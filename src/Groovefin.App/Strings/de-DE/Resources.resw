@@ -538,4 +538,40 @@
   <data name="Operation_LoadArtist" xml:space="preserve">
     <value>Künstler konnte nicht geladen werden</value>
   </data>
+  <data name="HomeHeader.Text" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="HomeRefreshButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Aktualisieren</value>
+  </data>
+  <data name="HomeRefreshButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Aktualisieren</value>
+  </data>
+  <data name="HomeShelf_RecentlyAdded" xml:space="preserve">
+    <value>Kürzlich hinzugefügt</value>
+  </data>
+  <data name="HomeShelf_RecentlyPlayed" xml:space="preserve">
+    <value>Zuletzt gespielt</value>
+  </data>
+  <data name="HomeShelf_MostPlayed" xml:space="preserve">
+    <value>Meistgespielt</value>
+  </data>
+  <data name="HomeShelf_Random" xml:space="preserve">
+    <value>Zufällige Alben</value>
+  </data>
+  <data name="HomeShelf_Favourites" xml:space="preserve">
+    <value>Lieblingsalben</value>
+  </data>
+  <data name="HomeShelfEmpty.Text" xml:space="preserve">
+    <value>Hier ist noch nichts.</value>
+  </data>
+  <data name="HomeShelfFailed.Text" xml:space="preserve">
+    <value>Diese Liste konnte nicht geladen werden.</value>
+  </data>
+  <data name="AlbumSort_DatePlayed" xml:space="preserve">
+    <value>Zuletzt gespielt</value>
+  </data>
+  <data name="Operation_LoadHome" xml:space="preserve">
+    <value>Startseite konnte nicht geladen werden</value>
+  </data>
 </root>
