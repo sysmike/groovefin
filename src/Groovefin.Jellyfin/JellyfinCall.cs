@@ -12,28 +12,60 @@ internal static class JellyfinCall
     public static async Task<T> RunAsync<T>(Func<Task<T?>> call, string operation)
         where T : class
     {
+        T? result;
         try
         {
-            return await call().ConfigureAwait(false)
-                ?? throw new JellyfinException($"{operation}: the server returned an empty response.");
+            result = await call().ConfigureAwait(false);
         }
-        catch (ApiException ex)
+        catch (Exception ex) when (Translate(ex, operation) is { } translated)
         {
-            throw new JellyfinException($"{operation} failed with HTTP {ex.ResponseStatusCode}.", (HttpStatusCode)ex.ResponseStatusCode, ex);
+            throw translated;
         }
-        catch (HttpRequestException ex)
+
+        return result ?? throw new JellyfinException($"{operation}: the server returned an empty response.");
+    }
+
+    /// <summary>For responses that are a single value, such as a boolean.</summary>
+    public static async Task<T> RunValueAsync<T>(Func<Task<T?>> call, string operation)
+        where T : struct
+    {
+        T? result;
+        try
         {
-            throw new JellyfinException($"{operation}: the server could not be reached.", ex.StatusCode, ex);
+            result = await call().ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is TimeoutRejectedException || (ex is TaskCanceledException && ex.InnerException is TimeoutException))
+        catch (Exception ex) when (Translate(ex, operation) is { } translated)
         {
-            // Attempt or total timeout of the resilience pipeline, or HttpClient.Timeout.
-            throw new JellyfinException($"{operation}: the server did not respond in time.", null, ex);
+            throw translated;
         }
-        catch (BrokenCircuitException ex)
+
+        return result ?? throw new JellyfinException($"{operation}: the server returned an empty response.");
+    }
+
+    /// <summary>For requests without a response body (POST/DELETE that return 204).</summary>
+    public static async Task RunAsync(Func<Task> call, string operation)
+    {
+        try
         {
-            // Too many recent failures: the circuit breaker fails fast instead of waiting again.
-            throw new JellyfinException($"{operation}: the server is not responding.", null, ex);
+            await call().ConfigureAwait(false);
+        }
+        catch (Exception ex) when (Translate(ex, operation) is { } translated)
+        {
+            throw translated;
         }
     }
+
+    private static JellyfinException? Translate(Exception ex, string operation) => ex switch
+    {
+        ApiException api => new JellyfinException($"{operation} failed with HTTP {api.ResponseStatusCode}.", (HttpStatusCode)api.ResponseStatusCode, ex),
+        HttpRequestException http => new JellyfinException($"{operation}: the server could not be reached.", http.StatusCode, ex),
+
+        // Attempt or total timeout of the resilience pipeline, or HttpClient.Timeout.
+        TimeoutRejectedException or TaskCanceledException { InnerException: TimeoutException } =>
+            new JellyfinException($"{operation}: the server did not respond in time.", null, ex),
+
+        // Too many recent failures: the circuit breaker fails fast instead of waiting again.
+        BrokenCircuitException => new JellyfinException($"{operation}: the server is not responding.", null, ex),
+        _ => null,
+    };
 }
