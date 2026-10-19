@@ -79,6 +79,7 @@ internal static class AppHost
         builder.Services.AddSingleton<ShellViewModel>();
         builder.Services.AddTransient<SettingsViewModel>();
         builder.Services.AddTransient<AlbumsViewModel>();
+        builder.Services.AddTransient<AlbumDetailViewModel>();
 
         // Views
         builder.Services.AddSingleton<MainWindow>();
