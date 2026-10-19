@@ -20,6 +20,7 @@ internal sealed partial class NowPlayingBar : UserControl
     {
         ViewModel = App.Services.GetRequiredService<NowPlayingViewModel>();
         Queue = App.Services.GetRequiredService<QueueViewModel>();
+        Lyrics = App.Services.GetRequiredService<LyricsViewModel>();
         InitializeComponent();
         Loaded += (_, _) => ViewModel.DisplayScale = XamlRoot?.RasterizationScale ?? 1;
     }
@@ -27,6 +28,8 @@ internal sealed partial class NowPlayingBar : UserControl
     public NowPlayingViewModel ViewModel { get; }
 
     public QueueViewModel Queue { get; }
+
+    public LyricsViewModel Lyrics { get; }
 
     /// <summary>
     /// The slider follows the playing position (one-way binding). A value that differs from it comes

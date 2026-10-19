@@ -209,13 +209,12 @@
                 Style="{StaticResource NowPlayingToggleStyle}">
                 <FontIcon FontSize="14" Glyph="&#xE90B;" />
             </ToggleButton>
-            <!--  TODO(#45): open the lyrics pane.  -->
-            <Button
+            <ToggleButton
                 x:Uid="NowPlayingLyricsButton"
-                IsEnabled="False"
-                Style="{StaticResource NowPlayingButtonStyle}">
+                IsChecked="{x:Bind Lyrics.IsOpen, Mode=TwoWay}"
+                Style="{StaticResource NowPlayingToggleStyle}">
                 <FontIcon FontSize="14" Glyph="&#xE8D2;" />
-            </Button>
+            </ToggleButton>
             <!--  TODO(#43): open the full-screen player.  -->
             <Button
                 x:Uid="NowPlayingFullScreenButton"

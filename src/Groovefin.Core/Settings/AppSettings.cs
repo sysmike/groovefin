@@ -32,6 +32,8 @@ public sealed record AppSettings
     public StreamingSettings Streaming { get; set; } = new();
 
     public PlaybackSettings Playback { get; set; } = new();
+
+    public LyricsSettings Lyrics { get; set; } = new();
 }
 
 /// <summary>Look and feel.</summary>
@@ -139,4 +141,21 @@ public sealed record PlaybackSettings
     public NormalizationMode Normalization { get; set; } = NormalizationMode.Off;
 
     public InstantMixMode InstantMix { get; set; } = InstantMixMode.Replace;
+}
+
+/// <summary>How lines are aligned in the lyrics pane.</summary>
+public enum LyricsAlignment
+{
+    Left,
+    Center,
+    Right,
+}
+
+/// <summary>Look of the lyrics pane.</summary>
+public sealed record LyricsSettings
+{
+    /// <summary>Gets or sets the font size in device-independent pixels.</summary>
+    public double FontSize { get; set; } = 20;
+
+    public LyricsAlignment Alignment { get; set; } = LyricsAlignment.Center;
 }
