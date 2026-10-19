@@ -146,9 +146,29 @@ public sealed partial class ServerManager(
         var updated = profile with { UserId = user.UserId, UserName = user.UserName };
         Replace(updated);
         settings.Update(s => s with { Servers = s.Servers with { ActiveServerId = updated.Id } });
-        client.Connect(new ServerConnection(updated.Address, user.UserId, user.AccessToken));
+        client.Connect(new ServerConnection(updated.Address, user.UserId, user.AccessToken) { LibraryId = updated.LibraryId });
 
         LogSignedIn(updated.Name);
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void SetLibrary(string serverId, string? libraryId)
+    {
+        var profile = Find(serverId) ?? throw new InvalidOperationException($"Unknown server {serverId}.");
+        if (profile.LibraryId == libraryId)
+        {
+            return;
+        }
+
+        var updated = profile with { LibraryId = libraryId };
+        Replace(updated);
+
+        // Reconnect with the new library; pages opened from now on browse it.
+        if (ActiveServer?.Id == updated.Id && client.Connection is { } connection)
+        {
+            client.Connect(connection with { LibraryId = libraryId });
+        }
+
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -178,7 +198,7 @@ public sealed partial class ServerManager(
             return;
         }
 
-        client.Connect(new ServerConnection(profile.Address, profile.UserId!, token));
+        client.Connect(new ServerConnection(profile.Address, profile.UserId!, token) { LibraryId = profile.LibraryId });
     }
 
     private ServerProfile? Find(string serverId) =>
