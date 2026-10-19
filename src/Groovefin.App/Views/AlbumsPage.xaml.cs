@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Groovefin.App.Controls;
 using Groovefin.Core.Api;
 using Groovefin.Core.Models;
 using Groovefin.Core.Services;
@@ -21,6 +22,10 @@ internal sealed partial class AlbumsPage : Page
 
     private readonly IStringResources _strings;
     private bool _syncingControls;
+    private bool _initialized;
+
+    /// <summary>The album last opened from this page; its cover animates back on return.</summary>
+    private AlbumItem? _openedAlbum;
 
     public AlbumsPage()
     {
@@ -42,16 +47,38 @@ internal sealed partial class AlbumsPage : Page
 
     public AlbumsViewModel ViewModel { get; }
 
+    /// <remarks>
+    /// The page is cached (<c>NavigationCacheMode</c>): going back returns to the same list and scroll
+    /// position, and the cover of the album the user came from flies back. Opening the page from the
+    /// navigation pane reloads it. The ViewModel lives as long as the page, so it is not disposed when
+    /// the page is left.
+    /// </remarks>
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        Loaded += OnFirstLoaded;
+        Loaded -= OnFirstLoaded;
+        Loaded -= OnReturnLoaded;
+        if (!_initialized)
+        {
+            Loaded += OnFirstLoaded;
+        }
+        else if (e.NavigationMode == NavigationMode.Back)
+        {
+            Loaded += OnReturnLoaded;
+        }
+        else
+        {
+            // From the navigation pane: start fresh, the server or music library may have changed.
+            _openedAlbum = null;
+            _ = ViewModel.ReloadAsync();
+        }
     }
 
     /// <summary>The scroll view and the XAML root (for the DPI scale) exist only once the page is loaded.</summary>
     private async void OnFirstLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnFirstLoaded;
+        _initialized = true;
 
         if (AlbumsView.ScrollView is { } scroll)
         {
@@ -64,12 +91,13 @@ internal sealed partial class AlbumsPage : Page
         LoadMoreIfNeeded();
     }
 
-    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    /// <summary>The cover of the album the user came back from flies back into its tile.</summary>
+    private void OnReturnLoaded(object sender, RoutedEventArgs e)
     {
-        base.OnNavigatedFrom(e);
-        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
-        ViewModel.Dispose();
+        Loaded -= OnReturnLoaded;
+        CoverAnimation.StartOnList(AlbumsView, _openedAlbum);
     }
+
 
     private void LoadMoreIfNeeded()
     {
@@ -188,6 +216,8 @@ internal sealed partial class AlbumsPage : Page
     {
         if (args.InvokedItem is AlbumItem item)
         {
+            _openedAlbum = item;
+            CoverAnimation.PrepareToDetail(AlbumsView, item);
             ViewModel.OpenAlbumCommand.Execute(item);
         }
     }

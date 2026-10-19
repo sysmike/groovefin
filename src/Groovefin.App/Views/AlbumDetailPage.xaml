@@ -36,6 +36,7 @@
                             Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                             Glyph="&#xE93C;" />
                         <Image
+                            x:Name="CoverImage"
                             controls:Artwork.Request="{x:Bind ViewModel.Cover, Mode=OneWay}"
                             AutomationProperties.AccessibilityView="Raw"
                             Stretch="UniformToFill" />
