@@ -35,7 +35,8 @@
   </PropertyGroup>
 
   <PropertyGroup Label="Publish">
-    <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">true</PublishReadyToRun>
+    <!-- Unconditional so that a plain restore (no -c Release) already fetches the crossgen pack. -->
+    <PublishReadyToRun>true</PublishReadyToRun>
     <!-- DI and XAML rely on reflection; trimming stays off until the app is trim-safe. -->
     <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
