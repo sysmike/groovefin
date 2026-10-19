@@ -1,5 +1,6 @@
 using Groovefin.App.Services;
 using Groovefin.Core;
+using Groovefin.Core.Images;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Security;
 using Groovefin.Core.Servers;
@@ -52,6 +53,17 @@ internal static class AppHost
         // Settings: settings.json next to the logs (LocalFolder when packaged, %LOCALAPPDATA%\Groovefin otherwise).
         builder.Services.AddSingleton(new SettingsStoreOptions(Path.Join(AppPaths.LocalData, "settings.json")));
         builder.Services.AddSingleton<ISettingsService, JsonSettingsService>();
+
+        // Image cache: Cache\Images in local app data, size limit from settings (applies immediately).
+        builder.Services.AddSingleton(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            return new ImageCacheOptions(
+                Path.Join(AppPaths.LocalData, "Cache", "Images"),
+                () => settings.Current.Cache.ImageCacheSizeMegabytes * 1024L * 1024L);
+        });
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton<IImageCache, DiskImageCache>();
 
         // Platform services
         builder.Services.AddSingleton<IDispatcher, DispatcherQueueDispatcher>();
