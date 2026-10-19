@@ -122,7 +122,21 @@ jobs:
         run: dotnet restore Groovefin.sln -p:Platform=${{ matrix.platform }}
 
       - name: Build
-        run: dotnet build Groovefin.sln --configuration Release --no-restore -p:Platform=${{ matrix.platform }}
+        # Errors also go to a file: XAML compiler errors (WMC...) are not picked up by the
+        # problem matcher, so the next step turns every error line into an annotation.
+        run: >
+          dotnet build Groovefin.sln --configuration Release --no-restore -p:Platform=${{ matrix.platform }}
+          "-flp:LogFile=${{ runner.temp }}/build-errors.log;ErrorsOnly;NoSummary"
+
+      - name: Report build errors
+        if: failure()
+        shell: pwsh
+        run: |
+          $log = Join-Path $env:RUNNER_TEMP 'build-errors.log'
+          if (Test-Path $log) {
+            Get-Content $log | Where-Object { $_.Trim() } | Select-Object -Unique -First 50 |
+              ForEach-Object { Write-Output "::error title=Build error::$($_ -replace '%', '%25')" }
+          }
 
       - name: Package MSIX (unsigned)
         shell: pwsh

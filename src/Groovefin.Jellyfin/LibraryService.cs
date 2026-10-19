@@ -62,6 +62,61 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         return new PagedResult<Album>(items, result.TotalRecordCount ?? items.Count, result.StartIndex ?? query.StartIndex);
     }
 
+    public async Task<Album> GetAlbumAsync(string albumId, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(albumId);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var dto = await JellyfinCall.RunAsync(
+            () => api.Items[id].GetAsync(request => request.QueryParameters.UserId = userId, cancellationToken),
+            "Loading album").ConfigureAwait(false);
+        return ItemMapper.ToAlbum(dto);
+    }
+
+    public async Task<IReadOnlyList<Track>> GetAlbumTracksAsync(string albumId, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(albumId);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items.GetAsync(
+                request =>
+                {
+                    var p = request.QueryParameters;
+                    p.UserId = userId;
+                    p.ParentId = id;
+                    p.IncludeItemTypes = [BaseItemKind.Audio];
+                    p.Recursive = true;
+                    p.SortBy = [ItemSortBy.ParentIndexNumber, ItemSortBy.IndexNumber, ItemSortBy.SortName];
+                    p.EnableUserData = true;
+                    p.EnableImages = false;
+                    p.EnableTotalRecordCount = false;
+                },
+                cancellationToken),
+            "Loading tracks").ConfigureAwait(false);
+
+        return (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
+    }
+
+    public async Task SetFavouriteAsync(string itemId, bool isFavourite, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(itemId);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+        var item = api.UserFavoriteItems[id];
+
+        await JellyfinCall.RunAsync(
+            () => isFavourite
+                ? item.PostAsync(request => request.QueryParameters.UserId = userId, cancellationToken)
+                : item.DeleteAsync(request => request.QueryParameters.UserId = userId, cancellationToken),
+            isFavourite ? "Adding favourite" : "Removing favourite").ConfigureAwait(false);
+    }
+
+    private static Guid ParseId(string id) =>
+        Guid.TryParse(id, out var guid) ? guid : throw new ArgumentException($"'{id}' is not a Jellyfin item ID.", nameof(id));
+
     public async Task<IReadOnlyList<Genre>> GetAlbumGenresAsync(CancellationToken cancellationToken = default)
     {
         var (api, connection) = client.Active;

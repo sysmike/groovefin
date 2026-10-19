@@ -255,6 +255,63 @@
   <data name="SectionTitle_album" xml:space="preserve">
     <value>Album</value>
   </data>
+  <data name="AlbumKind.Text" xml:space="preserve">
+    <value>ALBUM</value>
+  </data>
+  <data name="AlbumPlayText.Text" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="AlbumPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Play album</value>
+  </data>
+  <data name="AlbumShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Shuffle</value>
+  </data>
+  <data name="AlbumShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Shuffle</value>
+  </data>
+  <data name="AlbumQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Add to queue</value>
+  </data>
+  <data name="AlbumQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Add to queue</value>
+  </data>
+  <data name="AlbumFavouriteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favourite</value>
+  </data>
+  <data name="AlbumFavouriteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Favourite</value>
+  </data>
+  <data name="AlbumTracks.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Tracks</value>
+  </data>
+  <data name="AlbumLoadFailed.Text" xml:space="preserve">
+    <value>This album couldn't be loaded.</value>
+  </data>
+  <data name="Album_TrackCount" xml:space="preserve">
+    <value>{0} tracks</value>
+  </data>
+  <data name="Album_TrackCountOne" xml:space="preserve">
+    <value>{0} track</value>
+  </data>
+  <data name="Album_Disc" xml:space="preserve">
+    <value>Disc {0}</value>
+  </data>
+  <data name="Duration_HoursMinutes" xml:space="preserve">
+    <value>{0} h {1} min</value>
+  </data>
+  <data name="Duration_Minutes" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
+  <data name="Operation_LoadAlbum" xml:space="preserve">
+    <value>Couldn't load the album</value>
+  </data>
+  <data name="Operation_SetFavourite" xml:space="preserve">
+    <value>Couldn't update favourites</value>
+  </data>
+  <data name="SectionTitle_artist" xml:space="preserve">
+    <value>Artist</value>
+  </data>
   <data name="ServersHeader.Text" xml:space="preserve">
     <value>Servers</value>
   </data>

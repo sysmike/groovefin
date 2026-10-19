@@ -12,6 +12,18 @@ public interface ILibraryService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<PagedResult<Album>> GetAlbumsAsync(AlbumQuery query, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets one album.</summary>
+    /// <exception cref="JellyfinException">The album does not exist (HTTP 404) or the request failed.</exception>
+    Task<Album> GetAlbumAsync(string albumId, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets the tracks of an album in disc and track order.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<Track>> GetAlbumTracksAsync(string albumId, CancellationToken cancellationToken = default);
+
+    /// <summary>Marks an album, artist or track as favourite of the signed-in user, or removes the mark.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task SetFavouriteAsync(string itemId, bool isFavourite, CancellationToken cancellationToken = default);
+
     /// <summary>Gets the genres used by albums, sorted by name.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<IReadOnlyList<Genre>> GetAlbumGenresAsync(CancellationToken cancellationToken = default);
