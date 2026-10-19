@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an idea or improvement for Groovefin.
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what makes it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How should Groovefin behave?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: A checklist that tells us when this is done.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Screenshots, mock-ups, links to other players that do this well.
