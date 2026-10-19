@@ -241,4 +241,82 @@
   <data name="SectionTitle_album" xml:space="preserve">
     <value>Album</value>
   </data>
+  <data name="ServersHeader.Text" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="ServersIntro.Text" xml:space="preserve">
+    <value>Füge die Jellyfin-Server hinzu, die du hören möchtest. Groovefin merkt sie sich und meldet dich beim Start wieder an.</value>
+  </data>
+  <data name="ServerAddressBox.Header" xml:space="preserve">
+    <value>Serveradresse</value>
+  </data>
+  <data name="ServerAddressBox.PlaceholderText" xml:space="preserve">
+    <value>http://192.168.1.10:8096</value>
+  </data>
+  <data name="ServerAddButton.Content" xml:space="preserve">
+    <value>Server hinzufügen</value>
+  </data>
+  <data name="ServersListHeader.Text" xml:space="preserve">
+    <value>Deine Server</value>
+  </data>
+  <data name="ServerList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Deine Server</value>
+  </data>
+  <data name="ServerActiveBadge.Text" xml:space="preserve">
+    <value>Aktiv</value>
+  </data>
+  <data name="ServerMakeActiveButton.Content" xml:space="preserve">
+    <value>Diesen Server verwenden</value>
+  </data>
+  <data name="ServerEditButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Adresse ändern</value>
+  </data>
+  <data name="ServerEditButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Adresse ändern</value>
+  </data>
+  <data name="ServerRemoveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Server entfernen</value>
+  </data>
+  <data name="ServerRemoveButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Server entfernen</value>
+  </data>
+  <data name="Servers_EditTitle" xml:space="preserve">
+    <value>Serveradresse ändern</value>
+  </data>
+  <data name="Servers_AddressLabel" xml:space="preserve">
+    <value>Serveradresse</value>
+  </data>
+  <data name="Servers_RemoveTitle" xml:space="preserve">
+    <value>Server entfernen?</value>
+  </data>
+  <data name="Servers_RemoveMessage" xml:space="preserve">
+    <value>{0} und deine Anmeldung dafür werden aus Groovefin entfernt. Auf dem Server wird nichts gelöscht.</value>
+  </data>
+  <data name="Servers_RemoveConfirm" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="Servers_InvalidAddress" xml:space="preserve">
+    <value>Gib eine gültige Adresse ein, zum Beispiel http://192.168.1.10:8096.</value>
+  </data>
+  <data name="Servers_Unreachable" xml:space="preserve">
+    <value>Unter dieser Adresse antwortet kein Server. Prüfe Adresse, Port und Netzwerkverbindung.</value>
+  </data>
+  <data name="Servers_NotJellyfin" xml:space="preserve">
+    <value>Der Server unter dieser Adresse scheint kein Jellyfin-Server zu sein.</value>
+  </data>
+  <data name="Servers_DifferentServer" xml:space="preserve">
+    <value>Diese Adresse gehört zu einem anderen Server. Füge ihn stattdessen als neuen Server hinzu.</value>
+  </data>
+  <data name="Dialog_Save" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="Dialog_Cancel" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="SettingsServersHeader.Text" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="SettingsManageServersButton.Content" xml:space="preserve">
+    <value>Server verwalten</value>
+  </data>
 </root>
