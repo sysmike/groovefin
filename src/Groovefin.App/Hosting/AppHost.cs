@@ -87,6 +87,7 @@ internal static class AppHost
         builder.Services.AddSingleton(_ => new QueueManager());
         builder.Services.AddSingleton<Player>();
         builder.Services.AddSingleton<IPlayer>(sp => sp.GetRequiredService<Player>());
+        builder.Services.AddSingleton<PlaybackReporting>();
         builder.Services.AddSingleton<NowPlayingViewModel>();
 
         // Servers
