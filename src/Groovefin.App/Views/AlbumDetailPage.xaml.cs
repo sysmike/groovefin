@@ -1,9 +1,12 @@
+using Groovefin.App.Controls;
 using Groovefin.App.Services;
 using Groovefin.Core.Models;
+using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 
 namespace Groovefin.App.Views;
@@ -46,6 +49,15 @@ internal sealed partial class AlbumDetailPage : Page
 
         ViewModel.DisplayScale = XamlRoot?.RasterizationScale ?? 1;
         await ViewModel.LoadAsync(_albumId, _cancellation.Token);
+    }
+
+    /// <summary>Right-click or Menu key on a track: go to one of its artists.</summary>
+    private void OnTrackContextRequested(UIElement sender, ContextRequestedEventArgs e)
+    {
+        if ((e.OriginalSource as FrameworkElement)?.DataContext is TrackItem item)
+        {
+            ArtistMenu.TryShow(e, item.Track.Artists, App.Services.GetRequiredService<IStringResources>(), artist => ViewModel.OpenArtistCommand.Execute(artist));
+        }
     }
 
     private void OnArtistClick(object sender, RoutedEventArgs e)

@@ -24,6 +24,22 @@ public interface ILibraryService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task SetFavouriteAsync(string itemId, bool isFavourite, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets one page of artists or album artists.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<PagedResult<Artist>> GetArtistsAsync(ArtistQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets one artist with biography and genres.</summary>
+    /// <exception cref="JellyfinException">The artist does not exist (HTTP 404) or the request failed.</exception>
+    Task<Artist> GetArtistAsync(string artistId, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets the artist's most played tracks, most played first.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<Track>> GetArtistTopTracksAsync(string artistId, int limit, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets artists the server considers similar.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<Artist>> GetSimilarArtistsAsync(string artistId, int limit, CancellationToken cancellationToken = default);
+
     /// <summary>Gets the genres used by albums, sorted by name.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<IReadOnlyList<Genre>> GetAlbumGenresAsync(CancellationToken cancellationToken = default);
@@ -51,6 +67,12 @@ public sealed record AlbumQuery
 
     public bool FavouritesOnly { get; init; }
 
+    /// <summary>Gets an artist ID; only albums by this album artist are included.</summary>
+    public string? AlbumArtistId { get; init; }
+
+    /// <summary>Gets an artist ID; only albums this artist appears on, but is not the album artist of, are included.</summary>
+    public string? ContributingArtistId { get; init; }
+
     /// <summary>Gets a value indicating whether only albums the user has played are included.</summary>
     public bool PlayedOnly { get; init; }
 }
@@ -64,5 +86,31 @@ public enum AlbumSortField
     DateAdded,
     PlayCount,
     DatePlayed,
+    Random,
+}
+
+/// <summary>Paging, sorting and filters for <see cref="ILibraryService.GetArtistsAsync"/>.</summary>
+public sealed record ArtistQuery
+{
+    public int StartIndex { get; init; }
+
+    public int Limit { get; init; } = 100;
+
+    /// <summary>Gets a value indicating whether only album artists are listed (otherwise every track artist).</summary>
+    public bool AlbumArtistsOnly { get; init; } = true;
+
+    public ArtistSortField SortBy { get; init; } = ArtistSortField.Name;
+
+    public bool Descending { get; init; }
+
+    public bool FavouritesOnly { get; init; }
+}
+
+/// <summary>Artist sort orders. Ties are broken by name.</summary>
+public enum ArtistSortField
+{
+    Name,
+    DateAdded,
+    PlayCount,
     Random,
 }

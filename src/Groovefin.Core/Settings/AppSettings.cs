@@ -66,4 +66,13 @@ public sealed record BrowseSettings
     public AlbumSortField AlbumSort { get; set; } = AlbumSortField.Name;
 
     public bool AlbumSortDescending { get; set; }
+
+    public CollectionViewMode ArtistView { get; set; } = CollectionViewMode.Grid;
+
+    public ArtistSortField ArtistSort { get; set; } = ArtistSortField.Name;
+
+    public bool ArtistSortDescending { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the artists page lists album artists only.</summary>
+    public bool AlbumArtistsOnly { get; set; } = true;
 }
