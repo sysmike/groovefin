@@ -29,7 +29,10 @@ public sealed record TrackItem(Track Track, string? Artist)
 }
 
 /// <summary>The tracks of one disc. <see cref="Header"/> is empty for single-disc albums.</summary>
-public sealed record DiscGroup(string Header, IReadOnlyList<TrackItem> Tracks);
+public sealed record DiscGroup(string Header, IReadOnlyList<TrackItem> Tracks)
+{
+    public bool HasHeader => Header.Length > 0;
+}
 
 /// <summary>
 /// Album detail page: hero header (cover, title, artists, year, track count, length), tracks grouped by

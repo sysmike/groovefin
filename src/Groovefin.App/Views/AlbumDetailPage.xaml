@@ -127,7 +127,7 @@
                                 AutomationProperties.HeadingLevel="Level2"
                                 Style="{StaticResource BodyStrongTextBlockStyle}"
                                 Text="{x:Bind Header}"
-                                Visibility="{x:Bind conv:Visible.WhenText(Header)}" />
+                                Visibility="{x:Bind HasHeader}" />
                             <ListView
                                 x:Uid="AlbumTracks"
                                 ItemsSource="{x:Bind Tracks}"

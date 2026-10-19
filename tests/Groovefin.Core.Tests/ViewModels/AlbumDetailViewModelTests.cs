@@ -81,7 +81,7 @@ public sealed class AlbumDetailViewModelTests
 
         await sut.LoadAsync("album-1", Ct);
 
-        sut.Discs.Should().ContainSingle().Which.Header.Should().BeEmpty();
+        sut.Discs.Should().ContainSingle().Which.HasHeader.Should().BeFalse();
         sut.Discs[0].Tracks.Select(t => t.Number).Should().Equal("1", "2");
     }
 
@@ -109,7 +109,7 @@ public sealed class AlbumDetailViewModelTests
 
         await sut.LoadAsync("album-1", Ct);
 
-        sut.Discs.Select(d => (d.Header, d.Tracks.Count)).Should().Equal(("Disc 1", 2), ("Disc 2", 1));
+        sut.Discs.Select(d => (d.Header, d.HasHeader, d.Tracks.Count)).Should().Equal(("Disc 1", true, 2), ("Disc 2", true, 1));
     }
 
     [Fact]
