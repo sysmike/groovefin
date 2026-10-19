@@ -135,6 +135,7 @@ public sealed class PlaybackEngineBaseTests
     {
         _sut.Volume = 0.5;
         _sut.Volume = 0.5;
+        _sut.Volume = 0.5 + (PlaybackEngineBase.VolumeTolerance / 2);
         _sut.Volume = 3;
         _sut.Volume = -1;
         _sut.Volume = double.NaN;

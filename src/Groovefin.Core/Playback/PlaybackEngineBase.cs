@@ -13,6 +13,9 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
     /// <summary>Shortest interval between two <see cref="PositionChanged"/> events from the player.</summary>
     public static readonly TimeSpan PositionInterval = TimeSpan.FromMilliseconds(250);
 
+    /// <summary>Smaller volume changes (slider jitter) do not reach the player.</summary>
+    public const double VolumeTolerance = 0.001;
+
     private double _volume = 1;
     private bool _isMuted;
     private long _lastPositionReport = long.MinValue;
@@ -41,7 +44,7 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
         set
         {
             var clamped = double.IsNaN(value) ? _volume : Math.Clamp(value, 0, 1);
-            if (clamped != _volume)
+            if (Math.Abs(clamped - _volume) >= VolumeTolerance)
             {
                 _volume = clamped;
                 SetVolumeCore(clamped);
