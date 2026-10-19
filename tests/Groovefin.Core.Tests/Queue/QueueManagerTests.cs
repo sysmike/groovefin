@@ -288,6 +288,46 @@ public sealed class QueueManagerTests
     }
 
     [Fact]
+    public void ClearUpcoming_keeps_the_current_entry_and_those_before_it()
+    {
+        Start("a", "b", "c", "d");
+        _sut.Next();
+        _changes = 0;
+
+        _sut.ClearUpcoming();
+
+        Order.Should().Equal("a", "b");
+        CurrentName.Should().Be("b");
+        _changes.Should().Be(1);
+    }
+
+    [Fact]
+    public void ClearUpcoming_while_shuffled_also_drops_the_entries_from_the_original_order()
+    {
+        Start("a", "b", "c", "d");
+        _sut.Shuffle = true;
+        var current = CurrentName;
+
+        _sut.ClearUpcoming();
+        _sut.Shuffle = false;
+
+        Order.Should().Equal(current);
+    }
+
+    [Fact]
+    public void ClearUpcoming_without_upcoming_entries_changes_nothing()
+    {
+        _sut.ClearUpcoming();
+        Start("a");
+        _changes = 0;
+
+        _sut.ClearUpcoming();
+
+        _changes.Should().Be(0);
+        Order.Should().Equal("a");
+    }
+
+    [Fact]
     public void JumpTo_makes_an_entry_current_and_records_history()
     {
         Start("a", "b", "c");

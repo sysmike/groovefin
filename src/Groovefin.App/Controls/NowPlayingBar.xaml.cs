@@ -19,11 +19,14 @@ internal sealed partial class NowPlayingBar : UserControl
     public NowPlayingBar()
     {
         ViewModel = App.Services.GetRequiredService<NowPlayingViewModel>();
+        Queue = App.Services.GetRequiredService<QueueViewModel>();
         InitializeComponent();
         Loaded += (_, _) => ViewModel.DisplayScale = XamlRoot?.RasterizationScale ?? 1;
     }
 
     public NowPlayingViewModel ViewModel { get; }
+
+    public QueueViewModel Queue { get; }
 
     /// <summary>
     /// The slider follows the playing position (one-way binding). A value that differs from it comes

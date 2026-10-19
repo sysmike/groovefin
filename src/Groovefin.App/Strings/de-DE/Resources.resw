@@ -680,10 +680,10 @@
     <value>Favorit</value>
   </data>
   <data name="NowPlayingQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Warteschlange</value>
+    <value>Warteschlange (Strg+Q)</value>
   </data>
   <data name="NowPlayingQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Warteschlange</value>
+    <value>Warteschlange (Strg+Q)</value>
   </data>
   <data name="NowPlayingLyricsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Liedtext</value>
@@ -723,5 +723,78 @@
   </data>
   <data name="Operation_Playback" xml:space="preserve">
     <value>Titel konnte nicht wiedergegeben werden</value>
+  </data>
+  <data name="QueuePanelHeader.Text" xml:space="preserve">
+    <value>Warteschlange</value>
+  </data>
+  <data name="QueueSaveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Warteschlange als Playlist speichern</value>
+  </data>
+  <data name="QueueSaveButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Warteschlange als Playlist speichern</value>
+  </data>
+  <data name="QueueClearButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Als Nächstes leeren</value>
+  </data>
+  <data name="QueueClearButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Als Nächstes leeren</value>
+  </data>
+  <data name="QueueCloseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Warteschlange schließen (Strg+Q)</value>
+  </data>
+  <data name="QueueCloseButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Warteschlange schließen (Strg+Q)</value>
+  </data>
+  <data name="QueueNowPlayingHeader.Text" xml:space="preserve">
+    <value>Läuft gerade</value>
+  </data>
+  <data name="QueueUpNextTab.Text" xml:space="preserve">
+    <value>Als Nächstes</value>
+  </data>
+  <data name="QueueHistoryTab.Text" xml:space="preserve">
+    <value>Verlauf</value>
+  </data>
+  <data name="QueueUpNextList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Als Nächstes</value>
+  </data>
+  <data name="QueueHistoryList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Verlauf</value>
+  </data>
+  <data name="QueueUpNextEmpty.Text" xml:space="preserve">
+    <value>Als Nächstes ist nichts geplant. Füge Alben oder Titel mit „Zur Warteschlange hinzufügen“ hinzu.</value>
+  </data>
+  <data name="QueueHistoryEmpty.Text" xml:space="preserve">
+    <value>Hier erscheinen die Titel, die du gehört hast.</value>
+  </data>
+  <data name="Queue_SaveTitle" xml:space="preserve">
+    <value>Warteschlange als Playlist speichern</value>
+  </data>
+  <data name="Queue_SaveLabel" xml:space="preserve">
+    <value>Name der Playlist</value>
+  </data>
+  <data name="Queue_SavedTitle" xml:space="preserve">
+    <value>Playlist gespeichert</value>
+  </data>
+  <data name="Queue_SavedMessage" xml:space="preserve">
+    <value>Die Warteschlange wurde als „{0}“ gespeichert.</value>
+    <comment>{0} = playlist name</comment>
+  </data>
+  <data name="Operation_SavePlaylist" xml:space="preserve">
+    <value>Playlist konnte nicht gespeichert werden</value>
+  </data>
+  <data name="Menu_Play" xml:space="preserve">
+    <value>Abspielen</value>
+  </data>
+  <data name="Menu_PlayAgain" xml:space="preserve">
+    <value>Erneut abspielen</value>
+  </data>
+  <data name="Menu_MoveUp" xml:space="preserve">
+    <value>Nach oben</value>
+  </data>
+  <data name="Menu_MoveDown" xml:space="preserve">
+    <value>Nach unten</value>
+  </data>
+  <data name="Menu_RemoveFromQueue" xml:space="preserve">
+    <value>Aus der Warteschlange entfernen</value>
   </data>
 </root>
