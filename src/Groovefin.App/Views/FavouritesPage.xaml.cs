@@ -62,7 +62,8 @@ internal sealed partial class FavouritesPage : Page
         AlbumsView.Visibility = Show(albums && ViewModel.HasAlbums);
         ArtistsView.Visibility = Show(artists && ViewModel.HasArtists);
 
-        var empty = !ViewModel.IsLoading && !ViewModel.LoadFailed && ((songs && !ViewModel.HasTracks) || (albums && !ViewModel.HasAlbums) || (artists && !ViewModel.HasArtists));
+        var hasItems = songs ? ViewModel.HasTracks : albums ? ViewModel.HasAlbums : ViewModel.HasArtists;
+        var empty = !ViewModel.IsLoading && !ViewModel.LoadFailed && !hasItems;
         EmptyText.Visibility = Show(empty);
         EmptyText.Text = empty
             ? _strings.GetString(songs ? "Favourites_NoSongs" : albums ? "Favourites_NoAlbums" : "Favourites_NoArtists")
