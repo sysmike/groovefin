@@ -20,4 +20,10 @@ public sealed record ServerProfile
     public string? UserId { get; init; }
 
     public string? UserName { get; init; }
+
+    /// <summary>
+    /// Gets the music library browsing is limited to on this server, or <see langword="null"/> for all
+    /// music libraries (the default).
+    /// </summary>
+    public string? LibraryId { get; init; }
 }

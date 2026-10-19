@@ -205,6 +205,39 @@ public sealed class ServerManagerTests
     }
 
     [Fact]
+    public async Task Library_choice_is_stored_per_server_and_applied_to_the_connection()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        _authentication.SignInAsync(Arg.Any<Uri>(), "mike", "pw", Arg.Any<CancellationToken>())
+            .Returns(new AuthenticatedUser("id-a", "user-1", "Mike", "token"));
+        await _sut.SignInAsync("id-a", "mike", "pw", Ct);
+        var connection = new ServerConnection(new Uri("http://alpha:8096/"), "user-1", "token");
+        _client.Connection.Returns(connection);
+        var raised = 0;
+        _sut.Changed += (_, _) => raised++;
+
+        _sut.SetLibrary("id-a", "lib-1");
+        _sut.SetLibrary("id-a", "lib-1");
+
+        _sut.ActiveServer!.LibraryId.Should().Be("lib-1");
+        _client.Received(1).Connect(connection with { LibraryId = "lib-1" });
+        raised.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Stored_library_choice_is_used_when_connecting()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        _sut.SetLibrary("id-a", "lib-2");
+        _authentication.SignInAsync(Arg.Any<Uri>(), "mike", "pw", Arg.Any<CancellationToken>())
+            .Returns(new AuthenticatedUser("id-a", "user-1", "Mike", "token"));
+
+        await _sut.SignInAsync("id-a", "mike", "pw", Ct);
+
+        _client.Received(1).Connect(new ServerConnection(new Uri("http://alpha:8096/"), "user-1", "token") { LibraryId = "lib-2" });
+    }
+
+    [Fact]
     public async Task SignIn_as_another_user_removes_the_previous_token()
     {
         await _sut.AddAsync("alpha:8096", Ct);

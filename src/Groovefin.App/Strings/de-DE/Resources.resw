@@ -574,4 +574,16 @@
   <data name="Operation_LoadHome" xml:space="preserve">
     <value>Startseite konnte nicht geladen werden</value>
   </data>
+  <data name="SettingsLibraryBox.Header" xml:space="preserve">
+    <value>Musikbibliothek</value>
+  </data>
+  <data name="SettingsLibraryBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Musikbibliothek</value>
+  </data>
+  <data name="Settings_AllLibraries" xml:space="preserve">
+    <value>Alle Musikbibliotheken</value>
+  </data>
+  <data name="Operation_LoadLibraries" xml:space="preserve">
+    <value>Musikbibliotheken konnten nicht geladen werden</value>
+  </data>
 </root>

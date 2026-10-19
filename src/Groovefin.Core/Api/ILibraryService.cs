@@ -7,6 +7,10 @@ namespace Groovefin.Core.Api;
 /// </summary>
 public interface ILibraryService
 {
+    /// <summary>Gets the user's music libraries, sorted as on the server. Browsing is limited to <see cref="ServerConnection.LibraryId"/> when set.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<MusicLibrary>> GetMusicLibrariesAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Gets one page of albums.</summary>
     /// <exception cref="InvalidOperationException">There is no active connection.</exception>
     /// <exception cref="JellyfinException">The request failed.</exception>

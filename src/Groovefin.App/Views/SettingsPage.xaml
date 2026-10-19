@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Groovefin.Core.ViewModels"
     mc:Ignorable="d">
 
     <ScrollViewer>
@@ -54,6 +55,19 @@
                 AutomationProperties.HeadingLevel="Level2"
                 Style="{StaticResource BodyStrongTextBlockStyle}" />
             <Button x:Uid="SettingsManageServersButton" Command="{x:Bind ViewModel.ManageServersCommand}" />
+            <!--  Only shown when the server has more than one music library.  -->
+            <ComboBox
+                x:Uid="SettingsLibraryBox"
+                MinWidth="260"
+                ItemsSource="{x:Bind ViewModel.Libraries}"
+                SelectedIndex="{x:Bind ViewModel.SelectedLibraryIndex, Mode=TwoWay}"
+                Visibility="{x:Bind ViewModel.HasLibraryChoice, Mode=OneWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LibraryOption">
+                        <TextBlock Text="{x:Bind Name}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
 
             <TextBlock
                 x:Uid="SettingsAboutHeader"

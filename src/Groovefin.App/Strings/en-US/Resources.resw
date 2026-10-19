@@ -596,4 +596,16 @@
   <data name="Operation_LoadHome" xml:space="preserve">
     <value>Couldn't load the home page</value>
   </data>
+  <data name="SettingsLibraryBox.Header" xml:space="preserve">
+    <value>Music library</value>
+  </data>
+  <data name="SettingsLibraryBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Music library</value>
+  </data>
+  <data name="Settings_AllLibraries" xml:space="preserve">
+    <value>All music libraries</value>
+  </data>
+  <data name="Operation_LoadLibraries" xml:space="preserve">
+    <value>Couldn't load the music libraries</value>
+  </data>
 </root>

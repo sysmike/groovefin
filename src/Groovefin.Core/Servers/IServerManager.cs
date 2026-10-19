@@ -44,6 +44,12 @@ public interface IServerManager
     /// <exception cref="Api.JellyfinException">Wrong credentials (<c>IsUnauthorized</c>) or the server cannot be reached.</exception>
     Task SignInAsync(string serverId, string userName, string password, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Limits browsing on a server to one music library, or to all music libraries when
+    /// <paramref name="libraryId"/> is <see langword="null"/>. Applies at once when the server is active.
+    /// </summary>
+    void SetLibrary(string serverId, string? libraryId);
+
     /// <summary>Signs out of the active server and deletes its stored token.</summary>
     Task SignOutAsync(CancellationToken cancellationToken = default);
 }
