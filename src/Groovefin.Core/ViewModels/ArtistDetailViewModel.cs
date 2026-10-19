@@ -8,6 +8,7 @@ using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
 
 namespace Groovefin.Core.ViewModels;
@@ -35,6 +36,7 @@ public sealed record ArtistTrackItem(Track Track, int Rank)
 /// </summary>
 public sealed partial class ArtistDetailViewModel(
     ILibraryService library,
+    IPlayer player,
     INavigationService navigation,
     IErrorReporter errors) : ObservableObject
 {
@@ -64,7 +66,7 @@ public sealed partial class ArtistDetailViewModel(
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasArtist), nameof(Name), nameof(GenresText), nameof(Biography), nameof(HasBiography))]
-    [NotifyCanExecuteChangedFor(nameof(ToggleFavouriteCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ToggleFavouriteCommand), nameof(PlayCommand), nameof(ShuffleCommand))]
     public partial Artist? Artist { get; private set; }
 
     public bool HasArtist => Artist is not null;
@@ -165,33 +167,46 @@ public sealed partial class ArtistDetailViewModel(
         }
     }
 
-    // TODO(#30): play and shuffle the artist once the player service exists (engine #25, queue #26, stream URLs #28).
-    private static bool CanPlay() => false;
+    /// <summary>Plays all of the artist's tracks, album by album.</summary>
+    [RelayCommand(CanExecute = nameof(HasArtist))]
+    private Task PlayAsync() => PlayAllAsync(shuffle: false);
 
-    [RelayCommand(CanExecute = nameof(CanPlay))]
-    private void Play()
-    {
-    }
-
-    [RelayCommand(CanExecute = nameof(CanPlay))]
-    private void Shuffle()
-    {
-    }
+    [RelayCommand(CanExecute = nameof(HasArtist))]
+    private Task ShuffleAsync() => PlayAllAsync(shuffle: true);
 
     [RelayCommand]
     private void OpenAlbum(AlbumItem item) => navigation.NavigateTo(PageKeys.Album, item.Album.Id);
 
+    /// <summary>Plays the top tracks from <paramref name="item"/> on (a top track was clicked).</summary>
     [RelayCommand]
-    private void OpenTrackAlbum(ArtistTrackItem item)
+    private void PlayTopTrack(ArtistTrackItem item)
     {
-        if (item.Track.AlbumId is { } albumId)
-        {
-            navigation.NavigateTo(PageKeys.Album, albumId);
-        }
+        var tracks = TopTracks.Select(t => t.Track).ToList();
+        player.Play(tracks, item.Rank - 1);
     }
 
     [RelayCommand]
     private void OpenArtist(ArtistItem item) => navigation.NavigateTo(PageKeys.Artist, item.Artist.Id);
+
+    private async Task PlayAllAsync(bool shuffle)
+    {
+        try
+        {
+            var tracks = await library.GetArtistTracksAsync(Artist!.Id);
+            if (shuffle)
+            {
+                player.Shuffle(tracks);
+            }
+            else
+            {
+                player.Play(tracks);
+            }
+        }
+        catch (Exception ex) when (ex is JellyfinException or InvalidOperationException or ArgumentException)
+        {
+            errors.Report(ex, Operations.Playback);
+        }
+    }
 
     /// <summary>Runs one section load; returns its failure so the page reports it once.</summary>
     private static async Task<Exception?> LoadSectionAsync(Func<Task> load)

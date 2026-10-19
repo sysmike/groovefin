@@ -35,6 +35,7 @@ internal static class ItemMapper
             Name = dto.Name ?? string.Empty,
             AlbumId = FormatId(dto.AlbumId),
             AlbumName = dto.Album,
+            AlbumImageTag = dto.AlbumPrimaryImageTag,
             Artists = ToArtistRefs(dto.ArtistItems),
             Duration = dto.RunTimeTicks is { } ticks ? TimeSpan.FromTicks(ticks) : null,
             TrackNumber = dto.IndexNumber,

@@ -643,4 +643,85 @@
   <data name="Settings_Kbps" xml:space="preserve">
     <value>{0} kbit/s</value>
   </data>
+  <data name="NowPlayingBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Aktuelle Wiedergabe</value>
+  </data>
+  <data name="NowPlayingTitleLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Album öffnen</value>
+  </data>
+  <data name="NowPlayingTitleLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Album öffnen</value>
+  </data>
+  <data name="NowPlayingShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zufallswiedergabe</value>
+  </data>
+  <data name="NowPlayingShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zufallswiedergabe</value>
+  </data>
+  <data name="NowPlayingPreviousButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zurück (Strg+B)</value>
+  </data>
+  <data name="NowPlayingPreviousButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zurück (Strg+B)</value>
+  </data>
+  <data name="NowPlayingNextButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Weiter (Strg+F)</value>
+  </data>
+  <data name="NowPlayingNextButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Weiter (Strg+F)</value>
+  </data>
+  <data name="NowPlayingSeekSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="NowPlayingFavouriteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
+  <data name="NowPlayingFavouriteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
+  <data name="NowPlayingQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Warteschlange</value>
+  </data>
+  <data name="NowPlayingQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Warteschlange</value>
+  </data>
+  <data name="NowPlayingLyricsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Liedtext</value>
+  </data>
+  <data name="NowPlayingLyricsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Liedtext</value>
+  </data>
+  <data name="NowPlayingFullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Vollbild</value>
+  </data>
+  <data name="NowPlayingFullScreenButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Vollbild</value>
+  </data>
+  <data name="NowPlayingMuteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Stummschalten</value>
+  </data>
+  <data name="NowPlayingMuteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Stummschalten</value>
+  </data>
+  <data name="NowPlayingVolumeSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lautstärke</value>
+  </data>
+  <data name="NowPlaying_Play" xml:space="preserve">
+    <value>Wiedergabe (Strg+P)</value>
+  </data>
+  <data name="NowPlaying_Pause" xml:space="preserve">
+    <value>Pause (Strg+P)</value>
+  </data>
+  <data name="NowPlaying_RepeatOff" xml:space="preserve">
+    <value>Wiederholen: aus</value>
+  </data>
+  <data name="NowPlaying_RepeatAll" xml:space="preserve">
+    <value>Wiederholen: alle</value>
+  </data>
+  <data name="NowPlaying_RepeatOne" xml:space="preserve">
+    <value>Wiederholen: einen Titel</value>
+  </data>
+  <data name="Operation_Playback" xml:space="preserve">
+    <value>Titel konnte nicht wiedergegeben werden</value>
+  </data>
 </root>

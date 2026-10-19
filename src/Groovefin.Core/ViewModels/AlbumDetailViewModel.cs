@@ -8,6 +8,7 @@ using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
 
 namespace Groovefin.Core.ViewModels;
@@ -43,10 +44,13 @@ public sealed record DiscGroup(string Header, IReadOnlyList<TrackItem> Tracks)
 /// </summary>
 public sealed partial class AlbumDetailViewModel(
     ILibraryService library,
+    IPlayer player,
     INavigationService navigation,
     IErrorReporter errors,
     IStringResources strings) : ObservableObject
 {
+    private IReadOnlyList<Track> _tracks = [];
+
     /// <summary>Cover width in device-independent pixels.</summary>
     public const double CoverWidth = 232;
 
@@ -106,6 +110,10 @@ public sealed partial class AlbumDetailViewModel(
             Background = ImageRequest.Primary(album.Id, album.PrimaryImageTag, BackgroundWidth, 1);
             Details = BuildDetails(album, tracks);
             BuildDiscs(album, tracks);
+            _tracks = tracks;
+            PlayCommand.NotifyCanExecuteChanged();
+            ShuffleCommand.NotifyCanExecuteChanged();
+            AddToQueueCommand.NotifyCanExecuteChanged();
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(Artists));
             OnPropertyChanged(nameof(ArtistText));
@@ -145,22 +153,26 @@ public sealed partial class AlbumDetailViewModel(
         }
     }
 
-    // TODO(#30): play, shuffle and queue the album once the player service exists (engine #25, queue #26, stream URLs #28).
-    private static bool CanPlay() => false;
+    private bool CanPlay() => _tracks.Count > 0;
 
     [RelayCommand(CanExecute = nameof(CanPlay))]
-    private void Play()
-    {
-    }
+    private void Play() => player.Play(_tracks);
 
     [RelayCommand(CanExecute = nameof(CanPlay))]
-    private void Shuffle()
-    {
-    }
+    private void Shuffle() => player.Shuffle(_tracks);
 
     [RelayCommand(CanExecute = nameof(CanPlay))]
-    private void AddToQueue()
+    private void AddToQueue() => player.AddToQueue(_tracks);
+
+    /// <summary>Plays the album from <paramref name="item"/> on (a track row was clicked).</summary>
+    [RelayCommand]
+    private void PlayTrack(TrackItem item)
     {
+        var index = _tracks.ToList().IndexOf(item.Track);
+        if (index >= 0)
+        {
+            player.Play(_tracks, index);
+        }
     }
 
     [RelayCommand]

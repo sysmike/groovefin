@@ -40,6 +40,10 @@ public interface ILibraryService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<IReadOnlyList<Track>> GetArtistTopTracksAsync(string artistId, int limit, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets all tracks of an artist, album by album (newest first) in disc and track order.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<Track>> GetArtistTracksAsync(string artistId, CancellationToken cancellationToken = default);
+
     /// <summary>Gets artists the server considers similar.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<IReadOnlyList<Artist>> GetSimilarArtistsAsync(string artistId, int limit, CancellationToken cancellationToken = default);

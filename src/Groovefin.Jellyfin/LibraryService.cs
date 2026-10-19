@@ -102,7 +102,9 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     p.Recursive = true;
                     p.SortBy = [ItemSortBy.ParentIndexNumber, ItemSortBy.IndexNumber, ItemSortBy.SortName];
                     p.EnableUserData = true;
-                    p.EnableImages = false;
+                    // Primary only: the track DTO then carries AlbumPrimaryImageTag for the now playing cover.
+                    p.ImageTypeLimit = 1;
+                    p.EnableImageTypes = [ImageType.Primary];
                     p.EnableTotalRecordCount = false;
                 },
                 cancellationToken),
@@ -218,11 +220,43 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     p.SortOrder = [SortOrder.Descending];
                     p.Limit = limit;
                     p.EnableUserData = true;
-                    p.EnableImages = false;
+                    // Primary only: the track DTO then carries AlbumPrimaryImageTag for the now playing cover.
+                    p.ImageTypeLimit = 1;
+                    p.EnableImageTypes = [ImageType.Primary];
                     p.EnableTotalRecordCount = false;
                 },
                 cancellationToken),
             "Loading top tracks").ConfigureAwait(false);
+
+        return (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
+    }
+
+    public async Task<IReadOnlyList<Track>> GetArtistTracksAsync(string artistId, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(artistId);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items.GetAsync(
+                request =>
+                {
+                    var p = request.QueryParameters;
+                    p.UserId = userId;
+                    p.ParentId = LibraryFolder(connection);
+                    p.ArtistIds = [id];
+                    p.IncludeItemTypes = [BaseItemKind.Audio];
+                    p.Recursive = true;
+                    p.SortBy = [ItemSortBy.ProductionYear, ItemSortBy.Album, ItemSortBy.ParentIndexNumber, ItemSortBy.IndexNumber];
+                    p.SortOrder = [SortOrder.Descending, SortOrder.Ascending, SortOrder.Ascending, SortOrder.Ascending];
+                    p.EnableUserData = true;
+                    // Primary only: the track DTO then carries AlbumPrimaryImageTag for the now playing cover.
+                    p.ImageTypeLimit = 1;
+                    p.EnableImageTypes = [ImageType.Primary];
+                    p.EnableTotalRecordCount = false;
+                },
+                cancellationToken),
+            "Loading artist tracks").ConfigureAwait(false);
 
         return (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
     }
