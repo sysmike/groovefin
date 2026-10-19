@@ -321,4 +321,128 @@ public sealed class PlayerTests : IDisposable
 
         Playing.Should().Be("a");
     }
+
+    [Fact]
+    public void The_entry_after_the_playing_one_is_queued_for_gapless_playback()
+    {
+        _sut.Play(Tracks("a", "b", "c"));
+
+        _engine.Next!.Id.Should().Be(_queue.Items[1].Id);
+        _engine.Next.Track.Id.Should().Be("b");
+        _engine.Next.Url.Should().Be(new Uri("http://stream/b"));
+    }
+
+    [Fact]
+    public void The_last_entry_has_nothing_queued_after_it()
+    {
+        _sut.Play(Tracks("a"));
+
+        _engine.Next.Should().BeNull();
+    }
+
+    [Fact]
+    public void A_gapless_transition_moves_the_queue_without_reloading()
+    {
+        _sut.Play(Tracks("a", "b", "c"));
+        _engine.Calls.Clear();
+
+        _engine.SimulateAdvance();
+
+        Playing.Should().Be("b");
+        _queue.Current!.Track.Id.Should().Be("b");
+        _engine.Calls.Should().BeEmpty();
+        _engine.Next!.Track.Id.Should().Be("c");
+    }
+
+    [Fact]
+    public void Repeat_one_queues_the_playing_entry_again()
+    {
+        _sut.Play(Tracks("a", "b"));
+
+        _queue.Repeat = RepeatMode.One;
+        _engine.Next!.Id.Should().Be(_queue.Current!.Id);
+        _engine.SimulateAdvance();
+
+        Playing.Should().Be("a");
+        _engine.Next!.Id.Should().Be(_queue.Current!.Id);
+    }
+
+    [Fact]
+    public void Queue_changes_update_the_queued_entry()
+    {
+        _sut.Play(Tracks("a", "b"));
+
+        _sut.PlayNext(Tracks("c"));
+        _engine.Next!.Track.Id.Should().Be("c");
+
+        _queue.Remove(_queue.Items[1].Id);
+        _engine.Next!.Track.Id.Should().Be("b");
+
+        _queue.Remove(_queue.Items[1].Id);
+        _engine.Next.Should().BeNull();
+
+        _sut.AddToQueue(Tracks("d"));
+        _engine.Next!.Track.Id.Should().Be("d");
+    }
+
+    [Fact]
+    public void An_unchanged_next_entry_is_not_queued_again()
+    {
+        _sut.Play(Tracks("a", "b"));
+        var queued = _engine.Next;
+
+        _sut.AddToQueue(Tracks("c"));
+
+        _engine.Next.Should().BeSameAs(queued);
+    }
+
+    [Fact]
+    public void A_transition_to_an_entry_removed_meanwhile_plays_what_the_queue_says()
+    {
+        _sut.Play(Tracks("a", "b", "c"));
+        var b = _engine.Next!;
+        _queue.Remove(b.Id);
+
+        _engine.SimulateAdvance(b);
+
+        Playing.Should().Be("c");
+        _engine.Calls[^1].Should().Be($"load {_queue.Current!.Id} autoPlay=True");
+    }
+
+    [Fact]
+    public void When_the_next_stream_url_cannot_be_built_nothing_is_queued()
+    {
+        _sut.Play(Tracks("a", "b"));
+        _client.Connection.ReturnsNull();
+
+        _sut.PlayNext(Tracks("c"));
+
+        _engine.Next.Should().BeNull();
+        _errors.DidNotReceiveWithAnyArgs().Report(default!, default!);
+        Playing.Should().Be("a");
+    }
+
+    [Fact]
+    public void A_gapless_transition_resets_the_failure_count()
+    {
+        _sut.Play(Tracks("a", "b", "c", "d", "e"));
+
+        _engine.SimulateFailure();
+        _engine.SimulateFailure();
+        _engine.SimulateAdvance();
+        _engine.SimulateFailure();
+
+        Playing.Should().Be("e");
+    }
+
+    [Fact]
+    public void Dispose_also_stops_following_gapless_transitions()
+    {
+        _sut.Play(Tracks("a", "b"));
+        _sut.Dispose();
+
+        _engine.SimulateAdvance();
+
+        _queue.Current!.Track.Id.Should().Be("a");
+    }
 }

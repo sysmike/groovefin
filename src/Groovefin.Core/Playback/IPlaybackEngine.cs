@@ -53,6 +53,9 @@ public interface IPlaybackEngine
 
     TimeSpan Position { get; }
 
+    /// <summary>Gets the source queued with <see cref="SetNext"/> to follow the current one, or <see langword="null"/>.</summary>
+    PlaybackSource? Next { get; }
+
     /// <summary>Gets the length of the current source; <see cref="TimeSpan.Zero"/> while unknown.</summary>
     TimeSpan Duration { get; }
 
@@ -67,10 +70,10 @@ public interface IPlaybackEngine
     /// <summary>Raised when <see cref="Position"/> or <see cref="Duration"/> changed, at most a few times a second.</summary>
     event EventHandler? PositionChanged;
 
-    /// <summary>Raised after <see cref="Current"/> changed.</summary>
+    /// <summary>Raised after <see cref="Current"/> changed: on load and stop, and when the engine moved on to <see cref="Next"/> by itself.</summary>
     event EventHandler? CurrentChanged;
 
-    /// <summary>Raised when the current source played to its end.</summary>
+    /// <summary>Raised when the current source played to its end and no <see cref="Next"/> followed it.</summary>
     event EventHandler? Ended;
 
     /// <summary>Raised when the current source cannot be played.</summary>
@@ -78,6 +81,16 @@ public interface IPlaybackEngine
 
     /// <summary>Loads <paramref name="source"/>, replacing the current one, and starts it unless <paramref name="autoPlay"/> is false.</summary>
     void Load(PlaybackSource source, bool autoPlay = true);
+
+    /// <summary>
+    /// Queues <paramref name="next"/> to play right after the current source without a gap: the engine
+    /// pre-buffers it, and when the current source ends it moves on by itself (<see cref="Current"/> becomes
+    /// it and <see cref="CurrentChanged"/> is raised instead of <see cref="Ended"/>). Replaces a source
+    /// queued before; <see langword="null"/> clears it. Ignored while nothing is loaded; <see cref="Load"/>
+    /// and <see cref="Stop"/> clear it. If the next source cannot be pre-buffered it is dropped, and the
+    /// current one ends normally.
+    /// </summary>
+    void SetNext(PlaybackSource? next);
 
     void Play();
 
