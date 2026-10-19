@@ -136,6 +136,7 @@
         </SelectorBar>
 
         <ItemsView
+            controls:ItemMenu.IsEnabled="True"
             x:Name="ArtistsView"
             x:Uid="ArtistsView"
             Grid.Row="2"

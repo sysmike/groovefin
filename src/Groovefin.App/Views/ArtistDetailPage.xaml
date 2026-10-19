@@ -192,6 +192,7 @@
                 <StackPanel Visibility="{x:Bind ViewModel.HasTopTracks, Mode=OneWay}">
                     <TextBlock x:Uid="ArtistTopTracksHeader" Style="{StaticResource SectionHeaderStyle}" />
                     <ListView
+                        controls:ItemMenu.IsEnabled="True"
                         x:Uid="ArtistTopTracks"
                         MaxWidth="880"
                         Margin="24,0"
@@ -240,6 +241,7 @@
                 <StackPanel Visibility="{x:Bind ViewModel.HasAlbums, Mode=OneWay}">
                     <TextBlock x:Uid="ArtistAlbumsHeader" Style="{StaticResource SectionHeaderStyle}" />
                     <ItemsView
+                        controls:ItemMenu.IsEnabled="True"
                         x:Uid="ArtistAlbums"
                         Height="224"
                         Padding="36,0"
@@ -258,6 +260,7 @@
                 <StackPanel Visibility="{x:Bind ViewModel.HasAppearsOn, Mode=OneWay}">
                     <TextBlock x:Uid="ArtistAppearsOnHeader" Style="{StaticResource SectionHeaderStyle}" />
                     <ItemsView
+                        controls:ItemMenu.IsEnabled="True"
                         x:Uid="ArtistAppearsOn"
                         Height="224"
                         Padding="36,0"
@@ -276,6 +279,7 @@
                 <StackPanel Visibility="{x:Bind ViewModel.HasSimilar, Mode=OneWay}">
                     <TextBlock x:Uid="ArtistSimilarHeader" Style="{StaticResource SectionHeaderStyle}" />
                     <ItemsView
+                        controls:ItemMenu.IsEnabled="True"
                         x:Uid="ArtistSimilar"
                         Height="208"
                         Padding="36,0"

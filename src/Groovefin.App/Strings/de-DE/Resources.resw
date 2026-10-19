@@ -1040,4 +1040,58 @@
   <data name="Operation_LoadFavourites" xml:space="preserve">
     <value>Deine Favoriten konnten nicht geladen werden</value>
   </data>
+  <data name="Menu_PlayNow" xml:space="preserve">
+    <value>Jetzt abspielen</value>
+  </data>
+  <data name="Menu_PlayNext" xml:space="preserve">
+    <value>Als Nächstes abspielen</value>
+  </data>
+  <data name="Menu_AddToQueue" xml:space="preserve">
+    <value>Zur Warteschlange hinzufügen</value>
+  </data>
+  <data name="Menu_AddToPlaylist" xml:space="preserve">
+    <value>Zu Playlist hinzufügen</value>
+  </data>
+  <data name="Menu_GoToAlbum" xml:space="preserve">
+    <value>Zum Album</value>
+  </data>
+  <data name="Menu_InstantMix" xml:space="preserve">
+    <value>Instant-Mix</value>
+  </data>
+  <data name="Menu_Favourite" xml:space="preserve">
+    <value>Zu Favoriten hinzufügen</value>
+  </data>
+  <data name="Menu_Unfavourite" xml:space="preserve">
+    <value>Aus Favoriten entfernen</value>
+  </data>
+  <data name="Menu_ShowInfo" xml:space="preserve">
+    <value>Infos anzeigen</value>
+  </data>
+  <data name="Menu_LoadingPlaylists" xml:space="preserve">
+    <value>Playlists werden geladen…</value>
+  </data>
+  <data name="Dialog_Close" xml:space="preserve">
+    <value>Schließen</value>
+  </data>
+  <data name="Info_Title" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="Info_Artists" xml:space="preserve">
+    <value>Interpreten</value>
+  </data>
+  <data name="Info_Album" xml:space="preserve">
+    <value>Album</value>
+  </data>
+  <data name="Info_Track" xml:space="preserve">
+    <value>Titelnummer</value>
+  </data>
+  <data name="Info_Disc" xml:space="preserve">
+    <value>CD</value>
+  </data>
+  <data name="Info_Length" xml:space="preserve">
+    <value>Länge</value>
+  </data>
+  <data name="Info_PlayCount" xml:space="preserve">
+    <value>Wiedergaben</value>
+  </data>
 </root>

@@ -199,6 +199,31 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         return ItemMapper.ToArtist(dto);
     }
 
+    public async Task<IReadOnlyList<Track>> GetInstantMixAsync(string itemId, int limit, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(itemId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items[id].InstantMix.GetAsync(
+                request =>
+                {
+                    var p = request.QueryParameters;
+                    p.UserId = userId;
+                    p.Limit = limit;
+                    p.EnableUserData = true;
+                    // Primary only: the track DTO then carries AlbumPrimaryImageTag for covers.
+                    p.ImageTypeLimit = 1;
+                    p.EnableImageTypes = [ImageType.Primary];
+                },
+                cancellationToken),
+            "Loading an instant mix").ConfigureAwait(false);
+
+        return (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
+    }
+
     public async Task<IReadOnlyList<Track>> GetFavouriteTracksAsync(int limit, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);

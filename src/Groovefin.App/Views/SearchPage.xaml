@@ -104,6 +104,7 @@
             <StackPanel Visibility="{x:Bind ViewModel.HasArtists, Mode=OneWay}">
                 <TextBlock x:Uid="SearchArtistsHeader" Style="{StaticResource SectionHeaderStyle}" />
                 <ItemsView
+                    controls:ItemMenu.IsEnabled="True"
                     x:Uid="SearchArtists"
                     Height="208"
                     Padding="36,0"
@@ -122,6 +123,7 @@
             <StackPanel Visibility="{x:Bind ViewModel.HasAlbums, Mode=OneWay}">
                 <TextBlock x:Uid="SearchAlbumsHeader" Style="{StaticResource SectionHeaderStyle}" />
                 <ItemsView
+                    controls:ItemMenu.IsEnabled="True"
                     x:Uid="SearchAlbums"
                     Height="224"
                     Padding="36,0"
@@ -140,6 +142,7 @@
             <StackPanel Visibility="{x:Bind ViewModel.HasTracks, Mode=OneWay}">
                 <TextBlock x:Uid="SearchTracksHeader" Style="{StaticResource SectionHeaderStyle}" />
                 <ListView
+                    controls:ItemMenu.IsEnabled="True"
                     x:Uid="SearchTracks"
                     MaxWidth="880"
                     Margin="24,0"
@@ -181,6 +184,7 @@
             <StackPanel Visibility="{x:Bind ViewModel.HasPlaylists, Mode=OneWay}">
                 <TextBlock x:Uid="SearchPlaylistsHeader" Style="{StaticResource SectionHeaderStyle}" />
                 <ListView
+                    controls:ItemMenu.IsEnabled="True"
                     x:Uid="SearchPlaylists"
                     MaxWidth="880"
                     Margin="24,0"

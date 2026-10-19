@@ -89,6 +89,7 @@
                             <Grid Height="224">
                                 <!--  Horizontal list; arrow keys move between albums, Tab leaves the list.  -->
                                 <ItemsView
+                                    controls:ItemMenu.IsEnabled="True"
                                     Padding="36,0"
                                     AutomationProperties.Name="{x:Bind Title}"
                                     IsItemInvokedEnabled="True"

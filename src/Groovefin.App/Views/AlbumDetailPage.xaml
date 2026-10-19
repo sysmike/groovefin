@@ -137,8 +137,8 @@
                                 Text="{x:Bind Header}"
                                 Visibility="{x:Bind HasHeader}" />
                             <ListView
+                                controls:ItemMenu.IsEnabled="True"
                                 x:Uid="AlbumTracks"
-                                ContextRequested="OnTrackContextRequested"
                                 IsItemClickEnabled="True"
                                 ItemClick="OnTrackClick"
                                 ItemsSource="{x:Bind Tracks}"

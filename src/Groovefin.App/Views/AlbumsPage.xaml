@@ -181,6 +181,7 @@
         </Grid>
 
         <ItemsView
+            controls:ItemMenu.IsEnabled="True"
             x:Name="AlbumsView"
             x:Uid="AlbumsView"
             Grid.Row="1"
