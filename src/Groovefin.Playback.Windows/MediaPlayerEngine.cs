@@ -1,5 +1,6 @@
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Windows.Media;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 
@@ -33,12 +34,19 @@ public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
             AudioCategory = MediaPlayerAudioCategory.Media,
         };
 
+        // SystemMediaControls drives the transport controls itself: the queue, not MediaPlayer, knows
+        // what next and previous mean, and what to show.
+        _player.CommandManager.IsEnabled = false;
+
         _player.PlaybackSession.PlaybackStateChanged += OnPlaybackStateChanged;
         _player.PlaybackSession.PositionChanged += OnPositionChanged;
         _player.PlaybackSession.NaturalDurationChanged += OnPositionChanged;
         _player.MediaEnded += OnMediaEnded;
         _player.MediaFailed += OnMediaFailed;
     }
+
+    /// <summary>Gets the System Media Transport Controls of the player (media keys, the media flyout).</summary>
+    public SystemMediaTransportControls TransportControls => _player.SystemMediaTransportControls;
 
     /// <summary>Gets the source the player is on; MediaPlayer's event threads read it.</summary>
     private PlaybackSource? CurrentSource

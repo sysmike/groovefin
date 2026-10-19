@@ -52,6 +52,9 @@ public partial class App : Application
 
         // Lives as long as the app: tells the server what is playing (play counts, recently played).
         _host.Services.GetRequiredService<PlaybackReporting>();
+
+        // Lives as long as the app: media keys and the Windows media flyout.
+        _host.Services.GetRequiredService<SystemMediaControlsSync>();
     }
 
     private void OnMainWindowClosed(object sender, WindowEventArgs args)
