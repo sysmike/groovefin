@@ -145,7 +145,7 @@ public sealed partial class AlbumDetailViewModel(
         }
     }
 
-    // TODO(#25): play, shuffle and queue the album once the playback engine and queue exist (M2).
+    // TODO(#30): play, shuffle and queue the album once the player service exists (engine #25, queue #26, stream URLs #28).
     private static bool CanPlay() => false;
 
     [RelayCommand(CanExecute = nameof(CanPlay))]

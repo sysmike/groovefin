@@ -165,7 +165,7 @@ public sealed partial class ArtistDetailViewModel(
         }
     }
 
-    // TODO(#25): play and shuffle the artist once the playback engine and queue exist (M2).
+    // TODO(#30): play and shuffle the artist once the player service exists (engine #25, queue #26, stream URLs #28).
     private static bool CanPlay() => false;
 
     [RelayCommand(CanExecute = nameof(CanPlay))]
