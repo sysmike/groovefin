@@ -178,7 +178,7 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Starts over: cancels a running load, clears the list and loads the first page.</summary>
-    private Task ReloadAsync()
+    public Task ReloadAsync()
     {
         if (!_initialized)
         {

@@ -197,4 +197,27 @@ public sealed class AlbumsViewModelTests
 
         _navigation.Received(1).NavigateTo(PageKeys.Album, "album-3");
     }
+
+    [Fact]
+    public async Task Reload_starts_over_with_the_first_page()
+    {
+        using var sut = CreateSut();
+        await sut.InitializeAsync();
+        await sut.LoadMoreCommand.ExecuteAsync(null);
+
+        await sut.ReloadAsync();
+
+        sut.Albums.Should().HaveCount(AlbumsViewModel.PageSize);
+        _queries[^1].StartIndex.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Reload_before_the_page_is_shown_loads_nothing()
+    {
+        using var sut = CreateSut();
+
+        await sut.ReloadAsync();
+
+        _queries.Should().BeEmpty();
+    }
 }

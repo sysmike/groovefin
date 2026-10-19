@@ -49,6 +49,18 @@ internal sealed partial class AlbumDetailPage : Page
 
         ViewModel.DisplayScale = XamlRoot?.RasterizationScale ?? 1;
         await ViewModel.LoadAsync(_albumId, _cancellation.Token);
+
+        // The header is shown once the album has loaded; fly the list cover in after that layout pass.
+        DispatcherQueue.TryEnqueue(() => CoverAnimation.StartOnDetail(CoverImage));
+    }
+
+    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+    {
+        base.OnNavigatingFrom(e);
+        if (e.NavigationMode == NavigationMode.Back && ViewModel.HasAlbum)
+        {
+            CoverAnimation.PrepareToList(CoverImage);
+        }
     }
 
     /// <summary>Right-click or Menu key on a track: go to one of its artists.</summary>
