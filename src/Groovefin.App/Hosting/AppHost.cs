@@ -2,12 +2,14 @@ using Groovefin.App.Services;
 using Groovefin.Core;
 using Groovefin.Core.Images;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Security;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
 using Groovefin.Core.ViewModels;
 using Groovefin.Jellyfin;
+using Groovefin.Playback.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -77,6 +79,10 @@ internal static class AppHost
         builder.Services.AddSingleton<ICredentialStore, PasswordVaultCredentialStore>();
         builder.Services.AddSingleton<ContentDialogService>();
         builder.Services.AddSingleton<IDialogService>(sp => sp.GetRequiredService<ContentDialogService>());
+
+        // Playback
+        builder.Services.AddSingleton<MediaPlayerEngine>();
+        builder.Services.AddSingleton<IPlaybackEngine>(sp => sp.GetRequiredService<MediaPlayerEngine>());
 
         // Servers
         builder.Services.AddSingleton<IServerManager, ServerManager>();

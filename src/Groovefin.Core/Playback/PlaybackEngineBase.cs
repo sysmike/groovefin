@@ -1,0 +1,205 @@
+using Groovefin.Core.Services;
+
+namespace Groovefin.Core.Playback;
+
+/// <summary>
+/// Platform-independent part of an <see cref="IPlaybackEngine"/>: state, clamping, position throttling
+/// and raising every event on the UI thread through <see cref="IDispatcher"/>. A platform engine
+/// implements the <c>…Core</c> methods and reports what its player does with the <c>Report…</c>
+/// methods, from any thread.
+/// </summary>
+public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider time) : IPlaybackEngine
+{
+    /// <summary>Shortest interval between two <see cref="PositionChanged"/> events from the player.</summary>
+    public static readonly TimeSpan PositionInterval = TimeSpan.FromMilliseconds(250);
+
+    private double _volume = 1;
+    private bool _isMuted;
+    private long _lastPositionReport = long.MinValue;
+
+    public event EventHandler? StateChanged;
+
+    public event EventHandler? PositionChanged;
+
+    public event EventHandler? CurrentChanged;
+
+    public event EventHandler? Ended;
+
+    public event EventHandler<PlaybackFailedEventArgs>? Failed;
+
+    public PlaybackState State { get; private set; }
+
+    public PlaybackSource? Current { get; private set; }
+
+    public TimeSpan Position { get; private set; }
+
+    public TimeSpan Duration { get; private set; }
+
+    public double Volume
+    {
+        get => _volume;
+        set
+        {
+            var clamped = double.IsNaN(value) ? _volume : Math.Clamp(value, 0, 1);
+            if (clamped != _volume)
+            {
+                _volume = clamped;
+                SetVolumeCore(clamped);
+            }
+        }
+    }
+
+    public bool IsMuted
+    {
+        get => _isMuted;
+        set
+        {
+            if (value != _isMuted)
+            {
+                _isMuted = value;
+                SetMutedCore(value);
+            }
+        }
+    }
+
+    public void Load(PlaybackSource source, bool autoPlay = true)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        Current = source;
+        Position = TimeSpan.Zero;
+        Duration = source.Track.Duration ?? TimeSpan.Zero;
+        _lastPositionReport = long.MinValue;
+        LoadCore(source, autoPlay);
+        CurrentChanged?.Invoke(this, EventArgs.Empty);
+        PositionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void Play()
+    {
+        if (Current is not null)
+        {
+            PlayCore();
+        }
+    }
+
+    public void Pause()
+    {
+        if (Current is not null)
+        {
+            PauseCore();
+        }
+    }
+
+    public void Seek(TimeSpan position)
+    {
+        if (Current is null)
+        {
+            return;
+        }
+
+        var target = position < TimeSpan.Zero ? TimeSpan.Zero : position;
+        if (Duration > TimeSpan.Zero && target > Duration)
+        {
+            target = Duration;
+        }
+
+        SeekCore(target);
+        Position = target;
+        PositionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void Stop()
+    {
+        if (Current is null)
+        {
+            return;
+        }
+
+        StopCore();
+        Current = null;
+        Position = TimeSpan.Zero;
+        Duration = TimeSpan.Zero;
+        SetState(PlaybackState.Idle);
+        CurrentChanged?.Invoke(this, EventArgs.Empty);
+        PositionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    protected abstract void LoadCore(PlaybackSource source, bool autoPlay);
+
+    protected abstract void PlayCore();
+
+    protected abstract void PauseCore();
+
+    protected abstract void SeekCore(TimeSpan position);
+
+    protected abstract void StopCore();
+
+    protected abstract void SetVolumeCore(double volume);
+
+    protected abstract void SetMutedCore(bool isMuted);
+
+    /// <summary>The player changed state. Safe to call from any thread.</summary>
+    protected void ReportState(PlaybackState state) => Dispatch(() => SetState(state));
+
+    /// <summary>
+    /// The player's position or length changed. Safe to call from any thread; events are throttled to
+    /// <see cref="PositionInterval"/>, a changed length is always reported.
+    /// </summary>
+    protected void ReportPosition(TimeSpan position, TimeSpan duration)
+    {
+        var now = time.GetTimestamp();
+        Dispatch(() =>
+        {
+            if (Current is null)
+            {
+                return;
+            }
+
+            var durationChanged = duration > TimeSpan.Zero && duration != Duration;
+            if (!durationChanged && _lastPositionReport != long.MinValue && time.GetElapsedTime(_lastPositionReport, now) < PositionInterval)
+            {
+                return;
+            }
+
+            _lastPositionReport = now;
+            Position = position;
+            if (durationChanged)
+            {
+                Duration = duration;
+            }
+
+            PositionChanged?.Invoke(this, EventArgs.Empty);
+        });
+    }
+
+    /// <summary>The player reached the end of <paramref name="source"/>. Safe to call from any thread.</summary>
+    protected void ReportEnded(PlaybackSource source) => Dispatch(() =>
+    {
+        if (ReferenceEquals(source, Current))
+        {
+            Ended?.Invoke(this, EventArgs.Empty);
+        }
+    });
+
+    /// <summary>The player could not play <paramref name="source"/>. Safe to call from any thread.</summary>
+    protected void ReportFailed(PlaybackSource source, string message, Exception? exception) => Dispatch(() =>
+    {
+        if (ReferenceEquals(source, Current))
+        {
+            SetState(PlaybackState.Idle);
+            Failed?.Invoke(this, new PlaybackFailedEventArgs(source, message, exception));
+        }
+    });
+
+    private void SetState(PlaybackState state)
+    {
+        if (state != State)
+        {
+            State = state;
+            StateChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private void Dispatch(Action action) => _ = dispatcher.EnqueueAsync(action);
+}
