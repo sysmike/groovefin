@@ -21,6 +21,7 @@ public static class Operations
     public const string SaveSettings = "Operation_SaveSettings";
     public const string ConnectServer = "Operation_ConnectServer";
     public const string LoadAlbums = "Operation_LoadAlbums";
+    public const string LoadHome = "Operation_LoadHome";
     public const string LoadAlbum = "Operation_LoadAlbum";
     public const string SetFavourite = "Operation_SetFavourite";
 }

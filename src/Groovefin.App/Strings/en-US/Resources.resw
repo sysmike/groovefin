@@ -442,4 +442,45 @@
   <data name="SignIn_QuickConnectFailed" xml:space="preserve">
     <value>Signing in with Quick Connect failed. Try again or sign in with your password.</value>
   </data>
+  <data name="HomeHeader.Text" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="HomeRefreshButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="HomeRefreshButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="HomeShelf_RecentlyAdded" xml:space="preserve">
+    <value>Recently added</value>
+    <comment>Home page list heading</comment>
+  </data>
+  <data name="HomeShelf_RecentlyPlayed" xml:space="preserve">
+    <value>Recently played</value>
+    <comment>Home page list heading</comment>
+  </data>
+  <data name="HomeShelf_MostPlayed" xml:space="preserve">
+    <value>Most played</value>
+    <comment>Home page list heading</comment>
+  </data>
+  <data name="HomeShelf_Random" xml:space="preserve">
+    <value>Random albums</value>
+    <comment>Home page list heading</comment>
+  </data>
+  <data name="HomeShelf_Favourites" xml:space="preserve">
+    <value>Favourite albums</value>
+    <comment>Home page list heading</comment>
+  </data>
+  <data name="HomeShelfEmpty.Text" xml:space="preserve">
+    <value>Nothing here yet.</value>
+  </data>
+  <data name="HomeShelfFailed.Text" xml:space="preserve">
+    <value>This list couldn't be loaded.</value>
+  </data>
+  <data name="AlbumSort_DatePlayed" xml:space="preserve">
+    <value>Last played</value>
+  </data>
+  <data name="Operation_LoadHome" xml:space="preserve">
+    <value>Couldn't load the home page</value>
+  </data>
 </root>
