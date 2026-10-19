@@ -15,12 +15,15 @@ public sealed record PlaybackReport(string ItemId, string PlaySessionId, TimeSpa
 /// </summary>
 public interface IPlaybackReporter
 {
+    /// <summary>Reports that a track started playing.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task ReportStartAsync(PlaybackReport report, CancellationToken cancellationToken = default);
 
+    /// <summary>Reports the position and state of the playing track.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task ReportProgressAsync(PlaybackReport report, CancellationToken cancellationToken = default);
 
+    /// <summary>Reports that a track stopped playing.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task ReportStoppedAsync(PlaybackReport report, CancellationToken cancellationToken = default);
 }
