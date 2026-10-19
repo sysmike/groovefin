@@ -35,9 +35,10 @@ public sealed partial class ErrorReporter(
         }
 
         var message = strings.GetString(messageKey);
-        if (exception is JellyfinException { StatusCode: { } status } && messageKey == "Error_Server")
+        if (exception is JellyfinException { StatusCode: { } status })
         {
-            message = string.Format(CultureInfo.CurrentCulture, message, (int)status);
+            // Not string.Format: a translation with stray braces must not make error reporting throw.
+            message = message.Replace("{0}", ((int)status).ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal);
         }
 
         notifications.Show(new AppNotification(NotificationSeverity.Error, strings.GetString(operationKey), message));

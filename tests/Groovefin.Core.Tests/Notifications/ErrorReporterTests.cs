@@ -48,6 +48,17 @@ public sealed class ErrorReporterTests
     }
 
     [Fact]
+    public void Translation_with_stray_braces_does_not_throw()
+    {
+        _strings.GetString("Error_Server").Returns("Fehler {0} {oops");
+
+        var act = () => _sut.Report(new JellyfinException("x", HttpStatusCode.BadGateway), Operations.LoadAlbums);
+
+        act.Should().NotThrow();
+        _notifications.Received(1).Show(Arg.Is<AppNotification>(n => n.Message == "Fehler 502 {oops"));
+    }
+
+    [Fact]
     public void Cancellation_is_not_reported()
     {
         _sut.Report(new OperationCanceledException(), Operations.LoadAlbums);
