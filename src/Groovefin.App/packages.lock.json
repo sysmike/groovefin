@@ -56,6 +56,12 @@
           "Microsoft.WindowsAppSDK.WinUI": "2.3.9"
         }
       },
+      "MinVer": {
+        "type": "Direct",
+        "requested": "[8.0.0, )",
+        "resolved": "8.0.0",
+        "contentHash": "AJy/KVjXgUbgjf6HiI8wAk4DSSq0SCmvXQF8aU6IB+pnIQq+YJvofvMczug2hqO8yEvnQY557ryew66KPpyCsA=="
+      },
       "Serilog": {
         "type": "Direct",
         "requested": "[4.4.0, )",

@@ -20,6 +20,12 @@
           "Mono.Cecil": "0.11.6"
         }
       },
+      "MinVer": {
+        "type": "Direct",
+        "requested": "[8.0.0, )",
+        "resolved": "8.0.0",
+        "contentHash": "AJy/KVjXgUbgjf6HiI8wAk4DSSq0SCmvXQF8aU6IB+pnIQq+YJvofvMczug2hqO8yEvnQY557ryew66KPpyCsA=="
+      },
       "NSubstitute": {
         "type": "Direct",
         "requested": "[6.2.0, )",
