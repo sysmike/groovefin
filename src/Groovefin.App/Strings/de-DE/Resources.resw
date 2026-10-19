@@ -127,4 +127,7 @@
   <data name="SettingsAppName.Text" xml:space="preserve">
     <value>Groovefin</value>
   </data>
+  <data name="SettingsLicense.Text" xml:space="preserve">
+    <value>Lizenziert unter der MIT-Lizenz.</value>
+  </data>
 </root>

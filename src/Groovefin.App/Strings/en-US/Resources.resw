@@ -139,4 +139,7 @@
   <data name="SettingsAppName.Text" xml:space="preserve">
     <value>Groovefin</value>
   </data>
+  <data name="SettingsLicense.Text" xml:space="preserve">
+    <value>Licensed under the MIT License.</value>
+  </data>
 </root>
