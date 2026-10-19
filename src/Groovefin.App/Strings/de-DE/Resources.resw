@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppDisplayName" xml:space="preserve">
+    <value>Groovefin</value>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>Ein nativer Jellyfin-Musikplayer für Windows</value>
+  </data>
+  <data name="AppTitleBar.Title" xml:space="preserve">
+    <value>Groovefin</value>
+  </data>
+  <data name="SearchBox.PlaceholderText" xml:space="preserve">
+    <value>Suchen</value>
+  </data>
+  <data name="SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Musikbibliothek durchsuchen</value>
+  </data>
+  <data name="NavHome.Content" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="NavAlbums.Content" xml:space="preserve">
+    <value>Alben</value>
+  </data>
+  <data name="NavArtists.Content" xml:space="preserve">
+    <value>Interpreten</value>
+  </data>
+  <data name="NavSongs.Content" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="NavGenres.Content" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="NavPlaylists.Content" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="NavFolders.Content" xml:space="preserve">
+    <value>Ordner</value>
+  </data>
+  <data name="NavFavourites.Content" xml:space="preserve">
+    <value>Favoriten</value>
+  </data>
+  <data name="SectionTitle_home" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="SectionTitle_albums" xml:space="preserve">
+    <value>Alben</value>
+  </data>
+  <data name="SectionTitle_artists" xml:space="preserve">
+    <value>Interpreten</value>
+  </data>
+  <data name="SectionTitle_songs" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="SectionTitle_genres" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="SectionTitle_playlists" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="SectionTitle_folders" xml:space="preserve">
+    <value>Ordner</value>
+  </data>
+  <data name="SectionTitle_favourites" xml:space="preserve">
+    <value>Favoriten</value>
+  </data>
+  <data name="SectionTitle_search" xml:space="preserve">
+    <value>Suche</value>
+  </data>
+  <data name="SectionPlaceholderInfo.Title" xml:space="preserve">
+    <value>Demnächst verfügbar</value>
+  </data>
+  <data name="SectionPlaceholderInfo.Message" xml:space="preserve">
+    <value>Dieser Bereich ist noch nicht verfügbar.</value>
+  </data>
+  <data name="SettingsHeader.Text" xml:space="preserve">
+    <value>Einstellungen</value>
+  </data>
+  <data name="SettingsAppearanceHeader.Text" xml:space="preserve">
+    <value>Darstellung</value>
+  </data>
+  <data name="SettingsTheme.Header" xml:space="preserve">
+    <value>App-Design</value>
+  </data>
+  <data name="SettingsThemeSystem.Content" xml:space="preserve">
+    <value>Systemeinstellung verwenden</value>
+  </data>
+  <data name="SettingsThemeLight.Content" xml:space="preserve">
+    <value>Hell</value>
+  </data>
+  <data name="SettingsThemeDark.Content" xml:space="preserve">
+    <value>Dunkel</value>
+  </data>
+  <data name="SettingsAboutHeader.Text" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="SettingsAppName.Text" xml:space="preserve">
+    <value>Groovefin</value>
+  </data>
+</root>

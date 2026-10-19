@@ -37,7 +37,7 @@ Triggers: `pull_request`, `push` to `main`, manual (`workflow_dispatch`).
 |---|---|---|
 | `format` | Ubuntu | `dotnet format Groovefin.sln --verify-no-changes`. Fails when code does not match `.editorconfig`. Fix locally with `dotnet format Groovefin.sln`. |
 | `test-core` | Ubuntu | Builds and tests `Groovefin.CrossPlatform.slnf` (Core, Jellyfin and their tests) on Microsoft.Testing.Platform. Writes a TRX results table and a Cobertura coverage summary to the job summary, and uploads TRX + coverage as the `test-results` artifact (7 days). |
-| `build-windows (x64)`, `build-windows (ARM64)` | Windows | Release build of the full solution for each platform. |
+| `build-windows (x64)`, `build-windows (ARM64)` | Windows | Release build of the full solution for each platform, then packages `Groovefin.App`: an unsigned MSIX (`groovefin-msix-<platform>`) and an unpackaged, self-contained build (`WindowsPackageType=None`, `WindowsAppSDKSelfContained=true`, artifact `groovefin-unpackaged-<platform>`). Artifacts are kept for 7 days so every PR has a testable build. |
 
 The status check names `format`, `test-core`, `build-windows (x64)` and `build-windows (ARM64)` are
 the required checks for `main` (see [contributing.md](contributing.md#branch-protection-for-main)).
@@ -74,6 +74,11 @@ The job needs `security-events: write` to upload results; everything else is rea
 | `github-actions` | Pinned action SHAs in `.github/workflows` | minor + patch in one PR (`actions-minor-patch`) | `dependencies`, `area:ci` |
 
 Dependabot PRs run the normal CI. Merge them like any other PR once green.
+### Testing a PR build
+
+- **Unpackaged:** download `groovefin-unpackaged-<platform>`, extract it and run `Groovefin.exe`.
+- **MSIX:** the CI package is unsigned. Install it in a PowerShell window started as administrator
+  with Developer Mode on: `Add-AppxPackage -AllowUnsigned .\Groovefin_*.msix`.
 
 ## Variables and secrets
 

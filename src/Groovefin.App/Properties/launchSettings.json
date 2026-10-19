@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Groovefin (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Groovefin (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
