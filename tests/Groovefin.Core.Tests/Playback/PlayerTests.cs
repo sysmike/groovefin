@@ -445,4 +445,25 @@ public sealed class PlayerTests : IDisposable
 
         _queue.Current!.Track.Id.Should().Be("a");
     }
+
+    [Theory]
+    [InlineData(NormalizationMode.Off, 1.0)]
+    [InlineData(NormalizationMode.Track, 0.5)]
+    [InlineData(NormalizationMode.Album, 0.25)]
+    public void Sources_carry_the_normalization_gain_of_the_setting(NormalizationMode mode, double expected)
+    {
+        _settings.Update(s => s with { Playback = new PlaybackSettings { Normalization = mode } });
+        var halfAsLoud = 20 * Math.Log10(0.5);
+        var quarterAsLoud = 20 * Math.Log10(0.25);
+        var tracks = new[]
+        {
+            new Track { Id = "a", Name = "a", NormalizationGain = halfAsLoud, AlbumNormalizationGain = quarterAsLoud },
+            new Track { Id = "b", Name = "b", NormalizationGain = halfAsLoud, AlbumNormalizationGain = quarterAsLoud },
+        };
+
+        _sut.Play(tracks);
+
+        _engine.Current!.Gain.Should().BeApproximately(expected, 1e-9);
+        _engine.Next!.Gain.Should().BeApproximately(expected, 1e-9);
+    }
 }

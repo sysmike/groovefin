@@ -310,7 +310,7 @@ public sealed partial class Player : IPlayer, IDisposable
     {
         var server = _client.Connection?.ServerUrl ?? throw new InvalidOperationException("Not connected to a server.");
         var url = _streams.GetStreamUrl(item.Track.Id, _settings.Current.Streaming.OptionsFor(server));
-        return new PlaybackSource(item.Id, url, item.Track);
+        return new PlaybackSource(item.Id, url, item.Track, Normalization.VolumeFactor(item.Track, _settings.Current.Playback.Normalization));
     }
 
     private void Stop()

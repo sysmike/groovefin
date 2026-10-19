@@ -28,4 +28,10 @@ public sealed record Track
     public bool IsFavorite { get; init; }
 
     public int PlayCount { get; init; }
+
+    /// <summary>Gets the gain in dB that brings the track to the server's target loudness, or <see langword="null"/> when not analysed.</summary>
+    public double? NormalizationGain { get; init; }
+
+    /// <summary>Gets the album's gain in dB (keeps the loudness differences within the album), or <see langword="null"/> when not analysed.</summary>
+    public double? AlbumNormalizationGain { get; init; }
 }
