@@ -515,10 +515,13 @@ public sealed class QueueManagerTests
         var names = Enumerable.Range(0, QueueManager.HistoryLimit + 10).Select(i => $"t{i}").ToArray();
         Start(names);
 
+        var moves = 0;
         while (_sut.Next() is not null)
         {
+            moves++;
         }
 
+        moves.Should().Be(names.Length - 1);
         _sut.History.Should().HaveCount(QueueManager.HistoryLimit);
         _sut.History[^1].Track.Name.Should().Be(names[^2]);
         _sut.History[0].Track.Name.Should().Be(names[9]);
