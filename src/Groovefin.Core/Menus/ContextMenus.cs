@@ -47,13 +47,11 @@ public sealed class ContextMenus(
     IPlaylistService playlists,
     INavigationService navigation,
     FavouritesService favourites,
+    InstantMix instantMix,
     IDialogService dialogs,
     IErrorReporter errors,
     IStringResources strings)
 {
-    /// <summary>Tracks in an instant mix.</summary>
-    public const int InstantMixSize = 100;
-
     /// <summary>Most tracks a genre entry plays or queues.</summary>
     public const int GenreTrackLimit = 1000;
 
@@ -128,9 +126,8 @@ public sealed class ContextMenus(
             strings.GetString("Menu_GoToArtist").Replace("{0}", artist.Name, StringComparison.Ordinal),
             () => navigation.NavigateTo(PageKeys.Artist, artist.Id)));
 
-    // TODO(#42): a setting to append the mix to the queue instead of replacing it.
     private MenuAction Mix(string itemId) =>
-        new(MenuActionKind.InstantMix, strings.GetString("Menu_InstantMix"), () => WithTracksAsync(() => library.GetInstantMixAsync(itemId, InstantMixSize), t => player.Play(t)));
+        new(MenuActionKind.InstantMix, strings.GetString("Menu_InstantMix"), () => instantMix.StartAsync(itemId));
 
     private MenuAction FavouriteToggle(string itemId, bool loaded)
     {

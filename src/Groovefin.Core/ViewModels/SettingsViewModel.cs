@@ -35,6 +35,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private static readonly int?[] Bitrates = [null, 320, 256, 192, 128, 96, 64];
     private static readonly TranscodingCodec[] CodecOrder = [TranscodingCodec.Aac, TranscodingCodec.Mp3];
     private static readonly NormalizationMode[] NormalizationOrder = [NormalizationMode.Off, NormalizationMode.Track, NormalizationMode.Album];
+    private static readonly InstantMixMode[] InstantMixOrder = [InstantMixMode.Replace, InstantMixMode.Append];
 
     private readonly IThemeService _themeService;
     private readonly INavigationService _navigation;
@@ -127,6 +128,20 @@ public sealed partial class SettingsViewModel : ObservableObject
             if (value >= 0 && value < NormalizationOrder.Length && value != NormalizationIndex)
             {
                 _settings.Update(s => s with { Playback = s.Playback with { Normalization = NormalizationOrder[value] } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>Gets or sets what an instant mix does to the queue, as an index into replace, append.</summary>
+    public int InstantMixIndex
+    {
+        get => Array.IndexOf(InstantMixOrder, _settings.Current.Playback.InstantMix);
+        set
+        {
+            if (value >= 0 && value < InstantMixOrder.Length && value != InstantMixIndex)
+            {
+                _settings.Update(s => s with { Playback = s.Playback with { InstantMix = InstantMixOrder[value] } });
                 OnPropertyChanged();
             }
         }

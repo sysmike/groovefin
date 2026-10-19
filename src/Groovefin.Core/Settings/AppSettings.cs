@@ -105,4 +105,6 @@ public sealed record StreamingSettings
 public sealed record PlaybackSettings
 {
     public NormalizationMode Normalization { get; set; } = NormalizationMode.Off;
+
+    public InstantMixMode InstantMix { get; set; } = InstantMixMode.Replace;
 }

@@ -145,6 +145,9 @@
                             <Button x:Uid="ArtistShuffleButton" Command="{x:Bind ViewModel.ShuffleCommand}">
                                 <FontIcon FontSize="14" Glyph="&#xE8B1;" />
                             </Button>
+                            <Button x:Uid="ArtistMixButton" Command="{x:Bind ViewModel.InstantMixCommand}">
+                                <FontIcon FontSize="14" Glyph="&#xE945;" />
+                            </Button>
                             <ToggleButton
                                 x:Uid="ArtistFavouriteButton"
                                 Command="{x:Bind ViewModel.ToggleFavouriteCommand}"

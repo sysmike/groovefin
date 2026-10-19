@@ -1168,4 +1168,28 @@
   <data name="Operation_LoadGenre" xml:space="preserve">
     <value>Couldn't load the genre</value>
   </data>
+  <data name="AlbumMixButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Instant mix from this album</value>
+  </data>
+  <data name="AlbumMixButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Instant mix from this album</value>
+  </data>
+  <data name="ArtistMixButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Instant mix from this artist</value>
+  </data>
+  <data name="ArtistMixButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Instant mix from this artist</value>
+  </data>
+  <data name="SettingsInstantMixBox.Header" xml:space="preserve">
+    <value>Instant mix</value>
+  </data>
+  <data name="SettingsInstantMixBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Instant mix</value>
+  </data>
+  <data name="SettingsInstantMixReplace.Content" xml:space="preserve">
+    <value>Replace the queue and play</value>
+  </data>
+  <data name="SettingsInstantMixAppend.Content" xml:space="preserve">
+    <value>Add to the end of the queue</value>
+  </data>
 </root>

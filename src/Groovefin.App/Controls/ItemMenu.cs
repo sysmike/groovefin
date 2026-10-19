@@ -120,7 +120,7 @@ internal static class ItemMenu
         MenuActionKind.AddToPlaylist => "",
         MenuActionKind.GoToAlbum => "",
         MenuActionKind.GoToArtist => "",
-        MenuActionKind.InstantMix => "",
+        MenuActionKind.InstantMix => "",
         MenuActionKind.Favourite => "",
         MenuActionKind.Unfavourite => "",
         _ => "",

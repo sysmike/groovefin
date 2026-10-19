@@ -1,10 +1,10 @@
 using Groovefin.Core.Api;
-using Groovefin.Core.Menus;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
 namespace Groovefin.Core.Tests.ViewModels;
@@ -23,7 +23,7 @@ public sealed class GenreDetailViewModelTests
         _library.GetAlbumsAsync(Arg.Any<AlbumQuery>(), Arg.Any<CancellationToken>())
             .Returns(new PagedResult<Album>([new Album { Id = "al1", Name = "Discovery", PrimaryImageTag = "c" }], 1, 0));
         _library.GetGenreTracksAsync("g1", Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(Songs(3));
-        _sut = new GenreDetailViewModel(_library, _player, _navigation, _errors);
+        _sut = new GenreDetailViewModel(_library, _player, _navigation, _errors, new InstantMix(_library, _player, new InMemorySettingsService(), _errors));
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -76,7 +76,7 @@ public sealed class GenreDetailViewModelTests
     public async Task Instant_mix_plays_the_genre_mix()
     {
         await _sut.LoadAsync("g1", Ct);
-        _library.GetInstantMixAsync("g1", ContextMenus.InstantMixSize, Arg.Any<CancellationToken>()).Returns(Songs(2));
+        _library.GetInstantMixAsync("g1", InstantMix.Size, Arg.Any<CancellationToken>()).Returns(Songs(2));
 
         await _sut.InstantMixCommand.ExecuteAsync(null);
 

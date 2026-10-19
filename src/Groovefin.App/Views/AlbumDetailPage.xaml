@@ -91,6 +91,9 @@
                             <Button x:Uid="AlbumShuffleButton" Command="{x:Bind ViewModel.ShuffleCommand}">
                                 <FontIcon FontSize="14" Glyph="&#xE8B1;" />
                             </Button>
+                            <Button x:Uid="AlbumMixButton" Command="{x:Bind ViewModel.InstantMixCommand}">
+                                <FontIcon FontSize="14" Glyph="&#xE945;" />
+                            </Button>
                             <Button x:Uid="AlbumQueueButton" Command="{x:Bind ViewModel.AddToQueueCommand}">
                                 <FontIcon FontSize="14" Glyph="&#xE710;" />
                             </Button>
