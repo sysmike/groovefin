@@ -123,7 +123,19 @@ public sealed partial class ServerManager(
     {
         var profile = Find(serverId) ?? throw new InvalidOperationException($"Unknown server {serverId}.");
         var user = await authentication.SignInAsync(profile.Address, userName, password, cancellationToken).ConfigureAwait(false);
+        SignedIn(profile, user);
+    }
 
+    public async Task SignInWithQuickConnectAsync(string serverId, string secret, CancellationToken cancellationToken = default)
+    {
+        var profile = Find(serverId) ?? throw new InvalidOperationException($"Unknown server {serverId}.");
+        var user = await authentication.SignInWithQuickConnectAsync(profile.Address, secret, cancellationToken).ConfigureAwait(false);
+        SignedIn(profile, user);
+    }
+
+    /// <summary>Stores the token (never a password), makes the server active and connects.</summary>
+    private void SignedIn(ServerProfile profile, AuthenticatedUser user)
+    {
         // Replace the previous user's token on this server, if any.
         if (profile.UserId is { } previous && previous != user.UserId)
         {

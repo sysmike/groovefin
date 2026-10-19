@@ -4,6 +4,8 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Groovefin.Core.Tests.ViewModels;
 
@@ -15,6 +17,8 @@ public sealed class SignInViewModelTests
     private readonly IServerManager _servers = Substitute.For<IServerManager>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
+    private readonly IAuthenticationService _authentication = Substitute.For<IAuthenticationService>();
+    private readonly FakeTimeProvider _time = new();
 
     public SignInViewModelTests()
     {
@@ -25,7 +29,7 @@ public sealed class SignInViewModelTests
 
     private SignInViewModel CreateSut(string? serverId = null)
     {
-        var sut = new SignInViewModel(_servers, _navigation, _strings);
+        var sut = new SignInViewModel(_servers, _authentication, _navigation, _strings, _time, NullLogger<SignInViewModel>.Instance);
         sut.Initialize(serverId);
         return sut;
     }
@@ -86,5 +90,130 @@ public sealed class SignInViewModelTests
         CreateSut().ChooseServerCommand.Execute(null);
 
         _navigation.Received(1).NavigateTo(PageKeys.Servers);
+    }
+
+    private async Task<SignInViewModel> CreateQuickConnectSutAsync()
+    {
+        _authentication.IsQuickConnectEnabledAsync(Alpha.Address, Arg.Any<CancellationToken>()).Returns(true);
+        _authentication.StartQuickConnectAsync(Alpha.Address, Arg.Any<CancellationToken>()).Returns(new QuickConnectRequest("123456", "the-secret"));
+        var sut = CreateSut();
+        await sut.CheckQuickConnectAsync(TestContext.Current.CancellationToken);
+        return sut;
+    }
+
+    /// <summary>Advances the fake clock by poll intervals until <paramref name="task"/> finishes.</summary>
+    private async Task RunToCompletionAsync(Task task, TimeSpan step)
+    {
+        for (var i = 0; i < 500 && !task.IsCompleted; i++)
+        {
+            _time.Advance(step);
+            await Task.WhenAny(task, Task.Delay(5, TestContext.Current.CancellationToken));
+        }
+
+        await task;
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Quick_Connect_is_offered_only_when_the_server_enables_it(bool enabled)
+    {
+        _authentication.IsQuickConnectEnabledAsync(Alpha.Address, Arg.Any<CancellationToken>()).Returns(enabled);
+        var sut = CreateSut();
+
+        await sut.CheckQuickConnectAsync(TestContext.Current.CancellationToken);
+
+        sut.IsQuickConnectAvailable.Should().Be(enabled);
+        sut.ShowsQuickConnectButton.Should().Be(enabled);
+        sut.QuickConnectCommand.CanExecute(null).Should().Be(enabled);
+    }
+
+    [Fact]
+    public async Task Quick_Connect_check_failure_hides_the_option_without_an_error()
+    {
+        _authentication.IsQuickConnectEnabledAsync(Arg.Any<Uri>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<bool>(new JellyfinException("offline")));
+        var sut = CreateSut();
+
+        await sut.CheckQuickConnectAsync(TestContext.Current.CancellationToken);
+
+        sut.IsQuickConnectAvailable.Should().BeFalse();
+        sut.HasError.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Quick_Connect_shows_the_code_polls_until_approved_and_signs_in()
+    {
+        _authentication.IsQuickConnectApprovedAsync(Alpha.Address, "the-secret", Arg.Any<CancellationToken>())
+            .Returns(false, false, true);
+        var sut = await CreateQuickConnectSutAsync();
+        string? shownCode = null;
+        sut.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(sut.QuickConnectCode) && sut.QuickConnectCode is { } code)
+            {
+                shownCode = code;
+            }
+        };
+
+        var run = sut.QuickConnectCommand.ExecuteAsync(null);
+        sut.IsWaitingForQuickConnect.Should().BeTrue();
+        sut.ShowsQuickConnectButton.Should().BeFalse();
+        await RunToCompletionAsync(run, SignInViewModel.QuickConnectPollInterval);
+
+        shownCode.Should().Be("123456");
+        await _authentication.Received(3).IsQuickConnectApprovedAsync(Alpha.Address, "the-secret", Arg.Any<CancellationToken>());
+        await _servers.Received(1).SignInWithQuickConnectAsync("id-a", "the-secret", Arg.Any<CancellationToken>());
+        _navigation.Received(1).NavigateTo(PageKeys.Home);
+        sut.IsWaitingForQuickConnect.Should().BeFalse();
+        sut.HasError.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Quick_Connect_gives_up_after_the_timeout()
+    {
+        _authentication.IsQuickConnectApprovedAsync(Arg.Any<Uri>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        var sut = await CreateQuickConnectSutAsync();
+
+        var run = sut.QuickConnectCommand.ExecuteAsync(null);
+        await RunToCompletionAsync(run, TimeSpan.FromSeconds(30));
+
+        _time.GetUtcNow().Should().BeOnOrAfter(_time.Start + SignInViewModel.QuickConnectTimeout);
+        sut.Error.Should().Be("SignIn_QuickConnectExpired");
+        sut.IsWaitingForQuickConnect.Should().BeFalse();
+        await _servers.DidNotReceiveWithAnyArgs().SignInWithQuickConnectAsync(default!, default!, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task Cancelling_Quick_Connect_stops_polling_without_an_error()
+    {
+        _authentication.IsQuickConnectApprovedAsync(Arg.Any<Uri>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        var sut = await CreateQuickConnectSutAsync();
+
+        var run = sut.QuickConnectCommand.ExecuteAsync(null);
+        sut.QuickConnectCancelCommand.Execute(null);
+        await RunToCompletionAsync(run, SignInViewModel.QuickConnectPollInterval);
+
+        sut.HasError.Should().BeFalse();
+        sut.IsWaitingForQuickConnect.Should().BeFalse();
+        await _servers.DidNotReceiveWithAnyArgs().SignInWithQuickConnectAsync(default!, default!, TestContext.Current.CancellationToken);
+        _navigation.DidNotReceiveWithAnyArgs().NavigateTo(default!, default);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.NotFound, "SignIn_QuickConnectExpired")]
+    [InlineData(HttpStatusCode.Unauthorized, "SignIn_QuickConnectFailed")]
+    [InlineData(null, "SignIn_Unreachable")]
+    public async Task Quick_Connect_failures_are_shown_on_the_page(HttpStatusCode? status, string expectedKey)
+    {
+        _authentication.IsQuickConnectApprovedAsync(Arg.Any<Uri>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<bool>(new JellyfinException("x", status)));
+        var sut = await CreateQuickConnectSutAsync();
+
+        await sut.QuickConnectCommand.ExecuteAsync(null);
+
+        sut.Error.Should().Be(expectedKey);
+        sut.IsWaitingForQuickConnect.Should().BeFalse();
+        _navigation.DidNotReceiveWithAnyArgs().NavigateTo(default!, default);
     }
 }

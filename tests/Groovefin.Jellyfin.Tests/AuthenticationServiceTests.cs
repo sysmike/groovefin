@@ -58,6 +58,96 @@ public sealed class AuthenticationServiceTests : IDisposable
         await act.Should().ThrowAsync<JellyfinException>();
     }
 
+    private void StubJson(string path, int status, object body, bool post = false)
+    {
+        var request = Request.Create().WithPath(path);
+        _host.Server.Given(post ? request.UsingPost() : request.UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(status).WithHeader("Content-Type", "application/json").WithBodyAsJson(body));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task QuickConnect_enabled_state_is_read(bool enabled)
+    {
+        StubJson("/QuickConnect/Enabled", 200, enabled);
+
+        (await Auth.IsQuickConnectEnabledAsync(_host.ServerUrl, Ct)).Should().Be(enabled);
+    }
+
+    [Fact]
+    public async Task QuickConnect_start_returns_code_and_secret_without_a_token()
+    {
+        StubJson("/QuickConnect/Initiate", 200, new { Code = "123456", Secret = "the-secret", Authenticated = false }, post: true);
+
+        var request = await Auth.StartQuickConnectAsync(_host.ServerUrl, Ct);
+
+        request.Should().Be(new QuickConnectRequest("123456", "the-secret"));
+        request.ToString().Should().Be("123456");
+        var header = _host.Server.LogEntries.Single().RequestMessage!.Headers!["Authorization"].Single();
+        header.Should().Contain("DeviceId=").And.NotContain("Token=");
+    }
+
+    [Fact]
+    public async Task QuickConnect_start_on_a_disabled_server_is_unauthorized()
+    {
+        StubJson("/QuickConnect/Initiate", 401, new { }, post: true);
+
+        var act = () => Auth.StartQuickConnectAsync(_host.ServerUrl, Ct);
+
+        (await act.Should().ThrowAsync<JellyfinException>()).Which.IsUnauthorized.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task QuickConnect_approval_is_polled_with_the_secret(bool approved)
+    {
+        StubJson("/QuickConnect/Connect", 200, new { Code = "123456", Secret = "the-secret", Authenticated = approved });
+
+        (await Auth.IsQuickConnectApprovedAsync(_host.ServerUrl, "the-secret", Ct)).Should().Be(approved);
+        _host.Server.LogEntries.Single().RequestMessage!.Query!["secret"].Single().Should().Be("the-secret");
+    }
+
+    [Fact]
+    public async Task QuickConnect_unknown_secret_is_not_found()
+    {
+        StubJson("/QuickConnect/Connect", 404, new { });
+
+        var act = () => Auth.IsQuickConnectApprovedAsync(_host.ServerUrl, "expired", Ct);
+
+        (await act.Should().ThrowAsync<JellyfinException>()).Which.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task QuickConnect_sign_in_posts_the_secret_and_maps_the_result()
+    {
+        StubJson(
+            "/Users/AuthenticateWithQuickConnect",
+            200,
+            new { AccessToken = "qc-token", ServerId = "f00d", User = new { Id = "0123456789abcdef0123456789abcdef", Name = "Mike" } },
+            post: true);
+
+        var user = await Auth.SignInWithQuickConnectAsync(_host.ServerUrl, "the-secret", Ct);
+
+        user.Should().Be(new AuthenticatedUser("f00d", "0123456789abcdef0123456789abcdef", "Mike", "qc-token"));
+        _host.Server.LogEntries.Single().RequestMessage!.Body.Should().Contain("\"Secret\":\"the-secret\"");
+    }
+
+    [Fact]
+    public async Task QuickConnect_sign_in_without_user_name_is_rejected()
+    {
+        StubJson(
+            "/Users/AuthenticateWithQuickConnect",
+            200,
+            new { AccessToken = "qc-token", ServerId = "f00d", User = new { Id = "0123456789abcdef0123456789abcdef" } },
+            post: true);
+
+        var act = () => Auth.SignInWithQuickConnectAsync(_host.ServerUrl, "the-secret", Ct);
+
+        await act.Should().ThrowAsync<JellyfinException>();
+    }
+
     [Fact]
     public async Task SignOut_ends_the_session_with_the_token()
     {

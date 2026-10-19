@@ -25,6 +25,23 @@ internal static class JellyfinCall
         return result ?? throw new JellyfinException($"{operation}: the server returned an empty response.");
     }
 
+    /// <summary>For responses that are a single value, such as a boolean.</summary>
+    public static async Task<T> RunValueAsync<T>(Func<Task<T?>> call, string operation)
+        where T : struct
+    {
+        T? result;
+        try
+        {
+            result = await call().ConfigureAwait(false);
+        }
+        catch (Exception ex) when (Translate(ex, operation) is { } translated)
+        {
+            throw translated;
+        }
+
+        return result ?? throw new JellyfinException($"{operation}: the server returned an empty response.");
+    }
+
     /// <summary>For requests without a response body (POST/DELETE that return 204).</summary>
     public static async Task RunAsync(Func<Task> call, string operation)
     {

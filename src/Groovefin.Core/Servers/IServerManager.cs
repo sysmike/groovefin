@@ -50,6 +50,13 @@ public interface IServerManager
     /// </summary>
     void SetLibrary(string serverId, string? libraryId);
 
+    /// <summary>
+    /// Signs in to a server with an approved Quick Connect request. The token is stored like a password
+    /// sign-in; the server becomes active and connects.
+    /// </summary>
+    /// <exception cref="Api.JellyfinException">The request is not approved or the server cannot be reached.</exception>
+    Task SignInWithQuickConnectAsync(string serverId, string secret, CancellationToken cancellationToken = default);
+
     /// <summary>Signs out of the active server and deletes its stored token.</summary>
     Task SignOutAsync(CancellationToken cancellationToken = default);
 }

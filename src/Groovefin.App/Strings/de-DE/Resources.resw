@@ -586,4 +586,25 @@
   <data name="Operation_LoadLibraries" xml:space="preserve">
     <value>Musikbibliotheken konnten nicht geladen werden</value>
   </data>
+  <data name="SignInQuickConnectButton.Content" xml:space="preserve">
+    <value>Quick Connect verwenden</value>
+  </data>
+  <data name="SignInQuickConnectHint.Text" xml:space="preserve">
+    <value>Öffne in einer anderen Jellyfin-App, in der du angemeldet bist, Quick Connect und gib diesen Code ein:</value>
+  </data>
+  <data name="SignInQuickConnectCode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Quick-Connect-Code</value>
+  </data>
+  <data name="SignInQuickConnectWaiting.Text" xml:space="preserve">
+    <value>Warte auf Bestätigung …</value>
+  </data>
+  <data name="SignInQuickConnectCancelButton.Content" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="SignIn_QuickConnectExpired" xml:space="preserve">
+    <value>Der Quick-Connect-Code ist abgelaufen. Starte Quick Connect erneut, um einen neuen Code zu erhalten.</value>
+  </data>
+  <data name="SignIn_QuickConnectFailed" xml:space="preserve">
+    <value>Die Anmeldung mit Quick Connect ist fehlgeschlagen. Versuche es erneut oder melde dich mit deinem Passwort an.</value>
+  </data>
 </root>

@@ -238,6 +238,20 @@ public sealed class ServerManagerTests
     }
 
     [Fact]
+    public async Task Quick_Connect_sign_in_stores_the_token_like_a_password_sign_in()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        _authentication.SignInWithQuickConnectAsync(new Uri("http://alpha:8096/"), "the-secret", Arg.Any<CancellationToken>())
+            .Returns(new AuthenticatedUser("id-a", "user-3", "Mike", "token-qc"));
+
+        await _sut.SignInWithQuickConnectAsync("id-a", "the-secret", Ct);
+
+        _credentials.Received(1).SaveAccessToken("id-a", "user-3", "token-qc");
+        _sut.ActiveServer!.Should().BeEquivalentTo(new { Id = "id-a", UserId = "user-3", UserName = "Mike" });
+        _client.Received(1).Connect(new ServerConnection(new Uri("http://alpha:8096/"), "user-3", "token-qc"));
+    }
+
+    [Fact]
     public async Task SignIn_as_another_user_removes_the_previous_token()
     {
         await _sut.AddAsync("alpha:8096", Ct);
