@@ -37,6 +37,19 @@ public sealed class SettingsViewModelTests
         new() { Id = "srv", Name = "Home", Address = new Uri("http://home:8096/"), UserId = "u", LibraryId = libraryId };
 
     [Fact]
+    public void The_shortcut_reference_lists_every_shortcut()
+    {
+        _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
+
+        var sut = CreateSut();
+
+        sut.Shortcuts.Should().HaveCount(Core.Shortcuts.KeyboardShortcuts.All.Count);
+        sut.Shortcuts[0].Should().Be(new ShortcutRow("Key_Space", "Shortcut_PlayPause"));
+        sut.Shortcuts[1].Gesture.Should().Be("Key_Ctrl+Key_Right");
+        sut.Shortcuts[1].AccessibleName.Should().Be("Key_Ctrl+Key_Right, Shortcut_Next");
+    }
+
+    [Fact]
     public void Account_shows_the_signed_in_user()
     {
         _servers.IsSignedIn.Returns(true);

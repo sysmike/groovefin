@@ -132,6 +132,33 @@
                 <ComboBoxItem x:Uid="SettingsInstantMixAppend" />
             </ComboBox>
 
+            <!--  Reference only: the shortcuts work anywhere in the window, except while typing.  -->
+            <TextBlock
+                x:Uid="SettingsShortcutsHeader"
+                AutomationProperties.HeadingLevel="Level2"
+                Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <ItemsControl x:Uid="SettingsShortcutsList" ItemsSource="{x:Bind ViewModel.Shortcuts}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ShortcutRow">
+                        <Grid
+                            Padding="0,2"
+                            AutomationProperties.Name="{x:Bind AccessibleName}"
+                            ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Gesture}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Text="{x:Bind Description}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
             <TextBlock
                 x:Uid="SettingsAboutHeader"
                 AutomationProperties.HeadingLevel="Level2"

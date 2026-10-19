@@ -179,6 +179,32 @@ public sealed class NowPlayingViewModelTests : IDisposable
     }
 
     [Fact]
+    public void Volume_shortcuts_step_by_five_within_bounds()
+    {
+        _sut.VolumeDownCommand.Execute(null);
+        _sut.Volume.Should().Be(95);
+        _changed.Should().Contain(nameof(_sut.Volume));
+
+        _sut.Volume = 98;
+        _sut.VolumeUpCommand.Execute(null);
+        _sut.Volume.Should().Be(100);
+
+        _sut.Volume = 3;
+        _sut.VolumeDownCommand.Execute(null);
+        _sut.Volume.Should().Be(0);
+    }
+
+    [Fact]
+    public void Toggle_shuffle_turns_shuffle_on_and_off()
+    {
+        _sut.ToggleShuffleCommand.Execute(null);
+        _queue.Shuffle.Should().BeTrue();
+
+        _sut.ToggleShuffleCommand.Execute(null);
+        _queue.Shuffle.Should().BeFalse();
+    }
+
+    [Fact]
     public void Shuffle_and_repeat_change_the_queue()
     {
         _sut.Shuffle = true;

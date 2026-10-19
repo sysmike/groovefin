@@ -1313,4 +1313,58 @@
   <data name="Operation_LoadLyrics" xml:space="preserve">
     <value>Liedtext konnte nicht geladen werden</value>
   </data>
+  <data name="SettingsShortcutsHeader.Text" xml:space="preserve">
+    <value>Tastenkombinationen</value>
+  </data>
+  <data name="SettingsShortcutsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Tastenkombinationen</value>
+  </data>
+  <data name="Key_Ctrl" xml:space="preserve">
+    <value>Strg</value>
+  </data>
+  <data name="Key_Space" xml:space="preserve">
+    <value>Leertaste</value>
+  </data>
+  <data name="Key_Right" xml:space="preserve">
+    <value>Nach-rechts</value>
+  </data>
+  <data name="Key_Left" xml:space="preserve">
+    <value>Nach-links</value>
+  </data>
+  <data name="Key_Up" xml:space="preserve">
+    <value>Nach-oben</value>
+  </data>
+  <data name="Key_Down" xml:space="preserve">
+    <value>Nach-unten</value>
+  </data>
+  <data name="Shortcut_PlayPause" xml:space="preserve">
+    <value>Wiedergabe oder Pause</value>
+  </data>
+  <data name="Shortcut_Next" xml:space="preserve">
+    <value>Nächster Titel</value>
+  </data>
+  <data name="Shortcut_Previous" xml:space="preserve">
+    <value>Vorheriger Titel</value>
+  </data>
+  <data name="Shortcut_VolumeUp" xml:space="preserve">
+    <value>Lauter</value>
+  </data>
+  <data name="Shortcut_VolumeDown" xml:space="preserve">
+    <value>Leiser</value>
+  </data>
+  <data name="Shortcut_Search" xml:space="preserve">
+    <value>Suchen</value>
+  </data>
+  <data name="Shortcut_Queue" xml:space="preserve">
+    <value>Warteschlange ein- oder ausblenden</value>
+  </data>
+  <data name="Shortcut_Lyrics" xml:space="preserve">
+    <value>Liedtext ein- oder ausblenden</value>
+  </data>
+  <data name="Shortcut_Shuffle" xml:space="preserve">
+    <value>Zufallswiedergabe ein oder aus</value>
+  </data>
+  <data name="Shortcut_Repeat" xml:space="preserve">
+    <value>Wiederholen: aus, alle oder einen</value>
+  </data>
 </root>
