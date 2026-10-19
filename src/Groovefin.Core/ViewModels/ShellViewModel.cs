@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Microsoft.Extensions.Logging;
 
@@ -16,12 +17,18 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
 {
     private readonly INavigationService _navigation;
     private readonly INotificationService _notifications;
+    private readonly IServerManager _servers;
     private readonly ILogger<ShellViewModel> _logger;
 
-    public ShellViewModel(INavigationService navigation, INotificationService notifications, ILogger<ShellViewModel> logger)
+    public ShellViewModel(
+        INavigationService navigation,
+        INotificationService notifications,
+        IServerManager servers,
+        ILogger<ShellViewModel> logger)
     {
         _navigation = navigation;
         _notifications = notifications;
+        _servers = servers;
         _logger = logger;
         _navigation.Navigated += OnNavigated;
     }
@@ -41,8 +48,15 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     [NotifyCanExecuteChangedFor(nameof(SubmitSearchCommand))]
     public partial string SearchText { get; set; } = string.Empty;
 
-    /// <summary>Shows the start page. Called once when the window is ready.</summary>
-    public void Start() => _navigation.NavigateTo(PageKeys.Home);
+    /// <summary>
+    /// Reconnects to the active server and shows the start page, or the server page on first run.
+    /// Called once when the window is ready.
+    /// </summary>
+    public void Start()
+    {
+        _servers.Restore();
+        _navigation.NavigateTo(_servers.Servers.Count == 0 ? PageKeys.Servers : PageKeys.Home);
+    }
 
     [RelayCommand]
     private void Navigate(string pageKey)
@@ -74,9 +88,13 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     private void OnNavigated(object? sender, NavigatedEventArgs e)
     {
         CanGoBack = _navigation.CanGoBack;
-        SelectedSection = PageKeys.MainSections.Contains(e.PageKey) || e.PageKey == PageKeys.Settings
-            ? e.PageKey
-            : null;
+        SelectedSection = e.PageKey switch
+        {
+            // Server management is part of Settings.
+            PageKeys.Settings or PageKeys.Servers => PageKeys.Settings,
+            _ when PageKeys.MainSections.Contains(e.PageKey) => e.PageKey,
+            _ => null,
+        };
     }
 
     public void Dispose() => _navigation.Navigated -= OnNavigated;

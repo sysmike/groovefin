@@ -27,6 +27,7 @@ internal sealed partial class FrameNavigationService(ILogger<FrameNavigationServ
         [PageKeys.Favourites] = typeof(SectionPage),
         [PageKeys.Search] = typeof(SectionPage),
         [PageKeys.Settings] = typeof(SettingsPage),
+        [PageKeys.Servers] = typeof(ServersPage),
     };
 
     private Frame? _frame;

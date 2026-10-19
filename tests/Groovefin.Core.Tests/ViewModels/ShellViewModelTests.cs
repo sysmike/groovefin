@@ -1,5 +1,6 @@
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -10,17 +11,45 @@ public sealed class ShellViewModelTests
 {
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly INotificationService _notifications = Substitute.For<INotificationService>();
+    private readonly IServerManager _servers = Substitute.For<IServerManager>();
 
-    private ShellViewModel CreateSut() => new(_navigation, _notifications, NullLogger<ShellViewModel>.Instance);
+    public ShellViewModelTests()
+    {
+        _servers.Servers.Returns([new ServerProfile { Id = "id-a", Name = "Alpha", Address = new Uri("http://alpha:8096") }]);
+    }
+
+    private ShellViewModel CreateSut() => new(_navigation, _notifications, _servers, NullLogger<ShellViewModel>.Instance);
 
     [Fact]
-    public void Start_navigates_to_home()
+    public void Start_restores_the_connection_and_navigates_to_home()
     {
         using var sut = CreateSut();
 
         sut.Start();
 
+        _servers.Received(1).Restore();
         _navigation.Received(1).NavigateTo(PageKeys.Home);
+    }
+
+    [Fact]
+    public void Start_without_servers_opens_the_server_page()
+    {
+        _servers.Servers.Returns([]);
+        using var sut = CreateSut();
+
+        sut.Start();
+
+        _navigation.Received(1).NavigateTo(PageKeys.Servers);
+    }
+
+    [Fact]
+    public void Server_page_selects_the_settings_item()
+    {
+        using var sut = CreateSut();
+
+        RaiseNavigated(PageKeys.Servers);
+
+        sut.SelectedSection.Should().Be(PageKeys.Settings);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using Groovefin.Core.Navigation;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 
@@ -6,8 +7,19 @@ namespace Groovefin.Core.Tests.ViewModels;
 public sealed class SettingsViewModelTests
 {
     private readonly IThemeService _themeService = Substitute.For<IThemeService>();
+    private readonly INavigationService _navigation = Substitute.For<INavigationService>();
 
-    private SettingsViewModel CreateSut() => new(_themeService, new AppVersion("1.0.0", "abc1234"));
+    private SettingsViewModel CreateSut() => new(_themeService, _navigation, new AppVersion("1.0.0", "abc1234"));
+
+    [Fact]
+    public void ManageServers_opens_the_server_page()
+    {
+        var sut = CreateSut();
+
+        sut.ManageServersCommand.Execute(null);
+
+        _navigation.Received(1).NavigateTo(PageKeys.Servers);
+    }
 
     [Fact]
     public void Initial_theme_comes_from_the_theme_service()
