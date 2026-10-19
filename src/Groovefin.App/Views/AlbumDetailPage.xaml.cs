@@ -1,6 +1,7 @@
 using Groovefin.App.Controls;
 using Groovefin.App.Services;
 using Groovefin.Core.Models;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -80,6 +81,13 @@ internal sealed partial class AlbumDetailPage : Page
             ArtistMenu.TryShow(e, item.Track.Artists, App.Services.GetRequiredService<IStringResources>(), artist => ViewModel.OpenArtistCommand.Execute(artist));
         }
     }
+
+    private async void OnAddToPlaylistClick(object sender, RoutedEventArgs e) =>
+        await PlaylistMenu.ShowAsync(
+            AddToPlaylistButton,
+            ViewModel.Tracks,
+            App.Services.GetRequiredService<AddToPlaylist>(),
+            App.Services.GetRequiredService<IStringResources>());
 
     private void OnArtistClick(object sender, RoutedEventArgs e)
     {

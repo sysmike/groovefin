@@ -17,6 +17,7 @@ public static class PageKeys
     public const string Settings = "settings";
     public const string Album = "album";
     public const string Artist = "artist";
+    public const string Playlist = "playlist";
     public const string Servers = "servers";
     public const string SignIn = "signin";
 

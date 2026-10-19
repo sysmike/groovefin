@@ -94,6 +94,13 @@
                             <Button x:Uid="AlbumQueueButton" Command="{x:Bind ViewModel.AddToQueueCommand}">
                                 <FontIcon FontSize="14" Glyph="&#xE710;" />
                             </Button>
+                            <Button
+                                x:Name="AddToPlaylistButton"
+                                x:Uid="AlbumAddToPlaylistButton"
+                                Click="OnAddToPlaylistClick"
+                                IsEnabled="{x:Bind ViewModel.HasTracks, Mode=OneWay}">
+                                <FontIcon FontSize="14" Glyph="&#xECC8;" />
+                            </Button>
                             <ToggleButton
                                 x:Uid="AlbumFavouriteButton"
                                 Command="{x:Bind ViewModel.ToggleFavouriteCommand}"
