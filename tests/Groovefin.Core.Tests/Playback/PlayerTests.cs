@@ -100,6 +100,20 @@ public sealed class PlayerTests : IDisposable
     }
 
     [Fact]
+    public void InsertIntoQueue_inserts_among_the_upcoming_tracks_and_updates_the_next_one()
+    {
+        _sut.Play(Tracks("a", "b"));
+        _engine.Calls.Clear();
+
+        _sut.InsertIntoQueue(Tracks("x"), 0);
+
+        _queue.Items.Select(i => i.Track.Id).Should().Equal("a", "x", "b");
+        _engine.Calls.Should().BeEmpty();
+        _engine.Next!.Track.Id.Should().Be("x");
+        Playing.Should().Be("a");
+    }
+
+    [Fact]
     public void A_track_that_ends_is_followed_by_the_next_one()
     {
         _sut.Play(Tracks("a", "b"));

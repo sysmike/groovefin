@@ -1248,4 +1248,11 @@
   <data name="Operation_LoadSongs" xml:space="preserve">
     <value>Titel konnten nicht geladen werden</value>
   </data>
+  <data name="Drag_AddToQueue" xml:space="preserve">
+    <value>Zur Warteschlange hinzufügen</value>
+  </data>
+  <data name="Drag_AddToPlaylist" xml:space="preserve">
+    <value>Zu {0} hinzufügen</value>
+    <comment>{0} = playlist name</comment>
+  </data>
 </root>

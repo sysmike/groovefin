@@ -140,6 +140,7 @@
                                 Text="{x:Bind Header}"
                                 Visibility="{x:Bind HasHeader}" />
                             <ListView
+                                controls:TrackDragSource.IsEnabled="True"
                                 controls:ItemMenu.IsEnabled="True"
                                 x:Uid="AlbumTracks"
                                 IsItemClickEnabled="True"

@@ -13,7 +13,7 @@
     <Page.Resources>
         <!--  Square cover, name, year.  -->
         <DataTemplate x:Key="AlbumTileTemplate" x:DataType="vm:AlbumItem">
-            <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
+            <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
                 <StackPanel Width="152" Padding="0,0,0,8" Spacing="6">
                     <Grid
                         Height="152"
@@ -195,6 +195,7 @@
                 <StackPanel Visibility="{x:Bind ViewModel.HasTopTracks, Mode=OneWay}">
                     <TextBlock x:Uid="ArtistTopTracksHeader" Style="{StaticResource SectionHeaderStyle}" />
                     <ListView
+                        controls:TrackDragSource.IsEnabled="True"
                         controls:ItemMenu.IsEnabled="True"
                         x:Uid="ArtistTopTracks"
                         MaxWidth="880"

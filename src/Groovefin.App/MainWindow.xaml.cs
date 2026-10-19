@@ -1,7 +1,11 @@
 using System.ComponentModel;
+using Groovefin.App.Controls;
 using Groovefin.App.Services;
+using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
+using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
@@ -10,6 +14,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.ApplicationModel.Resources;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace Groovefin.App;
 
@@ -18,14 +23,26 @@ namespace Groovefin.App;
 /// </summary>
 internal sealed partial class MainWindow : Window
 {
+    private readonly FrameNavigationService _navigation;
+    private readonly AddToPlaylist _addToPlaylist;
+    private readonly TrackDrag _trackDrag;
+    private readonly IStringResources _strings;
+
     public MainWindow(
         ShellViewModel viewModel,
         FrameNavigationService navigation,
         ThemeService themeService,
         ContentDialogService dialogs,
         QueueViewModel queue,
-        SearchSuggestionsViewModel suggestions)
+        SearchSuggestionsViewModel suggestions,
+        AddToPlaylist addToPlaylist,
+        TrackDrag trackDrag,
+        IStringResources strings)
     {
+        _navigation = navigation;
+        _addToPlaylist = addToPlaylist;
+        _trackDrag = trackDrag;
+        _strings = strings;
         ViewModel = viewModel;
         Queue = queue;
         Suggestions = suggestions;
@@ -88,10 +105,73 @@ internal sealed partial class MainWindow : Window
 
     private void OnNavigationItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
+        if (args.InvokedItemContainer?.Tag is Playlist playlist)
+        {
+            _navigation.NavigateTo(PageKeys.Playlist, playlist.Id);
+            return;
+        }
+
         var pageKey = args.IsSettingsInvoked ? PageKeys.Settings : args.InvokedItemContainer?.Tag as string;
         if (pageKey is not null)
         {
             ViewModel.NavigateCommand.Execute(pageKey);
+        }
+    }
+
+    /// <summary>Loads the playlists under the Playlists item each time it opens, so new and renamed ones show.</summary>
+    private async void OnNavigationExpanding(NavigationView sender, NavigationViewItemExpandingEventArgs args)
+    {
+        if (args.ExpandingItemContainer != PlaylistsNavItem)
+        {
+            return;
+        }
+
+        var playlists = await _addToPlaylist.GetTargetsAsync();
+        PlaylistsNavItem.MenuItems.Clear();
+        foreach (var playlist in playlists)
+        {
+            var item = new NavigationViewItem { Content = playlist.Name, Tag = playlist, AllowDrop = true, Icon = new FontIcon { Glyph = "\uEC4F" } };
+            item.DragOver += OnPlaylistNavDragOver;
+            item.Drop += OnPlaylistNavDrop;
+            PlaylistsNavItem.MenuItems.Add(item);
+        }
+    }
+
+    /// <summary>Dragging tracks over Playlists opens it, so they can be dropped on a playlist.</summary>
+    private void OnPlaylistsNavDragEnter(object sender, DragEventArgs e)
+    {
+        if (e.DataView.Contains(TrackDrag.DataFormat))
+        {
+            PlaylistsNavItem.IsExpanded = true;
+        }
+    }
+
+    private void OnPlaylistNavDragOver(object sender, DragEventArgs e)
+    {
+        if (e.DataView.Contains(TrackDrag.DataFormat) && sender is FrameworkElement { Tag: Playlist playlist })
+        {
+            e.AcceptedOperation = DataPackageOperation.Copy;
+            e.DragUIOverride.Caption = _strings.GetString("Drag_AddToPlaylist").Replace("{0}", playlist.Name, StringComparison.Ordinal);
+            e.Handled = true;
+        }
+    }
+
+    private async void OnPlaylistNavDrop(object sender, DragEventArgs e)
+    {
+        if (!e.DataView.Contains(TrackDrag.DataFormat) || sender is not FrameworkElement { Tag: Playlist playlist })
+        {
+            return;
+        }
+
+        e.Handled = true;
+        var deferral = e.GetDeferral();
+        try
+        {
+            await _trackDrag.DropOnPlaylistAsync(await TrackDragSource.TokenAsync(e.DataView), playlist);
+        }
+        finally
+        {
+            deferral.Complete();
         }
     }
 

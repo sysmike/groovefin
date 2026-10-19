@@ -95,6 +95,7 @@
             IsPaneToggleButtonVisible="False"
             IsSettingsVisible="True"
             IsTitleBarAutoPaddingEnabled="False"
+            Expanding="OnNavigationExpanding"
             ItemInvoked="OnNavigationItemInvoked"
             PaneDisplayMode="Auto">
             <NavigationView.MenuItems>
@@ -124,7 +125,14 @@
                         <FontIcon Glyph="&#xE8EC;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="NavPlaylists" Tag="playlists">
+                <!--  Expands to the user's playlists (loaded each time), which take dropped tracks and albums.  -->
+                <NavigationViewItem
+                    x:Name="PlaylistsNavItem"
+                    x:Uid="NavPlaylists"
+                    AllowDrop="True"
+                    DragEnter="OnPlaylistsNavDragEnter"
+                    HasUnrealizedChildren="True"
+                    Tag="playlists">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE8FD;" />
                     </NavigationViewItem.Icon>

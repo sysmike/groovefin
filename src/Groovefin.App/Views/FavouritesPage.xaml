@@ -12,7 +12,7 @@
     <Page.Resources>
         <!--  Grid: square cover, name, artist.  -->
         <DataTemplate x:Key="AlbumGridTemplate" x:DataType="vm:AlbumItem">
-            <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
+            <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
                 <StackPanel Width="168" Padding="0,0,0,8" Spacing="6">
                     <Grid
                         Height="168"
@@ -122,6 +122,7 @@
         <Grid Grid.Row="2" Padding="0,8,0,0">
             <!--  Songs: click plays from there; the heart removes the song from the favourites.  -->
             <ListView
+                controls:TrackDragSource.IsEnabled="True"
                 controls:ItemMenu.IsEnabled="True"
                 x:Name="SongsList"
                 x:Uid="FavouritesSongs"

@@ -12,7 +12,7 @@
     <Page.Resources>
         <!--  Square cover, name, artist.  -->
         <DataTemplate x:Key="HomeTileTemplate" x:DataType="vm:AlbumItem">
-            <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
+            <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
                 <StackPanel Width="152" Padding="0,0,0,8" Spacing="6">
                     <Grid
                         Height="152"

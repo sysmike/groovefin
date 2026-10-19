@@ -133,6 +133,64 @@ public sealed class QueueManagerTests
         CurrentName.Should().Be("a");
     }
 
+    [Theory]
+    [InlineData(0, new[] { "a", "b", "x", "y", "c", "d" })]
+    [InlineData(1, new[] { "a", "b", "c", "x", "y", "d" })]
+    [InlineData(2, new[] { "a", "b", "c", "d", "x", "y" })]
+    [InlineData(9, new[] { "a", "b", "c", "d", "x", "y" })]
+    [InlineData(int.MaxValue, new[] { "a", "b", "c", "d", "x", "y" })]
+    public void InsertUpcoming_inserts_at_a_position_after_the_current_entry(int position, string[] expected)
+    {
+        Start("a", "b", "c", "d");
+        _sut.Next();
+        _changes = 0;
+
+        _sut.InsertUpcoming(Tracks("x", "y"), position);
+
+        Order.Should().Equal(expected);
+        CurrentName.Should().Be("b");
+        _changes.Should().Be(1);
+    }
+
+    [Fact]
+    public void InsertUpcoming_without_a_current_entry_counts_from_the_start()
+    {
+        _sut.AddLast(Tracks("a", "b"));
+
+        _sut.InsertUpcoming(Tracks("x"), 1);
+
+        Order.Should().Equal("a", "x", "b");
+        _sut.Current.Should().BeNull();
+    }
+
+    [Fact]
+    public void InsertUpcoming_while_shuffled_keeps_the_entries_in_the_original_order()
+    {
+        Start("a", "b", "c", "d");
+        _sut.Shuffle = true;
+        var following = _sut.Items[_sut.CurrentIndex + 1].Track.Name;
+
+        _sut.InsertUpcoming(Tracks("x"), 0);
+        _sut.Items[_sut.CurrentIndex + 1].Track.Name.Should().Be("x");
+        _sut.Shuffle = false;
+
+        var order = Order.ToList();
+        order.Should().HaveCount(5);
+        order.IndexOf("x").Should().Be(order.IndexOf(following) - 1);
+    }
+
+    [Fact]
+    public void InsertUpcoming_rejects_a_negative_position_and_ignores_nothing()
+    {
+        Start("a");
+        _changes = 0;
+
+        _sut.Invoking(q => q.InsertUpcoming(Tracks("x"), -1)).Should().Throw<ArgumentOutOfRangeException>();
+        _sut.InsertUpcoming([], 0);
+
+        _changes.Should().Be(0);
+    }
+
     [Fact]
     public void Adding_nothing_changes_nothing()
     {

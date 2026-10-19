@@ -102,6 +102,12 @@ public sealed partial class Player : IPlayer, IDisposable
         UpdateNext();
     }
 
+    public void InsertIntoQueue(IReadOnlyList<Track> tracks, int position)
+    {
+        Drive(() => Queue.InsertUpcoming(tracks, position));
+        UpdateNext();
+    }
+
     public void TogglePlayPause()
     {
         if (Engine.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Opening)
