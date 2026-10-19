@@ -60,7 +60,8 @@ public sealed partial class AlbumDetailViewModel(
     IErrorReporter errors,
     IStringResources strings,
     FavouritesService favourites,
-    IMessenger messenger) : ObservableObject
+    IMessenger messenger,
+    InstantMix instantMix) : ObservableObject
 {
     private IReadOnlyList<Track> _tracks = [];
 
@@ -81,7 +82,7 @@ public sealed partial class AlbumDetailViewModel(
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasAlbum))]
-    [NotifyCanExecuteChangedFor(nameof(ToggleFavouriteCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ToggleFavouriteCommand), nameof(InstantMixCommand))]
     public partial Album? Album { get; private set; }
 
     public bool HasAlbum => Album is not null;
@@ -187,6 +188,9 @@ public sealed partial class AlbumDetailViewModel(
 
     [RelayCommand(CanExecute = nameof(CanPlay))]
     private void AddToQueue() => player.AddToQueue(_tracks);
+
+    [RelayCommand(CanExecute = nameof(HasAlbum))]
+    private Task InstantMixAsync() => instantMix.StartAsync(Album!.Id);
 
     /// <summary>Plays the album from <paramref name="item"/> on (a track row was clicked).</summary>
     [RelayCommand]

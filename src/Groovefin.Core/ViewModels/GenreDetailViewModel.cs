@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.Input;
 using Groovefin.Core.Api;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
-using Groovefin.Core.Menus;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -33,7 +32,8 @@ public sealed partial class GenreDetailViewModel(
     ILibraryService library,
     IPlayer player,
     INavigationService navigation,
-    IErrorReporter errors) : ObservableObject
+    IErrorReporter errors,
+    InstantMix instantMix) : ObservableObject
 {
     public const int TrackLimit = 1000;
 
@@ -133,23 +133,8 @@ public sealed partial class GenreDetailViewModel(
         player.Play(_tracks, Math.Max(0, index));
     }
 
-    // TODO(#42): a setting to append the mix to the queue instead of replacing it.
     [RelayCommand(CanExecute = nameof(HasGenre))]
-    private async Task InstantMixAsync()
-    {
-        try
-        {
-            var mix = await library.GetInstantMixAsync(Genre!.Id, ContextMenus.InstantMixSize);
-            if (mix.Count > 0)
-            {
-                player.Play(mix);
-            }
-        }
-        catch (Exception ex) when (ex is JellyfinException or InvalidOperationException or ArgumentException)
-        {
-            errors.Report(ex, Operations.Playback);
-        }
-    }
+    private Task InstantMixAsync() => instantMix.StartAsync(Genre!.Id);
 
     [RelayCommand]
     private void OpenAlbum(AlbumItem item) => navigation.NavigateTo(PageKeys.Album, item.Album.Id);

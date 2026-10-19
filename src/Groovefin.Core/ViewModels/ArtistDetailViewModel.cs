@@ -42,7 +42,8 @@ public sealed partial class ArtistDetailViewModel(
     INavigationService navigation,
     IErrorReporter errors,
     FavouritesService favourites,
-    IMessenger messenger) : ObservableObject
+    IMessenger messenger,
+    InstantMix instantMix) : ObservableObject
 {
     public const double ImageWidth = 200;
 
@@ -70,7 +71,7 @@ public sealed partial class ArtistDetailViewModel(
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasArtist), nameof(Name), nameof(GenresText), nameof(Biography), nameof(HasBiography))]
-    [NotifyCanExecuteChangedFor(nameof(ToggleFavouriteCommand), nameof(PlayCommand), nameof(ShuffleCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ToggleFavouriteCommand), nameof(PlayCommand), nameof(ShuffleCommand), nameof(InstantMixCommand))]
     public partial Artist? Artist { get; private set; }
 
     public bool HasArtist => Artist is not null;
@@ -190,6 +191,9 @@ public sealed partial class ArtistDetailViewModel(
 
     [RelayCommand(CanExecute = nameof(HasArtist))]
     private Task ShuffleAsync() => PlayAllAsync(shuffle: true);
+
+    [RelayCommand(CanExecute = nameof(HasArtist))]
+    private Task InstantMixAsync() => instantMix.StartAsync(Artist!.Id);
 
     [RelayCommand]
     private void OpenAlbum(AlbumItem item) => navigation.NavigateTo(PageKeys.Album, item.Album.Id);

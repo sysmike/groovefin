@@ -7,6 +7,7 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Tests.TestDoubles;
 
 namespace Groovefin.Core.Tests.Menus;
 
@@ -27,7 +28,7 @@ public sealed class ContextMenusTests
         _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
         _strings.GetString("Menu_GoToArtist").Returns("Go to {0}");
         _favourites = new FavouritesService(_library, new WeakReferenceMessenger(), _errors);
-        _sut = new ContextMenus(_player, _library, _playlists, _navigation, _favourites, _dialogs, _errors, _strings);
+        _sut = new ContextMenus(_player, _library, _playlists, _navigation, _favourites, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _dialogs, _errors, _strings);
     }
 
     private static readonly Track Song = new()
@@ -101,7 +102,7 @@ public sealed class ContextMenusTests
     [Fact]
     public async Task Instant_mix_replaces_the_queue_with_the_mix()
     {
-        _library.GetInstantMixAsync("t1", ContextMenus.InstantMixSize, Arg.Any<CancellationToken>()).Returns(AlbumTracks);
+        _library.GetInstantMixAsync("t1", InstantMix.Size, Arg.Any<CancellationToken>()).Returns(AlbumTracks);
 
         await Find(_sut.ForTrack(Song), MenuActionKind.InstantMix).InvokeAsync();
 

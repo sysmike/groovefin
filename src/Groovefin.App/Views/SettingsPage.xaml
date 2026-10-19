@@ -124,6 +124,13 @@
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                 Style="{StaticResource CaptionTextBlockStyle}"
                 TextWrapping="Wrap" />
+            <ComboBox
+                x:Uid="SettingsInstantMixBox"
+                MinWidth="260"
+                SelectedIndex="{x:Bind ViewModel.InstantMixIndex, Mode=TwoWay}">
+                <ComboBoxItem x:Uid="SettingsInstantMixReplace" />
+                <ComboBoxItem x:Uid="SettingsInstantMixAppend" />
+            </ComboBox>
 
             <TextBlock
                 x:Uid="SettingsAboutHeader"

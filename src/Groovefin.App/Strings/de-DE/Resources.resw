@@ -1145,4 +1145,28 @@
   <data name="Operation_LoadGenre" xml:space="preserve">
     <value>Genre konnte nicht geladen werden</value>
   </data>
+  <data name="AlbumMixButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Instant-Mix aus diesem Album</value>
+  </data>
+  <data name="AlbumMixButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Instant-Mix aus diesem Album</value>
+  </data>
+  <data name="ArtistMixButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Instant-Mix aus diesem Interpreten</value>
+  </data>
+  <data name="ArtistMixButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Instant-Mix aus diesem Interpreten</value>
+  </data>
+  <data name="SettingsInstantMixBox.Header" xml:space="preserve">
+    <value>Instant-Mix</value>
+  </data>
+  <data name="SettingsInstantMixBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Instant-Mix</value>
+  </data>
+  <data name="SettingsInstantMixReplace.Content" xml:space="preserve">
+    <value>Warteschlange ersetzen und abspielen</value>
+  </data>
+  <data name="SettingsInstantMixAppend.Content" xml:space="preserve">
+    <value>Ans Ende der Warteschlange anfügen</value>
+  </data>
 </root>

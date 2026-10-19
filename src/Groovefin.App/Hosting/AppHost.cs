@@ -99,6 +99,7 @@ internal static class AppHost
         builder.Services.AddSingleton<AddToPlaylist>();
         builder.Services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         builder.Services.AddSingleton<FavouritesService>();
+        builder.Services.AddSingleton<InstantMix>();
         builder.Services.AddSingleton<ContextMenus>();
 
         // Servers

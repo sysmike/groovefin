@@ -281,4 +281,17 @@ public sealed class SettingsViewModelTests
         _settings.Current.Playback.Normalization.Should().Be(NormalizationMode.Album);
         changed.Should().Equal(nameof(sut.NormalizationIndex));
     }
+
+    [Fact]
+    public void Instant_mix_replaces_by_default_and_the_choice_is_saved()
+    {
+        var sut = CreateSut();
+        sut.InstantMixIndex.Should().Be(0);
+
+        sut.InstantMixIndex = 1;
+        sut.InstantMixIndex = 7;
+
+        _settings.Current.Playback.InstantMix.Should().Be(InstantMixMode.Append);
+        sut.InstantMixIndex.Should().Be(1);
+    }
 }

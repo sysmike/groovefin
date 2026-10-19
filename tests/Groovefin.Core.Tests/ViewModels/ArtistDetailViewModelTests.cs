@@ -6,6 +6,7 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
 namespace Groovefin.Core.Tests.ViewModels;
@@ -50,7 +51,7 @@ public sealed class ArtistDetailViewModelTests
 
     private static PagedResult<Album> Page(params Album[] albums) => new(albums, albums.Length, 0);
 
-    private ArtistDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, new FavouritesService(_library, _messenger, _errors), _messenger);
+    private ArtistDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, new FavouritesService(_library, _messenger, _errors), _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors));
 
     [Fact]
     public async Task Load_fills_header_and_all_sections()
@@ -243,5 +244,17 @@ public sealed class ArtistDetailViewModelTests
 
         _messenger.Send(new FavouriteChangedMessage(ArtistId, !before));
         sut.IsFavourite.Should().Be(!before);
+    }
+
+    [Fact]
+    public async Task Instant_mix_starts_a_mix_of_the_artist()
+    {
+        var sut = CreateSut();
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+        _library.GetInstantMixAsync(ArtistId, InstantMix.Size, Arg.Any<CancellationToken>()).Returns([new Track { Id = "m", Name = "m" }]);
+
+        await sut.InstantMixCommand.ExecuteAsync(null);
+
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Single().Id == "m"));
     }
 }
