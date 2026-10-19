@@ -1,5 +1,6 @@
 using Groovefin.App.Services;
 using Groovefin.Core;
+using Groovefin.Core.Security;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
 using Groovefin.Core.ViewModels;
@@ -56,6 +57,7 @@ internal static class AppHost
         builder.Services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<FrameNavigationService>());
         builder.Services.AddSingleton<ThemeService>();
         builder.Services.AddSingleton<IThemeService>(sp => sp.GetRequiredService<ThemeService>());
+        builder.Services.AddSingleton<ICredentialStore, PasswordVaultCredentialStore>();
 
         // ViewModels
         builder.Services.AddSingleton<ShellViewModel>();
