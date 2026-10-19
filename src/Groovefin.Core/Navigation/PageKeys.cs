@@ -15,6 +15,7 @@ public static class PageKeys
     public const string Favourites = "favourites";
     public const string Search = "search";
     public const string Settings = "settings";
+    public const string Album = "album";
 
     /// <summary>The sections shown in the main navigation, in display order.</summary>
     public static IReadOnlyList<string> MainSections { get; } =

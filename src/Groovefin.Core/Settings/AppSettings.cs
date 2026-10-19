@@ -1,3 +1,4 @@
+using Groovefin.Core.Api;
 using Groovefin.Core.Services;
 
 namespace Groovefin.Core.Settings;
@@ -21,6 +22,8 @@ public sealed record AppSettings
     public AppearanceSettings Appearance { get; set; } = new();
 
     public CacheSettings Cache { get; set; } = new();
+
+    public BrowseSettings Browse { get; set; } = new();
 }
 
 /// <summary>Look and feel.</summary>
@@ -34,4 +37,21 @@ public sealed record CacheSettings
 {
     /// <summary>Gets or sets the image cache size limit in megabytes.</summary>
     public int ImageCacheSizeMegabytes { get; set; } = 500;
+}
+
+/// <summary>How a collection page shows its items.</summary>
+public enum CollectionViewMode
+{
+    Grid,
+    List,
+}
+
+/// <summary>Remembered view options of the browsing pages.</summary>
+public sealed record BrowseSettings
+{
+    public CollectionViewMode AlbumView { get; set; } = CollectionViewMode.Grid;
+
+    public AlbumSortField AlbumSort { get; set; } = AlbumSortField.Name;
+
+    public bool AlbumSortDescending { get; set; }
 }

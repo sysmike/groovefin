@@ -173,4 +173,86 @@
   <data name="NotificationArea.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Notifications</value>
   </data>
+  <data name="AlbumsHeader.Text" xml:space="preserve">
+    <value>Albums</value>
+  </data>
+  <data name="Albums_Count" xml:space="preserve">
+    <value>{0} albums</value>
+    <comment>{0} = number of albums</comment>
+  </data>
+  <data name="AlbumsSortBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Sort by</value>
+  </data>
+  <data name="AlbumsSortBox.PlaceholderText" xml:space="preserve">
+    <value>Sort by</value>
+  </data>
+  <data name="AlbumSort_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="AlbumSort_AlbumArtist" xml:space="preserve">
+    <value>Album artist</value>
+  </data>
+  <data name="AlbumSort_Year" xml:space="preserve">
+    <value>Year</value>
+  </data>
+  <data name="AlbumSort_DateAdded" xml:space="preserve">
+    <value>Date added</value>
+  </data>
+  <data name="AlbumSort_PlayCount" xml:space="preserve">
+    <value>Play count</value>
+  </data>
+  <data name="AlbumSort_Random" xml:space="preserve">
+    <value>Random</value>
+  </data>
+  <data name="AlbumsDescendingToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Descending order</value>
+  </data>
+  <data name="AlbumsDescendingToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Descending order</value>
+  </data>
+  <data name="AlbumsFilterButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="AlbumsFilterButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="AlbumsFavouritesSwitch.Header" xml:space="preserve">
+    <value>Favourites only</value>
+  </data>
+  <data name="AlbumsGenreBox.Header" xml:space="preserve">
+    <value>Genre</value>
+  </data>
+  <data name="Albums_AllGenres" xml:space="preserve">
+    <value>All genres</value>
+  </data>
+  <data name="AlbumsMinYearBox.Header" xml:space="preserve">
+    <value>From year</value>
+  </data>
+  <data name="AlbumsMaxYearBox.Header" xml:space="preserve">
+    <value>To year</value>
+  </data>
+  <data name="AlbumsClearFiltersButton.Content" xml:space="preserve">
+    <value>Clear filters</value>
+  </data>
+  <data name="AlbumsGridViewToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Grid view</value>
+  </data>
+  <data name="AlbumsGridViewToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Grid view</value>
+  </data>
+  <data name="AlbumsListViewToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>List view</value>
+  </data>
+  <data name="AlbumsListViewToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>List view</value>
+  </data>
+  <data name="AlbumsView.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Albums</value>
+  </data>
+  <data name="AlbumsEmpty.Text" xml:space="preserve">
+    <value>No albums match.</value>
+  </data>
+  <data name="SectionTitle_album" xml:space="preserve">
+    <value>Album</value>
+  </data>
 </root>

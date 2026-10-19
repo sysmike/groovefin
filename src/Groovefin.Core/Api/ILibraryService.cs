@@ -11,9 +11,13 @@ public interface ILibraryService
     /// <exception cref="InvalidOperationException">There is no active connection.</exception>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<PagedResult<Album>> GetAlbumsAsync(AlbumQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets the genres used by albums, sorted by name.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<Genre>> GetAlbumGenresAsync(CancellationToken cancellationToken = default);
 }
 
-/// <summary>Paging and sorting for <see cref="ILibraryService.GetAlbumsAsync"/>.</summary>
+/// <summary>Paging, sorting and filters for <see cref="ILibraryService.GetAlbumsAsync"/>.</summary>
 public sealed record AlbumQuery
 {
     public int StartIndex { get; init; }
@@ -23,6 +27,17 @@ public sealed record AlbumQuery
     public AlbumSortField SortBy { get; init; } = AlbumSortField.Name;
 
     public bool Descending { get; init; }
+
+    /// <summary>Gets the genre IDs; an album matches when it has any of them. Empty means all genres.</summary>
+    public IReadOnlyList<string> GenreIds { get; init; } = [];
+
+    /// <summary>Gets the first production year to include, or <see langword="null"/> for no lower bound.</summary>
+    public int? MinYear { get; init; }
+
+    /// <summary>Gets the last production year to include, or <see langword="null"/> for no upper bound.</summary>
+    public int? MaxYear { get; init; }
+
+    public bool FavouritesOnly { get; init; }
 }
 
 /// <summary>Album sort orders. Ties are broken by name.</summary>
