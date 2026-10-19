@@ -21,7 +21,12 @@ public enum PlaybackState
 /// A stream to play. <see cref="Id"/> identifies the queue entry, so track changes can be matched to the
 /// queue (also when the engine moves on by itself, e.g. gapless).
 /// </summary>
-public sealed record PlaybackSource(string Id, Uri Url, Track Track);
+/// <remarks><see cref="Url"/> can carry the access token (stream URLs do): never log it.</remarks>
+public sealed record PlaybackSource(string Id, Uri Url, Track Track)
+{
+    /// <summary>Describes the source without its URL, so logging it cannot leak a token.</summary>
+    public override string ToString() => $"{Id} ({Track.Name})";
+}
 
 /// <summary>Why playback of <see cref="Source"/> failed.</summary>
 public sealed class PlaybackFailedEventArgs(PlaybackSource source, string message, Exception? exception) : EventArgs

@@ -276,4 +276,12 @@ public sealed class PlaybackEngineBaseTests
         engine.State.Should().Be(PlaybackState.Idle);
         engine.Current.Should().BeNull();
     }
+
+    [Fact]
+    public void A_source_never_shows_its_url_when_logged()
+    {
+        var source = new PlaybackSource("7", new Uri("https://server/Audio/x/universal?api_key=secret-token"), new Track { Id = "x", Name = "One More Time" });
+
+        source.ToString().Should().Be("7 (One More Time)").And.NotContain("secret-token");
+    }
 }
