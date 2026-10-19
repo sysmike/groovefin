@@ -1,0 +1,160 @@
+# Architecture
+
+Groovefin is a native Jellyfin music player for Windows 11. It is written in C# on .NET 10 with
+WinUI 3 (Windows App SDK). This document describes how the solution is split, which project may
+depend on which, and the conventions every feature follows.
+
+## Goals
+
+- **Native first.** Fluent design and stock WinUI 3 controls. No WebView2 for UI.
+- **Testable.** All logic that does not need WinUI (domain, ViewModels, queue, API mapping) runs and
+  is unit-tested on any OS.
+- **Replaceable edges.** The Jellyfin SDK and the Windows media stack sit behind interfaces. This
+  makes a libmpv engine or a second server backend possible later.
+
+## Projects
+
+| Project | Target | Responsibility |
+|---|---|---|
+| `Groovefin.App` | `net10.0-windows10.0.22000.0`, WinUI 3, single-project MSIX | Composition root (generic host + DI), XAML views, styles, `.resw` resources, platform services (navigation, dialogs, theme, dispatcher, credentials, settings storage location). |
+| `Groovefin.Core` | `net10.0` | Domain models, service interfaces, ViewModels, `QueueManager`, settings model, messages. **No WinUI or Windows references.** |
+| `Groovefin.Jellyfin` | `net10.0` | Implements the Core API interfaces with `Jellyfin.Sdk`: authentication, DTO→domain mapping, stream URLs, image URLs, playback reporting, resilient HTTP pipeline. |
+| `Groovefin.Playback.Windows` | `net10.0-windows10.0.22000.0` | `IPlaybackEngine` implementation using `Windows.Media.Playback.MediaPlayer` + `MediaPlaybackList`. System Media Transport Controls. |
+| `Groovefin.Core.Tests` | `net10.0` | Unit tests for Core (ViewModels, queue, parsers). |
+| `Groovefin.Jellyfin.Tests` | `net10.0` | Unit tests for the Jellyfin layer against WireMock.Net fakes. |
+
+## Component diagram
+
+```mermaid
+flowchart LR
+    subgraph App["Groovefin.App (WinUI 3)"]
+        Views["Views / XAML pages"]
+        Shell["Shell window<br/>Mica · TitleBar · NavigationView"]
+        PlatformSvc["Platform services<br/>Navigation · Dialog · Theme · Dispatcher<br/>Credential store · Settings storage"]
+        Host["Generic host / DI<br/>Serilog"]
+    end
+
+    subgraph Core["Groovefin.Core (net10.0)"]
+        VMs["ViewModels<br/>(CommunityToolkit.Mvvm)"]
+        Queue["QueueManager"]
+        Abstractions["Interfaces<br/>IJellyfinClient · ILibraryService · IPlaylistService<br/>ISearchService · ILyricsService · IPlaybackReporter<br/>IPlaybackEngine · INavigationService · IDialogService<br/>IThemeService · ISettingsService · IDispatcher"]
+        Models["Domain models"]
+    end
+
+    subgraph Jellyfin["Groovefin.Jellyfin (net10.0)"]
+        Sdk["Jellyfin.Sdk wrapper"]
+        Mapping["DTO → domain mapping"]
+        Http["HttpClient + resilience pipeline"]
+    end
+
+    subgraph Playback["Groovefin.Playback.Windows"]
+        Engine["MediaPlayerEngine<br/>MediaPlaybackList (gapless)"]
+        Smtc["SMTC integration"]
+    end
+
+    Server[("Jellyfin server")]
+    Windows[("Windows media stack")]
+
+    Views --> VMs
+    Shell --> VMs
+    Host --> PlatformSvc
+    PlatformSvc -. implements .-> Abstractions
+    VMs --> Abstractions
+    VMs --> Queue
+    VMs --> Models
+    Sdk -. implements .-> Abstractions
+    Sdk --> Mapping --> Models
+    Sdk --> Http --> Server
+    Engine -. implements .-> Abstractions
+    Engine --> Windows
+    Smtc --> Windows
+```
+
+## Dependency rules
+
+```mermaid
+flowchart TD
+    App[Groovefin.App] --> Core[Groovefin.Core]
+    App --> Jellyfin[Groovefin.Jellyfin]
+    App --> Playback[Groovefin.Playback.Windows]
+    Jellyfin --> Core
+    Playback --> Core
+    CoreTests[Groovefin.Core.Tests] --> Core
+    JellyfinTests[Groovefin.Jellyfin.Tests] --> Jellyfin
+```
+
+1. `Groovefin.Core` references no other Groovefin project and no WinUI / WinRT API.
+2. `Groovefin.Jellyfin` and `Groovefin.Playback.Windows` reference only `Groovefin.Core`. They never
+   reference each other.
+3. Only `Groovefin.App` references everything. It is the only place that registers implementations
+   in DI.
+4. ViewModels never use `Jellyfin.Sdk` types. The Jellyfin layer maps DTOs to Core domain models
+   (`Album`, `Artist`, `Track`, `Playlist`, ...) before they leave the project.
+5. Views bind to ViewModels with `x:Bind`. Views contain no business logic. Code-behind is limited to
+   pure view concerns (animations, focus, drag visuals).
+
+## Key abstractions
+
+| Interface | Lives in | Implemented in | Purpose |
+|---|---|---|---|
+| `IJellyfinClient` | Core | Jellyfin | Connection, authentication, server info. Entry point to the focused services below. |
+| `ILibraryService` | Core | Jellyfin | Albums, artists, tracks, genres, folders, favourites, instant mix. |
+| `IPlaylistService` | Core | Jellyfin | Playlist CRUD and track editing. |
+| `ISearchService` | Core | Jellyfin | Grouped search and suggestions. |
+| `ILyricsService` | Core | Jellyfin | Lyrics (synced LRC and plain text). |
+| `IPlaybackReporter` | Core | Jellyfin | `/Sessions/Playing`, `/Progress`, `/Stopped`. |
+| `IPlaybackEngine` | Core | Playback.Windows | Load, play, pause, seek, volume. Events for position, state and track changes. |
+| `QueueManager` | Core | — (concrete, pure) | Queue order, shuffle with stable original order, repeat modes, history. |
+| `INavigationService` | Core | App | Navigate by ViewModel type + parameter, back stack. |
+| `IDialogService` | Core | App | Content dialogs, confirmations, pickers. |
+| `IThemeService` | Core | App | Light / dark / system theme, density. |
+| `ISettingsService` | Core | Core + App storage location | Strongly typed settings persisted as JSON. |
+| `IDispatcher` | Core | App | Marshal work to the UI thread. The only way code outside views touches the UI thread. |
+| `ICredentialStore` | Core | App | Access tokens in `PasswordVault`. |
+
+## Conventions
+
+### Threading
+
+- All I/O is `async` and takes a `CancellationToken`. Nothing blocks the UI thread.
+- ViewModel properties are changed on the UI thread. Background work (engine events, network
+  callbacks) uses `IDispatcher.EnqueueAsync`.
+- Page ViewModels cancel their outstanding loads when the user navigates away.
+
+### Networking and errors
+
+- The Jellyfin layer uses `IHttpClientFactory` with the `Microsoft.Extensions.Http.Resilience`
+  standard pipeline (retry, attempt timeout, total timeout, circuit breaker).
+- Failures are never silent. Services throw typed exceptions (e.g. `JellyfinException`,
+  `AuthenticationRequiredException`). ViewModels catch them, log them and expose an error state that
+  the view shows in an `InfoBar`.
+- An unhandled exception is logged and shown. The app never crashes silently.
+
+### Logging
+
+- `Microsoft.Extensions.Logging` everywhere, Serilog as the provider.
+- Rolling log files in local app data (`Logs\groovefin-.log`), retained for 7 days.
+- Never log access tokens, passwords or full authorization headers.
+
+### Settings and secrets
+
+- Settings: JSON in `ApplicationData.LocalFolder` (packaged) or `%LOCALAPPDATA%\Groovefin`
+  (unpackaged).
+- Access tokens: `Windows.Security.Credentials.PasswordVault`. Passwords are never stored.
+
+### MVVM
+
+- `CommunityToolkit.Mvvm` source generators (`[ObservableProperty]`, `[RelayCommand]`).
+- Cross-ViewModel communication via `IMessenger` (e.g. `FavouriteChangedMessage`,
+  `NowPlayingChangedMessage`).
+
+### UI
+
+- Theme resources and the system accent colour only. No hard-coded colours or fonts.
+- Virtualized lists everywhere (`ItemsView` / `ItemsRepeater`, incremental loading).
+- Every user-visible string comes from `.resw` (`en-US`, `de-DE`).
+- Every custom control sets `AutomationProperties`.
+
+### TODOs
+
+Every `TODO` references a GitHub issue: `// TODO(#42): handle transcoding fallback`.

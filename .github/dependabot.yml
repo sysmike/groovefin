@@ -1,0 +1,42 @@
+# Dependabot version updates. Minor and patch updates are grouped into one PR per ecosystem;
+# major updates get their own PRs so breaking changes are reviewed one at a time.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - type:chore
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      nuget-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Berlin
+    labels:
+      - dependencies
+      - area:ci
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions-minor-patch:
+        update-types:
+          - minor
+          - patch

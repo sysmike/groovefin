@@ -1,0 +1,76 @@
+name: Bug report
+description: Something in Groovefin does not work as expected.
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please search the [existing issues](https://github.com/sysmike/groovefin/issues) first.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: input
+    id: groovefin-version
+    attributes:
+      label: Groovefin version
+      description: Settings > About. Include the commit SHA if shown.
+      placeholder: 0.1.0+abc1234
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package type
+      options:
+        - MSIX (installed)
+        - ZIP (unpackaged)
+        - Built from source
+    validations:
+      required: true
+  - type: input
+    id: windows-build
+    attributes:
+      label: Windows build
+      description: Run `winver`.
+      placeholder: Windows 11 24H2 (26100.4061), x64
+    validations:
+      required: true
+  - type: input
+    id: jellyfin-version
+    attributes:
+      label: Jellyfin server version
+      placeholder: 10.11.0
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Settings > Open log folder, or `%LOCALAPPDATA%\Groovefin\Logs` (unpackaged).
+        Remove server URLs or user names you do not want to share. Logs never contain tokens or passwords.
+      render: text
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or additional context
