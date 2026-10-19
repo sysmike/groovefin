@@ -406,6 +406,63 @@
   <data name="SettingsSignOutButton.Content" xml:space="preserve">
     <value>Abmelden</value>
   </data>
+  <data name="SignInQuickConnectButton.Content" xml:space="preserve">
+    <value>Quick Connect verwenden</value>
+  </data>
+  <data name="SignInQuickConnectHint.Text" xml:space="preserve">
+    <value>Öffne in einer anderen Jellyfin-App, in der du angemeldet bist, Quick Connect und gib diesen Code ein:</value>
+  </data>
+  <data name="SignInQuickConnectCode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Quick-Connect-Code</value>
+  </data>
+  <data name="SignInQuickConnectWaiting.Text" xml:space="preserve">
+    <value>Warte auf Bestätigung …</value>
+  </data>
+  <data name="SignInQuickConnectCancelButton.Content" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="SignIn_QuickConnectExpired" xml:space="preserve">
+    <value>Der Quick-Connect-Code ist abgelaufen. Starte Quick Connect erneut, um einen neuen Code zu erhalten.</value>
+  </data>
+  <data name="SignIn_QuickConnectFailed" xml:space="preserve">
+    <value>Die Anmeldung mit Quick Connect ist fehlgeschlagen. Versuche es erneut oder melde dich mit deinem Passwort an.</value>
+  </data>
+  <data name="HomeHeader.Text" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="HomeRefreshButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Aktualisieren</value>
+  </data>
+  <data name="HomeRefreshButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Aktualisieren</value>
+  </data>
+  <data name="HomeShelf_RecentlyAdded" xml:space="preserve">
+    <value>Kürzlich hinzugefügt</value>
+  </data>
+  <data name="HomeShelf_RecentlyPlayed" xml:space="preserve">
+    <value>Zuletzt gespielt</value>
+  </data>
+  <data name="HomeShelf_MostPlayed" xml:space="preserve">
+    <value>Meistgespielt</value>
+  </data>
+  <data name="HomeShelf_Random" xml:space="preserve">
+    <value>Zufällige Alben</value>
+  </data>
+  <data name="HomeShelf_Favourites" xml:space="preserve">
+    <value>Lieblingsalben</value>
+  </data>
+  <data name="HomeShelfEmpty.Text" xml:space="preserve">
+    <value>Hier ist noch nichts.</value>
+  </data>
+  <data name="HomeShelfFailed.Text" xml:space="preserve">
+    <value>Diese Liste konnte nicht geladen werden.</value>
+  </data>
+  <data name="AlbumSort_DatePlayed" xml:space="preserve">
+    <value>Zuletzt gespielt</value>
+  </data>
+  <data name="Operation_LoadHome" xml:space="preserve">
+    <value>Startseite konnte nicht geladen werden</value>
+  </data>
   <data name="ArtistsHeader.Text" xml:space="preserve">
     <value>Künstler</value>
   </data>
@@ -537,41 +594,5 @@
   </data>
   <data name="Operation_LoadArtist" xml:space="preserve">
     <value>Künstler konnte nicht geladen werden</value>
-  </data>
-  <data name="HomeHeader.Text" xml:space="preserve">
-    <value>Start</value>
-  </data>
-  <data name="HomeRefreshButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Aktualisieren</value>
-  </data>
-  <data name="HomeRefreshButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Aktualisieren</value>
-  </data>
-  <data name="HomeShelf_RecentlyAdded" xml:space="preserve">
-    <value>Kürzlich hinzugefügt</value>
-  </data>
-  <data name="HomeShelf_RecentlyPlayed" xml:space="preserve">
-    <value>Zuletzt gespielt</value>
-  </data>
-  <data name="HomeShelf_MostPlayed" xml:space="preserve">
-    <value>Meistgespielt</value>
-  </data>
-  <data name="HomeShelf_Random" xml:space="preserve">
-    <value>Zufällige Alben</value>
-  </data>
-  <data name="HomeShelf_Favourites" xml:space="preserve">
-    <value>Lieblingsalben</value>
-  </data>
-  <data name="HomeShelfEmpty.Text" xml:space="preserve">
-    <value>Hier ist noch nichts.</value>
-  </data>
-  <data name="HomeShelfFailed.Text" xml:space="preserve">
-    <value>Diese Liste konnte nicht geladen werden.</value>
-  </data>
-  <data name="AlbumSort_DatePlayed" xml:space="preserve">
-    <value>Zuletzt gespielt</value>
-  </data>
-  <data name="Operation_LoadHome" xml:space="preserve">
-    <value>Startseite konnte nicht geladen werden</value>
   </data>
 </root>

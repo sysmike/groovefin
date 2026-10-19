@@ -55,6 +55,43 @@
                     IsActive="{x:Bind ViewModel.SignInCommand.IsRunning, Mode=OneWay}" />
             </StackPanel>
 
+            <!--  Quick Connect: shown only when the server has it enabled.  -->
+            <Button
+                x:Uid="SignInQuickConnectButton"
+                Command="{x:Bind ViewModel.QuickConnectCommand}"
+                Visibility="{x:Bind ViewModel.ShowsQuickConnectButton, Mode=OneWay}" />
+            <Border
+                Padding="16"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource OverlayCornerRadius}"
+                Visibility="{x:Bind ViewModel.IsWaitingForQuickConnect, Mode=OneWay}">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Uid="SignInQuickConnectHint" Style="{StaticResource BodyTextBlockStyle}" />
+                    <TextBlock
+                        x:Name="QuickConnectCodeText"
+                        x:Uid="SignInQuickConnectCode"
+                        AutomationProperties.LiveSetting="Polite"
+                        CharacterSpacing="200"
+                        IsTextSelectionEnabled="True"
+                        Style="{StaticResource TitleLargeTextBlockStyle}"
+                        Text="{x:Bind ViewModel.QuickConnectCode, Mode=OneWay}" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <ProgressRing
+                            Width="20"
+                            Height="20"
+                            IsActive="{x:Bind ViewModel.IsWaitingForQuickConnect, Mode=OneWay}" />
+                        <TextBlock
+                            x:Uid="SignInQuickConnectWaiting"
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}" />
+                    </StackPanel>
+                    <Button x:Uid="SignInQuickConnectCancelButton" Command="{x:Bind ViewModel.QuickConnectCancelCommand}" />
+                </StackPanel>
+            </Border>
+
             <HyperlinkButton x:Uid="SignInChooseServerLink" Command="{x:Bind ViewModel.ChooseServerCommand}" />
         </StackPanel>
     </ScrollViewer>
