@@ -182,7 +182,7 @@ internal sealed partial class AlbumsPage : Page
     private void OnClearFiltersClick(object sender, RoutedEventArgs e) => ViewModel.ClearFiltersCommand.Execute(null);
 
     private void OnViewModeClick(object sender, RoutedEventArgs e) =>
-        ViewModel.ViewMode = sender == ListViewToggle ? CollectionViewMode.List : CollectionViewMode.Grid;
+        ViewModel.ViewMode = ReferenceEquals(sender, ListViewToggle) ? CollectionViewMode.List : CollectionViewMode.Grid;
 
     private void OnAlbumInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
     {
