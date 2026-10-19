@@ -3,6 +3,7 @@ using Groovefin.App.Services;
 using Groovefin.Core;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Images;
+using Groovefin.Core.Menus;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Queue;
@@ -98,6 +99,7 @@ internal static class AppHost
         builder.Services.AddSingleton<AddToPlaylist>();
         builder.Services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         builder.Services.AddSingleton<FavouritesService>();
+        builder.Services.AddSingleton<ContextMenus>();
 
         // Servers
         builder.Services.AddSingleton<IServerManager, ServerManager>();

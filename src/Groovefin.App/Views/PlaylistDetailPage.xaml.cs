@@ -1,4 +1,6 @@
+using Groovefin.App.Controls;
 using Groovefin.App.Services;
+using Groovefin.Core.Menus;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -96,16 +98,14 @@ internal sealed partial class PlaylistDetailPage : Page
 
         Add(menu, RemoveGlyph, "Menu_RemoveFromPlaylist", () => ViewModel.RemoveCommand.Execute(item));
 
-        if (e.TryGetPosition(target, out var point))
+        // Then what every track offers, except playing it alone: here "Play" plays from this entry.
+        if (ItemMenu.ActionsFor(item) is { } shared)
         {
-            menu.ShowAt(target, point);
-        }
-        else
-        {
-            menu.ShowAt(target);
+            menu.Items.Add(new MenuFlyoutSeparator());
+            ItemMenu.AddTo(menu, [.. shared.Where(a => a.Kind != MenuActionKind.PlayNow)]);
         }
 
-        e.Handled = true;
+        ItemMenu.Show(menu, target, e);
     }
 
     private void Add(MenuFlyout menu, string glyph, string textKey, Action invoke)

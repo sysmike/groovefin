@@ -7,7 +7,6 @@ using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 
 namespace Groovefin.App.Views;
@@ -74,14 +73,6 @@ internal sealed partial class AlbumDetailPage : Page
     }
 
     /// <summary>Right-click or Menu key on a track: go to one of its artists.</summary>
-    private void OnTrackContextRequested(UIElement sender, ContextRequestedEventArgs e)
-    {
-        if ((e.OriginalSource as FrameworkElement)?.DataContext is TrackItem item)
-        {
-            ArtistMenu.TryShow(e, item.Track.Artists, App.Services.GetRequiredService<IStringResources>(), artist => ViewModel.OpenArtistCommand.Execute(artist));
-        }
-    }
-
     private async void OnAddToPlaylistClick(object sender, RoutedEventArgs e) =>
         await PlaylistMenu.ShowAsync(
             AddToPlaylistButton,

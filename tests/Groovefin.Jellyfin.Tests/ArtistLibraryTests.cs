@@ -195,6 +195,19 @@ public sealed class ArtistLibraryTests : IDisposable
     }
 
     [Fact]
+    public async Task An_instant_mix_comes_from_the_items_instant_mix_endpoint()
+    {
+        Stub($"/Items/{Guid.ParseExact(ArtistId, "N")}/InstantMix", new { Items = new object[] { new { Id = "12121212-2222-3333-4444-555555555555", Name = "Mixed", Type = "Audio" } } });
+
+        var tracks = await _host.Library.GetInstantMixAsync(ArtistId, 50, Ct);
+
+        tracks.Should().ContainSingle().Which.Name.Should().Be("Mixed");
+        var query = LastQuery();
+        query["limit"].Should().Be("50");
+        query.Should().ContainKey("userId");
+    }
+
+    [Fact]
     public async Task Favourite_tracks_are_audio_items_with_the_favourite_filter()
     {
         Stub("/Items", new { Items = new object[] { new { Id = "12121212-2222-3333-4444-555555555555", Name = "Loved", Type = "Audio", UserData = new { IsFavorite = true } } } });

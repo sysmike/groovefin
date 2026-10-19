@@ -32,6 +32,10 @@ public interface ILibraryService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<IReadOnlyList<Track>> GetFavouriteTracksAsync(int limit, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets an instant mix: up to <paramref name="limit"/> tracks like the item (track, album, artist, playlist or genre).</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<Track>> GetInstantMixAsync(string itemId, int limit, CancellationToken cancellationToken = default);
+
     /// <summary>Gets one page of artists or album artists.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<PagedResult<Artist>> GetArtistsAsync(ArtistQuery query, CancellationToken cancellationToken = default);

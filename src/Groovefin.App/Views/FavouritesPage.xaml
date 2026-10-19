@@ -122,6 +122,7 @@
         <Grid Grid.Row="2" Padding="0,8,0,0">
             <!--  Songs: click plays from there; the heart removes the song from the favourites.  -->
             <ListView
+                controls:ItemMenu.IsEnabled="True"
                 x:Name="SongsList"
                 x:Uid="FavouritesSongs"
                 Padding="24,0,24,24"
@@ -182,6 +183,7 @@
             </ListView>
 
             <ItemsView
+                controls:ItemMenu.IsEnabled="True"
                 x:Name="AlbumsView"
                 x:Uid="FavouritesAlbums"
                 Padding="36,0,36,24"
@@ -200,6 +202,7 @@
             </ItemsView>
 
             <ItemsView
+                controls:ItemMenu.IsEnabled="True"
                 x:Name="ArtistsView"
                 x:Uid="FavouritesArtists"
                 Padding="36,0,36,24"
