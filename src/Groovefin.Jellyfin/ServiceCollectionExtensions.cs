@@ -31,6 +31,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ILibraryService, LibraryService>();
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         services.AddSingleton<IImageSource, JellyfinImageSource>();
+        services.AddSingleton<IStreamUrlProvider, StreamUrlBuilder>();
         return services;
     }
 

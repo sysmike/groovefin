@@ -27,6 +27,8 @@ public sealed record AppSettings
     public CacheSettings Cache { get; set; } = new();
 
     public BrowseSettings Browse { get; set; } = new();
+
+    public StreamingSettings Streaming { get; set; } = new();
 }
 
 /// <summary>Look and feel.</summary>
@@ -75,4 +77,23 @@ public sealed record BrowseSettings
 
     /// <summary>Gets or sets a value indicating whether the artists page lists album artists only.</summary>
     public bool AlbumArtistsOnly { get; set; } = true;
+}
+
+/// <summary>
+/// Stream quality. Local servers (home network) default to the original files, remote ones to
+/// 320 kbit/s, so mobile data and slow uplinks are spared.
+/// </summary>
+public sealed record StreamingSettings
+{
+    /// <summary>Gets or sets the bitrate limit on the local network; <see langword="null"/> means no limit.</summary>
+    public int? LocalMaxBitrateKbps { get; set; }
+
+    /// <summary>Gets or sets the bitrate limit for remote servers; <see langword="null"/> means no limit.</summary>
+    public int? RemoteMaxBitrateKbps { get; set; } = 320;
+
+    public TranscodingCodec Codec { get; set; } = TranscodingCodec.Aac;
+
+    /// <summary>Gets the stream options for a server at <paramref name="serverUrl"/>.</summary>
+    public StreamOptions OptionsFor(Uri serverUrl) =>
+        new(NetworkLocation.IsLocal(serverUrl) ? LocalMaxBitrateKbps : RemoteMaxBitrateKbps, Codec);
 }
