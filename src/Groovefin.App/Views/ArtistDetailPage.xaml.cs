@@ -66,7 +66,7 @@ internal sealed partial class ArtistDetailPage : Page
     {
         if (e.ClickedItem is ArtistTrackItem item)
         {
-            ViewModel.OpenTrackAlbumCommand.Execute(item);
+            ViewModel.PlayTopTrackCommand.Execute(item);
         }
     }
 

@@ -188,7 +188,7 @@
                         Click="OnBiographyToggleClick" />
                 </StackPanel>
 
-                <!--  Top tracks; a row opens its album.  -->
+                <!--  Top tracks; a row plays the top tracks from there.  -->
                 <StackPanel Visibility="{x:Bind ViewModel.HasTopTracks, Mode=OneWay}">
                     <TextBlock x:Uid="ArtistTopTracksHeader" Style="{StaticResource SectionHeaderStyle}" />
                     <ListView

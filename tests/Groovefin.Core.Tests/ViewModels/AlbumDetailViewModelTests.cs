@@ -2,6 +2,7 @@ using Groovefin.Core.Api;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 
@@ -26,6 +27,7 @@ public sealed class AlbumDetailViewModelTests
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
+    private readonly IPlayer _player = Substitute.For<IPlayer>();
 
     public AlbumDetailViewModelTests()
     {
@@ -52,7 +54,7 @@ public sealed class AlbumDetailViewModelTests
         Artists = artists,
     };
 
-    private AlbumDetailViewModel CreateSut() => new(_library, _navigation, _errors, _strings);
+    private AlbumDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, _strings);
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -159,6 +161,37 @@ public sealed class AlbumDetailViewModelTests
 
         sut.ToggleFavouriteCommand.CanExecute(null).Should().BeFalse();
         sut.PlayCommand.CanExecute(null).Should().BeFalse();
+        sut.ShuffleCommand.CanExecute(null).Should().BeFalse();
+        sut.AddToQueueCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Play_shuffle_and_add_to_queue_hand_the_tracks_to_the_player()
+    {
+        var sut = CreateSut();
+        await sut.LoadAsync("album-1", TestContext.Current.CancellationToken);
+        var ids = new[] { "t1", "t2" };
+
+        sut.PlayCommand.Execute(null);
+        sut.ShuffleCommand.Execute(null);
+        sut.AddToQueueCommand.Execute(null);
+
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(ids)), 0);
+        _player.Received(1).Shuffle(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 2));
+        _player.Received(1).AddToQueue(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 2));
+    }
+
+    [Fact]
+    public async Task Clicking_a_track_plays_the_album_from_there()
+    {
+        var sut = CreateSut();
+        await sut.LoadAsync("album-1", TestContext.Current.CancellationToken);
+
+        sut.PlayTrackCommand.Execute(sut.Discs[0].Tracks[1]);
+        sut.PlayTrackCommand.Execute(new TrackItem(new Track { Id = "elsewhere", Name = "x" }, null));
+
+        _player.Received(1).Play(Arg.Any<IReadOnlyList<Track>>(), 1);
+        _player.ReceivedWithAnyArgs(1).Play(default!, default);
     }
 
     [Fact]

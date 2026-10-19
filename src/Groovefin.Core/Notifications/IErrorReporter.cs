@@ -27,4 +27,5 @@ public static class Operations
     public const string LoadArtists = "Operation_LoadArtists";
     public const string LoadArtist = "Operation_LoadArtist";
     public const string LoadLibraries = "Operation_LoadLibraries";
+    public const string Playback = "Operation_Playback";
 }

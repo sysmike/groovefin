@@ -11,6 +11,9 @@ public sealed record Track
 
     public string? AlbumName { get; init; }
 
+    /// <summary>Gets the cache tag of the album cover, or <see langword="null"/> when the album has none.</summary>
+    public string? AlbumImageTag { get; init; }
+
     /// <summary>Gets the track's artists (may differ from the album artist on compilations).</summary>
     public IReadOnlyList<ArtistRef> Artists { get; init; } = [];
 

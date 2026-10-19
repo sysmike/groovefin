@@ -132,6 +132,8 @@
                             <ListView
                                 x:Uid="AlbumTracks"
                                 ContextRequested="OnTrackContextRequested"
+                                IsItemClickEnabled="True"
+                                ItemClick="OnTrackClick"
                                 ItemsSource="{x:Bind Tracks}"
                                 ScrollViewer.VerticalScrollMode="Disabled"
                                 SelectionMode="None">
