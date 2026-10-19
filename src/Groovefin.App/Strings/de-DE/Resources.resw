@@ -241,6 +241,63 @@
   <data name="SectionTitle_album" xml:space="preserve">
     <value>Album</value>
   </data>
+  <data name="AlbumKind.Text" xml:space="preserve">
+    <value>ALBUM</value>
+  </data>
+  <data name="AlbumPlayText.Text" xml:space="preserve">
+    <value>Wiedergeben</value>
+  </data>
+  <data name="AlbumPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Album wiedergeben</value>
+  </data>
+  <data name="AlbumShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zufallswiedergabe</value>
+  </data>
+  <data name="AlbumShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zufallswiedergabe</value>
+  </data>
+  <data name="AlbumQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zur Warteschlange hinzufügen</value>
+  </data>
+  <data name="AlbumQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zur Warteschlange hinzufügen</value>
+  </data>
+  <data name="AlbumFavouriteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
+  <data name="AlbumFavouriteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
+  <data name="AlbumTracks.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="AlbumLoadFailed.Text" xml:space="preserve">
+    <value>Dieses Album konnte nicht geladen werden.</value>
+  </data>
+  <data name="Album_TrackCount" xml:space="preserve">
+    <value>{0} Titel</value>
+  </data>
+  <data name="Album_TrackCountOne" xml:space="preserve">
+    <value>{0} Titel</value>
+  </data>
+  <data name="Album_Disc" xml:space="preserve">
+    <value>CD {0}</value>
+  </data>
+  <data name="Duration_HoursMinutes" xml:space="preserve">
+    <value>{0} Std. {1} Min.</value>
+  </data>
+  <data name="Duration_Minutes" xml:space="preserve">
+    <value>{0} Min.</value>
+  </data>
+  <data name="Operation_LoadAlbum" xml:space="preserve">
+    <value>Das Album konnte nicht geladen werden</value>
+  </data>
+  <data name="Operation_SetFavourite" xml:space="preserve">
+    <value>Favoriten konnten nicht geändert werden</value>
+  </data>
+  <data name="SectionTitle_artist" xml:space="preserve">
+    <value>Interpret</value>
+  </data>
   <data name="ServersHeader.Text" xml:space="preserve">
     <value>Server</value>
   </data>
