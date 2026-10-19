@@ -68,9 +68,12 @@
         </DataTemplate>
     </UserControl.Resources>
 
+    <!--  Tracks and albums dragged here go into up next, where they are dropped (at the end elsewhere).  -->
     <Grid
+        x:Name="PanelRoot"
         Width="360"
         Padding="16,12,8,0"
+        AllowDrop="True"
         Background="{ThemeResource LayerFillColorDefaultBrush}"
         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
         BorderThickness="1,0,0,0"
@@ -147,7 +150,7 @@
         </SelectorBar>
 
         <Grid Grid.Row="3">
-            <!--  Up next: click plays, drag reorders, context menu (or Shift+F10) moves and removes.  -->
+            <!--  Up next: click plays, drag reorders, context menu (or Shift+F10) moves and removes. Dropped tracks go where they land.  -->
             <ListView
                 x:Name="UpNextList"
                 x:Uid="QueueUpNextList"

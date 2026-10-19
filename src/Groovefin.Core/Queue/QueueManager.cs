@@ -150,6 +150,27 @@ public sealed class QueueManager
     }
 
     /// <summary>
+    /// Inserts <paramref name="tracks"/> among the upcoming entries: at <paramref name="position"/> 0 they
+    /// play next, at the number of upcoming entries (or more) they go last. With shuffle on, the original
+    /// order gets them before the entry they now precede.
+    /// </summary>
+    public void InsertUpcoming(IEnumerable<Track> tracks, int position)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(position);
+        var items = Wrap(tracks);
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        var index = CurrentIndex + 1 + Math.Min(position, _order.Count - CurrentIndex - 1);
+        var following = index < _order.Count ? _order[index] : null;
+        _order.InsertRange(index, items);
+        _original.InsertRange(following is null ? _original.Count : _original.IndexOf(following), items);
+        OnChanged();
+    }
+
+    /// <summary>
     /// Removes an entry. When it is the current entry, the next one becomes current (or the previous one
     /// when it was the last). Returns <see langword="false"/> when the entry is not in the queue.
     /// </summary>

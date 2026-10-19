@@ -1271,4 +1271,11 @@
   <data name="Operation_LoadSongs" xml:space="preserve">
     <value>Couldn't load songs</value>
   </data>
+  <data name="Drag_AddToQueue" xml:space="preserve">
+    <value>Add to queue</value>
+  </data>
+  <data name="Drag_AddToPlaylist" xml:space="preserve">
+    <value>Add to {0}</value>
+    <comment>{0} = playlist name</comment>
+  </data>
 </root>

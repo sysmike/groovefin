@@ -14,7 +14,7 @@
     <Page.Resources>
         <!--  Grid: square cover, name, artist.  -->
         <DataTemplate x:Key="AlbumGridTemplate" x:DataType="vm:AlbumItem">
-            <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
+            <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
                 <StackPanel Width="168" Padding="0,0,0,8" Spacing="6">
                     <Grid
                         Height="168"
@@ -46,7 +46,7 @@
 
         <!--  List: thumbnail, name, artist, year.  -->
         <DataTemplate x:Key="AlbumListTemplate" x:DataType="vm:AlbumItem">
-            <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
+            <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
                 <Grid Padding="8,4" ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="40" />

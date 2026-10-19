@@ -257,8 +257,9 @@ public sealed partial class SongsViewModel : ObservableObject, IDisposable
     public void ResizeColumn(SongColumnViewModel column, double width)
     {
         ArgumentNullException.ThrowIfNull(column);
+        // Whole pixels: smaller changes are not worth a layout pass.
         var clamped = Math.Clamp(Math.Round(width), MinColumnWidth, MaxColumnWidth);
-        if (clamped != column.Width)
+        if (Math.Abs(clamped - column.Width) >= 1)
         {
             column.Width = clamped;
             LayoutChanged?.Invoke(this, EventArgs.Empty);

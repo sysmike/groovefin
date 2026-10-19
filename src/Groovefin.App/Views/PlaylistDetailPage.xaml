@@ -104,6 +104,7 @@
 
         <!--  Entries: click plays from there, drag reorders, the context menu (or Shift+F10) moves and removes.  -->
         <ListView
+            controls:TrackDragSource.IsEnabled="True"
             x:Name="EntriesList"
             x:Uid="PlaylistEntries"
             Grid.Row="1"

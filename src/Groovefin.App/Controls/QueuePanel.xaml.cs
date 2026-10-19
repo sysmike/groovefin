@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,12 +7,14 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Foundation;
 
 namespace Groovefin.App.Controls;
 
 /// <summary>
 /// The queue on the right of the window: the playing entry, up next (click plays, drag or the context
 /// menu reorders, the context menu removes) and history. Opened with Ctrl+Q or the now playing bar.
+/// Tracks and albums dragged onto the panel are inserted into up next where they are dropped.
 /// </summary>
 internal sealed partial class QueuePanel : UserControl
 {
@@ -27,6 +30,10 @@ internal sealed partial class QueuePanel : UserControl
         ViewModel = App.Services.GetRequiredService<QueueViewModel>();
         _strings = App.Services.GetRequiredService<IStringResources>();
         InitializeComponent();
+
+        // Also when the up next list handled the event first (it reorders its own rows).
+        PanelRoot.AddHandler(DragOverEvent, new DragEventHandler(OnTrackDragOver), true);
+        PanelRoot.AddHandler(DropEvent, new DragEventHandler(OnTrackDrop), true);
 
         Loaded += OnLoaded;
         Unloaded += (_, _) => ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
@@ -96,6 +103,57 @@ internal sealed partial class QueuePanel : UserControl
         {
             ViewModel.MoveUpcoming(entry, ViewModel.Upcoming.IndexOf(entry));
         }
+    }
+
+    private void OnTrackDragOver(object sender, DragEventArgs e)
+    {
+        if (e.DataView.Contains(TrackDrag.DataFormat))
+        {
+            e.AcceptedOperation = DataPackageOperation.Copy;
+            e.DragUIOverride.Caption = _strings.GetString("Drag_AddToQueue");
+        }
+    }
+
+    private async void OnTrackDrop(object sender, DragEventArgs e)
+    {
+        if (!e.DataView.Contains(TrackDrag.DataFormat))
+        {
+            return;
+        }
+
+        var position = DropPosition(e.GetPosition(UpNextList));
+        var deferral = e.GetDeferral();
+        try
+        {
+            await App.Services.GetRequiredService<TrackDrag>().DropOnQueueAsync(await TrackDragSource.TokenAsync(e.DataView), position);
+        }
+        finally
+        {
+            deferral.Complete();
+        }
+    }
+
+    /// <summary>The up next position under <paramref name="point"/> (list coordinates): before the row whose upper half it is in, else last.</summary>
+    private int DropPosition(Point point)
+    {
+        if (UpNextList.Visibility != Visibility.Visible)
+        {
+            return ViewModel.Upcoming.Count;
+        }
+
+        for (var i = 0; i < ViewModel.Upcoming.Count; i++)
+        {
+            if (UpNextList.ContainerFromIndex(i) is FrameworkElement row)
+            {
+                var top = row.TransformToVisual(UpNextList).TransformPoint(default).Y;
+                if (point.Y < top + (row.ActualHeight / 2))
+                {
+                    return i;
+                }
+            }
+        }
+
+        return ViewModel.Upcoming.Count;
     }
 
     private void OnCurrentContextRequested(UIElement sender, ContextRequestedEventArgs e)

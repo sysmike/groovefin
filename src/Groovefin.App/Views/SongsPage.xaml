@@ -119,6 +119,7 @@
                     Drop="OnHeaderDrop" />
 
                 <ListView
+                    controls:TrackDragSource.IsEnabled="True"
                     x:Name="SongsList"
                     x:Uid="SongsList"
                     Grid.Row="1"

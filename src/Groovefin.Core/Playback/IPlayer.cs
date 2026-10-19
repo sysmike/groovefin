@@ -25,6 +25,9 @@ public interface IPlayer
     /// <summary>Adds <paramref name="tracks"/> to the end of the queue.</summary>
     void AddToQueue(IReadOnlyList<Track> tracks);
 
+    /// <summary>Inserts <paramref name="tracks"/> at <paramref name="position"/> among the upcoming tracks (0 plays them next).</summary>
+    void InsertIntoQueue(IReadOnlyList<Track> tracks, int position);
+
     void TogglePlayPause();
 
     void Next();
