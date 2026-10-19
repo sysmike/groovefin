@@ -8,6 +8,7 @@
     xmlns:controls="using:Groovefin.App.Controls"
     xmlns:conv="using:Groovefin.App.Converters"
     xmlns:notifications="using:Groovefin.Core.Notifications"
+    xmlns:vm="using:Groovefin.Core.ViewModels"
     mc:Ignorable="d">
 
     <Grid x:Name="RootGrid">
@@ -52,9 +53,38 @@
                     MaxWidth="{StaticResource SearchBoxMaxWidth}"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Center"
+                    ItemsSource="{x:Bind Suggestions.Suggestions}"
                     QueryIcon="Find"
                     QuerySubmitted="OnSearchQuerySubmitted"
-                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
+                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}"
+                    TextChanged="OnSearchTextChanged"
+                    TextMemberPath="Title">
+                    <AutoSuggestBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SearchSuggestion">
+                            <Grid
+                                Padding="0,4"
+                                AutomationProperties.Name="{x:Bind AccessibleName}"
+                                ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <FontIcon
+                                    FontSize="16"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Glyph="{x:Bind conv:Glyphs.Suggestion(Kind)}" />
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind Subtitle}"
+                                        TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </AutoSuggestBox.ItemTemplate>
+                </AutoSuggestBox>
             </TitleBar.Content>
         </TitleBar>
 
