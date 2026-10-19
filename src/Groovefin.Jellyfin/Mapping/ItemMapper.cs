@@ -44,6 +44,21 @@ internal static class ItemMapper
         };
     }
 
+    public static Artist ToArtist(BaseItemDto dto)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        return new Artist
+        {
+            Id = FormatId(dto.Id) ?? throw new ArgumentException("Artist without ID.", nameof(dto)),
+            Name = dto.Name ?? string.Empty,
+            PrimaryImageTag = PrimaryImageTag(dto),
+            IsFavorite = dto.UserData?.IsFavorite ?? false,
+            Biography = PlainText.FromHtml(dto.Overview),
+            Genres = dto.Genres?.Where(g => !string.IsNullOrWhiteSpace(g)).ToList() ?? [],
+        };
+    }
+
     /// <summary>Formats a Jellyfin ID the way the server writes it in URLs (32 hex digits).</summary>
     public static string? FormatId(Guid? id) => id is { } value && value != Guid.Empty ? value.ToString("N") : null;
 

@@ -406,6 +406,138 @@
   <data name="SettingsSignOutButton.Content" xml:space="preserve">
     <value>Abmelden</value>
   </data>
+  <data name="ArtistsHeader.Text" xml:space="preserve">
+    <value>Künstler</value>
+  </data>
+  <data name="Artists_Count" xml:space="preserve">
+    <value>{0} Künstler</value>
+  </data>
+  <data name="ArtistsSortBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Sortieren nach</value>
+  </data>
+  <data name="ArtistsSortBox.PlaceholderText" xml:space="preserve">
+    <value>Sortieren nach</value>
+  </data>
+  <data name="ArtistSort_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="ArtistSort_DateAdded" xml:space="preserve">
+    <value>Hinzugefügt am</value>
+  </data>
+  <data name="ArtistSort_PlayCount" xml:space="preserve">
+    <value>Wiedergaben</value>
+  </data>
+  <data name="ArtistSort_Random" xml:space="preserve">
+    <value>Zufällig</value>
+  </data>
+  <data name="ArtistsDescendingToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Absteigende Reihenfolge</value>
+  </data>
+  <data name="ArtistsDescendingToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Absteigende Reihenfolge</value>
+  </data>
+  <data name="ArtistsFavouritesToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Nur Favoriten</value>
+  </data>
+  <data name="ArtistsFavouritesToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Nur Favoriten</value>
+  </data>
+  <data name="ArtistsGridViewToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Rasteransicht</value>
+  </data>
+  <data name="ArtistsGridViewToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Rasteransicht</value>
+  </data>
+  <data name="ArtistsListViewToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Listenansicht</value>
+  </data>
+  <data name="ArtistsListViewToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Listenansicht</value>
+  </data>
+  <data name="ArtistsScopeBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Welche Künstler</value>
+  </data>
+  <data name="ArtistsScopeAlbumArtists.Text" xml:space="preserve">
+    <value>Albuminterpreten</value>
+  </data>
+  <data name="ArtistsScopeAll.Text" xml:space="preserve">
+    <value>Alle Künstler</value>
+  </data>
+  <data name="ArtistsView.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Künstler</value>
+  </data>
+  <data name="ArtistsEmpty.Text" xml:space="preserve">
+    <value>Keine passenden Künstler.</value>
+  </data>
+  <data name="ArtistKind.Text" xml:space="preserve">
+    <value>Künstler</value>
+  </data>
+  <data name="ArtistPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Wiedergeben</value>
+  </data>
+  <data name="ArtistPlayText.Text" xml:space="preserve">
+    <value>Wiedergeben</value>
+  </data>
+  <data name="ArtistShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zufallswiedergabe</value>
+  </data>
+  <data name="ArtistShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zufallswiedergabe</value>
+  </data>
+  <data name="ArtistFavouriteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
+  <data name="ArtistFavouriteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
+  <data name="ArtistLoadFailed.Text" xml:space="preserve">
+    <value>Dieser Künstler konnte nicht geladen werden.</value>
+  </data>
+  <data name="ArtistBiographyHeader.Text" xml:space="preserve">
+    <value>Über</value>
+  </data>
+  <data name="ArtistBiographyMore.Content" xml:space="preserve">
+    <value>Mehr anzeigen</value>
+  </data>
+  <data name="Artist_BiographyMore" xml:space="preserve">
+    <value>Mehr anzeigen</value>
+  </data>
+  <data name="Artist_BiographyLess" xml:space="preserve">
+    <value>Weniger anzeigen</value>
+  </data>
+  <data name="ArtistTopTracksHeader.Text" xml:space="preserve">
+    <value>Top-Titel</value>
+  </data>
+  <data name="ArtistTopTracks.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Top-Titel</value>
+  </data>
+  <data name="ArtistAlbumsHeader.Text" xml:space="preserve">
+    <value>Alben</value>
+  </data>
+  <data name="ArtistAlbums.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Alben</value>
+  </data>
+  <data name="ArtistAppearsOnHeader.Text" xml:space="preserve">
+    <value>Mitwirkend bei</value>
+  </data>
+  <data name="ArtistAppearsOn.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mitwirkend bei</value>
+  </data>
+  <data name="ArtistSimilarHeader.Text" xml:space="preserve">
+    <value>Ähnliche Künstler</value>
+  </data>
+  <data name="ArtistSimilar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Ähnliche Künstler</value>
+  </data>
+  <data name="Menu_GoToArtist" xml:space="preserve">
+    <value>Zu {0} wechseln</value>
+  </data>
+  <data name="Operation_LoadArtists" xml:space="preserve">
+    <value>Künstler konnten nicht geladen werden</value>
+  </data>
+  <data name="Operation_LoadArtist" xml:space="preserve">
+    <value>Künstler konnte nicht geladen werden</value>
+  </data>
   <data name="HomeHeader.Text" xml:space="preserve">
     <value>Start</value>
   </data>

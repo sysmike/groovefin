@@ -23,6 +23,9 @@ public sealed record TrackItem(Track Track, string? Artist)
 
     public bool HasArtist => !string.IsNullOrEmpty(Artist);
 
+    /// <summary>Gets the track's artists as links; empty when the row does not show them.</summary>
+    public IReadOnlyList<ArtistRef> ArtistLinks => HasArtist ? Track.Artists : [];
+
     /// <summary>Gets the text Narrator reads, e.g. "3, Digital Love, 4:58".</summary>
     public string AccessibleName =>
         string.Join(", ", new[] { Number, Name, Artist ?? string.Empty, Duration }.Where(s => s.Length > 0));

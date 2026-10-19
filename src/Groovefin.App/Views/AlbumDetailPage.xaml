@@ -130,6 +130,7 @@
                                 Visibility="{x:Bind HasHeader}" />
                             <ListView
                                 x:Uid="AlbumTracks"
+                                ContextRequested="OnTrackContextRequested"
                                 ItemsSource="{x:Bind Tracks}"
                                 ScrollViewer.VerticalScrollMode="Disabled"
                                 SelectionMode="None">
@@ -151,12 +152,23 @@
                                                 Text="{x:Bind Number}" />
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                 <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock
-                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                    Style="{StaticResource CaptionTextBlockStyle}"
-                                                    Text="{x:Bind Artist}"
-                                                    TextTrimming="CharacterEllipsis"
-                                                    Visibility="{x:Bind HasArtist}" />
+                                                <!--  Track artists as links (compilations, features); also in the row's context menu.  -->
+                                                <ItemsRepeater ItemsSource="{x:Bind ArtistLinks}" Visibility="{x:Bind HasArtist}">
+                                                    <ItemsRepeater.Layout>
+                                                        <StackLayout Orientation="Horizontal" Spacing="2" />
+                                                    </ItemsRepeater.Layout>
+                                                    <ItemsRepeater.ItemTemplate>
+                                                        <DataTemplate x:DataType="models:ArtistRef">
+                                                            <HyperlinkButton
+                                                                Padding="0"
+                                                                Click="OnArtistClick"
+                                                                FontSize="12"
+                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                                                                <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                                            </HyperlinkButton>
+                                                        </DataTemplate>
+                                                    </ItemsRepeater.ItemTemplate>
+                                                </ItemsRepeater>
                                             </StackPanel>
                                             <TextBlock
                                                 Grid.Column="2"
