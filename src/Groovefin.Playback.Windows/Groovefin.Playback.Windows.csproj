@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(GroovefinWindowsTargetFramework)</TargetFramework>
+    <TargetPlatformMinVersion>$(GroovefinWindowsMinVersion)</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>$(GroovefinWindowsMinVersion)</SupportedOSPlatformVersion>
+    <RootNamespace>Groovefin.Playback.Windows</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Groovefin.Core\Groovefin.Core.csproj" />
+  </ItemGroup>
+
+</Project>

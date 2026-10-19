@@ -1,0 +1,33 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Deterministic>true</Deterministic>
+
+    <Product>Groovefin</Product>
+    <Company>Groovefin contributors</Company>
+    <Copyright>Copyright (c) Groovefin contributors</Copyright>
+    <NeutralLanguage>en-US</NeutralLanguage>
+
+    <!-- Lets the Windows-only projects restore and build on Linux/macOS (CI format and test jobs). -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <!-- NuGet lock files; CI restores in locked mode so dependency drift fails the build. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <RestoreLockedMode>true</RestoreLockedMode>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Windows target used by every project that needs WinRT APIs. -->
+    <GroovefinWindowsTargetFramework>net10.0-windows10.0.22000.0</GroovefinWindowsTargetFramework>
+    <GroovefinWindowsMinVersion>10.0.22000.0</GroovefinWindowsMinVersion>
+  </PropertyGroup>
+</Project>
