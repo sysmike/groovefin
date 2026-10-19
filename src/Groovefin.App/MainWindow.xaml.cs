@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Groovefin.App.Services;
 using Groovefin.Core.Navigation;
+using Groovefin.Core.Notifications;
 using Groovefin.Core.ViewModels;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
@@ -91,6 +92,14 @@ internal sealed partial class MainWindow : Window
         if (ViewModel.SubmitSearchCommand.CanExecute(null))
         {
             ViewModel.SubmitSearchCommand.Execute(null);
+        }
+    }
+
+    private void OnNotificationCloseButtonClick(InfoBar sender, object args)
+    {
+        if (sender.DataContext is AppNotification notification)
+        {
+            ViewModel.DismissNotificationCommand.Execute(notification);
         }
     }
 

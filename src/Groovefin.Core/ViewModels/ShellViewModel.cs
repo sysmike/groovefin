@@ -1,25 +1,33 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Groovefin.Core.Navigation;
+using Groovefin.Core.Notifications;
 using Groovefin.Core.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>
-/// State of the main window: current section, back navigation and the title-bar search box.
+/// State of the main window: current section, back navigation, the title-bar search box and the
+/// notification area.
 /// </summary>
 public sealed partial class ShellViewModel : ObservableObject, IDisposable
 {
     private readonly INavigationService _navigation;
+    private readonly INotificationService _notifications;
     private readonly ILogger<ShellViewModel> _logger;
 
-    public ShellViewModel(INavigationService navigation, ILogger<ShellViewModel> logger)
+    public ShellViewModel(INavigationService navigation, INotificationService notifications, ILogger<ShellViewModel> logger)
     {
         _navigation = navigation;
+        _notifications = notifications;
         _logger = logger;
         _navigation.Navigated += OnNavigated;
     }
+
+    /// <summary>Gets the notifications shown above the page content.</summary>
+    public ReadOnlyObservableCollection<AppNotification> Notifications => _notifications.Notifications;
 
     /// <summary>Gets the key of the selected main section, or <see langword="null"/> when another page is shown.</summary>
     [ObservableProperty]
@@ -46,6 +54,9 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
 
         _navigation.NavigateTo(pageKey);
     }
+
+    [RelayCommand]
+    private void DismissNotification(AppNotification notification) => _notifications.Dismiss(notification);
 
     [RelayCommand(CanExecute = nameof(CanGoBack))]
     private void GoBack() => _navigation.GoBack();

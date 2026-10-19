@@ -5,6 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:conv="using:Groovefin.App.Converters"
+    xmlns:notifications="using:Groovefin.Core.Notifications"
     mc:Ignorable="d">
 
     <Grid x:Name="RootGrid">
@@ -98,7 +100,31 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
 
-            <Frame x:Name="ContentFrame" />
+            <Grid>
+                <Frame x:Name="ContentFrame" />
+
+                <!--  Errors and other notifications, newest at the bottom.  -->
+                <ItemsControl
+                    x:Name="NotificationArea"
+                    x:Uid="NotificationArea"
+                    MaxWidth="{StaticResource PageContentMaxWidth}"
+                    Margin="36,12,36,0"
+                    VerticalAlignment="Top"
+                    IsTabStop="False"
+                    ItemsSource="{x:Bind ViewModel.Notifications}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="notifications:AppNotification">
+                            <InfoBar
+                                Title="{x:Bind Title}"
+                                Margin="0,0,0,8"
+                                CloseButtonClick="OnNotificationCloseButtonClick"
+                                IsOpen="True"
+                                Message="{x:Bind Message}"
+                                Severity="{x:Bind conv:NotificationSeverityConverter.ToInfoBarSeverity(Severity)}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
         </NavigationView>
     </Grid>
 </Window>

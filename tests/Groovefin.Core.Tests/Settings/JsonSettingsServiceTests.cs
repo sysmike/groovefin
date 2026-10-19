@@ -1,3 +1,4 @@
+using Groovefin.Core.Notifications;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,7 @@ public sealed class JsonSettingsServiceTests : IDisposable
 {
     private readonly string _directory = Path.Join(Path.GetTempPath(), "groovefin-tests", Guid.NewGuid().ToString("N"));
     private readonly FakeLogger<JsonSettingsService> _logger = new();
+    private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
 
     private string FilePath => Path.Join(_directory, "settings.json");
 
@@ -20,7 +22,7 @@ public sealed class JsonSettingsServiceTests : IDisposable
         }
     }
 
-    private JsonSettingsService CreateSut(string? filePath = null) => new(new SettingsStoreOptions(filePath ?? FilePath), _logger);
+    private JsonSettingsService CreateSut(string? filePath = null) => new(new SettingsStoreOptions(filePath ?? FilePath), _errors, _logger);
 
     private async Task WriteFileAsync(string json)
     {
@@ -196,7 +198,7 @@ public sealed class JsonSettingsServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Save_failure_is_logged_and_keeps_the_in_memory_value()
+    public async Task Save_failure_is_reported_and_keeps_the_in_memory_value()
     {
         // The parent "directory" is a file, so creating the settings directory fails.
         Directory.CreateDirectory(_directory);
@@ -209,7 +211,7 @@ public sealed class JsonSettingsServiceTests : IDisposable
 
         await flush.Should().NotThrowAsync();
         sut.Current.Appearance.Theme.Should().Be(AppTheme.Dark);
-        _logger.Collector.GetSnapshot().Should().Contain(r => r.Level == LogLevel.Error);
+        _errors.Received(1).Report(Arg.Any<IOException>(), Operations.SaveSettings);
     }
 
     [Fact]
