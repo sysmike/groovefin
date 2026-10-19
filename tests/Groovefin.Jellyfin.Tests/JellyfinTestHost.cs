@@ -25,6 +25,8 @@ internal sealed class JellyfinTestHost : IDisposable
 
     public WireMockServer Server { get; }
 
+    public IServiceProvider Services => _services;
+
     public Uri ServerUrl => new(Server.Url!);
 
     public IJellyfinClient Client => _services.GetRequiredService<IJellyfinClient>();
