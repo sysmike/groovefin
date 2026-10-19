@@ -7,10 +7,10 @@ namespace Groovefin.Core.Tests.Settings;
 
 public sealed class JsonSettingsServiceTests : IDisposable
 {
-    private readonly string _directory = Path.Combine(Path.GetTempPath(), "groovefin-tests", Guid.NewGuid().ToString("N"));
+    private readonly string _directory = Path.Join(Path.GetTempPath(), "groovefin-tests", Guid.NewGuid().ToString("N"));
     private readonly FakeLogger<JsonSettingsService> _logger = new();
 
-    private string FilePath => Path.Combine(_directory, "settings.json");
+    private string FilePath => Path.Join(_directory, "settings.json");
 
     public void Dispose()
     {
@@ -200,9 +200,9 @@ public sealed class JsonSettingsServiceTests : IDisposable
     {
         // The parent "directory" is a file, so creating the settings directory fails.
         Directory.CreateDirectory(_directory);
-        var blocker = Path.Combine(_directory, "blocker");
+        var blocker = Path.Join(_directory, "blocker");
         await File.WriteAllTextAsync(blocker, "x", TestContext.Current.CancellationToken);
-        var sut = CreateSut(Path.Combine(blocker, "settings.json"));
+        var sut = CreateSut(Path.Join(blocker, "settings.json"));
 
         sut.Update(s => s with { Appearance = s.Appearance with { Theme = AppTheme.Dark } });
         var flush = () => sut.FlushAsync();
