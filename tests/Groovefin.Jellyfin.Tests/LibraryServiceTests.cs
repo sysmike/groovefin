@@ -319,6 +319,67 @@ public sealed class LibraryServiceTests : IDisposable
         tracks[0].Artists.Should().ContainSingle().Which.Name.Should().Be("Daft Punk");
     }
 
+    [Fact]
+    public async Task GetTracks_pages_through_all_audio_items_with_the_sort_order()
+    {
+        StubItems(new
+        {
+            Items = new object[]
+            {
+                new
+                {
+                    Id = "aaaaaaaa-0000-0000-0000-000000000001",
+                    Name = "One More Time",
+                    Type = "Audio",
+                    AlbumArtist = "Daft Punk",
+                    ProductionYear = 2001,
+                    DateCreated = "2024-05-01T10:00:00.0000000Z",
+                },
+            },
+            TotalRecordCount = 5000,
+            StartIndex = 400,
+        });
+        _host.ConnectAsTestUser();
+
+        var page = await _host.Library.GetTracksAsync(
+            new TrackQuery { StartIndex = 400, Limit = 200, SortBy = TrackSortField.Album, Descending = true },
+            TestContext.Current.CancellationToken);
+
+        page.TotalCount.Should().Be(5000);
+        page.StartIndex.Should().Be(400);
+        var track = page.Items.Should().ContainSingle().Subject;
+        track.AlbumArtist.Should().Be("Daft Punk");
+        track.Year.Should().Be(2001);
+        track.DateAdded.Should().Be(new DateTimeOffset(2024, 5, 1, 10, 0, 0, TimeSpan.Zero));
+        var query = LastQuery();
+        query["includeItemTypes"].Should().Be("Audio");
+        query["recursive"].Should().Be("true");
+        query["startIndex"].Should().Be("400");
+        query["limit"].Should().Be("200");
+        query["sortBy"].Should().Be("Album,ParentIndexNumber,IndexNumber,SortName");
+        query["sortOrder"].Should().Be("Descending");
+        query["fields"].Should().Be("DateCreated");
+        query["enableTotalRecordCount"].Should().Be("true");
+    }
+
+    [Theory]
+    [InlineData(TrackSortField.Name, "SortName")]
+    [InlineData(TrackSortField.Artist, "Artist,Album,ParentIndexNumber,IndexNumber,SortName")]
+    [InlineData(TrackSortField.Duration, "Runtime,SortName")]
+    [InlineData(TrackSortField.DateAdded, "DateCreated,SortName")]
+    [InlineData(TrackSortField.Random, "Random")]
+    public async Task GetTracks_maps_each_sort_order(TrackSortField sortBy, string expected)
+    {
+        StubItems(new { Items = Array.Empty<object>(), TotalRecordCount = 0 });
+        _host.ConnectAsTestUser();
+
+        await _host.Library.GetTracksAsync(new TrackQuery { SortBy = sortBy }, TestContext.Current.CancellationToken);
+
+        var query = LastQuery();
+        query["sortBy"].Should().Be(expected);
+        query["sortOrder"].Should().Be("Ascending");
+    }
+
     [Theory]
     [InlineData(true, "POST")]
     [InlineData(false, "DELETE")]

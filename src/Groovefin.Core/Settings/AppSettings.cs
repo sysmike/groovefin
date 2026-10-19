@@ -80,6 +80,38 @@ public sealed record BrowseSettings
 
     /// <summary>Gets or sets a value indicating whether the artists page lists album artists only.</summary>
     public bool AlbumArtistsOnly { get; set; } = true;
+
+    public TrackSortField SongSort { get; set; } = TrackSortField.Name;
+
+    public bool SongSortDescending { get; set; }
+
+    /// <summary>Gets or sets the songs table columns in display order; empty means the default layout.</summary>
+    public IReadOnlyList<SongColumnSettings> SongColumns { get; set; } = [];
+}
+
+/// <summary>A column of the songs table.</summary>
+public enum SongColumn
+{
+    TrackNumber,
+    Title,
+    Artist,
+    Album,
+    AlbumArtist,
+    Year,
+    Duration,
+    PlayCount,
+    DateAdded,
+}
+
+/// <summary>Width and visibility of one songs table column.</summary>
+public sealed record SongColumnSettings
+{
+    public SongColumn Column { get; set; }
+
+    /// <summary>Gets or sets the width in device-independent pixels.</summary>
+    public double Width { get; set; }
+
+    public bool IsVisible { get; set; } = true;
 }
 
 /// <summary>

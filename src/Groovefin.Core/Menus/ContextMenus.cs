@@ -73,6 +73,19 @@ public sealed class ContextMenus(
         return actions;
     }
 
+    /// <summary>The menu of several selected tracks: playback and add to playlist; one track gets <see cref="ForTrack"/>.</summary>
+    public IReadOnlyList<MenuAction> ForTracks(IReadOnlyList<Track> tracks)
+    {
+        ArgumentNullException.ThrowIfNull(tracks);
+        if (tracks.Count == 1)
+        {
+            return ForTrack(tracks[0]);
+        }
+
+        Task<IReadOnlyList<Track>> Tracks() => Task.FromResult(tracks);
+        return [.. Playback(Tracks), AddTo(Tracks)];
+    }
+
     public IReadOnlyList<MenuAction> ForAlbum(Album album)
     {
         ArgumentNullException.ThrowIfNull(album);

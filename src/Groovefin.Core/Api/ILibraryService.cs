@@ -36,6 +36,10 @@ public interface ILibraryService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<IReadOnlyList<Track>> GetInstantMixAsync(string itemId, int limit, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets one page of all tracks of the music library.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<PagedResult<Track>> GetTracksAsync(TrackQuery query, CancellationToken cancellationToken = default);
+
     /// <summary>Gets one page of artists or album artists.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<PagedResult<Artist>> GetArtistsAsync(ArtistQuery query, CancellationToken cancellationToken = default);
@@ -136,5 +140,31 @@ public enum ArtistSortField
     Name,
     DateAdded,
     PlayCount,
+    Random,
+}
+
+/// <summary>Paging and sorting for <see cref="ILibraryService.GetTracksAsync"/>.</summary>
+public sealed record TrackQuery
+{
+    public int StartIndex { get; init; }
+
+    public int Limit { get; init; } = 200;
+
+    public TrackSortField SortBy { get; init; } = TrackSortField.Name;
+
+    public bool Descending { get; init; }
+}
+
+/// <summary>Track sort orders. Ties are broken by album and track order, then by name.</summary>
+public enum TrackSortField
+{
+    Name,
+    Artist,
+    Album,
+    AlbumArtist,
+    Year,
+    Duration,
+    PlayCount,
+    DateAdded,
     Random,
 }

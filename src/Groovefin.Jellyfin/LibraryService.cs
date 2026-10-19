@@ -127,6 +127,42 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
             isFavourite ? "Adding favourite" : "Removing favourite").ConfigureAwait(false);
     }
 
+    public async Task<PagedResult<Track>> GetTracksAsync(TrackQuery query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfNegative(query.StartIndex);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(query.Limit);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+        var order = query.Descending ? SortOrder.Descending : SortOrder.Ascending;
+
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items.GetAsync(
+                request =>
+                {
+                    var p = request.QueryParameters;
+                    p.UserId = userId;
+                    p.ParentId = LibraryFolder(connection);
+                    p.IncludeItemTypes = [BaseItemKind.Audio];
+                    p.Recursive = true;
+                    p.StartIndex = query.StartIndex;
+                    p.Limit = query.Limit;
+                    p.SortBy = TrackSortFields(query.SortBy);
+                    p.SortOrder = [order];
+                    p.EnableUserData = true;
+                    p.EnableTotalRecordCount = true;
+                    // Primary only: the track DTO then carries AlbumPrimaryImageTag for covers.
+                    p.ImageTypeLimit = 1;
+                    p.EnableImageTypes = [ImageType.Primary];
+                    p.Fields = [ItemFields.DateCreated];
+                },
+                cancellationToken),
+            "Loading tracks").ConfigureAwait(false);
+
+        var items = (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
+        return new PagedResult<Track>(items, result.TotalRecordCount ?? items.Count, result.StartIndex ?? query.StartIndex);
+    }
+
     public async Task<PagedResult<Artist>> GetArtistsAsync(ArtistQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -448,6 +484,20 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         ArtistSortField.DateAdded => [ItemSortBy.DateCreated, ItemSortBy.SortName],
         ArtistSortField.PlayCount => [ItemSortBy.PlayCount, ItemSortBy.SortName],
         ArtistSortField.Random => [ItemSortBy.Random],
+        _ => throw new ArgumentOutOfRangeException(nameof(sortBy), sortBy, null),
+    };
+
+    private static ItemSortBy[] TrackSortFields(TrackSortField sortBy) => sortBy switch
+    {
+        TrackSortField.Name => [ItemSortBy.SortName],
+        TrackSortField.Artist => [ItemSortBy.Artist, ItemSortBy.Album, ItemSortBy.ParentIndexNumber, ItemSortBy.IndexNumber, ItemSortBy.SortName],
+        TrackSortField.Album => [ItemSortBy.Album, ItemSortBy.ParentIndexNumber, ItemSortBy.IndexNumber, ItemSortBy.SortName],
+        TrackSortField.AlbumArtist => [ItemSortBy.AlbumArtist, ItemSortBy.Album, ItemSortBy.ParentIndexNumber, ItemSortBy.IndexNumber, ItemSortBy.SortName],
+        TrackSortField.Year => [ItemSortBy.ProductionYear, ItemSortBy.Album, ItemSortBy.ParentIndexNumber, ItemSortBy.IndexNumber, ItemSortBy.SortName],
+        TrackSortField.Duration => [ItemSortBy.Runtime, ItemSortBy.SortName],
+        TrackSortField.PlayCount => [ItemSortBy.PlayCount, ItemSortBy.SortName],
+        TrackSortField.DateAdded => [ItemSortBy.DateCreated, ItemSortBy.SortName],
+        TrackSortField.Random => [ItemSortBy.Random],
         _ => throw new ArgumentOutOfRangeException(nameof(sortBy), sortBy, null),
     };
 
