@@ -211,4 +211,16 @@ public sealed class ContextMenusTests
 
         _player.ReceivedCalls().Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task Genre_actions_play_its_songs_and_mix_it()
+    {
+        _library.GetGenreTracksAsync("g1", ContextMenus.GenreTrackLimit, Arg.Any<CancellationToken>()).Returns(AlbumTracks);
+
+        var actions = _sut.ForGenre(new Genre("g1", "Electronic"));
+        await Find(actions, MenuActionKind.AddToQueue).InvokeAsync();
+
+        _player.Received(1).AddToQueue(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(AlbumTracks)));
+        actions.Select(a => a.Kind).Should().Equal(MenuActionKind.PlayNow, MenuActionKind.PlayNext, MenuActionKind.AddToQueue, MenuActionKind.InstantMix);
+    }
 }

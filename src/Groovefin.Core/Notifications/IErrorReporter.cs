@@ -34,4 +34,6 @@ public static class Operations
     public const string LoadPlaylist = "Operation_LoadPlaylist";
     public const string EditPlaylist = "Operation_EditPlaylist";
     public const string LoadFavourites = "Operation_LoadFavourites";
+    public const string LoadGenres = "Operation_LoadGenres";
+    public const string LoadGenre = "Operation_LoadGenre";
 }

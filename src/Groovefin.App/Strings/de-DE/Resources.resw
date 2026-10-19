@@ -1094,4 +1094,55 @@
   <data name="Info_PlayCount" xml:space="preserve">
     <value>Wiedergaben</value>
   </data>
+  <data name="GenresHeader.Text" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="GenresView.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="GenresEmpty.Text" xml:space="preserve">
+    <value>In dieser Bibliothek gibt es noch keine Genres.</value>
+  </data>
+  <data name="GenreKind.Text" xml:space="preserve">
+    <value>Genre</value>
+  </data>
+  <data name="GenrePlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Genre abspielen</value>
+  </data>
+  <data name="GenrePlayText.Text" xml:space="preserve">
+    <value>Abspielen</value>
+  </data>
+  <data name="GenreShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Genre zufällig abspielen</value>
+  </data>
+  <data name="GenreShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Genre zufällig abspielen</value>
+  </data>
+  <data name="GenreMixButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Instant-Mix aus diesem Genre</value>
+  </data>
+  <data name="GenreMixText.Text" xml:space="preserve">
+    <value>Instant-Mix</value>
+  </data>
+  <data name="GenreLoadFailed.Text" xml:space="preserve">
+    <value>Dieses Genre konnte nicht geladen werden.</value>
+  </data>
+  <data name="GenreAlbumsHeader.Text" xml:space="preserve">
+    <value>Alben</value>
+  </data>
+  <data name="GenreAlbums.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Alben</value>
+  </data>
+  <data name="GenreSongsHeader.Text" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="GenreSongs.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="Operation_LoadGenres" xml:space="preserve">
+    <value>Genres konnten nicht geladen werden</value>
+  </data>
+  <data name="Operation_LoadGenre" xml:space="preserve">
+    <value>Genre konnte nicht geladen werden</value>
+  </data>
 </root>

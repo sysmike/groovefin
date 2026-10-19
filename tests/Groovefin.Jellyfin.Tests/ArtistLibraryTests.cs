@@ -1,4 +1,5 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Models;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 
@@ -192,6 +193,31 @@ public sealed class ArtistLibraryTests : IDisposable
         query["sortOrder"].Should().Be("Descending,Ascending,Ascending,Ascending");
         query["enableImageTypes"].Should().Be("Primary");
         query.Should().NotContainKey("limit");
+    }
+
+    [Fact]
+    public async Task A_genre_is_loaded_by_id()
+    {
+        Stub("/Items/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", new { Id = ArtistId, Name = "Electronic", Type = "MusicGenre" });
+
+        var genre = await _host.Library.GetGenreAsync(ArtistId, Ct);
+
+        genre.Should().Be(new Genre(ArtistId, "Electronic"));
+    }
+
+    [Fact]
+    public async Task Genre_tracks_are_audio_items_of_the_genre_album_by_album()
+    {
+        Stub("/Items", new { Items = new object[] { new { Id = "12121212-2222-3333-4444-555555555555", Name = "Song", Type = "Audio" } } });
+
+        var tracks = await _host.Library.GetGenreTracksAsync(ArtistId, 300, Ct);
+
+        tracks.Should().ContainSingle();
+        var query = LastQuery();
+        Guid.Parse(query["genreIds"]).ToString("N").Should().Be(ArtistId);
+        query["includeItemTypes"].Should().Be("Audio");
+        query["sortBy"].Should().Be("AlbumArtist,Album,ParentIndexNumber,IndexNumber");
+        query["limit"].Should().Be("300");
     }
 
     [Fact]
