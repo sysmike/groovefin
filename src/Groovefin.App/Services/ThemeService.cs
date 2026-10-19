@@ -1,19 +1,26 @@
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 
 namespace Groovefin.App.Services;
 
 /// <summary>
-/// Applies the requested theme to every attached window, including its caption buttons.
-/// High contrast is handled by the theme resources and always takes precedence.
+/// Applies the theme stored in <see cref="ISettingsService"/> to every attached window, including its
+/// caption buttons. High contrast is handled by the theme resources and always takes precedence.
 /// </summary>
-internal sealed class ThemeService : IThemeService
+internal sealed class ThemeService : IThemeService, IDisposable
 {
+    private readonly ISettingsService _settings;
     private readonly List<Window> _windows = [];
 
-    // TODO(#11): persist the selected theme through ISettingsService.
-    public AppTheme Theme { get; private set; } = AppTheme.System;
+    public ThemeService(ISettingsService settings)
+    {
+        _settings = settings;
+        _settings.Changed += OnSettingsChanged;
+    }
+
+    public AppTheme Theme => _settings.Current.Appearance.Theme;
 
     public event EventHandler? ThemeChanged;
 
@@ -24,14 +31,18 @@ internal sealed class ThemeService : IThemeService
         Apply(window);
     }
 
-    public void SetTheme(AppTheme theme)
+    public void SetTheme(AppTheme theme) =>
+        _settings.Update(s => s with { Appearance = s.Appearance with { Theme = theme } });
+
+    public void Dispose() => _settings.Changed -= OnSettingsChanged;
+
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        if (theme == Theme)
+        if (e.OldSettings.Appearance.Theme == e.NewSettings.Appearance.Theme)
         {
             return;
         }
 
-        Theme = theme;
         foreach (var window in _windows)
         {
             Apply(window);
