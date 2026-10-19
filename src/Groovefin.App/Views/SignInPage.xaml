@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="Groovefin.App.Views.SignInPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer>
+        <StackPanel
+            MaxWidth="440"
+            Margin="{StaticResource PageContentMargin}"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Spacing="16">
+            <TextBlock
+                x:Uid="SignInHeader"
+                AutomationProperties.HeadingLevel="Level1"
+                Style="{StaticResource TitleTextBlockStyle}" />
+            <StackPanel Spacing="2">
+                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.ServerName, Mode=OneWay}" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.ServerAddress, Mode=OneWay}" />
+            </StackPanel>
+
+            <InfoBar
+                IsClosable="False"
+                IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                Message="{x:Bind ViewModel.Error, Mode=OneWay}"
+                Severity="Error" />
+
+            <TextBox
+                x:Name="UserNameBox"
+                x:Uid="SignInUserNameBox"
+                InputScope="Default"
+                IsSpellCheckEnabled="False"
+                Text="{x:Bind ViewModel.UserName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <PasswordBox
+                x:Name="PasswordBox"
+                x:Uid="SignInPasswordBox"
+                KeyDown="OnPasswordKeyDown"
+                Password="{x:Bind ViewModel.Password, Mode=TwoWay}" />
+
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button
+                    x:Uid="SignInButton"
+                    Command="{x:Bind ViewModel.SignInCommand}"
+                    Style="{StaticResource AccentButtonStyle}" />
+                <ProgressRing
+                    Width="20"
+                    Height="20"
+                    IsActive="{x:Bind ViewModel.SignInCommand.IsRunning, Mode=OneWay}" />
+            </StackPanel>
+
+            <HyperlinkButton x:Uid="SignInChooseServerLink" Command="{x:Bind ViewModel.ChooseServerCommand}" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

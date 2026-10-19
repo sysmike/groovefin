@@ -9,6 +9,7 @@ namespace Groovefin.Core.Servers;
 public sealed partial class ServerManager(
     ISettingsService settings,
     IJellyfinClient client,
+    IAuthenticationService authentication,
     ICredentialStore credentials,
     ILogger<ServerManager> logger) : IServerManager
 {
@@ -118,12 +119,49 @@ public sealed partial class ServerManager(
         }
     }
 
+    public async Task SignInAsync(string serverId, string userName, string password, CancellationToken cancellationToken = default)
+    {
+        var profile = Find(serverId) ?? throw new InvalidOperationException($"Unknown server {serverId}.");
+        var user = await authentication.SignInAsync(profile.Address, userName, password, cancellationToken).ConfigureAwait(false);
+
+        // Replace the previous user's token on this server, if any.
+        if (profile.UserId is { } previous && previous != user.UserId)
+        {
+            credentials.RemoveAccessToken(profile.Id, previous);
+        }
+
+        credentials.SaveAccessToken(profile.Id, user.UserId, user.AccessToken);
+        var updated = profile with { UserId = user.UserId, UserName = user.UserName };
+        Replace(updated);
+        settings.Update(s => s with { Servers = s.Servers with { ActiveServerId = updated.Id } });
+        client.Connect(new ServerConnection(updated.Address, user.UserId, user.AccessToken));
+
+        LogSignedIn(updated.Name);
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public async Task SignOutAsync(CancellationToken cancellationToken = default)
+    {
+        if (ActiveServer is not { UserId: { } userId } profile)
+        {
+            return;
+        }
+
+        await authentication.SignOutAsync(cancellationToken).ConfigureAwait(false);
+        credentials.RemoveAccessToken(profile.Id, userId);
+        Replace(profile with { UserId = null, UserName = null });
+        client.Disconnect();
+
+        LogSignedOut(profile.Name);
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
     private void Connect(ServerProfile profile)
     {
         var token = profile.UserId is { } userId ? credentials.GetAccessToken(profile.Id, userId) : null;
         if (token is null)
         {
-            // Login (#15) stores a token and connects.
+            // Not signed in (or the token was removed): the shell shows the sign-in page.
             client.Disconnect();
             return;
         }
@@ -150,4 +188,10 @@ public sealed partial class ServerManager(
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Server {Name} removed")]
     private partial void LogRemoved(string name);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Signed in to {Name}")]
+    private partial void LogSignedIn(string name);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Signed out of {Name}")]
+    private partial void LogSignedOut(string name);
 }

@@ -17,6 +17,7 @@ public static class PageKeys
     public const string Settings = "settings";
     public const string Album = "album";
     public const string Servers = "servers";
+    public const string SignIn = "signin";
 
     /// <summary>The sections shown in the main navigation, in display order.</summary>
     public static IReadOnlyList<string> MainSections { get; } =

@@ -32,6 +32,24 @@
             </RadioButtons>
 
             <TextBlock
+                x:Uid="SettingsAccountHeader"
+                AutomationProperties.HeadingLevel="Level2"
+                Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind ViewModel.UserName}" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind ViewModel.ServerName}" />
+                </StackPanel>
+                <Button
+                    x:Uid="SettingsSignOutButton"
+                    VerticalAlignment="Center"
+                    Command="{x:Bind ViewModel.SignOutCommand}" />
+            </StackPanel>
+
+            <TextBlock
                 x:Uid="SettingsServersHeader"
                 AutomationProperties.HeadingLevel="Level2"
                 Style="{StaticResource BodyStrongTextBlockStyle}" />

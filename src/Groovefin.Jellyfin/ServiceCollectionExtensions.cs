@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<JellyfinClient>();
         services.AddSingleton<IJellyfinClient>(sp => sp.GetRequiredService<JellyfinClient>());
         services.AddSingleton<ILibraryService, LibraryService>();
+        services.AddSingleton<IAuthenticationService, AuthenticationService>();
         services.AddSingleton<IImageSource, JellyfinImageSource>();
         return services;
     }

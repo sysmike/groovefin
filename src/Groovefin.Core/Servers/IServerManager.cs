@@ -36,4 +36,14 @@ public interface IServerManager
 
     /// <summary>Connects to the active server if possible. Called once at startup.</summary>
     void Restore();
+
+    /// <summary>
+    /// Signs in to a server, stores the access token (never the password), makes the server active and
+    /// connects.
+    /// </summary>
+    /// <exception cref="Api.JellyfinException">Wrong credentials (<c>IsUnauthorized</c>) or the server cannot be reached.</exception>
+    Task SignInAsync(string serverId, string userName, string password, CancellationToken cancellationToken = default);
+
+    /// <summary>Signs out of the active server and deletes its stored token.</summary>
+    Task SignOutAsync(CancellationToken cancellationToken = default);
 }
