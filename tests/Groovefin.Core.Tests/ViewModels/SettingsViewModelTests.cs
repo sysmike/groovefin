@@ -1,4 +1,5 @@
 using Groovefin.Core.Navigation;
+using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 
@@ -8,8 +9,40 @@ public sealed class SettingsViewModelTests
 {
     private readonly IThemeService _themeService = Substitute.For<IThemeService>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
+    private readonly IServerManager _servers = Substitute.For<IServerManager>();
 
-    private SettingsViewModel CreateSut() => new(_themeService, _navigation, new AppVersion("1.0.0", "abc1234"));
+    private SettingsViewModel CreateSut() => new(_themeService, _navigation, _servers, new AppVersion("1.0.0", "abc1234"));
+
+    [Fact]
+    public void Account_shows_the_signed_in_user()
+    {
+        _servers.IsSignedIn.Returns(true);
+        _servers.ActiveServer.Returns(new ServerProfile { Id = "id-a", Name = "Alpha", Address = new Uri("http://alpha"), UserName = "Mike" });
+
+        var sut = CreateSut();
+
+        sut.UserName.Should().Be("Mike");
+        sut.ServerName.Should().Be("Alpha");
+        sut.SignOutCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SignOut_signs_out_and_opens_sign_in()
+    {
+        _servers.IsSignedIn.Returns(true);
+        var sut = CreateSut();
+
+        await sut.SignOutCommand.ExecuteAsync(null);
+
+        await _servers.Received(1).SignOutAsync(Arg.Any<CancellationToken>());
+        _navigation.Received(1).NavigateTo(PageKeys.SignIn);
+    }
+
+    [Fact]
+    public void SignOut_is_disabled_when_nobody_is_signed_in()
+    {
+        CreateSut().SignOutCommand.CanExecute(null).Should().BeFalse();
+    }
 
     [Fact]
     public void ManageServers_opens_the_server_page()

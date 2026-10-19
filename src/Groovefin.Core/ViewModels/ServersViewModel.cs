@@ -60,15 +60,15 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
     private async Task AddAsync(CancellationToken cancellationToken)
     {
         FormError = null;
-        if (await TryAsync(() => _servers.AddAsync(NewAddress, cancellationToken)))
+        ServerProfile? added = null;
+        if (await TryAsync(async () => added = await _servers.AddAsync(NewAddress, cancellationToken)))
         {
             NewAddress = string.Empty;
 
-            // First-run flow: go on as soon as there is a server.
+            // First-run flow: sign in to the first server right away.
             if (Servers.Count == 1)
             {
-                // TODO(#15): continue to sign-in for the new server.
-                _navigation.NavigateTo(PageKeys.Home);
+                _navigation.NavigateTo(PageKeys.SignIn, added!.Id);
             }
         }
     }
@@ -111,6 +111,10 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
         if (!item.IsActive)
         {
             _servers.SetActive(item.Profile.Id);
+            if (!_servers.IsSignedIn)
+            {
+                _navigation.NavigateTo(PageKeys.SignIn, item.Profile.Id);
+            }
         }
     }
 

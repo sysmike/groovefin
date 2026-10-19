@@ -252,4 +252,34 @@
   <data name="SettingsManageServersButton.Content" xml:space="preserve">
     <value>Manage servers</value>
   </data>
+  <data name="SignInHeader.Text" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="SignInUserNameBox.Header" xml:space="preserve">
+    <value>User name</value>
+  </data>
+  <data name="SignInPasswordBox.Header" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="SignInButton.Content" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="SignInChooseServerLink.Content" xml:space="preserve">
+    <value>Use a different server</value>
+  </data>
+  <data name="SignIn_WrongCredentials" xml:space="preserve">
+    <value>The user name or password is wrong.</value>
+  </data>
+  <data name="SignIn_Unreachable" xml:space="preserve">
+    <value>The server can't be reached. Check your network connection and try again.</value>
+  </data>
+  <data name="SignIn_Failed" xml:space="preserve">
+    <value>Signing in didn't work. Try again later.</value>
+  </data>
+  <data name="SettingsAccountHeader.Text" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="SettingsSignOutButton.Content" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
 </root>
