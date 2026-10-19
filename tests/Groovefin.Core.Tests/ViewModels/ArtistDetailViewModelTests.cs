@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -24,6 +26,7 @@ public sealed class ArtistDetailViewModelTests
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
+    private readonly WeakReferenceMessenger _messenger = new();
     private readonly IPlayer _player = Substitute.For<IPlayer>();
 
     public ArtistDetailViewModelTests()
@@ -47,7 +50,7 @@ public sealed class ArtistDetailViewModelTests
 
     private static PagedResult<Album> Page(params Album[] albums) => new(albums, albums.Length, 0);
 
-    private ArtistDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors);
+    private ArtistDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, new FavouritesService(_library, _messenger, _errors), _messenger);
 
     [Fact]
     public async Task Load_fills_header_and_all_sections()
@@ -226,5 +229,19 @@ public sealed class ArtistDetailViewModelTests
 
         new TrackItem(track, "Daft Punk, Romanthony").ArtistLinks.Should().Equal(artists);
         new TrackItem(track, null).ArtistLinks.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_heart_toggled_elsewhere_updates_the_artist()
+    {
+        var sut = CreateSut();
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+        var before = sut.IsFavourite;
+
+        _messenger.Send(new FavouriteChangedMessage("someone-else", !before));
+        sut.IsFavourite.Should().Be(before);
+
+        _messenger.Send(new FavouriteChangedMessage(ArtistId, !before));
+        sut.IsFavourite.Should().Be(!before);
     }
 }

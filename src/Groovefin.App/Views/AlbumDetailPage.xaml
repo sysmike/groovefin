@@ -154,6 +154,7 @@
                                                 <ColumnDefinition Width="32" />
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock
                                                 VerticalAlignment="Center"
@@ -180,8 +181,21 @@
                                                     </ItemsRepeater.ItemTemplate>
                                                 </ItemsRepeater>
                                             </StackPanel>
-                                            <TextBlock
+                                            <ToggleButton
+                                                x:Uid="AlbumTrackFavouriteButton"
                                                 Grid.Column="2"
+                                                Width="32"
+                                                Height="32"
+                                                Padding="0"
+                                                VerticalAlignment="Center"
+                                                Background="{ThemeResource SubtleFillColorTransparentBrush}"
+                                                BorderThickness="0"
+                                                Click="OnTrackFavouriteClick"
+                                                IsChecked="{x:Bind IsFavourite, Mode=OneWay}">
+                                                <FontIcon FontSize="12" Glyph="{x:Bind conv:Glyphs.Heart(IsFavourite), Mode=OneWay}" />
+                                            </ToggleButton>
+                                            <TextBlock
+                                                Grid.Column="3"
                                                 VerticalAlignment="Center"
                                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                 Text="{x:Bind Duration}" />

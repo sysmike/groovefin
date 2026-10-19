@@ -28,6 +28,10 @@ public interface ILibraryService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task SetFavouriteAsync(string itemId, bool isFavourite, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets up to <paramref name="limit"/> favourite tracks of the music library, by name.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<Track>> GetFavouriteTracksAsync(int limit, CancellationToken cancellationToken = default);
+
     /// <summary>Gets one page of artists or album artists.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<PagedResult<Artist>> GetArtistsAsync(ArtistQuery query, CancellationToken cancellationToken = default);

@@ -983,4 +983,61 @@
   <data name="Operation_EditPlaylist" xml:space="preserve">
     <value>Playlist konnte nicht geändert werden</value>
   </data>
+  <data name="FavouritesHeader.Text" xml:space="preserve">
+    <value>Favoriten</value>
+  </data>
+  <data name="FavouritesPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lieblingstitel abspielen</value>
+  </data>
+  <data name="FavouritesPlayText.Text" xml:space="preserve">
+    <value>Abspielen</value>
+  </data>
+  <data name="FavouritesShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lieblingstitel zufällig abspielen</value>
+  </data>
+  <data name="FavouritesShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Lieblingstitel zufällig abspielen</value>
+  </data>
+  <data name="FavouritesSongsTab.Text" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="FavouritesAlbumsTab.Text" xml:space="preserve">
+    <value>Alben</value>
+  </data>
+  <data name="FavouritesArtistsTab.Text" xml:space="preserve">
+    <value>Interpreten</value>
+  </data>
+  <data name="FavouritesSongs.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lieblingstitel</value>
+  </data>
+  <data name="FavouritesAlbums.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lieblingsalben</value>
+  </data>
+  <data name="FavouritesArtists.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lieblingsinterpreten</value>
+  </data>
+  <data name="FavouritesRemoveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Aus den Favoriten entfernen</value>
+  </data>
+  <data name="FavouritesRemoveButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Aus den Favoriten entfernen</value>
+  </data>
+  <data name="AlbumTrackFavouriteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
+  <data name="AlbumTrackFavouriteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
+  <data name="Favourites_NoSongs" xml:space="preserve">
+    <value>Noch keine Lieblingstitel. Tippe auf das Herz neben einem Titel, um ihn hinzuzufügen.</value>
+  </data>
+  <data name="Favourites_NoAlbums" xml:space="preserve">
+    <value>Noch keine Lieblingsalben. Tippe auf das Herz auf der Seite eines Albums.</value>
+  </data>
+  <data name="Favourites_NoArtists" xml:space="preserve">
+    <value>Noch keine Lieblingsinterpreten. Tippe auf das Herz auf der Seite eines Interpreten.</value>
+  </data>
+  <data name="Operation_LoadFavourites" xml:space="preserve">
+    <value>Deine Favoriten konnten nicht geladen werden</value>
+  </data>
 </root>

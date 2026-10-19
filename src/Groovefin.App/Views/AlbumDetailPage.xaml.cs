@@ -89,6 +89,14 @@ internal sealed partial class AlbumDetailPage : Page
             App.Services.GetRequiredService<AddToPlaylist>(),
             App.Services.GetRequiredService<IStringResources>());
 
+    private void OnTrackFavouriteClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is TrackItem item)
+        {
+            ViewModel.ToggleTrackFavouriteCommand.Execute(item);
+        }
+    }
+
     private void OnArtistClick(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is ArtistRef artist)

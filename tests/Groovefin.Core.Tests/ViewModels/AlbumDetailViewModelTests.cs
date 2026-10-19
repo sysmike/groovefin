@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -26,6 +28,7 @@ public sealed class AlbumDetailViewModelTests
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
+    private readonly WeakReferenceMessenger _messenger = new();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
     private readonly IPlayer _player = Substitute.For<IPlayer>();
 
@@ -54,7 +57,7 @@ public sealed class AlbumDetailViewModelTests
         Artists = artists,
     };
 
-    private AlbumDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, _strings);
+    private AlbumDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger);
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -200,5 +203,49 @@ public sealed class AlbumDetailViewModelTests
         CreateSut().OpenArtistCommand.Execute(DaftPunk);
 
         _navigation.Received(1).NavigateTo(PageKeys.Artist, "artist-1");
+    }
+
+    [Fact]
+    public async Task A_track_heart_is_optimistic_and_rolls_back_on_failure()
+    {
+        var sut = CreateSut();
+        await sut.LoadAsync("album-1", Ct);
+        var row = sut.Discs[0].Tracks[0];
+
+        await sut.ToggleTrackFavouriteCommand.ExecuteAsync(row);
+        row.IsFavourite.Should().BeTrue();
+        await _library.Received(1).SetFavouriteAsync("t1", true, Arg.Any<CancellationToken>());
+
+        _library.SetFavouriteAsync("t1", false, Arg.Any<CancellationToken>()).Returns(Task.FromException(new JellyfinException("no")));
+        await sut.ToggleTrackFavouriteCommand.ExecuteAsync(row);
+
+        row.IsFavourite.Should().BeTrue();
+        _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.SetFavourite);
+    }
+
+    [Fact]
+    public async Task Hearts_toggled_elsewhere_update_the_album_and_its_rows()
+    {
+        var sut = CreateSut();
+        await sut.LoadAsync("album-1", Ct);
+
+        _messenger.Send(new FavouriteChangedMessage("album-1", true));
+        _messenger.Send(new FavouriteChangedMessage("t2", true));
+
+        sut.IsFavourite.Should().BeTrue();
+        sut.Discs[0].Tracks.Select(t => t.IsFavourite).Should().Equal(false, true);
+    }
+
+    [Fact]
+    public async Task Rows_start_with_the_state_saved_in_this_session()
+    {
+        var favourites = new FavouritesService(_library, _messenger, _errors);
+        await favourites.SetAsync("t1", true);
+        var sut = new AlbumDetailViewModel(_library, _player, _navigation, _errors, _strings, favourites, _messenger);
+
+        await sut.LoadAsync("album-1", Ct);
+        await sut.LoadAsync("album-1", Ct);
+
+        sut.Discs[0].Tracks[0].IsFavourite.Should().BeTrue();
     }
 }

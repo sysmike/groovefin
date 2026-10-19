@@ -199,6 +199,36 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         return ItemMapper.ToArtist(dto);
     }
 
+    public async Task<IReadOnlyList<Track>> GetFavouriteTracksAsync(int limit, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items.GetAsync(
+                request =>
+                {
+                    var p = request.QueryParameters;
+                    p.UserId = userId;
+                    p.ParentId = LibraryFolder(connection);
+                    p.IncludeItemTypes = [BaseItemKind.Audio];
+                    p.Recursive = true;
+                    p.Filters = [ItemFilter.IsFavorite];
+                    p.SortBy = [ItemSortBy.SortName];
+                    p.Limit = limit;
+                    p.EnableUserData = true;
+                    // Primary only: the track DTO then carries AlbumPrimaryImageTag for covers.
+                    p.ImageTypeLimit = 1;
+                    p.EnableImageTypes = [ImageType.Primary];
+                    p.EnableTotalRecordCount = false;
+                },
+                cancellationToken),
+            "Loading favourite tracks").ConfigureAwait(false);
+
+        return (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
+    }
+
     public async Task<IReadOnlyList<Track>> GetArtistTopTracksAsync(string artistId, int limit, CancellationToken cancellationToken = default)
     {
         var id = ParseId(artistId);
