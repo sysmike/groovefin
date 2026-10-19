@@ -285,4 +285,139 @@ public sealed class PlaybackEngineBaseTests
 
         source.ToString().Should().Be("7 (One More Time)").And.NotContain("secret-token");
     }
+
+    [Fact]
+    public void SetNext_without_a_source_is_ignored()
+    {
+        _sut.SetNext(Source("b"));
+
+        _sut.Next.Should().BeNull();
+        _sut.SetNextCount.Should().Be(0);
+    }
+
+    [Fact]
+    public void SetNext_queues_and_replaces_the_next_source_once()
+    {
+        _sut.Load(Source("a"));
+        var b = Source("b");
+
+        _sut.SetNext(b);
+        _sut.SetNext(b);
+        _sut.SetNext(null);
+
+        _sut.Next.Should().BeNull();
+        _sut.SetNextCount.Should().Be(2);
+    }
+
+    [Fact]
+    public void Load_and_stop_clear_the_next_source()
+    {
+        _sut.Load(Source("a"));
+        _sut.SetNext(Source("b"));
+        _sut.Load(Source("c"));
+        _sut.Next.Should().BeNull();
+
+        _sut.SetNext(Source("d"));
+        _sut.Stop();
+
+        _sut.Next.Should().BeNull();
+    }
+
+    [Fact]
+    public void Advancing_makes_the_next_source_current_on_the_ui_thread()
+    {
+        _sut.Load(Source("a"));
+        var b = Source("b", seconds: 120);
+        _sut.SetNext(b);
+        _events.Clear();
+
+        _sut.SimulateAdvance();
+        _sut.Current!.Id.Should().Be("a");
+        _dispatcher.RunAll();
+
+        _sut.Current.Should().BeSameAs(b);
+        _sut.Next.Should().BeNull();
+        _sut.Duration.Should().Be(TimeSpan.FromSeconds(120));
+        _events.Should().Equal("current b", "position 0/120");
+    }
+
+    [Fact]
+    public void Advancing_to_a_source_replaced_a_moment_ago_still_follows_the_player()
+    {
+        _sut.Load(Source("a"));
+        var b = Source("b");
+        var c = Source("c");
+        _sut.SetNext(b);
+        _sut.SetNext(c);
+
+        _sut.SimulateAdvance(b);
+        _dispatcher.RunAll();
+
+        _sut.Current.Should().BeSameAs(b);
+        _sut.Next.Should().BeSameAs(c, "the player still has it queued after b");
+    }
+
+    [Fact]
+    public void Advancing_after_a_load_or_stop_is_ignored()
+    {
+        _sut.Load(Source("a"));
+        var b = Source("b");
+        _sut.SetNext(b);
+        _sut.SimulateAdvance(b);
+        _sut.Load(Source("c"));
+        _events.Clear();
+
+        _dispatcher.RunAll();
+
+        _sut.Current!.Id.Should().Be("c");
+        _events.Should().BeEmpty();
+
+        _sut.SetNext(b);
+        _sut.SimulateAdvance(b);
+        _sut.Stop();
+        _dispatcher.RunAll();
+
+        _sut.Current.Should().BeNull();
+    }
+
+    [Fact]
+    public void Advancing_to_an_unknown_source_is_ignored()
+    {
+        _sut.Load(Source("a"));
+        _events.Clear();
+
+        _sut.SimulateAdvance(Source("x"));
+        _dispatcher.RunAll();
+
+        _sut.Current!.Id.Should().Be("a");
+        _events.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void A_next_source_that_fails_to_buffer_is_dropped()
+    {
+        _sut.Load(Source("a"));
+        _sut.SetNext(Source("b"));
+
+        _sut.SimulateNextFailed();
+        _dispatcher.RunAll();
+
+        _sut.Next.Should().BeNull();
+        _sut.SetNextCount.Should().Be(2, "the engine is told to drop it");
+        _sut.Current!.Id.Should().Be("a");
+    }
+
+    [Fact]
+    public void A_buffer_failure_of_a_replaced_next_source_is_ignored()
+    {
+        _sut.Load(Source("a"));
+        _sut.SetNext(Source("b"));
+        _sut.SimulateNextFailed();
+        var c = Source("c");
+        _sut.SetNext(c);
+
+        _dispatcher.RunAll();
+
+        _sut.Next.Should().BeSameAs(c);
+    }
 }

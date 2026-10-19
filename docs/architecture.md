@@ -103,9 +103,9 @@ flowchart TD
 | `ISearchService` | Core | Jellyfin | Grouped search and suggestions. |
 | `ILyricsService` | Core | Jellyfin | Lyrics (synced LRC and plain text). |
 | `IPlaybackReporter` | Core | Jellyfin | `/Sessions/Playing`, `/Progress`, `/Stopped`. |
-| `IPlaybackEngine` | Core | Playback.Windows | Load, play, pause, seek, volume. Events for position, state and track changes. |
+| `IPlaybackEngine` | Core | Playback.Windows | Load, play, pause, seek, volume. Queues the next source (`SetNext`) and moves on to it without a gap (`MediaPlaybackList` with the current and the next item). Events for position, state and track changes. |
 | `QueueManager` | Core | — (concrete, pure) | Queue order, shuffle with stable original order, repeat modes, history. |
-| `IPlayer` | Core | Core (`Player`) | Queue and engine together: play/shuffle/queue tracks, transport, auto-advance, skipping failed tracks. Stream URLs come from `IStreamUrlProvider` with the streaming settings for the active server. |
+| `IPlayer` | Core | Core (`Player`) | Queue and engine together: play/shuffle/queue tracks, transport, auto-advance, skipping failed tracks, keeping the engine's next source on the queue's next entry (gapless). Stream URLs come from `IStreamUrlProvider` with the streaming settings for the active server. |
 | `ISystemMediaControls` | Core | Playback.Windows | Media keys and the Windows media flyout (SMTC of the engine's `MediaPlayer`, its command manager off). `SystemMediaControlsSync` (Core) shows the playing track, status and timeline and sends the buttons to `IPlayer`. |
 | `IStreamUrlProvider` | Core | Jellyfin | `/Audio/{id}/universal` URLs (direct play or transcode, bitrate limit). |
 | `INavigationService` | Core | App | Navigate by ViewModel type + parameter, back stack. |

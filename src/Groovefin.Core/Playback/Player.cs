@@ -10,7 +10,9 @@ namespace Groovefin.Core.Playback;
 /// <summary>
 /// <see cref="IPlayer"/>: keeps the engine on the queue's current entry. Builds stream URLs with the
 /// streaming settings for the active server, moves on when a track ends, and skips tracks that fail
-/// (up to <see cref="MaxConsecutiveFailures"/> in a row, then stops). Use it from the UI thread.
+/// (up to <see cref="MaxConsecutiveFailures"/> in a row, then stops). The entry after the current one is
+/// queued in the engine (<see cref="IPlaybackEngine.SetNext"/>) so it follows without a gap; when the
+/// engine moves on by itself, the queue follows. Use it from the UI thread.
 /// </summary>
 public sealed partial class Player : IPlayer, IDisposable
 {
@@ -29,6 +31,7 @@ public sealed partial class Player : IPlayer, IDisposable
     private string? _loadedItemId;
     private int _failures;
     private bool _driving;
+    private bool _loading;
 
     public Player(
         QueueManager queue,
@@ -51,6 +54,7 @@ public sealed partial class Player : IPlayer, IDisposable
 
         Engine.Ended += OnEnded;
         Engine.Failed += OnFailed;
+        Engine.CurrentChanged += OnEngineCurrentChanged;
         Queue.Changed += OnQueueChanged;
     }
 
@@ -86,9 +90,17 @@ public sealed partial class Player : IPlayer, IDisposable
         LoadCurrent();
     }
 
-    public void PlayNext(IReadOnlyList<Track> tracks) => Drive(() => Queue.PlayNext(tracks));
+    public void PlayNext(IReadOnlyList<Track> tracks)
+    {
+        Drive(() => Queue.PlayNext(tracks));
+        UpdateNext();
+    }
 
-    public void AddToQueue(IReadOnlyList<Track> tracks) => Drive(() => Queue.AddLast(tracks));
+    public void AddToQueue(IReadOnlyList<Track> tracks)
+    {
+        Drive(() => Queue.AddLast(tracks));
+        UpdateNext();
+    }
 
     public void TogglePlayPause()
     {
@@ -148,6 +160,7 @@ public sealed partial class Player : IPlayer, IDisposable
     {
         Engine.Ended -= OnEnded;
         Engine.Failed -= OnFailed;
+        Engine.CurrentChanged -= OnEngineCurrentChanged;
         Queue.Changed -= OnQueueChanged;
     }
 
@@ -172,15 +185,44 @@ public sealed partial class Player : IPlayer, IDisposable
         Advance(() => Queue.Next());
     }
 
+    /// <summary>The engine moved on to the queued next entry by itself (gapless): the queue follows.</summary>
+    private void OnEngineCurrentChanged(object? sender, EventArgs e)
+    {
+        if (_loading || Engine.Current is not { } source || _loadedItemId is null)
+        {
+            // Our own load or stop, or a stop from outside (closing the app).
+            return;
+        }
+
+        _failures = 0;
+        QueueItem? next = null;
+        Drive(() => next = Queue.TrackEnded());
+        if (next?.Id == source.Id)
+        {
+            _loadedItemId = source.Id;
+            UpdateNext();
+        }
+        else
+        {
+            // The queue changed while the engine moved on: play what it says now.
+            LoadCurrent();
+        }
+    }
+
     /// <summary>Follows changes made by others (e.g. the queue panel removed the playing entry).</summary>
     private void OnQueueChanged(object? sender, EventArgs e)
     {
-        if (_driving || Engine.Current is null || Queue.Current?.Id == _loadedItemId)
+        if (_driving || Engine.Current is null)
         {
             return;
         }
 
-        if (Queue.Current is null)
+        if (Queue.Current?.Id == _loadedItemId)
+        {
+            // Reordered, shuffled, repeat changed or entries added: the entry after this one may differ.
+            UpdateNext();
+        }
+        else if (Queue.Current is null)
         {
             Stop();
         }
@@ -215,16 +257,60 @@ public sealed partial class Player : IPlayer, IDisposable
 
         try
         {
-            var server = _client.Connection?.ServerUrl ?? throw new InvalidOperationException("Not connected to a server.");
-            var url = _streams.GetStreamUrl(item.Track.Id, _settings.Current.Streaming.OptionsFor(server));
+            var source = SourceFor(item);
             _loadedItemId = item.Id;
-            Engine.Load(new PlaybackSource(item.Id, url, item.Track), autoPlay);
+            _loading = true;
+            try
+            {
+                Engine.Load(source, autoPlay);
+            }
+            finally
+            {
+                _loading = false;
+            }
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
             _errors.Report(ex, Operations.Playback);
             Stop();
+            return;
         }
+
+        UpdateNext();
+    }
+
+    /// <summary>Queues the entry after the current one in the engine, unless it is queued already.</summary>
+    private void UpdateNext()
+    {
+        if (Engine.Current is null)
+        {
+            return;
+        }
+
+        var item = Queue.PeekNext();
+        if (item?.Id == Engine.Next?.Id)
+        {
+            return;
+        }
+
+        try
+        {
+            Engine.SetNext(item is null ? null : SourceFor(item));
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+        {
+            // Not gapless then: the next entry loads (and reports its error) when this one ends.
+            LogNextFailed(ex, item!.Id);
+            Engine.SetNext(null);
+        }
+    }
+
+    /// <exception cref="InvalidOperationException">Not connected to a server.</exception>
+    private PlaybackSource SourceFor(QueueItem item)
+    {
+        var server = _client.Connection?.ServerUrl ?? throw new InvalidOperationException("Not connected to a server.");
+        var url = _streams.GetStreamUrl(item.Track.Id, _settings.Current.Streaming.OptionsFor(server));
+        return new PlaybackSource(item.Id, url, item.Track);
     }
 
     private void Stop()
@@ -246,6 +332,9 @@ public sealed partial class Player : IPlayer, IDisposable
             _driving = false;
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Queueing {ItemId} for gapless playback failed")]
+    private partial void LogNextFailed(Exception exception, string itemId);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Playback of {Source} failed: {Message}")]
     private partial void LogPlaybackFailed(Exception? exception, string source, string message);

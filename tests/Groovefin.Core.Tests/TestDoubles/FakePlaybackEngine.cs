@@ -20,11 +20,23 @@ internal sealed class FakePlaybackEngine(IDispatcher? dispatcher = null, TimePro
 
     public void SimulateEnded(PlaybackSource source) => ReportEnded(source);
 
+    /// <summary>Moves on to the queued <see cref="IPlaybackEngine.Next"/>, like a gapless transition.</summary>
+    public void SimulateAdvance() => ReportAdvanced(Next!);
+
+    public void SimulateAdvance(PlaybackSource source) => ReportAdvanced(source);
+
+    public void SimulateNextFailed() => ReportNextFailed(Next!);
+
     public void SimulateFailure(string message = "boom", Exception? exception = null) => ReportFailed(Current!, message, exception);
 
     public void SimulateFailure(PlaybackSource source) => ReportFailed(source, "boom", null);
 
     protected override void LoadCore(PlaybackSource source, bool autoPlay) => Calls.Add($"load {source.Id} autoPlay={autoPlay}");
+
+    /// <summary>Gets how often the queued next source was set or cleared (not recorded in <see cref="Calls"/>).</summary>
+    public int SetNextCount { get; private set; }
+
+    protected override void SetNextCore(PlaybackSource? next) => SetNextCount++;
 
     protected override void PlayCore() => Calls.Add("play");
 

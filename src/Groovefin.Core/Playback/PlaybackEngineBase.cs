@@ -20,6 +20,10 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
     private bool _isMuted;
     private long _lastPositionReport = long.MinValue;
 
+    /// <summary>Sources passed to <see cref="SetNext"/> since the last load, oldest first. The player can
+    /// move on to one that was replaced a moment ago, before the replacement reached it.</summary>
+    private readonly List<PlaybackSource> _queuedNext = [];
+
     public event EventHandler? StateChanged;
 
     public event EventHandler? PositionChanged;
@@ -33,6 +37,8 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
     public PlaybackState State { get; private set; }
 
     public PlaybackSource? Current { get; private set; }
+
+    public PlaybackSource? Next { get; private set; }
 
     public TimeSpan Position { get; private set; }
 
@@ -70,12 +76,29 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
         ArgumentNullException.ThrowIfNull(source);
 
         Current = source;
+        ClearNext();
         Position = TimeSpan.Zero;
         Duration = source.Track.Duration ?? TimeSpan.Zero;
         _lastPositionReport = long.MinValue;
         LoadCore(source, autoPlay);
         CurrentChanged?.Invoke(this, EventArgs.Empty);
         PositionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void SetNext(PlaybackSource? next)
+    {
+        if (Current is null || ReferenceEquals(next, Next))
+        {
+            return;
+        }
+
+        Next = next;
+        if (next is not null)
+        {
+            _queuedNext.Add(next);
+        }
+
+        SetNextCore(next);
     }
 
     public void Play()
@@ -121,6 +144,7 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
 
         StopCore();
         Current = null;
+        ClearNext();
         Position = TimeSpan.Zero;
         Duration = TimeSpan.Zero;
         SetState(PlaybackState.Idle);
@@ -129,6 +153,9 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
     }
 
     protected abstract void LoadCore(PlaybackSource source, bool autoPlay);
+
+    /// <summary>Queues <paramref name="next"/> after the current source, replacing a queued one; <see langword="null"/> clears it.</summary>
+    protected abstract void SetNextCore(PlaybackSource? next);
 
     protected abstract void PlayCore();
 
@@ -185,6 +212,45 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
         }
     });
 
+    /// <summary>
+    /// The player moved on to <paramref name="source"/>, a source queued with <see cref="SetNext"/>, by
+    /// itself. Safe to call from any thread; ignored when a load or stop came first.
+    /// </summary>
+    protected void ReportAdvanced(PlaybackSource source) => Dispatch(() =>
+    {
+        var index = _queuedNext.FindIndex(queued => ReferenceEquals(queued, source));
+        if (Current is null || index < 0)
+        {
+            return;
+        }
+
+        _queuedNext.RemoveRange(0, index + 1);
+        Current = source;
+        if (ReferenceEquals(source, Next))
+        {
+            Next = null;
+        }
+
+        Position = TimeSpan.Zero;
+        Duration = source.Track.Duration ?? TimeSpan.Zero;
+        _lastPositionReport = long.MinValue;
+        CurrentChanged?.Invoke(this, EventArgs.Empty);
+        PositionChanged?.Invoke(this, EventArgs.Empty);
+    });
+
+    /// <summary>
+    /// The player could not pre-buffer <paramref name="source"/>, the queued next source: it is dropped and
+    /// the current source ends normally. Safe to call from any thread.
+    /// </summary>
+    protected void ReportNextFailed(PlaybackSource source) => Dispatch(() =>
+    {
+        if (ReferenceEquals(source, Next))
+        {
+            Next = null;
+            SetNextCore(null);
+        }
+    });
+
     /// <summary>The player could not play <paramref name="source"/>. Safe to call from any thread.</summary>
     protected void ReportFailed(PlaybackSource source, string message, Exception? exception) => Dispatch(() =>
     {
@@ -202,6 +268,12 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
             State = state;
             StateChanged?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    private void ClearNext()
+    {
+        Next = null;
+        _queuedNext.Clear();
     }
 
     private void Dispatch(Action action) => _ = dispatcher.EnqueueAsync(action);
