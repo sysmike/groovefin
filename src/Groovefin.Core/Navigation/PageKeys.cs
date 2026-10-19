@@ -15,6 +15,7 @@ public static class PageKeys
     public const string Favourites = "favourites";
     public const string Search = "search";
     public const string Settings = "settings";
+    public const string Album = "album";
     public const string Servers = "servers";
     public const string SignIn = "signin";
 

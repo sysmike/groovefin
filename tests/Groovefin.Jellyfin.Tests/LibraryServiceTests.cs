@@ -142,4 +142,78 @@ public sealed class LibraryServiceTests : IDisposable
 
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
+
+    [Fact]
+    public async Task GetAlbums_sends_genre_year_and_favourite_filters()
+    {
+        StubItems(AlbumsResponse);
+        _host.ConnectAsTestUser();
+
+        await _host.Library.GetAlbumsAsync(
+            new AlbumQuery
+            {
+                GenreIds = ["aaaaaaaabbbbccccddddeeeeeeeeeeee"],
+                MinYear = 1999,
+                MaxYear = 2001,
+                FavouritesOnly = true,
+            },
+            TestContext.Current.CancellationToken);
+
+        var query = LastQuery();
+        Guid.Parse(query["genreIds"]).ToString("N").Should().Be("aaaaaaaabbbbccccddddeeeeeeeeeeee");
+        query["years"].Should().Be("1999,2000,2001");
+        query["filters"].Should().Be("IsFavorite");
+    }
+
+    [Fact]
+    public async Task GetAlbums_without_filters_sends_none()
+    {
+        StubItems(AlbumsResponse);
+        _host.ConnectAsTestUser();
+
+        await _host.Library.GetAlbumsAsync(new AlbumQuery(), TestContext.Current.CancellationToken);
+
+        LastQuery().Keys.Should().NotContain(["genreIds", "years", "filters"]);
+    }
+
+    [Fact]
+    public void Open_ended_year_range_is_bounded()
+    {
+        var years = LibraryService.Years(new AlbumQuery { MaxYear = 1905 });
+
+        years.Should().Equal(1900, 1901, 1902, 1903, 1904, 1905);
+        LibraryService.Years(new AlbumQuery()).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAlbums_rejects_an_inverted_year_range()
+    {
+        _host.ConnectAsTestUser();
+
+        var act = () => _host.Library.GetAlbumsAsync(new AlbumQuery { MinYear = 2000, MaxYear = 1990 }, TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task GetAlbumGenres_maps_genres_for_albums()
+    {
+        _host.Server.Given(Request.Create().WithPath("/Genres").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200).WithHeader("Content-Type", "application/json").WithBodyAsJson(new
+            {
+                Items = new object[]
+                {
+                    new { Id = "11111111-2222-3333-4444-555555555555", Name = "Electronic" },
+                    new { Id = "99999999-2222-3333-4444-555555555555", Name = "Jazz" },
+                    new { Name = "No id" },
+                },
+            }));
+        _host.ConnectAsTestUser();
+
+        var genres = await _host.Library.GetAlbumGenresAsync(TestContext.Current.CancellationToken);
+
+        genres.Select(g => g.Name).Should().Equal("Electronic", "Jazz");
+        genres[0].Id.Should().Be("11111111222233334444555555555555");
+        LastQuery()["includeItemTypes"].Should().Be("MusicAlbum");
+    }
 }
