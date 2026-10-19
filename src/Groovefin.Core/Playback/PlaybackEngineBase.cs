@@ -17,6 +17,9 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
     public const double VolumeTolerance = 0.001;
 
     private double _volume = 1;
+
+    /// <summary>The volume last passed to <see cref="SetVolumeCore"/>: <see cref="Volume"/> times the gain.</summary>
+    private double _playerVolume = 1;
     private bool _isMuted;
     private long _lastPositionReport = long.MinValue;
 
@@ -53,7 +56,7 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
             if (Math.Abs(clamped - _volume) >= VolumeTolerance)
             {
                 _volume = clamped;
-                SetVolumeCore(clamped);
+                ApplyVolume();
             }
         }
     }
@@ -80,6 +83,7 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
         Position = TimeSpan.Zero;
         Duration = source.Track.Duration ?? TimeSpan.Zero;
         _lastPositionReport = long.MinValue;
+        ApplyVolume();
         LoadCore(source, autoPlay);
         CurrentChanged?.Invoke(this, EventArgs.Empty);
         PositionChanged?.Invoke(this, EventArgs.Empty);
@@ -231,6 +235,8 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
             Next = null;
         }
 
+        ApplyVolume();
+
         Position = TimeSpan.Zero;
         Duration = source.Track.Duration ?? TimeSpan.Zero;
         _lastPositionReport = long.MinValue;
@@ -267,6 +273,18 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
         {
             State = state;
             StateChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>Passes the user's volume times the current source's gain to the player, when it changed.</summary>
+    private void ApplyVolume()
+    {
+        var gain = Current?.Gain is { } g && double.IsFinite(g) ? Math.Clamp(g, 0, 1) : 1;
+        var volume = _volume * gain;
+        if (Math.Abs(volume - _playerVolume) >= VolumeTolerance)
+        {
+            _playerVolume = volume;
+            SetVolumeCore(volume);
         }
     }
 

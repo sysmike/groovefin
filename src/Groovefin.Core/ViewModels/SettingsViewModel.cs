@@ -6,6 +6,7 @@ using Groovefin.Core.Api;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
@@ -25,14 +26,15 @@ public sealed record LibraryOption(string? Id, string Name)
 }
 
 /// <summary>
-/// Settings page: theme, account, servers, the music library to browse and stream quality. The full page
-/// is tracked in #53.
+/// Settings page: theme, account, servers, the music library to browse, stream quality and volume
+/// normalization. The full page is tracked in #53.
 /// </summary>
 public sealed partial class SettingsViewModel : ObservableObject
 {
     private static readonly AppTheme[] ThemeOrder = [AppTheme.System, AppTheme.Light, AppTheme.Dark];
     private static readonly int?[] Bitrates = [null, 320, 256, 192, 128, 96, 64];
     private static readonly TranscodingCodec[] CodecOrder = [TranscodingCodec.Aac, TranscodingCodec.Mp3];
+    private static readonly NormalizationMode[] NormalizationOrder = [NormalizationMode.Off, NormalizationMode.Track, NormalizationMode.Album];
 
     private readonly IThemeService _themeService;
     private readonly INavigationService _navigation;
@@ -111,6 +113,20 @@ public sealed partial class SettingsViewModel : ObservableObject
             if (value >= 0 && value < CodecOrder.Length && value != CodecIndex)
             {
                 _settings.Update(s => s with { Streaming = s.Streaming with { Codec = CodecOrder[value] } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>Gets or sets the volume normalization as an index into off, track, album.</summary>
+    public int NormalizationIndex
+    {
+        get => Array.IndexOf(NormalizationOrder, _settings.Current.Playback.Normalization);
+        set
+        {
+            if (value >= 0 && value < NormalizationOrder.Length && value != NormalizationIndex)
+            {
+                _settings.Update(s => s with { Playback = s.Playback with { Normalization = NormalizationOrder[value] } });
                 OnPropertyChanged();
             }
         }

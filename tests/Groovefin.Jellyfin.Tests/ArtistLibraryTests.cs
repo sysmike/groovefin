@@ -193,4 +193,24 @@ public sealed class ArtistLibraryTests : IDisposable
         query["enableImageTypes"].Should().Be("Primary");
         query.Should().NotContainKey("limit");
     }
+
+    [Fact]
+    public async Task Tracks_carry_the_server_loudness_gains()
+    {
+        Stub("/Items", new
+        {
+            Items = new object[]
+            {
+                new { Id = "12121212-2222-3333-4444-555555555555", Name = "Loud", Type = "Audio", NormalizationGain = -7.5, AlbumNormalizationGain = -6.25 },
+                new { Id = "13131313-2222-3333-4444-555555555555", Name = "Unscanned", Type = "Audio" },
+            },
+        });
+
+        var tracks = await _host.Library.GetArtistTracksAsync(ArtistId, Ct);
+
+        tracks[0].NormalizationGain.Should().Be(-7.5);
+        tracks[0].AlbumNormalizationGain.Should().Be(-6.25);
+        tracks[1].NormalizationGain.Should().BeNull();
+        tracks[1].AlbumNormalizationGain.Should().BeNull();
+    }
 }

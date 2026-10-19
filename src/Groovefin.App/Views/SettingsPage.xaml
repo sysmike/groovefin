@@ -108,6 +108,24 @@
             </ComboBox>
 
             <TextBlock
+                x:Uid="SettingsPlaybackHeader"
+                AutomationProperties.HeadingLevel="Level2"
+                Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <ComboBox
+                x:Uid="SettingsNormalizationBox"
+                MinWidth="260"
+                SelectedIndex="{x:Bind ViewModel.NormalizationIndex, Mode=TwoWay}">
+                <ComboBoxItem x:Uid="SettingsNormalizationOff" />
+                <ComboBoxItem x:Uid="SettingsNormalizationTrack" />
+                <ComboBoxItem x:Uid="SettingsNormalizationAlbum" />
+            </ComboBox>
+            <TextBlock
+                x:Uid="SettingsNormalizationHint"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                TextWrapping="Wrap" />
+
+            <TextBlock
                 x:Uid="SettingsAboutHeader"
                 AutomationProperties.HeadingLevel="Level2"
                 Style="{StaticResource BodyStrongTextBlockStyle}" />

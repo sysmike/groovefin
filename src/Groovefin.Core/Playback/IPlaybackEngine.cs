@@ -19,10 +19,12 @@ public enum PlaybackState
 
 /// <summary>
 /// A stream to play. <see cref="Id"/> identifies the queue entry, so track changes can be matched to the
-/// queue (also when the engine moves on by itself, e.g. gapless).
+/// queue (also when the engine moves on by itself, e.g. gapless). <see cref="Gain"/> is a volume factor
+/// from 0 to 1 (loudness normalization) applied on top of <see cref="IPlaybackEngine.Volume"/> while the
+/// source plays.
 /// </summary>
 /// <remarks><see cref="Url"/> can carry the access token (stream URLs do): never log it.</remarks>
-public sealed record PlaybackSource(string Id, Uri Url, Track Track)
+public sealed record PlaybackSource(string Id, Uri Url, Track Track, double Gain = 1)
 {
     /// <summary>Describes the source without its URL, so logging it cannot leak a token.</summary>
     public override string ToString() => $"{Id} ({Track.Name})";
@@ -59,7 +61,8 @@ public interface IPlaybackEngine
     /// <summary>Gets the length of the current source; <see cref="TimeSpan.Zero"/> while unknown.</summary>
     TimeSpan Duration { get; }
 
-    /// <summary>Gets or sets the volume from 0 to 1; values outside are clamped.</summary>
+    /// <summary>Gets or sets the user's volume from 0 to 1; values outside are clamped. The player plays at
+    /// this volume times the current source's <see cref="PlaybackSource.Gain"/>.</summary>
     double Volume { get; set; }
 
     bool IsMuted { get; set; }

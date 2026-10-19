@@ -2,6 +2,7 @@ using Groovefin.Core.Api;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
@@ -263,5 +264,21 @@ public sealed class SettingsViewModelTests
 
         raised.Should().Be(0);
         _settings.Current.Streaming.Should().Be(new StreamingSettings());
+    }
+
+    [Fact]
+    public void Normalization_is_off_by_default_and_saved()
+    {
+        var sut = CreateSut();
+        var changed = new List<string?>();
+        sut.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+        sut.NormalizationIndex.Should().Be(0);
+
+        sut.NormalizationIndex = 2;
+        sut.NormalizationIndex = 2;
+        sut.NormalizationIndex = 5;
+
+        _settings.Current.Playback.Normalization.Should().Be(NormalizationMode.Album);
+        changed.Should().Equal(nameof(sut.NormalizationIndex));
     }
 }

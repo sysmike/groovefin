@@ -724,4 +724,25 @@
   <data name="Operation_Playback" xml:space="preserve">
     <value>Titel konnte nicht wiedergegeben werden</value>
   </data>
+  <data name="SettingsPlaybackHeader.Text" xml:space="preserve">
+    <value>Wiedergabe</value>
+  </data>
+  <data name="SettingsNormalizationBox.Header" xml:space="preserve">
+    <value>Lautstärke angleichen</value>
+  </data>
+  <data name="SettingsNormalizationBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lautstärke angleichen</value>
+  </data>
+  <data name="SettingsNormalizationOff.Content" xml:space="preserve">
+    <value>Aus</value>
+  </data>
+  <data name="SettingsNormalizationTrack.Content" xml:space="preserve">
+    <value>Jeder Titel gleich laut</value>
+  </data>
+  <data name="SettingsNormalizationAlbum.Content" xml:space="preserve">
+    <value>Jedes Album gleich laut</value>
+  </data>
+  <data name="SettingsNormalizationHint.Text" xml:space="preserve">
+    <value>Nutzt die Lautheit, die dein Jellyfin-Server gemessen hat (LUFS-Scan in den Bibliothekseinstellungen aktivieren). Laute Titel werden leiser gestellt, nie lauter, damit nichts übersteuert. Gilt ab dem nächsten Titel.</value>
+  </data>
 </root>
