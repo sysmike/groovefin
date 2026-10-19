@@ -1,6 +1,7 @@
 using Groovefin.App.Hosting;
 using Groovefin.Core;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -45,6 +46,9 @@ public partial class App : Application
         var window = _host.Services.GetRequiredService<MainWindow>();
         window.Closed += OnMainWindowClosed;
         window.Activate();
+
+        // Lives as long as the app: media keys and the Windows media flyout.
+        _host.Services.GetRequiredService<SystemMediaControlsSync>();
     }
 
     private void OnMainWindowClosed(object sender, WindowEventArgs args)
