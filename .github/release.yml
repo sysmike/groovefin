@@ -1,0 +1,21 @@
+# Categories for automatically generated release notes (gh release create --generate-notes).
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+      - tracking
+  categories:
+    - title: Features
+      labels:
+        - type:feature
+    - title: Fixes
+      labels:
+        - type:bug
+    - title: Maintenance
+      labels:
+        - type:chore
+        - type:docs
+        - dependencies
+    - title: Other changes
+      labels:
+        - "*"

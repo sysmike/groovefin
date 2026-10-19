@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Jellyfin server problems
+    url: https://jellyfin.org/docs/general/getting-help
+    about: Problems with the Jellyfin server itself belong to the Jellyfin project.
