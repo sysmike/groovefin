@@ -14,6 +14,9 @@ public sealed record Track
     /// <summary>Gets the cache tag of the album cover, or <see langword="null"/> when the album has none.</summary>
     public string? AlbumImageTag { get; init; }
 
+    /// <summary>Gets the album artist's name, or <see langword="null"/> when unknown.</summary>
+    public string? AlbumArtist { get; init; }
+
     /// <summary>Gets the track's artists (may differ from the album artist on compilations).</summary>
     public IReadOnlyList<ArtistRef> Artists { get; init; } = [];
 
@@ -24,6 +27,12 @@ public sealed record Track
 
     /// <summary>Gets the disc number, or <see langword="null"/> when the album has only one disc.</summary>
     public int? DiscNumber { get; init; }
+
+    /// <summary>Gets the release year, or <see langword="null"/> when unknown.</summary>
+    public int? Year { get; init; }
+
+    /// <summary>Gets when the track was added to the library, or <see langword="null"/> when not loaded.</summary>
+    public DateTimeOffset? DateAdded { get; init; }
 
     public bool IsFavorite { get; init; }
 

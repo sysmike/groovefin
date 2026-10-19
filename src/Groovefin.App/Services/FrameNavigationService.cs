@@ -13,13 +13,13 @@ namespace Groovefin.App.Services;
 /// </summary>
 internal sealed partial class FrameNavigationService(ILogger<FrameNavigationService> logger) : INavigationService
 {
-    // TODO(#37): replace the placeholder pages as the sections land: Songs #37, Folders #39.
+    // TODO(#39): replace the placeholder page with folder browsing.
     private static readonly Dictionary<string, Type> Pages = new(StringComparer.Ordinal)
     {
         [PageKeys.Home] = typeof(HomePage),
         [PageKeys.Albums] = typeof(AlbumsPage),
         [PageKeys.Artists] = typeof(ArtistsPage),
-        [PageKeys.Songs] = typeof(SectionPage),
+        [PageKeys.Songs] = typeof(SongsPage),
         [PageKeys.Genres] = typeof(GenresPage),
         [PageKeys.Playlists] = typeof(PlaylistsPage),
         [PageKeys.Folders] = typeof(SectionPage),

@@ -1192,4 +1192,83 @@
   <data name="SettingsInstantMixAppend.Content" xml:space="preserve">
     <value>Add to the end of the queue</value>
   </data>
+  <data name="SongsHeader.Text" xml:space="preserve">
+    <value>Songs</value>
+  </data>
+  <data name="SongsColumnsText.Text" xml:space="preserve">
+    <value>Columns</value>
+  </data>
+  <data name="SongsColumnsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Columns</value>
+  </data>
+  <data name="SongsColumnsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Show, hide and reset columns</value>
+  </data>
+  <data name="SongsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Songs</value>
+  </data>
+  <data name="SongsEmpty.Text" xml:space="preserve">
+    <value>There are no songs in this library.</value>
+  </data>
+  <data name="Songs_Count" xml:space="preserve">
+    <value>{0} songs</value>
+    <comment>{0} = number of songs</comment>
+  </data>
+  <data name="Songs_SortedAscending" xml:space="preserve">
+    <value>{0}, sorted ascending</value>
+    <comment>{0} = column name</comment>
+  </data>
+  <data name="Songs_SortedDescending" xml:space="preserve">
+    <value>{0}, sorted descending</value>
+    <comment>{0} = column name</comment>
+  </data>
+  <data name="Songs_TrackNumberName" xml:space="preserve">
+    <value>Track number</value>
+  </data>
+  <data name="Songs_MoveLeft" xml:space="preserve">
+    <value>Move left</value>
+  </data>
+  <data name="Songs_MoveRight" xml:space="preserve">
+    <value>Move right</value>
+  </data>
+  <data name="Songs_Widen" xml:space="preserve">
+    <value>Wider</value>
+  </data>
+  <data name="Songs_Narrow" xml:space="preserve">
+    <value>Narrower</value>
+  </data>
+  <data name="Songs_ResetColumns" xml:space="preserve">
+    <value>Reset columns</value>
+  </data>
+  <data name="SongColumn_TrackNumber" xml:space="preserve">
+    <value>#</value>
+    <comment>Column header for the track number</comment>
+  </data>
+  <data name="SongColumn_Title" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="SongColumn_Artist" xml:space="preserve">
+    <value>Artist</value>
+  </data>
+  <data name="SongColumn_Album" xml:space="preserve">
+    <value>Album</value>
+  </data>
+  <data name="SongColumn_AlbumArtist" xml:space="preserve">
+    <value>Album artist</value>
+  </data>
+  <data name="SongColumn_Year" xml:space="preserve">
+    <value>Year</value>
+  </data>
+  <data name="SongColumn_Duration" xml:space="preserve">
+    <value>Length</value>
+  </data>
+  <data name="SongColumn_PlayCount" xml:space="preserve">
+    <value>Plays</value>
+  </data>
+  <data name="SongColumn_DateAdded" xml:space="preserve">
+    <value>Added</value>
+  </data>
+  <data name="Operation_LoadSongs" xml:space="preserve">
+    <value>Couldn't load songs</value>
+  </data>
 </root>

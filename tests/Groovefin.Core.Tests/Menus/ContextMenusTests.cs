@@ -67,6 +67,22 @@ public sealed class ContextMenusTests
     }
 
     [Fact]
+    public async Task Several_tracks_get_playback_and_add_to_playlist()
+    {
+        var actions = _sut.ForTracks(AlbumTracks);
+
+        actions.Select(a => a.Kind).Should().Equal(
+            MenuActionKind.PlayNow, MenuActionKind.PlayNext, MenuActionKind.AddToQueue, MenuActionKind.AddToPlaylist);
+        (await Find(actions, MenuActionKind.AddToPlaylist).Tracks!()).Should().Equal(AlbumTracks);
+        await Find(actions, MenuActionKind.PlayNext).InvokeAsync();
+        _player.Received(1).PlayNext(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(AlbumTracks)));
+    }
+
+    [Fact]
+    public void A_single_selected_track_gets_the_track_menu() =>
+        _sut.ForTracks([Song]).Select(a => a.Kind).Should().Equal(_sut.ForTrack(Song).Select(a => a.Kind));
+
+    [Fact]
     public void A_track_without_album_has_no_go_to_album()
     {
         _sut.ForTrack(Song with { AlbumId = null }).Should().NotContain(a => a.Kind == MenuActionKind.GoToAlbum);

@@ -1169,4 +1169,83 @@
   <data name="SettingsInstantMixAppend.Content" xml:space="preserve">
     <value>Ans Ende der Warteschlange anfügen</value>
   </data>
+  <data name="SongsHeader.Text" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="SongsColumnsText.Text" xml:space="preserve">
+    <value>Spalten</value>
+  </data>
+  <data name="SongsColumnsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Spalten</value>
+  </data>
+  <data name="SongsColumnsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Spalten ein- und ausblenden oder zurücksetzen</value>
+  </data>
+  <data name="SongsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="SongsEmpty.Text" xml:space="preserve">
+    <value>Diese Bibliothek enthält keine Titel.</value>
+  </data>
+  <data name="Songs_Count" xml:space="preserve">
+    <value>{0} Titel</value>
+    <comment>{0} = number of songs</comment>
+  </data>
+  <data name="Songs_SortedAscending" xml:space="preserve">
+    <value>{0}, aufsteigend sortiert</value>
+    <comment>{0} = column name</comment>
+  </data>
+  <data name="Songs_SortedDescending" xml:space="preserve">
+    <value>{0}, absteigend sortiert</value>
+    <comment>{0} = column name</comment>
+  </data>
+  <data name="Songs_TrackNumberName" xml:space="preserve">
+    <value>Titelnummer</value>
+  </data>
+  <data name="Songs_MoveLeft" xml:space="preserve">
+    <value>Nach links</value>
+  </data>
+  <data name="Songs_MoveRight" xml:space="preserve">
+    <value>Nach rechts</value>
+  </data>
+  <data name="Songs_Widen" xml:space="preserve">
+    <value>Breiter</value>
+  </data>
+  <data name="Songs_Narrow" xml:space="preserve">
+    <value>Schmaler</value>
+  </data>
+  <data name="Songs_ResetColumns" xml:space="preserve">
+    <value>Spalten zurücksetzen</value>
+  </data>
+  <data name="SongColumn_TrackNumber" xml:space="preserve">
+    <value>#</value>
+    <comment>Column header for the track number</comment>
+  </data>
+  <data name="SongColumn_Title" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="SongColumn_Artist" xml:space="preserve">
+    <value>Interpret</value>
+  </data>
+  <data name="SongColumn_Album" xml:space="preserve">
+    <value>Album</value>
+  </data>
+  <data name="SongColumn_AlbumArtist" xml:space="preserve">
+    <value>Albuminterpret</value>
+  </data>
+  <data name="SongColumn_Year" xml:space="preserve">
+    <value>Jahr</value>
+  </data>
+  <data name="SongColumn_Duration" xml:space="preserve">
+    <value>Länge</value>
+  </data>
+  <data name="SongColumn_PlayCount" xml:space="preserve">
+    <value>Wiedergaben</value>
+  </data>
+  <data name="SongColumn_DateAdded" xml:space="preserve">
+    <value>Hinzugefügt</value>
+  </data>
+  <data name="Operation_LoadSongs" xml:space="preserve">
+    <value>Titel konnten nicht geladen werden</value>
+  </data>
 </root>

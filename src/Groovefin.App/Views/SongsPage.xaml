@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="Groovefin.App.Views.SongsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Groovefin.App.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    NavigationCacheMode="Enabled"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <Style x:Key="SongCellStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="MaxLines" Value="1" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style
+            x:Key="SongSecondaryCellStyle"
+            BasedOn="{StaticResource SongCellStyle}"
+            TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
+
+        <!--  Header cell: sorts on click, opens the column menu on right-click, Menu key and Shift+F10.  -->
+        <Style
+            x:Key="ColumnHeaderButtonStyle"
+            BasedOn="{StaticResource DefaultButtonStyle}"
+            TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="8,0" />
+        </Style>
+
+        <!--  The right edge of a header cell; a thin divider that can be dragged.  -->
+        <Style x:Key="ColumnGripStyle" TargetType="controls:ColumnResizeGrip">
+            <Setter Property="Width" Value="9" />
+            <Setter Property="Margin" Value="0,8,-4,8" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="LineBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        </Style>
+
+        <Style
+            x:Key="SongItemStyle"
+            BasedOn="{StaticResource DefaultListViewItemStyle}"
+            TargetType="ListViewItem">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Margin="36,24,36,12" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Spacing="12">
+                <TextBlock
+                    x:Uid="SongsHeader"
+                    AutomationProperties.HeadingLevel="Level1"
+                    Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock
+                    x:Name="CountText"
+                    Margin="0,0,0,4"
+                    VerticalAlignment="Bottom"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}" />
+                <ProgressRing
+                    Width="16"
+                    Height="16"
+                    VerticalAlignment="Center"
+                    IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+            </StackPanel>
+            <DropDownButton x:Uid="SongsColumnsButton" Grid.Column="1">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon FontSize="16" Glyph="&#xE8A9;" />
+                    <TextBlock x:Uid="SongsColumnsText" />
+                </StackPanel>
+                <DropDownButton.Flyout>
+                    <MenuFlyout x:Name="ColumnsMenu" Opening="OnColumnsMenuOpening" Placement="BottomEdgeAlignedRight" />
+                </DropDownButton.Flyout>
+            </DropDownButton>
+        </Grid>
+
+        <!--  Wider than the window when the columns are: header and rows scroll sideways together.  -->
+        <ScrollViewer
+            Grid.Row="1"
+            Padding="36,0,36,0"
+            HorizontalScrollBarVisibility="Auto"
+            HorizontalScrollMode="Auto"
+            VerticalScrollBarVisibility="Disabled"
+            VerticalScrollMode="Disabled">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid
+                    x:Name="HeaderRow"
+                    Height="36"
+                    HorizontalAlignment="Left"
+                    AllowDrop="True"
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                    BorderThickness="0,0,0,1"
+                    DragOver="OnHeaderDragOver"
+                    Drop="OnHeaderDrop" />
+
+                <ListView
+                    x:Name="SongsList"
+                    x:Uid="SongsList"
+                    Grid.Row="1"
+                    Padding="0,0,0,24"
+                    ContainerContentChanging="OnContainerContentChanging"
+                    ContextRequested="OnSongsContextRequested"
+                    DoubleTapped="OnSongsDoubleTapped"
+                    ItemContainerStyle="{StaticResource SongItemStyle}"
+                    ItemsSource="{x:Bind ViewModel.Songs}"
+                    KeyDown="OnSongsKeyDown"
+                    SelectionMode="Extended">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <controls:SongTableRow />
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <TextBlock
+                    x:Uid="SongsEmpty"
+                    Grid.Row="1"
+                    Margin="0,12,0,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Page>
