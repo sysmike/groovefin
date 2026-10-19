@@ -30,6 +30,7 @@ internal sealed partial class FrameNavigationService(ILogger<FrameNavigationServ
         [PageKeys.Album] = typeof(AlbumDetailPage),
         [PageKeys.Artist] = typeof(SectionPage),
         [PageKeys.Servers] = typeof(ServersPage),
+        [PageKeys.SignIn] = typeof(SignInPage),
     };
 
     private Frame? _frame;
