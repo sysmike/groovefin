@@ -40,6 +40,17 @@ public interface ILibraryService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<PagedResult<Track>> GetTracksAsync(TrackQuery query, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gets the subfolders and tracks directly in a folder. <see langword="null"/> is the top: the
+    /// folders of the selected music library, or every music library when none is selected.
+    /// </summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<FolderContent> GetFolderAsync(string? folderId, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets up to <paramref name="limit"/> tracks in a folder and all its subfolders, album by album.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<Track>> GetFolderTracksAsync(string folderId, int limit, CancellationToken cancellationToken = default);
+
     /// <summary>Gets one page of artists or album artists.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<PagedResult<Artist>> GetArtistsAsync(ArtistQuery query, CancellationToken cancellationToken = default);
