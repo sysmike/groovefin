@@ -4,6 +4,8 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
 namespace Groovefin.Core.Tests.ViewModels;
@@ -16,9 +18,10 @@ public sealed class SettingsViewModelTests
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
+    private readonly InMemorySettingsService _settings = new();
 
     private SettingsViewModel CreateSut() =>
-        new(_themeService, _navigation, _servers, _library, _strings, _errors, new AppVersion("1.0.0", "abc1234"));
+        new(_themeService, _navigation, _servers, _library, _strings, _errors, _settings, new AppVersion("1.0.0", "abc1234"));
 
     private void SignedInTo(ServerProfile server)
     {
@@ -202,5 +205,63 @@ public sealed class SettingsViewModelTests
         await sut.LoadLibrariesAsync(TestContext.Current.CancellationToken);
 
         await _library.DidNotReceiveWithAnyArgs().GetMusicLibrariesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public void Bitrate_options_start_with_original_quality()
+    {
+        _strings.GetString("Settings_OriginalQuality").Returns("Original quality");
+        _strings.GetString("Settings_Kbps").Returns("{0} kbps");
+
+        var sut = CreateSut();
+
+        sut.BitrateOptions.Select(o => o.Label).Should().Equal("Original quality", "320 kbps", "256 kbps", "192 kbps", "128 kbps", "96 kbps", "64 kbps");
+        sut.BitrateOptions[0].Kbps.Should().BeNull();
+        sut.BitrateOptions[0].ToString().Should().Be("Original quality");
+    }
+
+    [Fact]
+    public void Streaming_defaults_are_shown()
+    {
+        var sut = CreateSut();
+
+        sut.LocalBitrateIndex.Should().Be(0);
+        sut.RemoteBitrateIndex.Should().Be(1);
+        sut.CodecIndex.Should().Be(0);
+    }
+
+    [Fact]
+    public void Streaming_choices_are_saved()
+    {
+        var sut = CreateSut();
+        var changed = new List<string?>();
+        sut.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        sut.LocalBitrateIndex = 3;
+        sut.RemoteBitrateIndex = 0;
+        sut.CodecIndex = 1;
+
+        _settings.Current.Streaming.Should().Be(new StreamingSettings { LocalMaxBitrateKbps = 192, RemoteMaxBitrateKbps = null, Codec = TranscodingCodec.Mp3 });
+        changed.Should().Equal(nameof(sut.LocalBitrateIndex), nameof(sut.RemoteBitrateIndex), nameof(sut.CodecIndex));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(99)]
+    public void Out_of_range_and_unchanged_choices_are_ignored(int index)
+    {
+        var sut = CreateSut();
+        var raised = 0;
+        sut.PropertyChanged += (_, _) => raised++;
+
+        sut.LocalBitrateIndex = index;
+        sut.RemoteBitrateIndex = index;
+        sut.CodecIndex = index;
+        sut.LocalBitrateIndex = 0;
+        sut.RemoteBitrateIndex = 1;
+        sut.CodecIndex = 0;
+
+        raised.Should().Be(0);
+        _settings.Current.Streaming.Should().Be(new StreamingSettings());
     }
 }

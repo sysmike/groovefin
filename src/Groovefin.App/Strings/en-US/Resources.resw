@@ -629,4 +629,41 @@
   <data name="SignIn_QuickConnectFailed" xml:space="preserve">
     <value>Signing in with Quick Connect failed. Try again or sign in with your password.</value>
   </data>
+  <data name="SettingsStreamingHeader.Text" xml:space="preserve">
+    <value>Streaming</value>
+  </data>
+  <data name="SettingsStreamingIntro.Text" xml:space="preserve">
+    <value>Groovefin plays the original files when it can. With a limit, the server converts tracks above it.</value>
+  </data>
+  <data name="SettingsLocalBitrateBox.Header" xml:space="preserve">
+    <value>Quality on the home network</value>
+  </data>
+  <data name="SettingsLocalBitrateBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Quality on the home network</value>
+  </data>
+  <data name="SettingsRemoteBitrateBox.Header" xml:space="preserve">
+    <value>Quality for remote servers</value>
+  </data>
+  <data name="SettingsRemoteBitrateBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Quality for remote servers</value>
+  </data>
+  <data name="SettingsCodecBox.Header" xml:space="preserve">
+    <value>Conversion format</value>
+  </data>
+  <data name="SettingsCodecBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Conversion format</value>
+  </data>
+  <data name="SettingsCodecAac.Content" xml:space="preserve">
+    <value>AAC (recommended)</value>
+  </data>
+  <data name="SettingsCodecMp3.Content" xml:space="preserve">
+    <value>MP3</value>
+  </data>
+  <data name="Settings_OriginalQuality" xml:space="preserve">
+    <value>Original quality</value>
+  </data>
+  <data name="Settings_Kbps" xml:space="preserve">
+    <value>{0} kbps</value>
+    <comment>Bitrate choice; {0} = kilobits per second</comment>
+  </data>
 </root>

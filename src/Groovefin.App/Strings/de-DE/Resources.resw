@@ -607,4 +607,40 @@
   <data name="SignIn_QuickConnectFailed" xml:space="preserve">
     <value>Die Anmeldung mit Quick Connect ist fehlgeschlagen. Versuche es erneut oder melde dich mit deinem Passwort an.</value>
   </data>
+  <data name="SettingsStreamingHeader.Text" xml:space="preserve">
+    <value>Streaming</value>
+  </data>
+  <data name="SettingsStreamingIntro.Text" xml:space="preserve">
+    <value>Groovefin spielt nach Möglichkeit die Originaldateien. Mit einem Limit wandelt der Server Titel darüber um.</value>
+  </data>
+  <data name="SettingsLocalBitrateBox.Header" xml:space="preserve">
+    <value>Qualität im Heimnetz</value>
+  </data>
+  <data name="SettingsLocalBitrateBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Qualität im Heimnetz</value>
+  </data>
+  <data name="SettingsRemoteBitrateBox.Header" xml:space="preserve">
+    <value>Qualität für entfernte Server</value>
+  </data>
+  <data name="SettingsRemoteBitrateBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Qualität für entfernte Server</value>
+  </data>
+  <data name="SettingsCodecBox.Header" xml:space="preserve">
+    <value>Format bei Umwandlung</value>
+  </data>
+  <data name="SettingsCodecBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Format bei Umwandlung</value>
+  </data>
+  <data name="SettingsCodecAac.Content" xml:space="preserve">
+    <value>AAC (empfohlen)</value>
+  </data>
+  <data name="SettingsCodecMp3.Content" xml:space="preserve">
+    <value>MP3</value>
+  </data>
+  <data name="Settings_OriginalQuality" xml:space="preserve">
+    <value>Originalqualität</value>
+  </data>
+  <data name="Settings_Kbps" xml:space="preserve">
+    <value>{0} kbit/s</value>
+  </data>
 </root>

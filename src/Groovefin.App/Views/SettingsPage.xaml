@@ -70,6 +70,44 @@
             </ComboBox>
 
             <TextBlock
+                x:Uid="SettingsStreamingHeader"
+                AutomationProperties.HeadingLevel="Level2"
+                Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <TextBlock
+                x:Uid="SettingsStreamingIntro"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}" />
+            <ComboBox
+                x:Uid="SettingsLocalBitrateBox"
+                MinWidth="260"
+                ItemsSource="{x:Bind ViewModel.BitrateOptions}"
+                SelectedIndex="{x:Bind ViewModel.LocalBitrateIndex, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:BitrateOption">
+                        <TextBlock Text="{x:Bind Label}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <ComboBox
+                x:Uid="SettingsRemoteBitrateBox"
+                MinWidth="260"
+                ItemsSource="{x:Bind ViewModel.BitrateOptions}"
+                SelectedIndex="{x:Bind ViewModel.RemoteBitrateIndex, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:BitrateOption">
+                        <TextBlock Text="{x:Bind Label}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <ComboBox
+                x:Uid="SettingsCodecBox"
+                MinWidth="260"
+                SelectedIndex="{x:Bind ViewModel.CodecIndex, Mode=TwoWay}">
+                <ComboBoxItem x:Uid="SettingsCodecAac" />
+                <ComboBoxItem x:Uid="SettingsCodecMp3" />
+            </ComboBox>
+
+            <TextBlock
                 x:Uid="SettingsAboutHeader"
                 AutomationProperties.HeadingLevel="Level2"
                 Style="{StaticResource BodyStrongTextBlockStyle}" />
