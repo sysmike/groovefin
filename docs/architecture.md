@@ -134,7 +134,9 @@ flowchart TD
 - All I/O is `async` and takes a `CancellationToken`. Nothing blocks the UI thread.
 - ViewModel properties are changed on the UI thread. Background work (engine events, network
   callbacks) uses `IDispatcher.EnqueueAsync`.
-- Page ViewModels cancel their outstanding loads when the user navigates away.
+- Page ViewModels cancel their outstanding loads when the user navigates away. Cached pages
+  (`NavigationCacheMode`, e.g. Albums) are the exception: they keep their ViewModel, list and scroll
+  position for the next visit.
 
 ### Networking and errors
 
@@ -173,6 +175,8 @@ flowchart TD
 - Virtualized lists everywhere (`ItemsView` / `ItemsRepeater`, incremental loading).
 - Every user-visible string comes from `.resw` (`en-US`, `de-DE`).
 - Every custom control sets `AutomationProperties`.
+- Animations are subtle and native (connected animation for album covers) and are skipped when the
+  Windows "Animation effects" setting is off.
 
 ### TODOs
 
