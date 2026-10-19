@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
 
@@ -7,6 +8,15 @@ namespace Groovefin.Core.Servers;
 public static class NetworkLocation
 {
     private static readonly string[] LocalSuffixes = [".local", ".lan", ".home", ".internal", ".home.arpa", ".localdomain"];
+
+    /// <summary>Private (RFC 1918) and link-local IPv4 networks.</summary>
+    private static readonly (uint Network, uint Mask)[] PrivateIPv4 =
+    [
+        Range(10, 0, 0, 0, 8),
+        Range(172, 16, 0, 0, 12),
+        Range(192, 168, 0, 0, 16),
+        Range(169, 254, 0, 0, 16),
+    ];
 
     /// <summary>
     /// Gets a value indicating whether <paramref name="serverUrl"/> points into the local network: loopback,
@@ -46,10 +56,14 @@ public static class NetworkLocation
             return address.IsIPv6LinkLocal || address.IsIPv6UniqueLocal || address.IsIPv6SiteLocal;
         }
 
-        var b = address.GetAddressBytes();
-        return b[0] == 10
-            || (b[0] == 172 && b[1] >= 16 && b[1] <= 31)
-            || (b[0] == 192 && b[1] == 168)
-            || (b[0] == 169 && b[1] == 254);
+        var value = BinaryPrimitives.ReadUInt32BigEndian(address.GetAddressBytes());
+        return PrivateIPv4.Any(range => (value & range.Mask) == range.Network);
+    }
+
+    /// <summary>An IPv4 network in CIDR form, e.g. <c>Range(172, 16, 0, 0, 12)</c> for 172.16.0.0/12.</summary>
+    private static (uint Network, uint Mask) Range(byte a, byte b, byte c, byte d, int prefixLength)
+    {
+        var mask = uint.MaxValue << (32 - prefixLength);
+        return ((((uint)a << 24) | ((uint)b << 16) | ((uint)c << 8) | d) & mask, mask);
     }
 }
