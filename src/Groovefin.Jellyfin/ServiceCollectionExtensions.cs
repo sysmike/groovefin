@@ -1,4 +1,5 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Images;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 
@@ -29,6 +30,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IJellyfinClient>(sp => sp.GetRequiredService<JellyfinClient>());
         services.AddSingleton<ILibraryService, LibraryService>();
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
+        services.AddSingleton<IImageSource, JellyfinImageSource>();
         return services;
     }
 
