@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Groovefin.Core.Navigation;
 using Groovefin.Core.Services;
 
 namespace Groovefin.Core.ViewModels;
@@ -11,10 +13,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     private static readonly AppTheme[] ThemeOrder = [AppTheme.System, AppTheme.Light, AppTheme.Dark];
 
     private readonly IThemeService _themeService;
+    private readonly INavigationService _navigation;
 
-    public SettingsViewModel(IThemeService themeService, AppVersion version)
+    public SettingsViewModel(IThemeService themeService, INavigationService navigation, AppVersion version)
     {
         _themeService = themeService;
+        _navigation = navigation;
         Version = version;
         Theme = themeService.Theme;
     }
@@ -40,6 +44,9 @@ public sealed partial class SettingsViewModel : ObservableObject
             }
         }
     }
+
+    [RelayCommand]
+    private void ManageServers() => _navigation.NavigateTo(PageKeys.Servers);
 
     partial void OnThemeChanged(AppTheme value)
     {
