@@ -358,6 +358,49 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
     private static Guid ParseId(string id) =>
         Guid.TryParse(id, out var guid) ? guid : throw new ArgumentException($"'{id}' is not a Jellyfin item ID.", nameof(id));
 
+    public async Task<Genre> GetGenreAsync(string genreId, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(genreId);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var dto = await JellyfinCall.RunAsync(
+            () => api.Items[id].GetAsync(request => request.QueryParameters.UserId = userId, cancellationToken),
+            "Loading genre").ConfigureAwait(false);
+        return new Genre(ItemMapper.FormatId(dto.Id) ?? genreId, dto.Name ?? string.Empty);
+    }
+
+    public async Task<IReadOnlyList<Track>> GetGenreTracksAsync(string genreId, int limit, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(genreId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items.GetAsync(
+                request =>
+                {
+                    var p = request.QueryParameters;
+                    p.UserId = userId;
+                    p.ParentId = LibraryFolder(connection);
+                    p.GenreIds = [id];
+                    p.IncludeItemTypes = [BaseItemKind.Audio];
+                    p.Recursive = true;
+                    p.SortBy = [ItemSortBy.AlbumArtist, ItemSortBy.Album, ItemSortBy.ParentIndexNumber, ItemSortBy.IndexNumber];
+                    p.Limit = limit;
+                    p.EnableUserData = true;
+                    // Primary only: the track DTO then carries AlbumPrimaryImageTag for covers.
+                    p.ImageTypeLimit = 1;
+                    p.EnableImageTypes = [ImageType.Primary];
+                    p.EnableTotalRecordCount = false;
+                },
+                cancellationToken),
+            "Loading genre tracks").ConfigureAwait(false);
+
+        return (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
+    }
+
     public async Task<IReadOnlyList<Genre>> GetAlbumGenresAsync(CancellationToken cancellationToken = default)
     {
         var (api, connection) = client.Active;

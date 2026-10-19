@@ -59,6 +59,14 @@ public interface ILibraryService
     /// <summary>Gets the genres used by albums, sorted by name.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<IReadOnlyList<Genre>> GetAlbumGenresAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Gets one genre by ID.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<Genre> GetGenreAsync(string genreId, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets up to <paramref name="limit"/> tracks of the genre in the music library, album by album.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<Track>> GetGenreTracksAsync(string genreId, int limit, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Paging, sorting and filters for <see cref="ILibraryService.GetAlbumsAsync"/>.</summary>

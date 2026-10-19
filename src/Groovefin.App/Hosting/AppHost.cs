@@ -116,6 +116,8 @@ internal static class AppHost
         builder.Services.AddTransient<PlaylistsViewModel>();
         builder.Services.AddTransient<PlaylistDetailViewModel>();
         builder.Services.AddTransient<FavouritesViewModel>();
+        builder.Services.AddTransient<GenresViewModel>();
+        builder.Services.AddTransient<GenreDetailViewModel>();
         builder.Services.AddTransient<ServersViewModel>();
         builder.Services.AddTransient<SignInViewModel>();
 

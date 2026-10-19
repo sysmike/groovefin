@@ -1117,4 +1117,55 @@
   <data name="Info_PlayCount" xml:space="preserve">
     <value>Plays</value>
   </data>
+  <data name="GenresHeader.Text" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="GenresView.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="GenresEmpty.Text" xml:space="preserve">
+    <value>No genres in this library yet.</value>
+  </data>
+  <data name="GenreKind.Text" xml:space="preserve">
+    <value>Genre</value>
+  </data>
+  <data name="GenrePlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Play the genre</value>
+  </data>
+  <data name="GenrePlayText.Text" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="GenreShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Shuffle the genre</value>
+  </data>
+  <data name="GenreShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Shuffle the genre</value>
+  </data>
+  <data name="GenreMixButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Instant mix from this genre</value>
+  </data>
+  <data name="GenreMixText.Text" xml:space="preserve">
+    <value>Instant mix</value>
+  </data>
+  <data name="GenreLoadFailed.Text" xml:space="preserve">
+    <value>This genre couldn't be loaded.</value>
+  </data>
+  <data name="GenreAlbumsHeader.Text" xml:space="preserve">
+    <value>Albums</value>
+  </data>
+  <data name="GenreAlbums.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Albums</value>
+  </data>
+  <data name="GenreSongsHeader.Text" xml:space="preserve">
+    <value>Songs</value>
+  </data>
+  <data name="GenreSongs.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Songs</value>
+  </data>
+  <data name="Operation_LoadGenres" xml:space="preserve">
+    <value>Couldn't load the genres</value>
+  </data>
+  <data name="Operation_LoadGenre" xml:space="preserve">
+    <value>Couldn't load the genre</value>
+  </data>
 </root>

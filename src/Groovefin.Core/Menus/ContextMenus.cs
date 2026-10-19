@@ -39,8 +39,7 @@ public sealed record MenuAction(MenuActionKind Kind, string Text, Func<Task> Inv
 /// <summary>
 /// The context menus of tracks, albums, artists and playlists, the same on every page: play now, play
 /// next, add to queue, add to playlist, go to album or artist, instant mix, favourite and show info.
-/// Album, artist and playlist actions load their tracks when they run. Genres follow with their page
-/// (#38).
+/// Album, artist, playlist and genre actions load their tracks when they run.
 /// </summary>
 public sealed class ContextMenus(
     IPlayer player,
@@ -54,6 +53,9 @@ public sealed class ContextMenus(
 {
     /// <summary>Tracks in an instant mix.</summary>
     public const int InstantMixSize = 100;
+
+    /// <summary>Most tracks a genre entry plays or queues.</summary>
+    public const int GenreTrackLimit = 1000;
 
     public IReadOnlyList<MenuAction> ForTrack(Track track)
     {
@@ -100,6 +102,14 @@ public sealed class ContextMenus(
         async Task<IReadOnlyList<Track>> Tracks() => [.. (await playlists.GetEntriesAsync(playlist.Id)).Select(e => e.Track)];
 
         return [.. Playback(Tracks), Mix(playlist.Id)];
+    }
+
+    public IReadOnlyList<MenuAction> ForGenre(Genre genre)
+    {
+        ArgumentNullException.ThrowIfNull(genre);
+        Task<IReadOnlyList<Track>> Tracks() => library.GetGenreTracksAsync(genre.Id, GenreTrackLimit);
+
+        return [.. Playback(Tracks), Mix(genre.Id)];
     }
 
     private IEnumerable<MenuAction> Playback(Func<Task<IReadOnlyList<Track>>> tracks)
