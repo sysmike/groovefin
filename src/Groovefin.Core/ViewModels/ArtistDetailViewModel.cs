@@ -2,7 +2,9 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
 using Groovefin.Core.Models;
@@ -38,7 +40,9 @@ public sealed partial class ArtistDetailViewModel(
     ILibraryService library,
     IPlayer player,
     INavigationService navigation,
-    IErrorReporter errors) : ObservableObject
+    IErrorReporter errors,
+    FavouritesService favourites,
+    IMessenger messenger) : ObservableObject
 {
     public const double ImageWidth = 200;
 
@@ -109,6 +113,12 @@ public sealed partial class ArtistDetailViewModel(
 
     public async Task LoadAsync(string artistId, CancellationToken cancellationToken = default)
     {
+        // Weak: the page's view model needs no unregistering.
+        if (!messenger.IsRegistered<FavouriteChangedMessage>(this))
+        {
+            messenger.Register<ArtistDetailViewModel, FavouriteChangedMessage>(this, static (r, m) => r.OnFavouriteChanged(m));
+        }
+
         IsLoading = true;
         LoadFailed = false;
         try
@@ -122,7 +132,7 @@ public sealed partial class ArtistDetailViewModel(
 
             var artist = await artistTask;
             Artist = artist;
-            IsFavourite = artist.IsFavorite;
+            IsFavourite = favourites.IsFavourite(artist.Id, artist.IsFavorite);
             Image = ImageRequest.Primary(artist.Id, artist.PrimaryImageTag, ImageWidth, DisplayScale);
             Background = ImageRequest.Primary(artist.Id, artist.PrimaryImageTag, BackgroundWidth, 1);
 
@@ -155,15 +165,22 @@ public sealed partial class ArtistDetailViewModel(
 
         // Optimistic: show the new state at once, roll back if the server refuses.
         IsFavourite = target;
-        try
+        if (await favourites.SetAsync(artist.Id, target))
         {
-            await library.SetFavouriteAsync(artist.Id, target);
             Artist = artist with { IsFavorite = target };
         }
-        catch (Exception ex) when (ex is JellyfinException or InvalidOperationException)
+        else
         {
             IsFavourite = !target;
-            errors.Report(ex, Operations.SetFavourite);
+        }
+    }
+
+    /// <summary>A heart was toggled elsewhere (favourites page, a context menu).</summary>
+    private void OnFavouriteChanged(FavouriteChangedMessage message)
+    {
+        if (Artist?.Id == message.ItemId)
+        {
+            IsFavourite = message.IsFavourite;
         }
     }
 

@@ -1006,4 +1006,61 @@
   <data name="Operation_EditPlaylist" xml:space="preserve">
     <value>Couldn't change the playlist</value>
   </data>
+  <data name="FavouritesHeader.Text" xml:space="preserve">
+    <value>Favourites</value>
+  </data>
+  <data name="FavouritesPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Play favourite songs</value>
+  </data>
+  <data name="FavouritesPlayText.Text" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="FavouritesShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Shuffle favourite songs</value>
+  </data>
+  <data name="FavouritesShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Shuffle favourite songs</value>
+  </data>
+  <data name="FavouritesSongsTab.Text" xml:space="preserve">
+    <value>Songs</value>
+  </data>
+  <data name="FavouritesAlbumsTab.Text" xml:space="preserve">
+    <value>Albums</value>
+  </data>
+  <data name="FavouritesArtistsTab.Text" xml:space="preserve">
+    <value>Artists</value>
+  </data>
+  <data name="FavouritesSongs.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favourite songs</value>
+  </data>
+  <data name="FavouritesAlbums.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favourite albums</value>
+  </data>
+  <data name="FavouritesArtists.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favourite artists</value>
+  </data>
+  <data name="FavouritesRemoveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Remove from favourites</value>
+  </data>
+  <data name="FavouritesRemoveButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Remove from favourites</value>
+  </data>
+  <data name="AlbumTrackFavouriteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favourite</value>
+  </data>
+  <data name="AlbumTrackFavouriteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Favourite</value>
+  </data>
+  <data name="Favourites_NoSongs" xml:space="preserve">
+    <value>No favourite songs yet. Tap the heart next to a song to add it.</value>
+  </data>
+  <data name="Favourites_NoAlbums" xml:space="preserve">
+    <value>No favourite albums yet. Tap the heart on an album's page to add it.</value>
+  </data>
+  <data name="Favourites_NoArtists" xml:space="preserve">
+    <value>No favourite artists yet. Tap the heart on an artist's page to add one.</value>
+  </data>
+  <data name="Operation_LoadFavourites" xml:space="preserve">
+    <value>Couldn't load your favourites</value>
+  </data>
 </root>

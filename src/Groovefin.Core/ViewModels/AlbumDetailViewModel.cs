@@ -2,7 +2,9 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
 using Groovefin.Core.Models;
@@ -14,8 +16,17 @@ using Groovefin.Core.Services;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>One track row.</summary>
-public sealed record TrackItem(Track Track, string? Artist)
+public sealed partial class TrackItem(Track track, string? artist, bool isFavourite = false) : ObservableObject
 {
+    public Track Track { get; } = track;
+
+    /// <summary>Gets the artists shown in the row, or <see langword="null"/> when they are the album's.</summary>
+    public string? Artist { get; } = artist;
+
+    /// <summary>Gets or sets the row's heart; kept in line with the server by the page.</summary>
+    [ObservableProperty]
+    public partial bool IsFavourite { get; set; } = isFavourite;
+
     public string Number => Track.TrackNumber?.ToString(CultureInfo.CurrentCulture) ?? string.Empty;
 
     public string Name => Track.Name;
@@ -47,7 +58,9 @@ public sealed partial class AlbumDetailViewModel(
     IPlayer player,
     INavigationService navigation,
     IErrorReporter errors,
-    IStringResources strings) : ObservableObject
+    IStringResources strings,
+    FavouritesService favourites,
+    IMessenger messenger) : ObservableObject
 {
     private IReadOnlyList<Track> _tracks = [];
 
@@ -100,6 +113,12 @@ public sealed partial class AlbumDetailViewModel(
 
     public async Task LoadAsync(string albumId, CancellationToken cancellationToken = default)
     {
+        // Weak: the page's view model needs no unregistering.
+        if (!messenger.IsRegistered<FavouriteChangedMessage>(this))
+        {
+            messenger.Register<AlbumDetailViewModel, FavouriteChangedMessage>(this, static (r, m) => r.OnFavouriteChanged(m));
+        }
+
         IsLoading = true;
         LoadFailed = false;
         try
@@ -110,7 +129,7 @@ public sealed partial class AlbumDetailViewModel(
             var tracks = await tracksTask;
 
             Album = album;
-            IsFavourite = album.IsFavorite;
+            IsFavourite = favourites.IsFavourite(album.Id, album.IsFavorite);
             Cover = ImageRequest.Primary(album.Id, album.PrimaryImageTag, CoverWidth, DisplayScale);
             Background = ImageRequest.Primary(album.Id, album.PrimaryImageTag, BackgroundWidth, 1);
             Details = BuildDetails(album, tracks);
@@ -148,15 +167,13 @@ public sealed partial class AlbumDetailViewModel(
 
         // Optimistic: show the new state at once, roll back if the server refuses.
         IsFavourite = target;
-        try
+        if (await favourites.SetAsync(album.Id, target))
         {
-            await library.SetFavouriteAsync(album.Id, target);
             Album = album with { IsFavorite = target };
         }
-        catch (Exception ex) when (ex is JellyfinException or InvalidOperationException)
+        else
         {
             IsFavourite = !target;
-            errors.Report(ex, Operations.SetFavourite);
         }
     }
 
@@ -184,6 +201,32 @@ public sealed partial class AlbumDetailViewModel(
 
     [RelayCommand]
     private void OpenArtist(ArtistRef artist) => navigation.NavigateTo(PageKeys.Artist, artist.Id);
+
+    /// <summary>Toggles a track's heart, optimistic like the album's.</summary>
+    [RelayCommand]
+    private async Task ToggleTrackFavouriteAsync(TrackItem item)
+    {
+        var target = !item.IsFavourite;
+        item.IsFavourite = target;
+        if (!await favourites.SetAsync(item.Track.Id, target))
+        {
+            item.IsFavourite = !target;
+        }
+    }
+
+    /// <summary>A heart was toggled elsewhere (now playing bar, favourites page, a context menu).</summary>
+    private void OnFavouriteChanged(FavouriteChangedMessage message)
+    {
+        if (Album?.Id == message.ItemId)
+        {
+            IsFavourite = message.IsFavourite;
+        }
+
+        foreach (var item in Discs.SelectMany(d => d.Tracks).Where(t => t.Track.Id == message.ItemId))
+        {
+            item.IsFavourite = message.IsFavourite;
+        }
+    }
 
     private string BuildDetails(Album album, IReadOnlyList<Track> tracks)
     {
@@ -216,7 +259,7 @@ public sealed partial class AlbumDetailViewModel(
             var header = multiDisc
                 ? strings.GetString("Album_Disc").Replace("{0}", group.Key.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)
                 : string.Empty;
-            var items = group.Select(t => new TrackItem(t, TrackArtist(album, t))).ToList();
+            var items = group.Select(t => new TrackItem(t, TrackArtist(album, t), favourites.IsFavourite(t.Id, t.IsFavorite))).ToList();
             Discs.Add(new DiscGroup(header, items));
         }
     }

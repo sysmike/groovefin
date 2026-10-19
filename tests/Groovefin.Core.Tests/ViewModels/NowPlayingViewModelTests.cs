@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
@@ -32,6 +34,7 @@ public sealed class NowPlayingViewModelTests : IDisposable
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
+    private readonly WeakReferenceMessenger _messenger = new();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
     private readonly NowPlayingViewModel _sut;
     private readonly List<string?> _changed = [];
@@ -41,7 +44,7 @@ public sealed class NowPlayingViewModelTests : IDisposable
         _player.Queue.Returns(_queue);
         _player.Engine.Returns(_engine);
         _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
-        _sut = new NowPlayingViewModel(_player, _library, _navigation, _errors, _strings) { DisplayScale = 2 };
+        _sut = new NowPlayingViewModel(_player, new FavouritesService(_library, _messenger, _errors), _messenger, _navigation, _strings) { DisplayScale = 2 };
         _sut.PropertyChanged += (_, e) => _changed.Add(e.PropertyName);
     }
 
@@ -255,5 +258,40 @@ public sealed class NowPlayingViewModelTests : IDisposable
         _engine.SimulateState(PlaybackState.Playing);
 
         _changed.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void A_heart_toggled_elsewhere_updates_the_bar_for_its_track_only()
+    {
+        PlayOneMoreTime();
+
+        _messenger.Send(new FavouriteChangedMessage("other", false));
+        _sut.IsFavourite.Should().BeTrue();
+
+        _messenger.Send(new FavouriteChangedMessage("t1", false));
+        _sut.IsFavourite.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_track_queued_before_its_heart_changed_shows_the_saved_state()
+    {
+        var favourites = new FavouritesService(_library, _messenger, _errors);
+        await favourites.SetAsync("t1", false);
+        using var sut = new NowPlayingViewModel(_player, favourites, _messenger, _navigation, _strings);
+
+        PlayOneMoreTime();
+
+        sut.IsFavourite.Should().BeFalse("the queued track still says it is a favourite");
+    }
+
+    [Fact]
+    public void After_dispose_hearts_toggled_elsewhere_are_ignored()
+    {
+        PlayOneMoreTime();
+        _sut.Dispose();
+
+        _messenger.Send(new FavouriteChangedMessage("t1", false));
+
+        _sut.IsFavourite.Should().BeTrue();
     }
 }

@@ -195,6 +195,22 @@ public sealed class ArtistLibraryTests : IDisposable
     }
 
     [Fact]
+    public async Task Favourite_tracks_are_audio_items_with_the_favourite_filter()
+    {
+        Stub("/Items", new { Items = new object[] { new { Id = "12121212-2222-3333-4444-555555555555", Name = "Loved", Type = "Audio", UserData = new { IsFavorite = true } } } });
+
+        var tracks = await _host.Library.GetFavouriteTracksAsync(25, Ct);
+
+        tracks.Should().ContainSingle().Which.IsFavorite.Should().BeTrue();
+        var query = LastQuery();
+        query["includeItemTypes"].Should().Be("Audio");
+        query["filters"].Should().Be("IsFavorite");
+        query["limit"].Should().Be("25");
+        query["sortBy"].Should().Be("SortName");
+        query["recursive"].Should().Be("true");
+    }
+
+    [Fact]
     public async Task Tracks_carry_the_server_loudness_gains()
     {
         Stub("/Items", new

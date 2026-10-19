@@ -1,5 +1,7 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.App.Services;
 using Groovefin.Core;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Images;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
@@ -94,6 +96,8 @@ internal static class AppHost
         builder.Services.AddSingleton<QueueViewModel>();
         builder.Services.AddSingleton<SearchSuggestionsViewModel>();
         builder.Services.AddSingleton<AddToPlaylist>();
+        builder.Services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
+        builder.Services.AddSingleton<FavouritesService>();
 
         // Servers
         builder.Services.AddSingleton<IServerManager, ServerManager>();
@@ -109,6 +113,7 @@ internal static class AppHost
         builder.Services.AddTransient<SearchViewModel>();
         builder.Services.AddTransient<PlaylistsViewModel>();
         builder.Services.AddTransient<PlaylistDetailViewModel>();
+        builder.Services.AddTransient<FavouritesViewModel>();
         builder.Services.AddTransient<ServersViewModel>();
         builder.Services.AddTransient<SignInViewModel>();
 

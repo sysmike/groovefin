@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
 using Groovefin.Core.Models;
@@ -22,23 +24,25 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     public const double CoverWidth = 56;
 
     private readonly IPlayer _player;
-    private readonly ILibraryService _library;
+    private readonly FavouritesService _favourites;
+    private readonly IMessenger _messenger;
     private readonly INavigationService _navigation;
-    private readonly IErrorReporter _errors;
     private readonly IStringResources _strings;
 
     public NowPlayingViewModel(
         IPlayer player,
-        ILibraryService library,
+        FavouritesService favourites,
+        IMessenger messenger,
         INavigationService navigation,
-        IErrorReporter errors,
         IStringResources strings)
     {
         _player = player;
-        _library = library;
+        _favourites = favourites;
+        _messenger = messenger;
         _navigation = navigation;
-        _errors = errors;
         _strings = strings;
+
+        _messenger.Register<NowPlayingViewModel, FavouriteChangedMessage>(this, static (r, m) => r.OnFavouriteChanged(m));
 
         Engine.StateChanged += OnStateChanged;
         Engine.PositionChanged += OnPositionChanged;
@@ -129,6 +133,7 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
         Engine.PositionChanged -= OnPositionChanged;
         Engine.CurrentChanged -= OnCurrentChanged;
         Queue.Changed -= OnQueueChanged;
+        _messenger.UnregisterAll(this);
     }
 
     [RelayCommand(CanExecute = nameof(HasTrack))]
@@ -160,18 +165,18 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
 
         // Optimistic: show the new state at once, roll back if the server refuses.
         IsFavourite = target;
-        try
+        if (!await _favourites.SetAsync(track.Id, target) && ReferenceEquals(track, Track))
         {
-            await _library.SetFavouriteAsync(track.Id, target);
+            IsFavourite = !target;
         }
-        catch (Exception ex) when (ex is JellyfinException or InvalidOperationException or ArgumentException)
-        {
-            if (ReferenceEquals(track, Track))
-            {
-                IsFavourite = !target;
-            }
+    }
 
-            _errors.Report(ex, Operations.SetFavourite);
+    /// <summary>A heart was toggled elsewhere (album page, favourites page, a context menu).</summary>
+    private void OnFavouriteChanged(FavouriteChangedMessage message)
+    {
+        if (Track?.Id == message.ItemId)
+        {
+            IsFavourite = message.IsFavourite;
         }
     }
 
@@ -205,7 +210,7 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     {
         var track = Track;
         Cover = track?.AlbumId is { } albumId ? ImageRequest.Primary(albumId, track.AlbumImageTag, CoverWidth, DisplayScale) : null;
-        IsFavourite = track?.IsFavorite ?? false;
+        IsFavourite = track is not null && _favourites.IsFavourite(track.Id, track.IsFavorite);
         OnPropertyChanged(nameof(Track));
         OnPropertyChanged(nameof(HasTrack));
         OnPropertyChanged(nameof(Title));
