@@ -19,10 +19,19 @@ public sealed record AppSettings
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
     public AppearanceSettings Appearance { get; set; } = new();
+
+    public CacheSettings Cache { get; set; } = new();
 }
 
 /// <summary>Look and feel.</summary>
 public sealed record AppearanceSettings
 {
     public AppTheme Theme { get; set; } = AppTheme.System;
+}
+
+/// <summary>Local caches.</summary>
+public sealed record CacheSettings
+{
+    /// <summary>Gets or sets the image cache size limit in megabytes.</summary>
+    public int ImageCacheSizeMegabytes { get; set; } = 500;
 }
