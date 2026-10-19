@@ -54,6 +54,16 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     {
                         p.Filters = [ItemFilter.IsFavorite];
                     }
+
+                    if (query.AlbumArtistId is { } albumArtistId)
+                    {
+                        p.AlbumArtistIds = [ParseId(albumArtistId)];
+                    }
+
+                    if (query.ContributingArtistId is { } contributingArtistId)
+                    {
+                        p.ContributingArtistIds = [ParseId(contributingArtistId)];
+                    }
                 },
                 cancellationToken),
             "Loading albums").ConfigureAwait(false);
@@ -114,6 +124,125 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
             isFavourite ? "Adding favourite" : "Removing favourite").ConfigureAwait(false);
     }
 
+    public async Task<PagedResult<Artist>> GetArtistsAsync(ArtistQuery query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfNegative(query.StartIndex);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(query.Limit);
+
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+        var order = query.Descending ? SortOrder.Descending : SortOrder.Ascending;
+
+        var sortBy = ArtistSortFields(query.SortBy);
+        bool? favourites = query.FavouritesOnly ? true : null;
+
+        // /Artists/AlbumArtists and /Artists take the same parameters, in two generated types.
+        // TODO(#95): the server marks both obsolete ("Use GetPersons"), but /Persons cannot sort or
+        // tell album artists apart yet, and the official web client still uses these endpoints.
+#pragma warning disable CS0618
+        var result = await JellyfinCall.RunAsync(
+            () => query.AlbumArtistsOnly
+                ? api.Artists.AlbumArtists.GetAsync(
+                    request =>
+                    {
+                        var p = request.QueryParameters;
+                        p.UserId = userId;
+                        p.StartIndex = query.StartIndex;
+                        p.Limit = query.Limit;
+                        p.SortBy = sortBy;
+                        p.SortOrder = [order];
+                        p.IsFavorite = favourites;
+                        p.EnableUserData = true;
+                        p.EnableTotalRecordCount = true;
+                        p.ImageTypeLimit = 1;
+                        p.EnableImageTypes = [ImageType.Primary];
+                    },
+                    cancellationToken)
+                : api.Artists.GetAsync(
+                    request =>
+                    {
+                        var p = request.QueryParameters;
+                        p.UserId = userId;
+                        p.StartIndex = query.StartIndex;
+                        p.Limit = query.Limit;
+                        p.SortBy = sortBy;
+                        p.SortOrder = [order];
+                        p.IsFavorite = favourites;
+                        p.EnableUserData = true;
+                        p.EnableTotalRecordCount = true;
+                        p.ImageTypeLimit = 1;
+                        p.EnableImageTypes = [ImageType.Primary];
+                    },
+                    cancellationToken),
+            "Loading artists").ConfigureAwait(false);
+#pragma warning restore CS0618
+
+        var items = (result.Items ?? []).Select(ItemMapper.ToArtist).ToList();
+        return new PagedResult<Artist>(items, result.TotalRecordCount ?? items.Count, result.StartIndex ?? query.StartIndex);
+    }
+
+    public async Task<Artist> GetArtistAsync(string artistId, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(artistId);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var dto = await JellyfinCall.RunAsync(
+            () => api.Items[id].GetAsync(request => request.QueryParameters.UserId = userId, cancellationToken),
+            "Loading artist").ConfigureAwait(false);
+        return ItemMapper.ToArtist(dto);
+    }
+
+    public async Task<IReadOnlyList<Track>> GetArtistTopTracksAsync(string artistId, int limit, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(artistId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items.GetAsync(
+                request =>
+                {
+                    var p = request.QueryParameters;
+                    p.UserId = userId;
+                    p.ArtistIds = [id];
+                    p.IncludeItemTypes = [BaseItemKind.Audio];
+                    p.Recursive = true;
+                    p.SortBy = [ItemSortBy.PlayCount, ItemSortBy.SortName];
+                    p.SortOrder = [SortOrder.Descending];
+                    p.Limit = limit;
+                    p.EnableUserData = true;
+                    p.EnableImages = false;
+                    p.EnableTotalRecordCount = false;
+                },
+                cancellationToken),
+            "Loading top tracks").ConfigureAwait(false);
+
+        return (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
+    }
+
+    public async Task<IReadOnlyList<Artist>> GetSimilarArtistsAsync(string artistId, int limit, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(artistId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items[id].Similar.GetAsync(
+                request =>
+                {
+                    request.QueryParameters.UserId = userId;
+                    request.QueryParameters.Limit = limit;
+                },
+                cancellationToken),
+            "Loading similar artists").ConfigureAwait(false);
+
+        return (result.Items ?? []).Select(ItemMapper.ToArtist).ToList();
+    }
+
     private static Guid ParseId(string id) =>
         Guid.TryParse(id, out var guid) ? guid : throw new ArgumentException($"'{id}' is not a Jellyfin item ID.", nameof(id));
 
@@ -156,6 +285,15 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         var last = query.MaxYear ?? DateTime.UtcNow.Year + 1;
         return Enumerable.Range(first, last - first + 1).Select(y => (int?)y).ToArray();
     }
+
+    private static ItemSortBy[] ArtistSortFields(ArtistSortField sortBy) => sortBy switch
+    {
+        ArtistSortField.Name => [ItemSortBy.SortName],
+        ArtistSortField.DateAdded => [ItemSortBy.DateCreated, ItemSortBy.SortName],
+        ArtistSortField.PlayCount => [ItemSortBy.PlayCount, ItemSortBy.SortName],
+        ArtistSortField.Random => [ItemSortBy.Random],
+        _ => throw new ArgumentOutOfRangeException(nameof(sortBy), sortBy, null),
+    };
 
     private static ItemSortBy[] SortFields(AlbumSortField sortBy) => sortBy switch
     {

@@ -23,4 +23,6 @@ public static class Operations
     public const string LoadAlbums = "Operation_LoadAlbums";
     public const string LoadAlbum = "Operation_LoadAlbum";
     public const string SetFavourite = "Operation_SetFavourite";
+    public const string LoadArtists = "Operation_LoadArtists";
+    public const string LoadArtist = "Operation_LoadArtist";
 }
