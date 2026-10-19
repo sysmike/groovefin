@@ -1,3 +1,4 @@
+using Groovefin.App.Controls;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -37,21 +38,7 @@ internal sealed partial class HomePage : Page
         await ViewModel.RefreshAsync();
     }
 
-    /// <summary>
-    /// ItemsView scrolls vertically by default. The shelves scroll sideways; vertical wheel input then
-    /// chains to the page.
-    /// </summary>
-    private void OnShelfLoaded(object sender, RoutedEventArgs e)
-    {
-        if (sender is ItemsView { ScrollView: { } scroll })
-        {
-            scroll.ContentOrientation = ScrollingContentOrientation.Horizontal;
-            scroll.HorizontalScrollMode = ScrollingScrollMode.Enabled;
-            scroll.HorizontalScrollBarVisibility = ScrollingScrollBarVisibility.Auto;
-            scroll.VerticalScrollMode = ScrollingScrollMode.Disabled;
-            scroll.VerticalScrollBarVisibility = ScrollingScrollBarVisibility.Hidden;
-        }
-    }
+    private void OnShelfLoaded(object sender, RoutedEventArgs e) => Shelf.ScrollHorizontally(sender as ItemsView);
 
     private void OnAlbumInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
     {
