@@ -1,5 +1,6 @@
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Groovefin.App.Views;
@@ -13,7 +14,14 @@ internal sealed partial class SettingsPage : Page
     {
         ViewModel = App.Services.GetRequiredService<SettingsViewModel>();
         InitializeComponent();
+        Loaded += OnFirstLoaded;
     }
 
     public SettingsViewModel ViewModel { get; }
+
+    private async void OnFirstLoaded(object sender, RoutedEventArgs e)
+    {
+        Loaded -= OnFirstLoaded;
+        await ViewModel.LoadLibrariesAsync();
+    }
 }

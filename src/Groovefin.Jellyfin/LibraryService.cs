@@ -28,6 +28,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                 {
                     var p = request.QueryParameters;
                     p.UserId = userId;
+                    p.ParentId = LibraryFolder(connection);
                     p.IncludeItemTypes = [BaseItemKind.MusicAlbum];
                     p.Recursive = true;
                     p.StartIndex = query.StartIndex;
@@ -148,6 +149,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     {
                         var p = request.QueryParameters;
                         p.UserId = userId;
+                        p.ParentId = LibraryFolder(connection);
                         p.StartIndex = query.StartIndex;
                         p.Limit = query.Limit;
                         p.SortBy = sortBy;
@@ -164,6 +166,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     {
                         var p = request.QueryParameters;
                         p.UserId = userId;
+                        p.ParentId = LibraryFolder(connection);
                         p.StartIndex = query.StartIndex;
                         p.Limit = query.Limit;
                         p.SortBy = sortBy;
@@ -207,6 +210,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                 {
                     var p = request.QueryParameters;
                     p.UserId = userId;
+                    p.ParentId = LibraryFolder(connection);
                     p.ArtistIds = [id];
                     p.IncludeItemTypes = [BaseItemKind.Audio];
                     p.Recursive = true;
@@ -243,6 +247,25 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         return (result.Items ?? []).Select(ItemMapper.ToArtist).ToList();
     }
 
+    public async Task<IReadOnlyList<MusicLibrary>> GetMusicLibrariesAsync(CancellationToken cancellationToken = default)
+    {
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var result = await JellyfinCall.RunAsync(
+            () => api.UserViews.GetAsync(request => request.QueryParameters.UserId = userId, cancellationToken),
+            "Loading libraries").ConfigureAwait(false);
+
+        return (result.Items ?? [])
+            .Where(view => view.CollectionType == BaseItemDto_CollectionType.Music && view.Id is not null)
+            .Select(view => new MusicLibrary(ItemMapper.FormatId(view.Id)!, view.Name ?? string.Empty))
+            .ToList();
+    }
+
+    /// <summary>The selected music library as parent folder of browse queries; <see langword="null"/> browses all.</summary>
+    private static Guid? LibraryFolder(ServerConnection connection) =>
+        connection.LibraryId is { } id ? ParseId(id) : null;
+
     private static Guid ParseId(string id) =>
         Guid.TryParse(id, out var guid) ? guid : throw new ArgumentException($"'{id}' is not a Jellyfin item ID.", nameof(id));
 
@@ -257,6 +280,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                 {
                     var p = request.QueryParameters;
                     p.UserId = userId;
+                    p.ParentId = LibraryFolder(connection);
                     p.IncludeItemTypes = [BaseItemKind.MusicAlbum];
                     p.SortBy = [ItemSortBy.SortName];
                     p.EnableImages = false;

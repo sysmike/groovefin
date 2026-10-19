@@ -45,6 +45,12 @@ public interface IServerManager
     Task SignInAsync(string serverId, string userName, string password, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Limits browsing on a server to one music library, or to all music libraries when
+    /// <paramref name="libraryId"/> is <see langword="null"/>. Applies at once when the server is active.
+    /// </summary>
+    void SetLibrary(string serverId, string? libraryId);
+
+    /// <summary>
     /// Signs in to a server with an approved Quick Connect request. The token is stored like a password
     /// sign-in; the server becomes active and connects.
     /// </summary>
