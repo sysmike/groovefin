@@ -37,4 +37,5 @@ public static class Operations
     public const string LoadGenres = "Operation_LoadGenres";
     public const string LoadGenre = "Operation_LoadGenre";
     public const string LoadSongs = "Operation_LoadSongs";
+    public const string LoadFolder = "Operation_LoadFolder";
 }

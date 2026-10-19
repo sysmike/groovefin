@@ -55,6 +55,9 @@ public sealed class ContextMenus(
     /// <summary>Most tracks a genre entry plays or queues.</summary>
     public const int GenreTrackLimit = 1000;
 
+    /// <summary>Most tracks a folder entry plays or queues, subfolders included.</summary>
+    public const int FolderTrackLimit = 1000;
+
     public IReadOnlyList<MenuAction> ForTrack(Track track)
     {
         ArgumentNullException.ThrowIfNull(track);
@@ -121,6 +124,15 @@ public sealed class ContextMenus(
         Task<IReadOnlyList<Track>> Tracks() => library.GetGenreTracksAsync(genre.Id, GenreTrackLimit);
 
         return [.. Playback(Tracks), Mix(genre.Id)];
+    }
+
+    /// <summary>A folder with its subfolders: playback and add to playlist.</summary>
+    public IReadOnlyList<MenuAction> ForFolder(Folder folder)
+    {
+        ArgumentNullException.ThrowIfNull(folder);
+        Task<IReadOnlyList<Track>> Tracks() => library.GetFolderTracksAsync(folder.Id, FolderTrackLimit);
+
+        return [.. Playback(Tracks), AddTo(Tracks)];
     }
 
     private IEnumerable<MenuAction> Playback(Func<Task<IReadOnlyList<Track>>> tracks)
