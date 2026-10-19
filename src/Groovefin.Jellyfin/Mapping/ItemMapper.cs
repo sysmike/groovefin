@@ -71,6 +71,20 @@ internal static class ItemMapper
             .Select(p => new ArtistRef(FormatId(p.Id)!, p.Name ?? string.Empty))
             .ToList() ?? [];
 
+    public static Playlist ToPlaylist(BaseItemDto dto)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        return new Playlist
+        {
+            Id = FormatId(dto.Id) ?? throw new ArgumentException("Playlist without ID.", nameof(dto)),
+            Name = dto.Name ?? string.Empty,
+            PrimaryImageTag = PrimaryImageTag(dto),
+            TrackCount = dto.ChildCount,
+            Duration = dto.RunTimeTicks is { } ticks ? TimeSpan.FromTicks(ticks) : null,
+        };
+    }
+
     private static string? PrimaryImageTag(BaseItemDto dto) =>
         dto.ImageTags?.AdditionalData is { } tags && tags.TryGetValue("Primary", out var tag) ? tag?.ToString() : null;
 }

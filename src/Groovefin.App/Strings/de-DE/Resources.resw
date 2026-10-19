@@ -745,4 +745,55 @@
   <data name="SettingsNormalizationHint.Text" xml:space="preserve">
     <value>Nutzt die Lautheit, die dein Jellyfin-Server gemessen hat (LUFS-Scan in den Bibliothekseinstellungen aktivieren). Laute Titel werden leiser gestellt, nie lauter, damit nichts übersteuert. Gilt ab dem nächsten Titel.</value>
   </data>
+  <data name="SearchArtistsHeader.Text" xml:space="preserve">
+    <value>Interpreten</value>
+  </data>
+  <data name="SearchAlbumsHeader.Text" xml:space="preserve">
+    <value>Alben</value>
+  </data>
+  <data name="SearchTracksHeader.Text" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="SearchPlaylistsHeader.Text" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="SearchArtists.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Interpreten</value>
+  </data>
+  <data name="SearchAlbums.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Alben</value>
+  </data>
+  <data name="SearchTracks.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="SearchPlaylists.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="SearchProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Suche läuft</value>
+  </data>
+  <data name="Search_Results" xml:space="preserve">
+    <value>{0} Ergebnisse für „{1}“</value>
+    <comment>{0} = number of results, {1} = search text</comment>
+  </data>
+  <data name="Search_OneResult" xml:space="preserve">
+    <value>{0} Ergebnis für „{1}“</value>
+    <comment>{0} = 1, {1} = search text</comment>
+  </data>
+  <data name="Search_NoResults" xml:space="preserve">
+    <value>Keine Ergebnisse für „{0}“</value>
+    <comment>{0} = search text</comment>
+  </data>
+  <data name="Search_KindArtist" xml:space="preserve">
+    <value>Interpret</value>
+  </data>
+  <data name="Search_KindAlbum" xml:space="preserve">
+    <value>Album</value>
+  </data>
+  <data name="Search_KindTrack" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="Operation_Search" xml:space="preserve">
+    <value>Die Bibliothek konnte nicht durchsucht werden</value>
+  </data>
 </root>

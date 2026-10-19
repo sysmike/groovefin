@@ -22,9 +22,11 @@ internal sealed partial class MainWindow : Window
         ShellViewModel viewModel,
         FrameNavigationService navigation,
         ThemeService themeService,
-        ContentDialogService dialogs)
+        ContentDialogService dialogs,
+        SearchSuggestionsViewModel suggestions)
     {
         ViewModel = viewModel;
+        Suggestions = suggestions;
         InitializeComponent();
 
         Title = new ResourceLoader().GetString("AppDisplayName");
@@ -45,6 +47,8 @@ internal sealed partial class MainWindow : Window
     }
 
     public ShellViewModel ViewModel { get; }
+
+    public SearchSuggestionsViewModel Suggestions { get; }
 
     /// <summary>Mica when supported, Desktop Acrylic as fallback, otherwise the default solid background.</summary>
     private static SystemBackdrop? CreateBackdrop()
@@ -91,8 +95,25 @@ internal sealed partial class MainWindow : Window
 
     private void OnTitleBarPaneToggleRequested(TitleBar sender, object args) => NavView.IsPaneOpen = !NavView.IsPaneOpen;
 
+    /// <summary>Typing asks for suggestions; picking one from the list (which also changes the text) does not.</summary>
+    private void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+        {
+            _ = Suggestions.UpdateAsync(sender.Text);
+        }
+    }
+
+    /// <summary>Enter on a suggestion opens or plays it; Enter on the text shows the results page.</summary>
     private void OnSearchQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
+        if (args.ChosenSuggestion is SearchSuggestion suggestion)
+        {
+            Suggestions.Choose(suggestion);
+            return;
+        }
+
+        Suggestions.Cancel();
         ViewModel.SearchText = args.QueryText;
         if (ViewModel.SubmitSearchCommand.CanExecute(null))
         {

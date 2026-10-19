@@ -91,6 +91,7 @@ internal static class AppHost
         builder.Services.AddSingleton<ISystemMediaControls, SystemMediaControls>();
         builder.Services.AddSingleton<SystemMediaControlsSync>();
         builder.Services.AddSingleton<NowPlayingViewModel>();
+        builder.Services.AddSingleton<SearchSuggestionsViewModel>();
 
         // Servers
         builder.Services.AddSingleton<IServerManager, ServerManager>();
@@ -103,6 +104,7 @@ internal static class AppHost
         builder.Services.AddTransient<AlbumDetailViewModel>();
         builder.Services.AddTransient<ArtistsViewModel>();
         builder.Services.AddTransient<ArtistDetailViewModel>();
+        builder.Services.AddTransient<SearchViewModel>();
         builder.Services.AddTransient<ServersViewModel>();
         builder.Services.AddTransient<SignInViewModel>();
 
