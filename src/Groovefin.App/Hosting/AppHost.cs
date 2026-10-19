@@ -83,6 +83,7 @@ internal static class AppHost
         // Playback
         builder.Services.AddSingleton<MediaPlayerEngine>();
         builder.Services.AddSingleton<IPlaybackEngine>(sp => sp.GetRequiredService<MediaPlayerEngine>());
+        builder.Services.AddSingleton<PlaybackReporting>();
 
         // Servers
         builder.Services.AddSingleton<IServerManager, ServerManager>();
