@@ -2,6 +2,7 @@ using Groovefin.Core.Api;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 
@@ -23,6 +24,7 @@ public sealed class ArtistDetailViewModelTests
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
+    private readonly IPlayer _player = Substitute.For<IPlayer>();
 
     public ArtistDetailViewModelTests()
     {
@@ -45,7 +47,7 @@ public sealed class ArtistDetailViewModelTests
 
     private static PagedResult<Album> Page(params Album[] albums) => new(albums, albums.Length, 0);
 
-    private ArtistDetailViewModel CreateSut() => new(_library, _navigation, _errors);
+    private ArtistDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors);
 
     [Fact]
     public async Task Load_fills_header_and_all_sections()
@@ -152,30 +154,68 @@ public sealed class ArtistDetailViewModelTests
     }
 
     [Fact]
-    public async Task Navigation_opens_albums_tracks_albums_and_similar_artists()
+    public async Task Navigation_opens_albums_and_similar_artists()
     {
         var sut = CreateSut();
         await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
 
         sut.OpenAlbumCommand.Execute(sut.Albums[1]);
-        sut.OpenTrackAlbumCommand.Execute(sut.TopTracks[0]);
         sut.OpenArtistCommand.Execute(sut.Similar[0]);
 
         Received.InOrder(() =>
         {
             _navigation.NavigateTo(PageKeys.Album, "album-2");
-            _navigation.NavigateTo(PageKeys.Album, "album-1");
             _navigation.NavigateTo(PageKeys.Artist, "artist-2");
         });
     }
 
     [Fact]
-    public void Playback_waits_for_the_engine()
+    public void Playback_needs_a_loaded_artist()
     {
         var sut = CreateSut();
 
         sut.PlayCommand.CanExecute(null).Should().BeFalse();
         sut.ShuffleCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Play_and_shuffle_play_all_tracks_of_the_artist()
+    {
+        var all = new[] { Track("x1", "A", "Discovery", "album-1"), Track("x2", "B", "Homework", "album-2") };
+        _library.GetArtistTracksAsync(ArtistId, Arg.Any<CancellationToken>()).Returns(all);
+        var sut = CreateSut();
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        await sut.PlayCommand.ExecuteAsync(null);
+        await sut.ShuffleCommand.ExecuteAsync(null);
+
+        _player.Received(1).Play(all, 0);
+        _player.Received(1).Shuffle(all);
+    }
+
+    [Fact]
+    public async Task Failing_to_load_the_artist_tracks_is_reported()
+    {
+        _library.GetArtistTracksAsync(ArtistId, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<IReadOnlyList<Track>>(new JellyfinException("boom")));
+        var sut = CreateSut();
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        await sut.PlayCommand.ExecuteAsync(null);
+
+        _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.Playback);
+        _player.DidNotReceiveWithAnyArgs().Play(default!, default);
+    }
+
+    [Fact]
+    public async Task Clicking_a_top_track_plays_the_top_tracks_from_there()
+    {
+        var sut = CreateSut();
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        sut.PlayTopTrackCommand.Execute(sut.TopTracks[1]);
+
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "t1", "t2" })), 1);
     }
 
     [Fact]

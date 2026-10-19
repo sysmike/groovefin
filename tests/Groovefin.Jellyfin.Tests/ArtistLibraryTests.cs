@@ -170,4 +170,27 @@ public sealed class ArtistLibraryTests : IDisposable
         Guid.Parse(appearsOn["contributingArtistIds"]).ToString("N").Should().Be(ArtistId);
         appearsOn.Should().NotContainKey("albumArtistIds");
     }
+
+    [Fact]
+    public async Task Artist_tracks_are_all_audio_items_album_by_album_with_the_cover_tag()
+    {
+        Stub("/Items", new
+        {
+            Items = new object[]
+            {
+                new { Id = "12121212-2222-3333-4444-555555555555", Name = "One More Time", Type = "Audio", Album = "Discovery", AlbumId = "11111111-2222-3333-4444-555555555555", AlbumPrimaryImageTag = "cover-1" },
+            },
+        });
+
+        var tracks = await _host.Library.GetArtistTracksAsync(ArtistId, Ct);
+
+        tracks.Should().ContainSingle().Which.Should().BeEquivalentTo(new { AlbumImageTag = "cover-1", AlbumId = "11111111222233334444555555555555" });
+        var query = LastQuery();
+        Guid.Parse(query["artistIds"]).ToString("N").Should().Be(ArtistId);
+        query["includeItemTypes"].Should().Be("Audio");
+        query["sortBy"].Should().Be("ProductionYear,Album,ParentIndexNumber,IndexNumber");
+        query["sortOrder"].Should().Be("Descending,Ascending,Ascending,Ascending");
+        query["enableImageTypes"].Should().Be("Primary");
+        query.Should().NotContainKey("limit");
+    }
 }

@@ -63,6 +63,15 @@ internal sealed partial class AlbumDetailPage : Page
         }
     }
 
+    /// <summary>Click or Enter on a track plays the album from there.</summary>
+    private void OnTrackClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is TrackItem item)
+        {
+            ViewModel.PlayTrackCommand.Execute(item);
+        }
+    }
+
     /// <summary>Right-click or Menu key on a track: go to one of its artists.</summary>
     private void OnTrackContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {

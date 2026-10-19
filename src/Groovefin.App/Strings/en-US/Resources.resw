@@ -666,4 +666,85 @@
     <value>{0} kbps</value>
     <comment>Bitrate choice; {0} = kilobits per second</comment>
   </data>
+  <data name="NowPlayingBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Now playing</value>
+  </data>
+  <data name="NowPlayingTitleLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Open album</value>
+  </data>
+  <data name="NowPlayingTitleLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Open album</value>
+  </data>
+  <data name="NowPlayingShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Shuffle</value>
+  </data>
+  <data name="NowPlayingShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Shuffle</value>
+  </data>
+  <data name="NowPlayingPreviousButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Previous (Ctrl+B)</value>
+  </data>
+  <data name="NowPlayingPreviousButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous (Ctrl+B)</value>
+  </data>
+  <data name="NowPlayingNextButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Next (Ctrl+F)</value>
+  </data>
+  <data name="NowPlayingNextButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next (Ctrl+F)</value>
+  </data>
+  <data name="NowPlayingSeekSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="NowPlayingFavouriteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favourite</value>
+  </data>
+  <data name="NowPlayingFavouriteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Favourite</value>
+  </data>
+  <data name="NowPlayingQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Queue</value>
+  </data>
+  <data name="NowPlayingQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Queue</value>
+  </data>
+  <data name="NowPlayingLyricsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lyrics</value>
+  </data>
+  <data name="NowPlayingLyricsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Lyrics</value>
+  </data>
+  <data name="NowPlayingFullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="NowPlayingFullScreenButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="NowPlayingMuteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mute</value>
+  </data>
+  <data name="NowPlayingMuteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Mute</value>
+  </data>
+  <data name="NowPlayingVolumeSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Volume</value>
+  </data>
+  <data name="NowPlaying_Play" xml:space="preserve">
+    <value>Play (Ctrl+P)</value>
+  </data>
+  <data name="NowPlaying_Pause" xml:space="preserve">
+    <value>Pause (Ctrl+P)</value>
+  </data>
+  <data name="NowPlaying_RepeatOff" xml:space="preserve">
+    <value>Repeat: off</value>
+  </data>
+  <data name="NowPlaying_RepeatAll" xml:space="preserve">
+    <value>Repeat: all</value>
+  </data>
+  <data name="NowPlaying_RepeatOne" xml:space="preserve">
+    <value>Repeat: one</value>
+  </data>
+  <data name="Operation_Playback" xml:space="preserve">
+    <value>Couldn't play the track</value>
+  </data>
 </root>

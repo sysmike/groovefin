@@ -1,0 +1,323 @@
+using Groovefin.Core.Api;
+using Groovefin.Core.Models;
+using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
+using Groovefin.Core.Queue;
+using Groovefin.Core.Settings;
+using Groovefin.Core.Tests.TestDoubles;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace Groovefin.Core.Tests.Playback;
+
+public sealed class PlayerTests : IDisposable
+{
+    private static readonly Uri Server = new("http://192.168.1.10:8096/");
+
+    private readonly QueueManager _queue = new(new Random(1));
+    private readonly FakePlaybackEngine _engine = new();
+    private readonly IStreamUrlProvider _streams = Substitute.For<IStreamUrlProvider>();
+    private readonly IJellyfinClient _client = Substitute.For<IJellyfinClient>();
+    private readonly InMemorySettingsService _settings = new();
+    private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
+    private readonly Player _sut;
+
+    public PlayerTests()
+    {
+        _client.Connection.Returns(new ServerConnection(Server, "user", "token"));
+        _streams.GetStreamUrl(Arg.Any<string>(), Arg.Any<StreamOptions>())
+            .Returns(call => new Uri($"http://stream/{call.Arg<string>()}"));
+        _sut = new Player(_queue, _engine, _streams, _client, _settings, _errors, NullLogger<Player>.Instance, new Random(7));
+    }
+
+    public void Dispose() => _sut.Dispose();
+
+    private static Track[] Tracks(params string[] ids) => ids.Select(id => new Track { Id = id, Name = id }).ToArray();
+
+    private string? Playing => _engine.Current?.Track.Id;
+
+    [Fact]
+    public void Play_queues_the_tracks_and_loads_the_chosen_one_with_local_stream_options()
+    {
+        _sut.Play(Tracks("a", "b", "c"), startIndex: 1);
+
+        Playing.Should().Be("b");
+        _engine.Current!.Id.Should().Be(_queue.Current!.Id);
+        _engine.Current.Url.Should().Be(new Uri("http://stream/b"));
+        _engine.Calls.Should().Equal($"load {_queue.Current.Id} autoPlay=True");
+        _streams.Received(1).GetStreamUrl("b", new StreamOptions(null, TranscodingCodec.Aac));
+    }
+
+    [Fact]
+    public void Remote_servers_get_the_remote_bitrate_limit()
+    {
+        _client.Connection.Returns(new ServerConnection(new Uri("https://media.example.com/"), "user", "token"));
+
+        _sut.Play(Tracks("a"));
+
+        _streams.Received(1).GetStreamUrl("a", new StreamOptions(320, TranscodingCodec.Aac));
+    }
+
+    [Fact]
+    public void Playing_nothing_changes_nothing()
+    {
+        _sut.Play([]);
+        _sut.Shuffle([]);
+
+        _engine.Calls.Should().BeEmpty();
+        _queue.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Null_tracks_are_rejected()
+    {
+        _sut.Invoking(p => p.Play(null!)).Should().Throw<ArgumentNullException>();
+        _sut.Invoking(p => p.Shuffle(null!)).Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Shuffle_turns_shuffle_on_and_plays()
+    {
+        _sut.Shuffle(Tracks("a", "b", "c", "d"));
+
+        _queue.Shuffle.Should().BeTrue();
+        _queue.CurrentIndex.Should().Be(0);
+        Playing.Should().Be(_queue.Current!.Track.Id);
+    }
+
+    [Fact]
+    public void PlayNext_and_AddToQueue_change_the_queue_but_not_the_playing_track()
+    {
+        _sut.Play(Tracks("a", "b"));
+        _engine.Calls.Clear();
+
+        _sut.PlayNext(Tracks("x"));
+        _sut.AddToQueue(Tracks("z"));
+
+        _queue.Items.Select(i => i.Track.Id).Should().Equal("a", "x", "b", "z");
+        _engine.Calls.Should().BeEmpty();
+        Playing.Should().Be("a");
+    }
+
+    [Fact]
+    public void A_track_that_ends_is_followed_by_the_next_one()
+    {
+        _sut.Play(Tracks("a", "b"));
+
+        _engine.SimulateEnded();
+
+        Playing.Should().Be("b");
+    }
+
+    [Fact]
+    public void The_end_of_the_queue_stops_playback_and_play_starts_the_last_entry_again()
+    {
+        _sut.Play(Tracks("a"));
+
+        _engine.SimulateEnded();
+
+        _engine.Current.Should().BeNull();
+        _engine.Calls[^1].Should().Be("stop");
+
+        _sut.TogglePlayPause();
+
+        Playing.Should().Be("a");
+    }
+
+    [Fact]
+    public void Toggle_pauses_while_playing_and_resumes_while_paused()
+    {
+        _sut.Play(Tracks("a"));
+        _engine.SimulateState(PlaybackState.Playing);
+
+        _sut.TogglePlayPause();
+        _engine.SimulateState(PlaybackState.Paused);
+        _sut.TogglePlayPause();
+
+        _engine.Calls.Should().EndWith(["pause", "play"]);
+    }
+
+    [Fact]
+    public void Toggle_with_an_empty_queue_does_nothing()
+    {
+        _sut.TogglePlayPause();
+
+        _engine.Calls.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Next_moves_on_and_stops_at_the_end()
+    {
+        _sut.Play(Tracks("a", "b"));
+
+        _sut.Next();
+        Playing.Should().Be("b");
+
+        _sut.Next();
+        _engine.Current.Should().BeNull();
+    }
+
+    [Fact]
+    public void Previous_restarts_a_track_that_has_played_for_a_while()
+    {
+        _sut.Play(Tracks("a", "b"));
+        _sut.Next();
+        _engine.Seek(TimeSpan.FromSeconds(10));
+
+        _sut.Previous();
+
+        Playing.Should().Be("b");
+        _engine.Position.Should().Be(TimeSpan.Zero);
+    }
+
+    [Fact]
+    public void Previous_early_in_a_track_goes_back()
+    {
+        _sut.Play(Tracks("a", "b"));
+        _sut.Next();
+
+        _sut.Previous();
+
+        Playing.Should().Be("a");
+    }
+
+    [Fact]
+    public void Previous_on_the_first_track_restarts_it()
+    {
+        _sut.Play(Tracks("a", "b"));
+        _engine.Calls.Clear();
+
+        _sut.Previous();
+
+        Playing.Should().Be("a");
+        _engine.Calls.Should().Equal("seek 0");
+    }
+
+    [Fact]
+    public void Previous_with_an_empty_queue_does_nothing()
+    {
+        _sut.Previous();
+
+        _engine.Calls.Should().BeEmpty();
+        _engine.Current.Should().BeNull();
+    }
+
+    [Fact]
+    public void JumpTo_plays_the_entry()
+    {
+        _sut.Play(Tracks("a", "b", "c"));
+
+        _sut.JumpTo(_queue.Items[2].Id);
+        Playing.Should().Be("c");
+
+        _engine.Calls.Clear();
+        _sut.JumpTo("missing");
+        _engine.Calls.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void A_failing_track_is_reported_and_skipped()
+    {
+        _sut.Play(Tracks("a", "b"));
+
+        _engine.SimulateFailure("MediaSourceNotSupported");
+
+        Playing.Should().Be("b");
+        _errors.Received(1).Report(Arg.Is<Exception>(e => e.Message == "MediaSourceNotSupported"), Operations.Playback);
+    }
+
+    [Fact]
+    public void Playback_stops_after_too_many_failures_in_a_row()
+    {
+        _sut.Play(Tracks("a", "b", "c", "d", "e"));
+
+        for (var i = 0; i < Player.MaxConsecutiveFailures; i++)
+        {
+            _engine.SimulateFailure(exception: new InvalidOperationException("boom"));
+        }
+
+        _engine.Current.Should().BeNull();
+        _errors.Received(Player.MaxConsecutiveFailures).Report(Arg.Any<InvalidOperationException>(), Operations.Playback);
+    }
+
+    [Fact]
+    public void A_track_that_plays_resets_the_failure_count()
+    {
+        _sut.Play(Tracks("a", "b", "c", "d", "e"));
+
+        _engine.SimulateFailure();
+        _engine.SimulateFailure();
+        _engine.SimulateEnded();
+        _engine.SimulateFailure();
+
+        Playing.Should().Be("e");
+    }
+
+    [Fact]
+    public void Without_a_connection_nothing_plays_and_the_error_is_shown()
+    {
+        _client.Connection.Returns((ServerConnection?)null);
+
+        _sut.Play(Tracks("a"));
+
+        _engine.Current.Should().BeNull();
+        _errors.Received(1).Report(Arg.Any<InvalidOperationException>(), Operations.Playback);
+    }
+
+    [Fact]
+    public void Removing_the_playing_entry_elsewhere_plays_the_next_one()
+    {
+        _sut.Play(Tracks("a", "b"));
+        _engine.SimulateState(PlaybackState.Playing);
+
+        _queue.Remove(_queue.Current!.Id);
+
+        Playing.Should().Be("b");
+        _engine.Calls[^1].Should().EndWith("autoPlay=True");
+    }
+
+    [Fact]
+    public void Removing_the_paused_entry_elsewhere_loads_the_next_one_paused()
+    {
+        _sut.Play(Tracks("a", "b"));
+        _engine.SimulateState(PlaybackState.Paused);
+
+        _queue.Remove(_queue.Current!.Id);
+
+        _engine.Calls[^1].Should().EndWith("autoPlay=False");
+    }
+
+    [Fact]
+    public void Clearing_the_queue_elsewhere_stops_playback()
+    {
+        _sut.Play(Tracks("a", "b"));
+
+        _queue.Clear();
+
+        _engine.Current.Should().BeNull();
+    }
+
+    [Fact]
+    public void Queue_changes_that_keep_the_playing_entry_or_happen_while_idle_change_nothing()
+    {
+        _sut.Play(Tracks("a", "b"));
+        _engine.Calls.Clear();
+
+        _queue.AddLast(Tracks("c"));
+        _engine.Stop();
+        _engine.Calls.Clear();
+        _queue.JumpTo(_queue.Items[1].Id);
+
+        _engine.Calls.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Dispose_detaches_from_the_engine_and_the_queue()
+    {
+        _sut.Play(Tracks("a", "b"));
+        _sut.Dispose();
+
+        _engine.SimulateEnded();
+
+        Playing.Should().Be("a");
+    }
+}

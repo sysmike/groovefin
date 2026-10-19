@@ -3,6 +3,7 @@ using Groovefin.Core;
 using Groovefin.Core.Images;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
+using Groovefin.Core.Queue;
 using Groovefin.Core.Security;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
@@ -83,6 +84,10 @@ internal static class AppHost
         // Playback
         builder.Services.AddSingleton<MediaPlayerEngine>();
         builder.Services.AddSingleton<IPlaybackEngine>(sp => sp.GetRequiredService<MediaPlayerEngine>());
+        builder.Services.AddSingleton(_ => new QueueManager());
+        builder.Services.AddSingleton<Player>();
+        builder.Services.AddSingleton<IPlayer>(sp => sp.GetRequiredService<Player>());
+        builder.Services.AddSingleton<NowPlayingViewModel>();
 
         // Servers
         builder.Services.AddSingleton<IServerManager, ServerManager>();
