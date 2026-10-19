@@ -33,6 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IImageSource, JellyfinImageSource>();
         services.AddSingleton<IStreamUrlProvider, StreamUrlBuilder>();
         services.AddSingleton<IPlaybackReporter, PlaybackReporter>();
+        services.AddSingleton<IPlaylistService, PlaylistService>();
         services.AddSingleton<ISearchService, SearchService>();
         return services;
     }

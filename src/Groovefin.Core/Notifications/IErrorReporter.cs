@@ -28,5 +28,6 @@ public static class Operations
     public const string LoadArtist = "Operation_LoadArtist";
     public const string LoadLibraries = "Operation_LoadLibraries";
     public const string Playback = "Operation_Playback";
+    public const string SavePlaylist = "Operation_SavePlaylist";
     public const string Search = "Operation_Search";
 }

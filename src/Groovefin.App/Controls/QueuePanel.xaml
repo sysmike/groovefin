@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Groovefin.App.Controls.QueuePanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Groovefin.App.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Groovefin.Core.ViewModels"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <Style
+            x:Key="QueuePanelButtonStyle"
+            BasedOn="{StaticResource DefaultButtonStyle}"
+            TargetType="Button">
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="{ThemeResource SubtleFillColorTransparentBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <!--  One queue row: cover, title, artists, length.  -->
+        <DataTemplate x:Key="QueueEntryTemplate" x:DataType="vm:QueueEntry">
+            <Grid
+                Padding="0,4"
+                AutomationProperties.Name="{x:Bind AccessibleName}"
+                ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid
+                    Width="40"
+                    Height="40"
+                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                    CornerRadius="{StaticResource ControlCornerRadius}">
+                    <FontIcon
+                        FontSize="16"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        Glyph="&#xE8D6;" />
+                    <Image
+                        controls:Artwork.Request="{x:Bind Cover}"
+                        AutomationProperties.AccessibilityView="Raw"
+                        Stretch="UniformToFill" />
+                </Grid>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock
+                        MaxLines="1"
+                        Text="{x:Bind Title}"
+                        TextTrimming="CharacterEllipsis" />
+                    <TextBlock
+                        MaxLines="1"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Artist}"
+                        TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <TextBlock
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind Duration}" />
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid
+        Width="360"
+        Padding="16,12,8,0"
+        Background="{ThemeResource LayerFillColorDefaultBrush}"
+        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+        BorderThickness="1,0,0,0"
+        RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Header: title and the queue's actions.  -->
+        <Grid ColumnSpacing="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                x:Uid="QueuePanelHeader"
+                VerticalAlignment="Center"
+                AutomationProperties.HeadingLevel="Level1"
+                Style="{StaticResource SubtitleTextBlockStyle}" />
+            <Button
+                x:Uid="QueueSaveButton"
+                Grid.Column="1"
+                Command="{x:Bind ViewModel.SaveAsPlaylistCommand}"
+                Style="{StaticResource QueuePanelButtonStyle}">
+                <FontIcon FontSize="14" Glyph="&#xE74E;" />
+            </Button>
+            <Button
+                x:Uid="QueueClearButton"
+                Grid.Column="2"
+                Command="{x:Bind ViewModel.ClearUpcomingCommand}"
+                Style="{StaticResource QueuePanelButtonStyle}">
+                <FontIcon FontSize="14" Glyph="&#xE894;" />
+            </Button>
+            <Button
+                x:Name="CloseButton"
+                x:Uid="QueueCloseButton"
+                Grid.Column="3"
+                Command="{x:Bind ViewModel.CloseCommand}"
+                Style="{StaticResource QueuePanelButtonStyle}">
+                <FontIcon FontSize="14" Glyph="&#xE711;" />
+            </Button>
+        </Grid>
+
+        <!--  The playing entry.  -->
+        <StackPanel
+            Grid.Row="1"
+            Padding="0,0,8,0"
+            Spacing="4"
+            Visibility="{x:Bind ViewModel.HasCurrent, Mode=OneWay}">
+            <TextBlock
+                x:Uid="QueueNowPlayingHeader"
+                AutomationProperties.HeadingLevel="Level2"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}" />
+            <ContentControl
+                HorizontalContentAlignment="Stretch"
+                Content="{x:Bind ViewModel.Current, Mode=OneWay}"
+                ContentTemplate="{StaticResource QueueEntryTemplate}"
+                ContextRequested="OnCurrentContextRequested"
+                IsTabStop="False" />
+        </StackPanel>
+
+        <SelectorBar
+            x:Name="Sections"
+            Grid.Row="2"
+            SelectionChanged="OnSectionChanged">
+            <SelectorBarItem x:Name="UpNextSection" x:Uid="QueueUpNextTab" IsSelected="True" />
+            <SelectorBarItem x:Name="HistorySection" x:Uid="QueueHistoryTab" />
+        </SelectorBar>
+
+        <Grid Grid.Row="3">
+            <!--  Up next: click plays, drag reorders, context menu (or Shift+F10) moves and removes.  -->
+            <ListView
+                x:Name="UpNextList"
+                x:Uid="QueueUpNextList"
+                AllowDrop="True"
+                CanDragItems="True"
+                CanReorderItems="True"
+                ContextRequested="OnUpNextContextRequested"
+                DragItemsCompleted="OnUpNextDragCompleted"
+                IsItemClickEnabled="True"
+                ItemClick="OnUpNextClick"
+                ItemTemplate="{StaticResource QueueEntryTemplate}"
+                ItemsSource="{x:Bind ViewModel.Upcoming}"
+                SelectionMode="None" />
+            <TextBlock
+                x:Name="UpNextEmpty"
+                x:Uid="QueueUpNextEmpty"
+                Margin="0,12,8,0"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                TextWrapping="Wrap" />
+
+            <ListView
+                x:Name="HistoryList"
+                x:Uid="QueueHistoryList"
+                ContextRequested="OnHistoryContextRequested"
+                IsItemClickEnabled="True"
+                ItemClick="OnHistoryClick"
+                ItemTemplate="{StaticResource QueueEntryTemplate}"
+                ItemsSource="{x:Bind ViewModel.History}"
+                SelectionMode="None"
+                Visibility="Collapsed" />
+            <TextBlock
+                x:Name="HistoryEmpty"
+                x:Uid="QueueHistoryEmpty"
+                Margin="0,12,8,0"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                TextWrapping="Wrap"
+                Visibility="Collapsed" />
+        </Grid>
+    </Grid>
+</UserControl>

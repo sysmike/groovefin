@@ -17,17 +17,26 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
 
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator
                 Key="K"
                 Invoked="OnFocusSearchInvoked"
                 Modifiers="Control" />
+            <KeyboardAccelerator
+                Key="Q"
+                Invoked="OnToggleQueueInvoked"
+                Modifiers="Control" />
         </Grid.KeyboardAccelerators>
 
         <TitleBar
             x:Name="AppTitleBar"
             x:Uid="AppTitleBar"
+            Grid.ColumnSpan="2"
             BackRequested="OnTitleBarBackRequested"
             IsBackButtonEnabled="{x:Bind ViewModel.CanGoBack, Mode=OneWay}"
             IsBackButtonVisible="True"
@@ -159,7 +168,17 @@
             </Grid>
         </NavigationView>
 
+        <!--  Ctrl+Q or the now playing bar's queue button.  -->
+        <controls:QueuePanel
+            x:Name="QueuePane"
+            Grid.Row="1"
+            Grid.Column="1"
+            Visibility="{x:Bind Queue.IsOpen, Mode=OneWay}" />
+
         <!--  Shown once something is queued.  -->
-        <controls:NowPlayingBar x:Name="NowPlaying" Grid.Row="2" />
+        <controls:NowPlayingBar
+            x:Name="NowPlaying"
+            Grid.Row="2"
+            Grid.ColumnSpan="2" />
     </Grid>
 </Window>

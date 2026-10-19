@@ -23,9 +23,11 @@ internal sealed partial class MainWindow : Window
         FrameNavigationService navigation,
         ThemeService themeService,
         ContentDialogService dialogs,
+        QueueViewModel queue,
         SearchSuggestionsViewModel suggestions)
     {
         ViewModel = viewModel;
+        Queue = queue;
         Suggestions = suggestions;
         InitializeComponent();
 
@@ -47,6 +49,8 @@ internal sealed partial class MainWindow : Window
     }
 
     public ShellViewModel ViewModel { get; }
+
+    public QueueViewModel Queue { get; }
 
     public SearchSuggestionsViewModel Suggestions { get; }
 
@@ -132,6 +136,19 @@ internal sealed partial class MainWindow : Window
     private void OnFocusSearchInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         SearchBox.Focus(FocusState.Keyboard);
+        args.Handled = true;
+    }
+
+    /// <summary>Ctrl+Q opens the queue panel and moves focus into it, or closes it.</summary>
+    private void OnToggleQueueInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        Queue.ToggleCommand.Execute(null);
+        if (Queue.IsOpen)
+        {
+            // The panel becomes visible with the next layout pass; focus it once it is there.
+            _ = DispatcherQueue.TryEnqueue(QueuePane.FocusPanel);
+        }
+
         args.Handled = true;
     }
 }
