@@ -223,6 +223,21 @@ public sealed class QueueManager
         OnChanged();
     }
 
+    /// <summary>Removes the entries after the current one; the current entry keeps playing.</summary>
+    public void ClearUpcoming()
+    {
+        var start = CurrentIndex + 1;
+        if (CurrentIndex < 0 || start >= _order.Count)
+        {
+            return;
+        }
+
+        var removed = _order.GetRange(start, _order.Count - start).ToHashSet();
+        _order.RemoveRange(start, _order.Count - start);
+        _original.RemoveAll(removed.Contains);
+        OnChanged();
+    }
+
     /// <summary>Makes an entry current, e.g. when the user picks it in the queue panel.</summary>
     public bool JumpTo(string itemId)
     {
