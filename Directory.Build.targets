@@ -1,0 +1,29 @@
+<Project>
+  <!--
+    Stamps the MinVer version into the MSIX manifest. MSIX needs a numeric 4-part version, so a
+    pre-release such as 0.3.0-beta.1 becomes 0.3.0.0. The source Package.appxmanifest is not
+    modified; a stamped copy in obj/ replaces it as the AppxManifest item.
+  -->
+  <Target Name="GroovefinStampAppxManifestVersion"
+          BeforeTargets="_ValidatePresenceOfAppxManifestItems"
+          DependsOnTargets="MinVer"
+          Condition="'@(AppxManifest)' != '' and '$(MinVerSkip)' != 'true'">
+    <PropertyGroup>
+      <_GroovefinAppxManifest>$(IntermediateOutputPath)Package.versioned.appxmanifest</_GroovefinAppxManifest>
+      <GroovefinAppxPackageVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).0</GroovefinAppxPackageVersion>
+    </PropertyGroup>
+
+    <Copy SourceFiles="@(AppxManifest)" DestinationFiles="$(_GroovefinAppxManifest)" SkipUnchangedFiles="false" />
+    <XmlPoke XmlInputPath="$(_GroovefinAppxManifest)"
+             Query="/m:Package/m:Identity/@Version"
+             Value="$(GroovefinAppxPackageVersion)"
+             Namespaces="&lt;Namespace Prefix='m' Uri='http://schemas.microsoft.com/appx/manifest/foundation/windows10' /&gt;" />
+
+    <ItemGroup>
+      <AppxManifest Remove="@(AppxManifest)" />
+      <AppxManifest Include="$(_GroovefinAppxManifest)" />
+    </ItemGroup>
+
+    <Message Importance="high" Text="Groovefin: MSIX version $(GroovefinAppxPackageVersion) (MinVer $(MinVerVersion))" />
+  </Target>
+</Project>

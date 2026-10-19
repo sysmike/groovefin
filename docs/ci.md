@@ -60,6 +60,27 @@ own working directory.
 - **MSIX:** the CI package is unsigned. Install it in a PowerShell window started as administrator
   with Developer Mode on: `Add-AppxPackage -AllowUnsigned .\Groovefin_*.msix`.
 
+## Versioning
+
+Versions come from git tags via [MinVer](https://github.com/adamralph/minver) (a global package
+reference in `Directory.Packages.props`, tag prefix `v`).
+
+| Situation | Version |
+|---|---|
+| Commit tagged `v1.2.0` | `1.2.0` |
+| Commit tagged `v0.3.0-beta.1` | `0.3.0-beta.1` |
+| 5 commits after `v1.2.0` | `1.2.1-alpha.0.5` |
+| No tag yet | `0.0.0-alpha.0.<height>` |
+
+- `InformationalVersion` is `<version>+<commit SHA>`. The About page shows the version and the
+  short SHA (`AppVersion` in Core).
+- `Package.appxmanifest` keeps `0.0.0.0` in source. At build time `Directory.Build.targets` writes
+  a copy to `obj/` with `Major.Minor.Patch.0` (MSIX versions are numeric) and packages that copy.
+- MinVer needs the full history. Every CI checkout uses `fetch-depth: 0`. In a shallow clone the
+  version falls back to `0.0.0-alpha.0`.
+
+To release, push a tag: `git tag v0.1.0 && git push origin v0.1.0` (see `release.yml`, #56).
+
 ## Variables and secrets
 
 | Name | Kind | Used by | Purpose |
