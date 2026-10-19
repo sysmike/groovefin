@@ -1,6 +1,7 @@
 using Groovefin.App.Hosting;
 using Groovefin.Core;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,6 +15,9 @@ namespace Groovefin.App;
 /// </summary>
 public partial class App : Application
 {
+    /// <summary>How long closing the window waits for the last playback reports.</summary>
+    private static readonly TimeSpan ReportFlushTimeout = TimeSpan.FromSeconds(2);
+
     private IHost? _host;
     private ILogger<App>? _logger;
 
@@ -45,6 +49,9 @@ public partial class App : Application
         var window = _host.Services.GetRequiredService<MainWindow>();
         window.Closed += OnMainWindowClosed;
         window.Activate();
+
+        // Lives as long as the app: tells the server what is playing (play counts, recently played).
+        _host.Services.GetRequiredService<PlaybackReporting>();
     }
 
     private void OnMainWindowClosed(object sender, WindowEventArgs args)
@@ -54,7 +61,14 @@ public partial class App : Application
             LogStopping(_logger);
         }
 
-        // Saves complete on the thread pool, so blocking the UI thread here cannot deadlock.
+        // Report the playing track as stopped, then give the reports a moment to reach the server.
+        // Saves and reports complete on the thread pool, so blocking the UI thread here cannot deadlock.
+        if (_host is not null)
+        {
+            _host.Services.GetRequiredService<IPlaybackEngine>().Stop();
+            _host.Services.GetRequiredService<PlaybackReporting>().FlushAsync().Wait(ReportFlushTimeout);
+        }
+
         _host?.Services.GetRequiredService<ISettingsService>().FlushAsync().GetAwaiter().GetResult();
         _host?.StopAsync().GetAwaiter().GetResult();
         _host?.Dispose();
