@@ -54,6 +54,27 @@ dotnet test --solution Groovefin.CrossPlatform.slnf -c Release \
 `--coverage-settings` needs an absolute path, because each test application resolves it from its
 own working directory.
 
+## `codeql.yml`
+
+Triggers: `pull_request`, `push` to `main`, weekly (Monday 03:27 UTC), manual.
+
+CodeQL analyses C# with the `security-and-quality` query suite. It uses `build-mode: manual` and
+traces a Release x64 build of the full solution on the Windows runner, so the WinUI project is
+analysed too. Results appear under Security → Code scanning. A PR must not add new alerts.
+
+The job needs `security-events: write` to upload results; everything else is read-only.
+
+## Dependabot
+
+`.github/dependabot.yml` checks every Monday:
+
+| Ecosystem | What | Grouping | Labels |
+|---|---|---|---|
+| `nuget` | `Directory.Packages.props`, lock files, `.config/dotnet-tools.json` | minor + patch in one PR (`nuget-minor-patch`); majors separately | `dependencies`, `type:chore` |
+| `github-actions` | Pinned action SHAs in `.github/workflows` | minor + patch in one PR (`actions-minor-patch`) | `dependencies`, `area:ci` |
+
+Dependabot PRs run the normal CI. Merge them like any other PR once green.
+
 ## Variables and secrets
 
 | Name | Kind | Used by | Purpose |
