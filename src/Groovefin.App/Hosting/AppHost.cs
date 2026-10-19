@@ -3,6 +3,7 @@ using Groovefin.Core;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
 using Groovefin.Core.ViewModels;
+using Groovefin.Jellyfin;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -38,7 +39,12 @@ internal static class AppHost
                 rollOnFileSizeLimit: true,
                 outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}"));
 
-        builder.Services.AddSingleton(AppVersion.FromAssembly(typeof(AppHost).Assembly));
+        var version = AppVersion.FromAssembly(typeof(AppHost).Assembly);
+        builder.Services.AddSingleton(version);
+
+        // Jellyfin
+        builder.Services.AddSingleton(DeviceIdentity.Create(version));
+        builder.Services.AddGroovefinJellyfin();
 
         // Settings: settings.json next to the logs (LocalFolder when packaged, %LOCALAPPDATA%\Groovefin otherwise).
         builder.Services.AddSingleton(new SettingsStoreOptions(Path.Join(AppPaths.LocalData, "settings.json")));
