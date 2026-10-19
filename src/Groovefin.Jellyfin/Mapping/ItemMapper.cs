@@ -42,6 +42,8 @@ internal static class ItemMapper
             DiscNumber = dto.ParentIndexNumber,
             IsFavorite = dto.UserData?.IsFavorite ?? false,
             PlayCount = dto.UserData?.PlayCount ?? 0,
+            NormalizationGain = dto.NormalizationGain,
+            AlbumNormalizationGain = dto.AlbumNormalizationGain,
         };
     }
 

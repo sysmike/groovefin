@@ -420,4 +420,52 @@ public sealed class PlaybackEngineBaseTests
 
         _sut.Next.Should().BeSameAs(c);
     }
+
+    [Fact]
+    public void A_source_gain_turns_the_player_down_on_load_and_back_up_for_the_next_source()
+    {
+        _sut.Volume = 0.8;
+        _sut.Calls.Clear();
+
+        _sut.Load(Source("a") with { Gain = 0.5 });
+        _sut.Load(Source("b"));
+
+        _sut.Volume.Should().Be(0.8, "the user's volume is unchanged");
+        _sut.Calls.Should().Equal("volume 0.4", "load a autoPlay=True", "volume 0.8", "load b autoPlay=True");
+    }
+
+    [Fact]
+    public void Volume_changes_keep_the_source_gain()
+    {
+        _sut.Load(Source("a") with { Gain = 0.5 });
+        _sut.Calls.Clear();
+
+        _sut.Volume = 0.6;
+
+        _sut.Calls.Should().Equal("volume 0.3");
+    }
+
+    [Fact]
+    public void A_gapless_transition_applies_the_gain_of_the_next_source()
+    {
+        _sut.Load(Source("a"));
+        _sut.SetNext(Source("b") with { Gain = 0.25 });
+        _sut.Calls.Clear();
+
+        _sut.SimulateAdvance();
+        _dispatcher.RunAll();
+
+        _sut.Calls.Should().Equal("volume 0.25");
+    }
+
+    [Theory]
+    [InlineData(double.NaN, "")]
+    [InlineData(3.0, "")]
+    [InlineData(-1.0, "volume 0")]
+    public void Broken_gains_are_clamped_or_ignored(double gain, string expected)
+    {
+        _sut.Load(Source("a") with { Gain = gain });
+
+        _sut.Calls.Where(c => c.StartsWith("volume", StringComparison.Ordinal)).Should().Equal(expected.Length == 0 ? Array.Empty<string>() : new[] { expected });
+    }
 }

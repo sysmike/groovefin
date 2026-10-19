@@ -1,4 +1,5 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 
@@ -29,6 +30,8 @@ public sealed record AppSettings
     public BrowseSettings Browse { get; set; } = new();
 
     public StreamingSettings Streaming { get; set; } = new();
+
+    public PlaybackSettings Playback { get; set; } = new();
 }
 
 /// <summary>Look and feel.</summary>
@@ -96,4 +99,10 @@ public sealed record StreamingSettings
     /// <summary>Gets the stream options for a server at <paramref name="serverUrl"/>.</summary>
     public StreamOptions OptionsFor(Uri serverUrl) =>
         new(NetworkLocation.IsLocal(serverUrl) ? LocalMaxBitrateKbps : RemoteMaxBitrateKbps, Codec);
+}
+
+/// <summary>How playback evens out loudness differences.</summary>
+public sealed record PlaybackSettings
+{
+    public NormalizationMode Normalization { get; set; } = NormalizationMode.Off;
 }
