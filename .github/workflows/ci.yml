@@ -119,3 +119,40 @@ jobs:
 
       - name: Build
         run: dotnet build Groovefin.sln --configuration Release --no-restore -p:Platform=${{ matrix.platform }}
+
+      - name: Package MSIX (unsigned)
+        shell: pwsh
+        run: >
+          dotnet build src/Groovefin.App/Groovefin.App.csproj
+          --configuration Release --no-restore
+          -p:Platform=${{ matrix.platform }}
+          -p:GenerateAppxPackageOnBuild=true
+          -p:AppxPackageSigningEnabled=false
+          "-p:AppxPackageDir=${{ runner.temp }}\out\msix\\"
+
+      - name: Publish unpackaged (self-contained)
+        shell: pwsh
+        run: >
+          dotnet publish src/Groovefin.App/Groovefin.App.csproj
+          --configuration Release
+          -p:Platform=${{ matrix.platform }}
+          -p:WindowsPackageType=None
+          -p:WindowsAppSDKSelfContained=true
+          --self-contained true
+          --output "${{ runner.temp }}\out\unpackaged"
+
+      - name: Upload MSIX
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: groovefin-msix-${{ matrix.platform }}
+          path: ${{ runner.temp }}/out/msix/**/*.msix
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload unpackaged
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: groovefin-unpackaged-${{ matrix.platform }}
+          path: ${{ runner.temp }}/out/unpackaged/
+          if-no-files-found: error
+          retention-days: 7
