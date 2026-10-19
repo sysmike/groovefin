@@ -139,11 +139,15 @@ flowchart TD
 ### Networking and errors
 
 - The Jellyfin layer uses `IHttpClientFactory` with the `Microsoft.Extensions.Http.Resilience`
-  standard pipeline (retry, attempt timeout, total timeout, circuit breaker).
-- Failures are never silent. Services throw typed exceptions (e.g. `JellyfinException`,
-  `AuthenticationRequiredException`). ViewModels catch them, log them and expose an error state that
-  the view shows in an `InfoBar`.
-- An unhandled exception is logged and shown. The app never crashes silently.
+  standard pipeline: up to 3 retries with exponential back-off and jitter for transient failures
+  (network errors, timeouts, 408, 429, 5xx) of **safe** methods only, 15 s per attempt, 45 s per
+  request, and a circuit breaker. 4xx such as 401 are never retried.
+- Services throw only `JellyfinException` (HTTP status, or `null` when the server was unreachable or
+  timed out). Caller cancellation stays an `OperationCanceledException` and is not an error.
+- Failures are never silent. Code that catches an exception and does not rethrow calls
+  `IErrorReporter.Report(exception, Operations.X)`. It logs the details and shows a localized
+  InfoBar in the shell through `INotificationService` (at most 3, duplicates dropped).
+- Unhandled XAML and unobserved task exceptions are reported the same way and the app keeps running.
 
 ### Logging
 

@@ -13,13 +13,22 @@ internal sealed class JellyfinTestHost : IDisposable
 
     private readonly ServiceProvider _services;
 
-    public JellyfinTestHost()
+    public JellyfinTestHost(TimeSpan? attemptTimeout = null)
     {
         Server = WireMockServer.Start();
         _services = new ServiceCollection()
             .AddLogging()
             .AddSingleton(Identity)
-            .AddGroovefinJellyfin()
+            .AddGroovefinJellyfin(options =>
+            {
+                // Keep retries, but without waiting between attempts.
+                options.Retry.Delay = TimeSpan.Zero;
+                if (attemptTimeout is { } timeout)
+                {
+                    options.AttemptTimeout.Timeout = timeout;
+                    options.CircuitBreaker.SamplingDuration = timeout * 2 + TimeSpan.FromSeconds(1);
+                }
+            })
             .BuildServiceProvider();
     }
 

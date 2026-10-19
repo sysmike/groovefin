@@ -1,5 +1,6 @@
 using Groovefin.App.Hosting;
 using Groovefin.Core;
+using Groovefin.Core.Notifications;
 using Groovefin.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -62,10 +63,16 @@ public partial class App : Application
 
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
-        // TODO(#13): surface the error in an InfoBar and keep the app running where possible.
         if (_logger is not null)
         {
             LogUnhandled(_logger, e.Exception, "XAML");
+        }
+
+        // Keep the app running and tell the user; the details are in the log.
+        if (TryGetErrorReporter() is { } errors)
+        {
+            errors.Report(e.Exception, Operations.Unexpected);
+            e.Handled = true;
         }
     }
 
@@ -84,8 +91,11 @@ public partial class App : Application
             LogUnhandled(_logger, e.Exception, "Task");
         }
 
+        TryGetErrorReporter()?.Report(e.Exception.GetBaseException(), Operations.Unexpected);
         e.SetObserved();
     }
+
+    private IErrorReporter? TryGetErrorReporter() => _host?.Services.GetService<IErrorReporter>();
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Groovefin {Version} started (packaged: {IsPackaged}, OS: {OsVersion})")]
     private static partial void LogStarted(ILogger logger, string version, bool isPackaged, string osVersion);

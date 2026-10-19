@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Groovefin.Core.Notifications;
 using Microsoft.Extensions.Logging;
 
 namespace Groovefin.Core.Settings;
@@ -8,7 +9,10 @@ namespace Groovefin.Core.Settings;
 /// replaces the settings file, so a crash never leaves a half-written file. A corrupted file is kept
 /// as <c>settings.json.corrupt</c> and the defaults are used.
 /// </summary>
-public sealed partial class JsonSettingsService(SettingsStoreOptions options, ILogger<JsonSettingsService> logger)
+public sealed partial class JsonSettingsService(
+    SettingsStoreOptions options,
+    IErrorReporter errors,
+    ILogger<JsonSettingsService> logger)
     : ISettingsService
 {
     private readonly Lock _gate = new();
@@ -145,8 +149,8 @@ public sealed partial class JsonSettingsService(SettingsStoreOptions options, IL
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // TODO(#13): surface the failure in an InfoBar through the notification service.
-            LogWriteFailed(ex, FilePath);
+            // Logged and shown to the user; the in-memory settings stay valid and the next change retries.
+            errors.Report(ex, Operations.SaveSettings);
         }
     }
 
@@ -155,9 +159,6 @@ public sealed partial class JsonSettingsService(SettingsStoreOptions options, IL
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Could not read settings file {Path}; using defaults")]
     private partial void LogReadFailed(Exception exception, string path);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Could not save settings file {Path}")]
-    private partial void LogWriteFailed(Exception exception, string path);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Settings file has schema version {FileVersion}, newer than {SupportedVersion}; unknown values are ignored")]
     private partial void LogNewerSchema(int fileVersion, int supportedVersion);

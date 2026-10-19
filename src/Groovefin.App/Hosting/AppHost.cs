@@ -1,5 +1,6 @@
 using Groovefin.App.Services;
 using Groovefin.Core;
+using Groovefin.Core.Notifications;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
 using Groovefin.Core.ViewModels;
@@ -52,6 +53,9 @@ internal static class AppHost
 
         // Platform services
         builder.Services.AddSingleton<IDispatcher, DispatcherQueueDispatcher>();
+        builder.Services.AddSingleton<IStringResources, ResourceStringProvider>();
+        builder.Services.AddSingleton<INotificationService, NotificationService>();
+        builder.Services.AddSingleton<IErrorReporter, ErrorReporter>();
         builder.Services.AddSingleton<FrameNavigationService>();
         builder.Services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<FrameNavigationService>());
         builder.Services.AddSingleton<ThemeService>();

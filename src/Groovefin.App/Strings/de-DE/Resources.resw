@@ -130,4 +130,34 @@
   <data name="SettingsLicense.Text" xml:space="preserve">
     <value>Lizenziert unter der MIT-Lizenz.</value>
   </data>
+  <data name="Operation_Unexpected" xml:space="preserve">
+    <value>Etwas ist schiefgelaufen</value>
+  </data>
+  <data name="Operation_SaveSettings" xml:space="preserve">
+    <value>Einstellungen konnten nicht gespeichert werden</value>
+  </data>
+  <data name="Operation_ConnectServer" xml:space="preserve">
+    <value>Keine Verbindung zum Server möglich</value>
+  </data>
+  <data name="Operation_LoadAlbums" xml:space="preserve">
+    <value>Alben konnten nicht geladen werden</value>
+  </data>
+  <data name="Error_Unauthorized" xml:space="preserve">
+    <value>Deine Sitzung ist abgelaufen. Melde dich erneut an.</value>
+  </data>
+  <data name="Error_Unreachable" xml:space="preserve">
+    <value>Der Server ist nicht erreichbar. Prüfe die Serveradresse und deine Netzwerkverbindung.</value>
+  </data>
+  <data name="Error_Server" xml:space="preserve">
+    <value>Der Server hat einen Fehler gemeldet (HTTP {0}).</value>
+  </data>
+  <data name="Error_Storage" xml:space="preserve">
+    <value>Groovefin konnte seine Dateien nicht lesen oder schreiben. Prüfe, ob genug Speicherplatz frei ist.</value>
+  </data>
+  <data name="Error_Unexpected" xml:space="preserve">
+    <value>Ein unerwarteter Fehler ist aufgetreten. Details stehen in der Protokolldatei.</value>
+  </data>
+  <data name="NotificationArea.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Benachrichtigungen</value>
+  </data>
 </root>

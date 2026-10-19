@@ -142,4 +142,35 @@
   <data name="SettingsLicense.Text" xml:space="preserve">
     <value>Licensed under the MIT License.</value>
   </data>
+  <data name="Operation_Unexpected" xml:space="preserve">
+    <value>Something went wrong</value>
+  </data>
+  <data name="Operation_SaveSettings" xml:space="preserve">
+    <value>Couldn't save settings</value>
+  </data>
+  <data name="Operation_ConnectServer" xml:space="preserve">
+    <value>Couldn't connect to the server</value>
+  </data>
+  <data name="Operation_LoadAlbums" xml:space="preserve">
+    <value>Couldn't load albums</value>
+  </data>
+  <data name="Error_Unauthorized" xml:space="preserve">
+    <value>Your session has expired. Sign in again.</value>
+  </data>
+  <data name="Error_Unreachable" xml:space="preserve">
+    <value>The server can't be reached. Check the server address and your network connection.</value>
+  </data>
+  <data name="Error_Server" xml:space="preserve">
+    <value>The server returned an error (HTTP {0}).</value>
+    <comment>{0} = HTTP status code</comment>
+  </data>
+  <data name="Error_Storage" xml:space="preserve">
+    <value>Groovefin couldn't read or write its files. Check that there is enough free disk space.</value>
+  </data>
+  <data name="Error_Unexpected" xml:space="preserve">
+    <value>An unexpected error occurred. Details are in the log file.</value>
+  </data>
+  <data name="NotificationArea.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
 </root>
