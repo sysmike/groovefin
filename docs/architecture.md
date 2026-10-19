@@ -112,6 +112,21 @@ flowchart TD
 | `IDispatcher` | Core | App | Marshal work to the UI thread. The only way code outside views touches the UI thread. |
 | `ICredentialStore` | Core | App | Access tokens in `PasswordVault`. |
 
+## Jellyfin layer
+
+- `JellyfinClient` owns the active `ServerConnection` (server URL, user ID, access token) and one SDK
+  client (`JellyfinApiClient`) per connection. `Connect` replaces it; the focused services always use
+  the current one.
+- Every request carries `Authorization: MediaBrowser Client="Groovefin", Device=…, DeviceId=…,
+  Version=…[, Token=…]`. The SDK's own header drops the client fields once a token is set, so
+  Groovefin uses its own `IAuthenticationProvider`. The device ID is stable per Windows user and
+  machine (`EasClientDeviceInformation`).
+- DTOs are mapped to Core models in `Mapping/`. IDs use Jellyfin's 32-digit hex form.
+- SDK (`ApiException`) and transport errors become `JellyfinException` with the HTTP status code
+  (`null` when the server was unreachable). Callers never see SDK types.
+- The focused interfaces (`IPlaylistService`, `ISearchService`, `ILyricsService`,
+  `IPlaybackReporter`) are added with the features that need them (#36, #41, #44, #31).
+
 ## Conventions
 
 ### Threading
