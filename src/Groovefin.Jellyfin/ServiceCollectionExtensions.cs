@@ -35,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPlaybackReporter, PlaybackReporter>();
         services.AddSingleton<IPlaylistService, PlaylistService>();
         services.AddSingleton<ISearchService, SearchService>();
+        services.AddSingleton<ILyricsService, LyricsService>();
         return services;
     }
 
