@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppDisplayName" xml:space="preserve">
+    <value>Groovefin</value>
+    <comment>App name: window title, Start menu, package</comment>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>A native Jellyfin music player for Windows</value>
+    <comment>Package description</comment>
+  </data>
+  <data name="AppTitleBar.Title" xml:space="preserve">
+    <value>Groovefin</value>
+  </data>
+  <data name="SearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search</value>
+    <comment>Title bar search box (Ctrl+K)</comment>
+  </data>
+  <data name="SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Search your music library</value>
+  </data>
+  <data name="NavHome.Content" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="NavAlbums.Content" xml:space="preserve">
+    <value>Albums</value>
+  </data>
+  <data name="NavArtists.Content" xml:space="preserve">
+    <value>Artists</value>
+  </data>
+  <data name="NavSongs.Content" xml:space="preserve">
+    <value>Songs</value>
+  </data>
+  <data name="NavGenres.Content" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="NavPlaylists.Content" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="NavFolders.Content" xml:space="preserve">
+    <value>Folders</value>
+  </data>
+  <data name="NavFavourites.Content" xml:space="preserve">
+    <value>Favourites</value>
+  </data>
+  <data name="SectionTitle_home" xml:space="preserve">
+    <value>Home</value>
+    <comment>Page header</comment>
+  </data>
+  <data name="SectionTitle_albums" xml:space="preserve">
+    <value>Albums</value>
+    <comment>Page header</comment>
+  </data>
+  <data name="SectionTitle_artists" xml:space="preserve">
+    <value>Artists</value>
+    <comment>Page header</comment>
+  </data>
+  <data name="SectionTitle_songs" xml:space="preserve">
+    <value>Songs</value>
+    <comment>Page header</comment>
+  </data>
+  <data name="SectionTitle_genres" xml:space="preserve">
+    <value>Genres</value>
+    <comment>Page header</comment>
+  </data>
+  <data name="SectionTitle_playlists" xml:space="preserve">
+    <value>Playlists</value>
+    <comment>Page header</comment>
+  </data>
+  <data name="SectionTitle_folders" xml:space="preserve">
+    <value>Folders</value>
+    <comment>Page header</comment>
+  </data>
+  <data name="SectionTitle_favourites" xml:space="preserve">
+    <value>Favourites</value>
+    <comment>Page header</comment>
+  </data>
+  <data name="SectionTitle_search" xml:space="preserve">
+    <value>Search</value>
+    <comment>Page header</comment>
+  </data>
+  <data name="SectionPlaceholderInfo.Title" xml:space="preserve">
+    <value>Coming soon</value>
+  </data>
+  <data name="SectionPlaceholderInfo.Message" xml:space="preserve">
+    <value>This section is not available yet.</value>
+  </data>
+  <data name="SettingsHeader.Text" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SettingsAppearanceHeader.Text" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="SettingsTheme.Header" xml:space="preserve">
+    <value>App theme</value>
+  </data>
+  <data name="SettingsThemeSystem.Content" xml:space="preserve">
+    <value>Use system setting</value>
+  </data>
+  <data name="SettingsThemeLight.Content" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="SettingsThemeDark.Content" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="SettingsAboutHeader.Text" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="SettingsAppName.Text" xml:space="preserve">
+    <value>Groovefin</value>
+  </data>
+</root>
