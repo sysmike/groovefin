@@ -1,6 +1,7 @@
 using Groovefin.App.Services;
 using Groovefin.Core;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 using Groovefin.Core.ViewModels;
 using Groovefin.Jellyfin;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,7 +32,7 @@ internal static class AppHost
             .MinimumLevel.Override("System.Net.Http", LogEventLevel.Warning)
             .Enrich.FromLogContext()
             .WriteTo.File(
-                Path.Combine(AppPaths.Logs, "groovefin-.log"),
+                Path.Join(AppPaths.Logs, "groovefin-.log"),
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: 7,
                 fileSizeLimitBytes: 10 * 1024 * 1024,
@@ -44,6 +45,10 @@ internal static class AppHost
         // Jellyfin
         builder.Services.AddSingleton(DeviceIdentity.Create(version));
         builder.Services.AddGroovefinJellyfin();
+
+        // Settings: settings.json next to the logs (LocalFolder when packaged, %LOCALAPPDATA%\Groovefin otherwise).
+        builder.Services.AddSingleton(new SettingsStoreOptions(Path.Join(AppPaths.LocalData, "settings.json")));
+        builder.Services.AddSingleton<ISettingsService, JsonSettingsService>();
 
         // Platform services
         builder.Services.AddSingleton<IDispatcher, DispatcherQueueDispatcher>();

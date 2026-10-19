@@ -1,5 +1,6 @@
 using Groovefin.App.Hosting;
 using Groovefin.Core;
+using Groovefin.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -28,7 +29,7 @@ public partial class App : Application
     public static IServiceProvider Services =>
         ((App)Current)._host?.Services ?? throw new InvalidOperationException("The host is not built yet.");
 
-    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         _host = AppHost.Build();
         _host.Start();
@@ -36,6 +37,9 @@ public partial class App : Application
         _logger = _host.Services.GetRequiredService<ILogger<App>>();
         var version = _host.Services.GetRequiredService<AppVersion>();
         LogStarted(_logger, version.DisplayText, AppPaths.IsPackaged, Environment.OSVersion.VersionString);
+
+        // Settings must be loaded before any view reads them. LoadAsync falls back to defaults on errors.
+        await _host.Services.GetRequiredService<ISettingsService>().LoadAsync();
 
         var window = _host.Services.GetRequiredService<MainWindow>();
         window.Closed += OnMainWindowClosed;
@@ -49,6 +53,8 @@ public partial class App : Application
             LogStopping(_logger);
         }
 
+        // Saves complete on the thread pool, so blocking the UI thread here cannot deadlock.
+        _host?.Services.GetRequiredService<ISettingsService>().FlushAsync().GetAwaiter().GetResult();
         _host?.StopAsync().GetAwaiter().GetResult();
         _host?.Dispose();
         _host = null;
