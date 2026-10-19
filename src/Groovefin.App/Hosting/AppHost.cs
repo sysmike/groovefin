@@ -2,6 +2,7 @@ using Groovefin.App.Services;
 using Groovefin.Core;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
+using Groovefin.Jellyfin;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -37,7 +38,12 @@ internal static class AppHost
                 rollOnFileSizeLimit: true,
                 outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}"));
 
-        builder.Services.AddSingleton(AppVersion.FromAssembly(typeof(AppHost).Assembly));
+        var version = AppVersion.FromAssembly(typeof(AppHost).Assembly);
+        builder.Services.AddSingleton(version);
+
+        // Jellyfin
+        builder.Services.AddSingleton(DeviceIdentity.Create(version));
+        builder.Services.AddGroovefinJellyfin();
 
         // Platform services
         builder.Services.AddSingleton<IDispatcher, DispatcherQueueDispatcher>();
