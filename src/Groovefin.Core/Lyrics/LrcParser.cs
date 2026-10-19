@@ -21,9 +21,8 @@ public static partial class LrcParser
         var metadata = new LyricsMetadata();
         var synced = new List<(TimeSpan Start, int Order, string Text)>();
         var plain = new List<string>();
-        foreach (var raw in text.TrimStart('﻿').Split('\n'))
+        foreach (var line in text.TrimStart('\uFEFF').Split('\n').Select(l => l.TrimEnd('\r')))
         {
-            var line = raw.TrimEnd('\r');
             if (MetadataTag().Match(line.Trim()) is { Success: true } tag)
             {
                 metadata = WithTag(metadata, tag.Groups["key"].Value, tag.Groups["value"].Value.Trim());
