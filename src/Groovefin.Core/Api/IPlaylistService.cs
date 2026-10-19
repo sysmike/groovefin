@@ -22,6 +22,7 @@ public interface IPlaylistService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<string> CreateAsync(string name, IReadOnlyList<string> trackIds, CancellationToken cancellationToken = default);
 
+    /// <summary>Gives the playlist a new name.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task RenameAsync(string playlistId, string name, CancellationToken cancellationToken = default);
 
@@ -33,6 +34,7 @@ public interface IPlaylistService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task AddTracksAsync(string playlistId, IReadOnlyList<string> trackIds, CancellationToken cancellationToken = default);
 
+    /// <summary>Removes entries from the playlist; the tracks stay in the library.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task RemoveEntriesAsync(string playlistId, IReadOnlyList<string> entryIds, CancellationToken cancellationToken = default);
 
