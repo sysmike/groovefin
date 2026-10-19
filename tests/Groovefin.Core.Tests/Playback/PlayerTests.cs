@@ -6,6 +6,7 @@ using Groovefin.Core.Queue;
 using Groovefin.Core.Settings;
 using Groovefin.Core.Tests.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute.ReturnsExtensions;
 
 namespace Groovefin.Core.Tests.Playback;
 
@@ -255,7 +256,7 @@ public sealed class PlayerTests : IDisposable
     [Fact]
     public void Without_a_connection_nothing_plays_and_the_error_is_shown()
     {
-        _client.Connection.Returns((ServerConnection?)null);
+        _client.Connection.ReturnsNull();
 
         _sut.Play(Tracks("a"));
 
