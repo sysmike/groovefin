@@ -30,4 +30,7 @@ public static class Operations
     public const string Playback = "Operation_Playback";
     public const string SavePlaylist = "Operation_SavePlaylist";
     public const string Search = "Operation_Search";
+    public const string LoadPlaylists = "Operation_LoadPlaylists";
+    public const string LoadPlaylist = "Operation_LoadPlaylist";
+    public const string EditPlaylist = "Operation_EditPlaylist";
 }

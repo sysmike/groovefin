@@ -178,7 +178,6 @@
                 </ListView>
             </StackPanel>
 
-            <!--  TODO(#36): open the playlist detail page from here.  -->
             <StackPanel Visibility="{x:Bind ViewModel.HasPlaylists, Mode=OneWay}">
                 <TextBlock x:Uid="SearchPlaylistsHeader" Style="{StaticResource SectionHeaderStyle}" />
                 <ListView
@@ -186,6 +185,8 @@
                     MaxWidth="880"
                     Margin="24,0"
                     HorizontalAlignment="Left"
+                    IsItemClickEnabled="True"
+                    ItemClick="OnPlaylistClick"
                     ItemsSource="{x:Bind ViewModel.Playlists}"
                     ScrollViewer.VerticalScrollMode="Disabled"
                     SelectionMode="None">

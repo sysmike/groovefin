@@ -93,6 +93,7 @@ internal static class AppHost
         builder.Services.AddSingleton<NowPlayingViewModel>();
         builder.Services.AddSingleton<QueueViewModel>();
         builder.Services.AddSingleton<SearchSuggestionsViewModel>();
+        builder.Services.AddSingleton<AddToPlaylist>();
 
         // Servers
         builder.Services.AddSingleton<IServerManager, ServerManager>();
@@ -106,6 +107,8 @@ internal static class AppHost
         builder.Services.AddTransient<ArtistsViewModel>();
         builder.Services.AddTransient<ArtistDetailViewModel>();
         builder.Services.AddTransient<SearchViewModel>();
+        builder.Services.AddTransient<PlaylistsViewModel>();
+        builder.Services.AddTransient<PlaylistDetailViewModel>();
         builder.Services.AddTransient<ServersViewModel>();
         builder.Services.AddTransient<SignInViewModel>();
 

@@ -59,6 +59,11 @@ public sealed partial class AlbumDetailViewModel(
 
     public ObservableCollection<DiscGroup> Discs { get; } = [];
 
+    /// <summary>Gets the album's tracks in play order (empty until loaded).</summary>
+    public IReadOnlyList<Track> Tracks => _tracks;
+
+    public bool HasTracks => _tracks.Count > 0;
+
     public double DisplayScale { get; set; } = 1;
 
     [ObservableProperty]
@@ -111,6 +116,8 @@ public sealed partial class AlbumDetailViewModel(
             Details = BuildDetails(album, tracks);
             BuildDiscs(album, tracks);
             _tracks = tracks;
+            OnPropertyChanged(nameof(Tracks));
+            OnPropertyChanged(nameof(HasTracks));
             PlayCommand.NotifyCanExecuteChanged();
             ShuffleCommand.NotifyCanExecuteChanged();
             AddToQueueCommand.NotifyCanExecuteChanged();

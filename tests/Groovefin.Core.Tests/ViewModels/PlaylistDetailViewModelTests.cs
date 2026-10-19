@@ -1,0 +1,293 @@
+using Groovefin.Core.Api;
+using Groovefin.Core.Models;
+using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
+using Groovefin.Core.Services;
+using Groovefin.Core.ViewModels;
+
+namespace Groovefin.Core.Tests.ViewModels;
+
+public sealed class PlaylistDetailViewModelTests
+{
+    private const string Id = "pl1";
+
+    private readonly IPlaylistService _playlists = Substitute.For<IPlaylistService>();
+    private readonly IPlayer _player = Substitute.For<IPlayer>();
+    private readonly INavigationService _navigation = Substitute.For<INavigationService>();
+    private readonly IDialogService _dialogs = Substitute.For<IDialogService>();
+    private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
+    private readonly IStringResources _strings = Substitute.For<IStringResources>();
+    private readonly PlaylistDetailViewModel _sut;
+
+    public PlaylistDetailViewModelTests()
+    {
+        _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
+        _strings.GetString("Album_TrackCount").Returns("{0} tracks");
+        _strings.GetString("Album_TrackCountOne").Returns("{0} track");
+        _strings.GetString("Playlist_DeleteMessage").Returns("Delete {0}?");
+        _playlists.GetPlaylistAsync(Id, Arg.Any<CancellationToken>()).Returns(new Playlist { Id = Id, Name = "Chill", PrimaryImageTag = "img" });
+        _playlists.GetEntriesAsync(Id, Arg.Any<CancellationToken>()).Returns(Entries("a", "b", "c"));
+        _sut = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings);
+    }
+
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    private static PlaylistEntry[] Entries(params string[] ids) => ids
+        .Select(id => new PlaylistEntry($"e-{id}", new Track
+        {
+            Id = id,
+            Name = $"Song {id}",
+            AlbumId = "al",
+            AlbumName = "Album",
+            AlbumImageTag = "t",
+            Artists = [new ArtistRef("x", "Artist")],
+            Duration = TimeSpan.FromSeconds(60),
+        }))
+        .ToArray();
+
+    private IEnumerable<string> Order => _sut.Entries.Select(e => e.Entry.Track.Id);
+
+    private PlaylistEntryItem Row(string id) => _sut.Entries.Single(e => e.Entry.Track.Id == id);
+
+    private Task LoadAsync() => _sut.LoadAsync(Id, Ct);
+
+    [Fact]
+    public async Task Load_shows_the_playlist_and_its_entries()
+    {
+        await LoadAsync();
+
+        _sut.Name.Should().Be("Chill");
+        _sut.Image!.ItemId.Should().Be(Id);
+        Order.Should().Equal("a", "b", "c");
+        _sut.Details.Should().Be("3 tracks · 3:00");
+        _sut.Entries[0].AccessibleName.Should().Be("Song a, Artist · Album, 1:00");
+        _sut.Entries[0].Cover!.ItemId.Should().Be("al");
+        _sut.PlayCommand.CanExecute(null).Should().BeTrue();
+        _sut.RenameCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task An_empty_playlist_cannot_be_played()
+    {
+        _playlists.GetEntriesAsync(Id, Arg.Any<CancellationToken>()).Returns([]);
+
+        await LoadAsync();
+
+        _sut.HasEntries.Should().BeFalse();
+        _sut.Details.Should().Be("0 tracks");
+        _sut.PlayCommand.CanExecute(null).Should().BeFalse();
+        _sut.ShuffleCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_failed_load_is_reported()
+    {
+        _playlists.GetPlaylistAsync(Id, Arg.Any<CancellationToken>()).Returns<Playlist>(_ => throw new JellyfinException("boom"));
+
+        await LoadAsync();
+
+        _sut.LoadFailed.Should().BeTrue();
+        _sut.HasPlaylist.Should().BeFalse();
+        _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.LoadPlaylist);
+    }
+
+    [Fact]
+    public async Task Cancelled_loads_are_quiet()
+    {
+        _playlists.GetPlaylistAsync(Id, Arg.Any<CancellationToken>()).Returns<Playlist>(_ => throw new OperationCanceledException());
+
+        await LoadAsync();
+
+        _sut.LoadFailed.Should().BeFalse();
+        _errors.DidNotReceiveWithAnyArgs().Report(default!, default!);
+    }
+
+    [Fact]
+    public async Task Play_shuffle_queue_and_a_row_use_the_entries_in_order()
+    {
+        await LoadAsync();
+
+        _sut.PlayCommand.Execute(null);
+        _sut.ShuffleCommand.Execute(null);
+        _sut.AddToQueueCommand.Execute(null);
+        _sut.PlayEntryCommand.Execute(Row("b"));
+
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "a", "b", "c" })), 0);
+        _player.Received(1).Shuffle(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 3));
+        _player.Received(1).AddToQueue(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 3));
+        _player.Received(1).Play(Arg.Any<IReadOnlyList<Track>>(), 1);
+    }
+
+    [Fact]
+    public async Task Rename_saves_the_trimmed_name()
+    {
+        await LoadAsync();
+        _dialogs.PromptAsync(default!, default!, default!, default!, default!).ReturnsForAnyArgs(" Calm ");
+
+        await _sut.RenameCommand.ExecuteAsync(null);
+
+        await _playlists.Received(1).RenameAsync(Id, " Calm ", Arg.Any<CancellationToken>());
+        _sut.Name.Should().Be("Calm");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(" ")]
+    [InlineData("Chill")]
+    public async Task Cancelled_blank_or_unchanged_names_are_not_sent(string? name)
+    {
+        await LoadAsync();
+        _dialogs.PromptAsync(default!, default!, default!, default!, default!).ReturnsForAnyArgs(name);
+
+        await _sut.RenameCommand.ExecuteAsync(null);
+
+        await _playlists.DidNotReceiveWithAnyArgs().RenameAsync(default!, default!, Ct);
+    }
+
+    [Fact]
+    public async Task A_failed_rename_keeps_the_name_and_is_reported()
+    {
+        await LoadAsync();
+        _dialogs.PromptAsync(default!, default!, default!, default!, default!).ReturnsForAnyArgs("Calm");
+        _playlists.RenameAsync(default!, default!, Ct).ReturnsForAnyArgs(_ => throw new JellyfinException("boom"));
+
+        await _sut.RenameCommand.ExecuteAsync(null);
+
+        _sut.Name.Should().Be("Chill");
+        _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.EditPlaylist);
+    }
+
+    [Fact]
+    public async Task Delete_asks_first_then_deletes_and_goes_back()
+    {
+        await LoadAsync();
+        _dialogs.ConfirmAsync("Playlist_DeleteTitle", "Delete Chill?", "Playlist_DeleteConfirm", "Dialog_Cancel").Returns(true);
+
+        await _sut.DeleteCommand.ExecuteAsync(null);
+
+        await _playlists.Received(1).DeleteAsync(Id, Arg.Any<CancellationToken>());
+        _navigation.Received(1).GoBack();
+    }
+
+    [Fact]
+    public async Task Declining_the_confirmation_deletes_nothing()
+    {
+        await LoadAsync();
+
+        await _sut.DeleteCommand.ExecuteAsync(null);
+
+        await _playlists.DidNotReceiveWithAnyArgs().DeleteAsync(default!, Ct);
+        _navigation.DidNotReceive().GoBack();
+    }
+
+    [Fact]
+    public async Task A_failed_delete_stays_on_the_page()
+    {
+        await LoadAsync();
+        _dialogs.ConfirmAsync(default!, default!, default!, default!).ReturnsForAnyArgs(true);
+        _playlists.DeleteAsync(default!, Ct).ReturnsForAnyArgs(_ => throw new JellyfinException("boom"));
+
+        await _sut.DeleteCommand.ExecuteAsync(null);
+
+        _navigation.DidNotReceive().GoBack();
+        _sut.HasPlaylist.Should().BeTrue();
+        _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.EditPlaylist);
+    }
+
+    [Fact]
+    public async Task Remove_takes_the_entry_out_at_once_and_on_the_server()
+    {
+        await LoadAsync();
+
+        await _sut.RemoveCommand.ExecuteAsync(Row("b"));
+
+        Order.Should().Equal("a", "c");
+        _sut.Details.Should().Be("2 tracks · 2:00");
+        await _playlists.Received(1).RemoveEntriesAsync(Id, Arg.Is<IReadOnlyList<string>>(ids => ids.Single() == "e-b"), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Removing_a_row_that_is_gone_does_nothing()
+    {
+        await LoadAsync();
+        var b = Row("b");
+        await _sut.RemoveCommand.ExecuteAsync(b);
+
+        await _sut.RemoveCommand.ExecuteAsync(b);
+
+        await _playlists.ReceivedWithAnyArgs(1).RemoveEntriesAsync(default!, default!, Ct);
+    }
+
+    [Fact]
+    public async Task Move_up_and_down_move_the_row_and_send_the_new_index()
+    {
+        await LoadAsync();
+
+        await _sut.MoveDownCommand.ExecuteAsync(Row("a"));
+        Order.Should().Equal("b", "a", "c");
+        await _playlists.Received(1).MoveEntryAsync(Id, "e-a", 1, Arg.Any<CancellationToken>());
+
+        await _sut.MoveUpCommand.ExecuteAsync(Row("c"));
+        Order.Should().Equal("b", "c", "a");
+        await _playlists.Received(1).MoveEntryAsync(Id, "e-c", 1, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Moves_past_the_ends_do_nothing()
+    {
+        await LoadAsync();
+
+        await _sut.MoveUpCommand.ExecuteAsync(Row("a"));
+        await _sut.MoveDownCommand.ExecuteAsync(Row("c"));
+
+        Order.Should().Equal("a", "b", "c");
+        await _playlists.DidNotReceiveWithAnyArgs().MoveEntryAsync(default!, default!, default, Ct);
+    }
+
+    [Fact]
+    public async Task A_drag_sends_the_new_index()
+    {
+        await LoadAsync();
+        var c = Row("c");
+        _sut.Entries.Move(2, 0);
+
+        await _sut.MoveEntryAsync(c, 0);
+
+        await _playlists.Received(1).MoveEntryAsync(Id, "e-c", 0, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task A_refused_edit_reloads_the_entries_and_is_reported()
+    {
+        await LoadAsync();
+        _playlists.MoveEntryAsync(default!, default!, default, Ct).ReturnsForAnyArgs(_ => throw new JellyfinException("boom"));
+
+        await _sut.MoveDownCommand.ExecuteAsync(Row("a"));
+
+        Order.Should().Equal("a", "b", "c");
+        _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.EditPlaylist);
+    }
+
+    [Fact]
+    public async Task When_the_reload_fails_too_the_list_stays()
+    {
+        await LoadAsync();
+        _playlists.RemoveEntriesAsync(default!, default!, Ct).ReturnsForAnyArgs(_ => throw new JellyfinException("boom"));
+        _playlists.GetEntriesAsync(Id, Arg.Any<CancellationToken>()).Returns<IReadOnlyList<PlaylistEntry>>(_ => throw new JellyfinException("offline"));
+
+        await _sut.RemoveCommand.ExecuteAsync(Row("a"));
+
+        Order.Should().Equal("b", "c");
+        _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.EditPlaylist);
+    }
+
+    [Fact]
+    public async Task Edits_before_the_playlist_loaded_are_ignored()
+    {
+        var row = new PlaylistEntryItem(Entries("x")[0], null);
+
+        await _sut.MoveEntryAsync(row, 0);
+
+        await _playlists.DidNotReceiveWithAnyArgs().MoveEntryAsync(default!, default!, default, Ct);
+    }
+}

@@ -869,4 +869,118 @@
   <data name="Operation_Search" xml:space="preserve">
     <value>Die Bibliothek konnte nicht durchsucht werden</value>
   </data>
+  <data name="PlaylistsHeader.Text" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="PlaylistsNewButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Neue Playlist</value>
+  </data>
+  <data name="PlaylistsNewButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Neue Playlist</value>
+  </data>
+  <data name="PlaylistsNewText.Text" xml:space="preserve">
+    <value>Neue Playlist</value>
+  </data>
+  <data name="PlaylistsView.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="PlaylistsEmpty.Text" xml:space="preserve">
+    <value>Noch keine Playlists. Erstelle eine mit „Neue Playlist“ oder nutze „Zu Playlist hinzufügen“ bei einem Album.</value>
+  </data>
+  <data name="PlaylistKind.Text" xml:space="preserve">
+    <value>Playlist</value>
+  </data>
+  <data name="PlaylistPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Abspielen</value>
+  </data>
+  <data name="PlaylistPlayText.Text" xml:space="preserve">
+    <value>Abspielen</value>
+  </data>
+  <data name="PlaylistShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zufallswiedergabe</value>
+  </data>
+  <data name="PlaylistShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zufallswiedergabe</value>
+  </data>
+  <data name="PlaylistQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zur Warteschlange hinzufügen</value>
+  </data>
+  <data name="PlaylistQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zur Warteschlange hinzufügen</value>
+  </data>
+  <data name="PlaylistRenameButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Umbenennen</value>
+  </data>
+  <data name="PlaylistRenameButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Umbenennen</value>
+  </data>
+  <data name="PlaylistDeleteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Playlist löschen</value>
+  </data>
+  <data name="PlaylistDeleteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Playlist löschen</value>
+  </data>
+  <data name="PlaylistLoadFailed.Text" xml:space="preserve">
+    <value>Diese Playlist konnte nicht geladen werden.</value>
+  </data>
+  <data name="PlaylistEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="PlaylistEmpty.Text" xml:space="preserve">
+    <value>Diese Playlist ist leer. Füge Alben auf ihrer Seite mit „Zu Playlist hinzufügen“ hinzu.</value>
+  </data>
+  <data name="AlbumAddToPlaylistButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zu Playlist hinzufügen</value>
+  </data>
+  <data name="AlbumAddToPlaylistButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zu Playlist hinzufügen</value>
+  </data>
+  <data name="Menu_NewPlaylist" xml:space="preserve">
+    <value>Neue Playlist…</value>
+  </data>
+  <data name="Menu_RemoveFromPlaylist" xml:space="preserve">
+    <value>Aus der Playlist entfernen</value>
+  </data>
+  <data name="Playlist_CreateTitle" xml:space="preserve">
+    <value>Neue Playlist</value>
+  </data>
+  <data name="Playlist_NameLabel" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Playlist_CreateButton" xml:space="preserve">
+    <value>Erstellen</value>
+  </data>
+  <data name="Playlist_RenameTitle" xml:space="preserve">
+    <value>Playlist umbenennen</value>
+  </data>
+  <data name="Playlist_DeleteTitle" xml:space="preserve">
+    <value>Playlist löschen?</value>
+  </data>
+  <data name="Playlist_DeleteMessage" xml:space="preserve">
+    <value>„{0}“ wird vom Server gelöscht. Die Titel bleiben in deiner Bibliothek.</value>
+    <comment>{0} = playlist name</comment>
+  </data>
+  <data name="Playlist_DeleteConfirm" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="Playlist_AddedTitle" xml:space="preserve">
+    <value>Zur Playlist hinzugefügt</value>
+  </data>
+  <data name="Playlist_Added" xml:space="preserve">
+    <value>{0} Titel zu „{1}“ hinzugefügt.</value>
+    <comment>{0} = number of songs, {1} = playlist name</comment>
+  </data>
+  <data name="Playlist_AddedOne" xml:space="preserve">
+    <value>{0} Titel zu „{1}“ hinzugefügt.</value>
+    <comment>{0} = 1, {1} = playlist name</comment>
+  </data>
+  <data name="Operation_LoadPlaylists" xml:space="preserve">
+    <value>Playlists konnten nicht geladen werden</value>
+  </data>
+  <data name="Operation_LoadPlaylist" xml:space="preserve">
+    <value>Playlist konnte nicht geladen werden</value>
+  </data>
+  <data name="Operation_EditPlaylist" xml:space="preserve">
+    <value>Playlist konnte nicht geändert werden</value>
+  </data>
 </root>

@@ -132,15 +132,17 @@ public sealed class SearchViewModelTests
     [Fact]
     public async Task Rows_open_artists_and_albums_and_play_tracks_from_the_clicked_one()
     {
-        Returns(new SearchResults([DaftPunk], [Discovery], [Song("t1"), Song("t2"), Song("t3")], []));
+        Returns(new SearchResults([DaftPunk], [Discovery], [Song("t1"), Song("t2"), Song("t3")], [new Playlist { Id = "p1", Name = "Disco" }]));
         await _sut.LoadAsync("d", Ct);
 
+        _sut.OpenPlaylistCommand.Execute(_sut.Playlists[0]);
         _sut.OpenArtistCommand.Execute(_sut.Artists[0]);
         _sut.OpenAlbumCommand.Execute(_sut.Albums[0]);
         _sut.PlayTrackCommand.Execute(_sut.Tracks[1]);
 
         _navigation.Received(1).NavigateTo(PageKeys.Artist, "ar1");
         _navigation.Received(1).NavigateTo(PageKeys.Album, "al1");
+        _navigation.Received(1).NavigateTo(PageKeys.Playlist, "p1");
         _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "t1", "t2", "t3" })), 1);
     }
 }

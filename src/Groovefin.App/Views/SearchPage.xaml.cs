@@ -79,6 +79,14 @@ internal sealed partial class SearchPage : Page
         }
     }
 
+    private void OnPlaylistClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is PlaylistItem item)
+        {
+            ViewModel.OpenPlaylistCommand.Execute(item);
+        }
+    }
+
     private void OnTrackClick(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is SearchTrackItem item)
