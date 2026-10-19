@@ -121,7 +121,7 @@ public sealed class LrcParserTests
     [Fact]
     public void A_byte_order_mark_and_brackets_in_text_are_handled()
     {
-        var lyrics = LrcParser.Parse("﻿[00:01.00]Text [with brackets]");
+        var lyrics = LrcParser.Parse("\uFEFF[00:01.00]Text [with brackets]");
 
         lyrics.Lines.Single().Text.Should().Be("Text [with brackets]");
     }
