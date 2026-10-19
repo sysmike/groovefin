@@ -18,7 +18,11 @@ namespace Groovefin.App;
 /// </summary>
 internal sealed partial class MainWindow : Window
 {
-    public MainWindow(ShellViewModel viewModel, FrameNavigationService navigation, ThemeService themeService)
+    public MainWindow(
+        ShellViewModel viewModel,
+        FrameNavigationService navigation,
+        ThemeService themeService,
+        ContentDialogService dialogs)
     {
         ViewModel = viewModel;
         InitializeComponent();
@@ -32,6 +36,7 @@ internal sealed partial class MainWindow : Window
 
         navigation.Initialize(ContentFrame);
         themeService.Attach(this);
+        RootGrid.Loaded += (_, _) => dialogs.Attach(RootGrid.XamlRoot);
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         Closed += (_, _) => ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
