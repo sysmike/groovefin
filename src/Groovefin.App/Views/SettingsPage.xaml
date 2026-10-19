@@ -42,6 +42,10 @@
                     IsTextSelectionEnabled="True"
                     Style="{StaticResource CaptionTextBlockStyle}"
                     Text="{x:Bind ViewModel.Version.DisplayText}" />
+                <TextBlock
+                    x:Uid="SettingsLicense"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}" />
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

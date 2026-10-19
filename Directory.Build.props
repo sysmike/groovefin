@@ -11,6 +11,7 @@
     <Product>Groovefin</Product>
     <Company>Groovefin contributors</Company>
     <Copyright>Copyright (c) Groovefin contributors</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <NeutralLanguage>en-US</NeutralLanguage>
 
     <!-- Lets the Windows-only projects restore and build on Linux/macOS (CI format and test jobs). -->
