@@ -1,3 +1,4 @@
+using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 
 namespace Groovefin.Core.Settings;
@@ -19,10 +20,21 @@ public sealed record AppSettings
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
     public AppearanceSettings Appearance { get; set; } = new();
+
+    public ServerSettings Servers { get; set; } = new();
 }
 
 /// <summary>Look and feel.</summary>
 public sealed record AppearanceSettings
 {
     public AppTheme Theme { get; set; } = AppTheme.System;
+}
+
+/// <summary>Known servers and the active one. Access tokens are in the credential store, not here.</summary>
+public sealed record ServerSettings
+{
+    public IReadOnlyList<ServerProfile> Known { get; set; } = [];
+
+    /// <summary>Gets or sets the <see cref="ServerProfile.Id"/> of the active server.</summary>
+    public string? ActiveServerId { get; set; }
 }

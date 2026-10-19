@@ -32,6 +32,12 @@
             </RadioButtons>
 
             <TextBlock
+                x:Uid="SettingsServersHeader"
+                AutomationProperties.HeadingLevel="Level2"
+                Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <Button x:Uid="SettingsManageServersButton" Command="{x:Bind ViewModel.ManageServersCommand}" />
+
+            <TextBlock
                 x:Uid="SettingsAboutHeader"
                 AutomationProperties.HeadingLevel="Level2"
                 Style="{StaticResource BodyStrongTextBlockStyle}" />

@@ -2,6 +2,7 @@ using Groovefin.App.Services;
 using Groovefin.Core;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Security;
+using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
 using Groovefin.Core.ViewModels;
@@ -62,10 +63,16 @@ internal static class AppHost
         builder.Services.AddSingleton<ThemeService>();
         builder.Services.AddSingleton<IThemeService>(sp => sp.GetRequiredService<ThemeService>());
         builder.Services.AddSingleton<ICredentialStore, PasswordVaultCredentialStore>();
+        builder.Services.AddSingleton<ContentDialogService>();
+        builder.Services.AddSingleton<IDialogService>(sp => sp.GetRequiredService<ContentDialogService>());
+
+        // Servers
+        builder.Services.AddSingleton<IServerManager, ServerManager>();
 
         // ViewModels
         builder.Services.AddSingleton<ShellViewModel>();
         builder.Services.AddTransient<SettingsViewModel>();
+        builder.Services.AddTransient<ServersViewModel>();
 
         // Views
         builder.Services.AddSingleton<MainWindow>();

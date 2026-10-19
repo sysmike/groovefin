@@ -56,6 +56,29 @@ public sealed class JsonSettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Server_profiles_survive_a_reload()
+    {
+        var sut = CreateSut();
+        var profile = new Groovefin.Core.Servers.ServerProfile
+        {
+            Id = "id-a",
+            Name = "Alpha",
+            Address = new Uri("https://alpha.example.com/jellyfin"),
+            Version = "10.11.0",
+            UserId = "user-1",
+            UserName = "mike",
+        };
+        sut.Update(s => s with { Servers = s.Servers with { Known = [profile], ActiveServerId = "id-a" } });
+        await sut.FlushAsync();
+
+        var reloaded = CreateSut();
+        await reloaded.LoadAsync(TestContext.Current.CancellationToken);
+
+        reloaded.Current.Servers.ActiveServerId.Should().Be("id-a");
+        reloaded.Current.Servers.Known.Should().ContainSingle().Which.Should().Be(profile);
+    }
+
+    [Fact]
     public async Task File_uses_camel_case_and_string_enums()
     {
         var sut = CreateSut();
