@@ -63,7 +63,7 @@ public sealed class ServersViewModelTests
     }
 
     [Fact]
-    public async Task First_server_continues_to_the_app()
+    public async Task First_server_continues_to_sign_in()
     {
         _servers.Servers.Returns([]);
         using var sut = CreateSut();
@@ -77,7 +77,7 @@ public sealed class ServersViewModelTests
 
         await sut.AddCommand.ExecuteAsync(null);
 
-        _navigation.Received(1).NavigateTo(PageKeys.Home);
+        _navigation.Received(1).NavigateTo(PageKeys.SignIn, "id-a");
     }
 
     [Theory]
@@ -165,6 +165,7 @@ public sealed class ServersViewModelTests
     [Fact]
     public void SetActive_switches_to_an_inactive_server_only()
     {
+        _servers.IsSignedIn.Returns(true);
         using var sut = CreateSut();
 
         sut.SetActiveCommand.Execute(sut.Servers[0]);
@@ -172,5 +173,17 @@ public sealed class ServersViewModelTests
 
         _servers.Received(1).SetActive("id-b");
         _servers.DidNotReceive().SetActive("id-a");
+        _navigation.DidNotReceiveWithAnyArgs().NavigateTo(default!, default);
+    }
+
+    [Fact]
+    public void SetActive_without_a_stored_login_opens_sign_in()
+    {
+        _servers.IsSignedIn.Returns(false);
+        using var sut = CreateSut();
+
+        sut.SetActiveCommand.Execute(sut.Servers[1]);
+
+        _navigation.Received(1).NavigateTo(PageKeys.SignIn, "id-b");
     }
 }

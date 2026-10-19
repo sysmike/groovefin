@@ -49,13 +49,17 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     public partial string SearchText { get; set; } = string.Empty;
 
     /// <summary>
-    /// Reconnects to the active server and shows the start page, or the server page on first run.
+    /// Reconnects to the active server and shows the start page, the sign-in page when no login is
+    /// stored, or the server page on first run.
     /// Called once when the window is ready.
     /// </summary>
     public void Start()
     {
         _servers.Restore();
-        _navigation.NavigateTo(_servers.Servers.Count == 0 ? PageKeys.Servers : PageKeys.Home);
+        _navigation.NavigateTo(
+            _servers.Servers.Count == 0 ? PageKeys.Servers
+            : !_servers.IsSignedIn ? PageKeys.SignIn
+            : PageKeys.Home);
     }
 
     [RelayCommand]
