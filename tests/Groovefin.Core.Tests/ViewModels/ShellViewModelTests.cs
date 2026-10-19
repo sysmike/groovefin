@@ -1,4 +1,5 @@
 using Groovefin.Core.Navigation;
+using Groovefin.Core.Notifications;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -8,8 +9,9 @@ namespace Groovefin.Core.Tests.ViewModels;
 public sealed class ShellViewModelTests
 {
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
+    private readonly INotificationService _notifications = Substitute.For<INotificationService>();
 
-    private ShellViewModel CreateSut() => new(_navigation, NullLogger<ShellViewModel>.Instance);
+    private ShellViewModel CreateSut() => new(_navigation, _notifications, NullLogger<ShellViewModel>.Instance);
 
     [Fact]
     public void Start_navigates_to_home()
@@ -117,6 +119,17 @@ public sealed class ShellViewModelTests
         sut.SubmitSearchCommand.Execute(null);
 
         _navigation.Received(1).NavigateTo(PageKeys.Search, "daft punk");
+    }
+
+    [Fact]
+    public void DismissNotification_removes_it_from_the_notification_service()
+    {
+        using var sut = CreateSut();
+        var notification = new AppNotification(NotificationSeverity.Error, "title", "message");
+
+        sut.DismissNotificationCommand.Execute(notification);
+
+        _notifications.Received(1).Dismiss(notification);
     }
 
     [Fact]
