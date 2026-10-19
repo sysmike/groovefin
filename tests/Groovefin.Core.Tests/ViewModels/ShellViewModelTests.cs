@@ -16,6 +16,7 @@ public sealed class ShellViewModelTests
     public ShellViewModelTests()
     {
         _servers.Servers.Returns([new ServerProfile { Id = "id-a", Name = "Alpha", Address = new Uri("http://alpha:8096") }]);
+        _servers.IsSignedIn.Returns(true);
     }
 
     private ShellViewModel CreateSut() => new(_navigation, _notifications, _servers, NullLogger<ShellViewModel>.Instance);
@@ -40,6 +41,17 @@ public sealed class ShellViewModelTests
         sut.Start();
 
         _navigation.Received(1).NavigateTo(PageKeys.Servers);
+    }
+
+    [Fact]
+    public void Start_without_a_stored_login_opens_sign_in()
+    {
+        _servers.IsSignedIn.Returns(false);
+        using var sut = CreateSut();
+
+        sut.Start();
+
+        _navigation.Received(1).NavigateTo(PageKeys.SignIn);
     }
 
     [Fact]

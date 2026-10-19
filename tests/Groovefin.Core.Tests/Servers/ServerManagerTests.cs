@@ -12,11 +12,12 @@ public sealed class ServerManagerTests
     private readonly InMemorySettingsService _settings = new();
     private readonly IJellyfinClient _client = Substitute.For<IJellyfinClient>();
     private readonly ICredentialStore _credentials = Substitute.For<ICredentialStore>();
+    private readonly IAuthenticationService _authentication = Substitute.For<IAuthenticationService>();
     private readonly ServerManager _sut;
 
     public ServerManagerTests()
     {
-        _sut = new ServerManager(_settings, _client, _credentials, NullLogger<ServerManager>.Instance);
+        _sut = new ServerManager(_settings, _client, _authentication, _credentials, NullLogger<ServerManager>.Instance);
         StubServer("http://alpha:8096/", "id-a", "Alpha");
         StubServer("http://beta:8096/", "id-b", "Beta");
     }
@@ -183,6 +184,75 @@ public sealed class ServerManagerTests
         _sut.Restore();
 
         _client.Received(1).Connect(new ServerConnection(new Uri("http://alpha:8096/"), "user-1", "token-id-a"));
+    }
+
+    [Fact]
+    public async Task SignIn_stores_the_token_records_the_user_and_connects()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        await _sut.AddAsync("beta:8096", Ct);
+        _authentication.SignInAsync(new Uri("http://beta:8096/"), "mike", "secret", Arg.Any<CancellationToken>())
+            .Returns(new AuthenticatedUser("id-b", "user-2", "Mike", "token-new"));
+        var raised = 0;
+        _sut.Changed += (_, _) => raised++;
+
+        await _sut.SignInAsync("id-b", "mike", "secret", Ct);
+
+        _credentials.Received(1).SaveAccessToken("id-b", "user-2", "token-new");
+        _sut.ActiveServer!.Should().BeEquivalentTo(new { Id = "id-b", UserId = "user-2", UserName = "Mike" });
+        _client.Received(1).Connect(new ServerConnection(new Uri("http://beta:8096/"), "user-2", "token-new"));
+        raised.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task SignIn_as_another_user_removes_the_previous_token()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        SignIn("id-a", "old-user");
+        _authentication.SignInAsync(Arg.Any<Uri>(), "new", "pw", Arg.Any<CancellationToken>())
+            .Returns(new AuthenticatedUser("id-a", "new-user", "New", "token"));
+
+        await _sut.SignInAsync("id-a", "new", "pw", Ct);
+
+        _credentials.Received(1).RemoveAccessToken("id-a", "old-user");
+    }
+
+    [Fact]
+    public async Task Rejected_sign_in_stores_nothing()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        _authentication.SignInAsync(Arg.Any<Uri>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns<AuthenticatedUser>(_ => throw new JellyfinException("no", System.Net.HttpStatusCode.Unauthorized));
+
+        var act = () => _sut.SignInAsync("id-a", "mike", "wrong", Ct);
+
+        (await act.Should().ThrowAsync<JellyfinException>()).Which.IsUnauthorized.Should().BeTrue();
+        _credentials.DidNotReceiveWithAnyArgs().SaveAccessToken(default!, default!, default!);
+        _sut.ActiveServer!.UserId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SignOut_ends_the_session_deletes_the_token_and_disconnects()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        SignIn("id-a", "user-1");
+
+        await _sut.SignOutAsync(Ct);
+
+        await _authentication.Received(1).SignOutAsync(Arg.Any<CancellationToken>());
+        _credentials.Received(1).RemoveAccessToken("id-a", "user-1");
+        _sut.ActiveServer!.UserId.Should().BeNull();
+        _client.Received().Disconnect();
+    }
+
+    [Fact]
+    public async Task SignOut_without_a_user_does_nothing()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+
+        await _sut.SignOutAsync(Ct);
+
+        await _authentication.DidNotReceiveWithAnyArgs().SignOutAsync(Ct);
     }
 
     [Fact]
