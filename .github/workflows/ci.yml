@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  TESTINGPLATFORM_TELEMETRY_OPTOUT: true
+  # Restore lock files must match; see Directory.Build.props (RestoreLockedMode).
+  NUGET_CACHE_PATHS: |
+    **/packages.lock.json
+    Directory.Packages.props
+
+jobs:
+  format:
+    name: format
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: ${{ env.NUGET_CACHE_PATHS }}
+
+      - name: Restore
+        run: dotnet restore Groovefin.sln
+
+      - name: Verify formatting
+        run: dotnet format Groovefin.sln --no-restore --verify-no-changes --verbosity normal
+
+  test-core:
+    name: test-core
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: ${{ env.NUGET_CACHE_PATHS }}
+
+      - name: Restore
+        run: |
+          dotnet restore Groovefin.CrossPlatform.slnf
+          dotnet tool restore
+
+      - name: Build
+        run: dotnet build Groovefin.CrossPlatform.slnf --configuration Release --no-restore
+
+      - name: Test
+        run: >
+          dotnet test --solution Groovefin.CrossPlatform.slnf
+          --configuration Release --no-build
+          --results-directory "${{ github.workspace }}/TestResults"
+          --report-xunit-trx
+          --coverage --coverage-output-format cobertura
+          --coverage-settings "${{ github.workspace }}/tests/coverage.config"
+
+      - name: Test summary
+        if: ${{ !cancelled() }}
+        run: python3 .github/scripts/trx_summary.py TestResults >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Coverage summary
+        if: ${{ !cancelled() }}
+        run: |
+          dotnet reportgenerator \
+            "-reports:TestResults/**/*.cobertura.xml" \
+            "-targetdir:coverage" \
+            "-reporttypes:MarkdownSummaryGithub;Cobertura"
+          cat coverage/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results
+          path: |
+            TestResults/**/*.trx
+            coverage/Cobertura.xml
+          retention-days: 7
+
+  build-windows:
+    name: build-windows (${{ matrix.platform }})
+    runs-on: ${{ vars.WINDOWS_RUNNER || 'windows-2025' }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [x64, ARM64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: ${{ env.NUGET_CACHE_PATHS }}
+
+      - name: Restore
+        run: dotnet restore Groovefin.sln -p:Platform=${{ matrix.platform }}
+
+      - name: Build
+        run: dotnet build Groovefin.sln --configuration Release --no-restore -p:Platform=${{ matrix.platform }}
