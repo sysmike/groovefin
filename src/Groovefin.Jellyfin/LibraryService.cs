@@ -50,9 +50,9 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                         p.Years = years;
                     }
 
-                    if (query.FavouritesOnly)
+                    if (Filters(query) is { Length: > 0 } filters)
                     {
-                        p.Filters = [ItemFilter.IsFavorite];
+                        p.Filters = filters;
                     }
                 },
                 cancellationToken),
@@ -102,6 +102,22 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         return Enumerable.Range(first, last - first + 1).Select(y => (int?)y).ToArray();
     }
 
+    private static ItemFilter[] Filters(AlbumQuery query)
+    {
+        var filters = new List<ItemFilter>(2);
+        if (query.FavouritesOnly)
+        {
+            filters.Add(ItemFilter.IsFavorite);
+        }
+
+        if (query.PlayedOnly)
+        {
+            filters.Add(ItemFilter.IsPlayed);
+        }
+
+        return [.. filters];
+    }
+
     private static ItemSortBy[] SortFields(AlbumSortField sortBy) => sortBy switch
     {
         AlbumSortField.Name => [ItemSortBy.SortName],
@@ -109,6 +125,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         AlbumSortField.Year => [ItemSortBy.ProductionYear, ItemSortBy.SortName],
         AlbumSortField.DateAdded => [ItemSortBy.DateCreated, ItemSortBy.SortName],
         AlbumSortField.PlayCount => [ItemSortBy.PlayCount, ItemSortBy.SortName],
+        AlbumSortField.DatePlayed => [ItemSortBy.DatePlayed, ItemSortBy.SortName],
         AlbumSortField.Random => [ItemSortBy.Random],
         _ => throw new ArgumentOutOfRangeException(nameof(sortBy), sortBy, null),
     };

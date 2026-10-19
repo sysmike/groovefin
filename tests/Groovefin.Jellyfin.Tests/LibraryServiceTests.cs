@@ -107,6 +107,7 @@ public sealed class LibraryServiceTests : IDisposable
     [InlineData(AlbumSortField.AlbumArtist, false, "AlbumArtist,SortName", "Ascending")]
     [InlineData(AlbumSortField.DateAdded, true, "DateCreated,SortName", "Descending")]
     [InlineData(AlbumSortField.PlayCount, true, "PlayCount,SortName", "Descending")]
+    [InlineData(AlbumSortField.DatePlayed, true, "DatePlayed,SortName", "Descending")]
     [InlineData(AlbumSortField.Random, false, "Random", "Ascending")]
     public async Task GetAlbums_maps_sort_order(AlbumSortField sortBy, bool descending, string expectedSortBy, string expectedOrder)
     {
@@ -163,6 +164,17 @@ public sealed class LibraryServiceTests : IDisposable
         Guid.Parse(query["genreIds"]).ToString("N").Should().Be("aaaaaaaabbbbccccddddeeeeeeeeeeee");
         query["years"].Should().Be("1999,2000,2001");
         query["filters"].Should().Be("IsFavorite");
+    }
+
+    [Fact]
+    public async Task GetAlbums_combines_favourite_and_played_filters()
+    {
+        StubItems(AlbumsResponse);
+        _host.ConnectAsTestUser();
+
+        await _host.Library.GetAlbumsAsync(new AlbumQuery { FavouritesOnly = true, PlayedOnly = true }, TestContext.Current.CancellationToken);
+
+        LastQuery()["filters"].Should().Be("IsFavorite,IsPlayed");
     }
 
     [Fact]

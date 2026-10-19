@@ -38,6 +38,9 @@ public sealed record AlbumQuery
     public int? MaxYear { get; init; }
 
     public bool FavouritesOnly { get; init; }
+
+    /// <summary>Gets a value indicating whether only albums the user has played are included.</summary>
+    public bool PlayedOnly { get; init; }
 }
 
 /// <summary>Album sort orders. Ties are broken by name.</summary>
@@ -48,5 +51,6 @@ public enum AlbumSortField
     Year,
     DateAdded,
     PlayCount,
+    DatePlayed,
     Random,
 }
