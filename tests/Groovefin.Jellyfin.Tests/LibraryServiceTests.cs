@@ -216,4 +216,122 @@ public sealed class LibraryServiceTests : IDisposable
         genres[0].Id.Should().Be("11111111222233334444555555555555");
         LastQuery()["includeItemTypes"].Should().Be("MusicAlbum");
     }
+
+    private const string AlbumId = "11111111222233334444555555555555";
+
+    [Fact]
+    public async Task GetAlbum_maps_the_album()
+    {
+        _host.Server.Given(Request.Create().WithPath($"/Items/{Guid.Parse(AlbumId)}").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200).WithHeader("Content-Type", "application/json").WithBodyAsJson(new
+            {
+                Id = Guid.Parse(AlbumId),
+                Name = "Discovery",
+                AlbumArtist = "Daft Punk",
+                ProductionYear = 2001,
+                Type = "MusicAlbum",
+            }));
+        _host.ConnectAsTestUser();
+
+        var album = await _host.Library.GetAlbumAsync(AlbumId, TestContext.Current.CancellationToken);
+
+        album.Name.Should().Be("Discovery");
+        album.Year.Should().Be(2001);
+        Guid.Parse(LastQuery()["userId"]).ToString("N").Should().Be(JellyfinTestHost.UserId);
+    }
+
+    [Fact]
+    public async Task GetAlbum_that_does_not_exist_is_a_404()
+    {
+        _host.Server.Given(Request.Create().WithPath($"/Items/{Guid.Parse(AlbumId)}").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(404));
+        _host.ConnectAsTestUser();
+
+        var act = () => _host.Library.GetAlbumAsync(AlbumId, TestContext.Current.CancellationToken);
+
+        (await act.Should().ThrowAsync<JellyfinException>()).Which.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetAlbum_rejects_a_malformed_id()
+    {
+        _host.ConnectAsTestUser();
+
+        var act = () => _host.Library.GetAlbumAsync("not-an-id", TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task GetAlbumTracks_queries_by_parent_in_disc_order_and_maps_tracks()
+    {
+        StubItems(new
+        {
+            Items = new object[]
+            {
+                new
+                {
+                    Id = "aaaaaaaa-0000-0000-0000-000000000001",
+                    Name = "One More Time",
+                    Type = "Audio",
+                    AlbumId = Guid.Parse(AlbumId),
+                    Album = "Discovery",
+                    ArtistItems = new[] { new { Id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", Name = "Daft Punk" } },
+                    RunTimeTicks = 3_200_000_000L,
+                    IndexNumber = 1,
+                    ParentIndexNumber = 2,
+                    UserData = new { IsFavorite = true, PlayCount = 3 },
+                },
+            },
+        });
+        _host.ConnectAsTestUser();
+
+        var tracks = await _host.Library.GetAlbumTracksAsync(AlbumId, TestContext.Current.CancellationToken);
+
+        var query = LastQuery();
+        Guid.Parse(query["parentId"]).ToString("N").Should().Be(AlbumId);
+        query["includeItemTypes"].Should().Be("Audio");
+        query["sortBy"].Should().Be("ParentIndexNumber,IndexNumber,SortName");
+        tracks.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Id = "aaaaaaaa000000000000000000000001",
+            Name = "One More Time",
+            AlbumId,
+            AlbumName = "Discovery",
+            Duration = TimeSpan.FromSeconds(320),
+            TrackNumber = 1,
+            DiscNumber = 2,
+            IsFavorite = true,
+            PlayCount = 3,
+        });
+        tracks[0].Artists.Should().ContainSingle().Which.Name.Should().Be("Daft Punk");
+    }
+
+    [Theory]
+    [InlineData(true, "POST")]
+    [InlineData(false, "DELETE")]
+    public async Task SetFavourite_posts_or_deletes_the_favourite(bool favourite, string method)
+    {
+        _host.Server.Given(Request.Create().WithPath($"/UserFavoriteItems/{Guid.Parse(AlbumId)}").UsingMethod(method))
+            .RespondWith(Response.Create().WithStatusCode(200).WithHeader("Content-Type", "application/json").WithBodyAsJson(new { IsFavorite = favourite }));
+        _host.ConnectAsTestUser();
+
+        await _host.Library.SetFavouriteAsync(AlbumId, favourite, TestContext.Current.CancellationToken);
+
+        var request = _host.Server.LogEntries.Single().RequestMessage!;
+        request.Method.Should().Be(method);
+        Guid.Parse(LastQuery()["userId"]).ToString("N").Should().Be(JellyfinTestHost.UserId);
+    }
+
+    [Fact]
+    public async Task SetFavourite_failure_becomes_JellyfinException()
+    {
+        _host.Server.Given(Request.Create().WithPath($"/UserFavoriteItems/{Guid.Parse(AlbumId)}").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(403));
+        _host.ConnectAsTestUser();
+
+        var act = () => _host.Library.SetFavouriteAsync(AlbumId, true, TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<JellyfinException>();
+    }
 }

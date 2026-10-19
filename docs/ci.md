@@ -39,6 +39,10 @@ Triggers: `pull_request`, `push` to `main`, manual (`workflow_dispatch`).
 | `test-core` | Ubuntu | Builds and tests `Groovefin.CrossPlatform.slnf` (Core, Jellyfin and their tests) on Microsoft.Testing.Platform. Writes a TRX results table and a Cobertura coverage summary to the job summary, and uploads TRX + coverage as the `test-results` artifact (7 days). |
 | `build-windows (x64)`, `build-windows (ARM64)` | Windows | Release build of the full solution for each platform, then packages `Groovefin.App`: an unsigned MSIX (`groovefin-msix-<platform>`) and an unpackaged, self-contained build (`WindowsPackageType=None`, `WindowsAppSDKSelfContained=true`, artifact `groovefin-unpackaged-<platform>`). Artifacts are kept for 7 days so every PR has a testable build. |
 
+If the Windows build fails, every MSBuild error (including XAML compiler `WMC…` errors, which the
+default problem matcher misses) is also reported as an annotation on the check run, so the cause is
+visible in the PR's *Checks* tab and through the API without opening the raw log.
+
 The status check names `format`, `test-core`, `build-windows (x64)` and `build-windows (ARM64)` are
 the required checks for `main` (see [contributing.md](contributing.md#branch-protection-for-main)).
 
