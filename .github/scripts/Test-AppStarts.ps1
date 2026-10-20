@@ -20,7 +20,10 @@ param(
 
     [int] $Seconds = 30,
 
-    [int] $Port = 8096
+    [int] $Port = 8096,
+
+    # Where screenshots of checked pages go (uploaded by CI); none when empty.
+    [string] $ScreenshotDir = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -165,6 +168,26 @@ try {
 
     $invoke = [System.Windows.Automation.InvokePattern]::Pattern
 
+    # Saves the window as it is on screen to $ScreenshotDir\<name>.png, for a look at the layout.
+    function Save-Screenshot([string] $name) {
+        if (-not $ScreenshotDir) { return }
+        try {
+            Add-Type -AssemblyName System.Drawing
+            $null = New-Item -ItemType Directory -Force -Path $ScreenshotDir
+            $r = $window.Current.BoundingRectangle
+            $bitmap = [System.Drawing.Bitmap]::new([int] $r.Width, [int] $r.Height)
+            $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+            $graphics.CopyFromScreen([int] $r.X, [int] $r.Y, 0, 0, $bitmap.Size)
+            $bitmap.Save((Join-Path $ScreenshotDir "$name.png"), [System.Drawing.Imaging.ImageFormat]::Png)
+            $graphics.Dispose()
+            $bitmap.Dispose()
+            Write-Output "Saved screenshot $name.png"
+        }
+        catch {
+            Write-Output "No screenshot ${name}: $($_.Exception.Message)"
+        }
+    }
+
     # Sets the text of a text box. A page that is still being shown may not offer the value pattern yet;
     # if it never does, the text is typed into the focused box.
     function Set-Text([System.Windows.Automation.AutomationElement] $element, [string] $text) {
@@ -216,10 +239,38 @@ try {
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) "navigation item 'Settings'"
     if ($settings.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref] $selection)) { $selection.Select() }
     else { $settings.GetCurrentPattern($invoke).Invoke() }
-    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) "equalizer settings"
+    $equalizerCard = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) "equalizer settings"
     Start-Sleep -Seconds 2
     Test-Running 'on the settings page'
     Write-Output 'The settings page opened with the equalizer.'
+
+    # The band sliders: expanded and scrolled into view, each must have a visible size (#165).
+    # The header text is named "Equalizer" too: expand the element that can be expanded.
+    $pattern = $null
+    $named = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer'))
+    foreach ($element in @($equalizerCard) + @($named)) {
+        if ($element.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $pattern)) {
+            $pattern.Expand()
+            break
+        }
+    }
+    $band = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, '1 kHz'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider))) "equalizer slider '1 kHz'"
+    if ($band.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $pattern)) { $pattern.ScrollIntoView() }
+    Start-Sleep -Seconds 1
+    Save-Screenshot 'settings-equalizer'
+    $sliders = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider))
+    foreach ($slider in $sliders) {
+        $r = $slider.Current.BoundingRectangle
+        Write-Output ("Slider '{0}': {1:0}x{2:0} at {3:0},{4:0}, offscreen {5}" -f $slider.Current.Name, $r.Width, $r.Height, $r.X, $r.Y, $slider.Current.IsOffscreen)
+    }
+    $bandRect = $band.Current.BoundingRectangle
+    if ($band.Current.IsOffscreen -or $bandRect.Width -lt 16 -or $bandRect.Height -lt 100) {
+        Stop-Test 'Smoke test' "The equalizer slider '1 kHz' has no visible size: $($bandRect.Width)x$($bandRect.Height)."
+    }
+    Test-Running 'with the equalizer expanded'
+    Write-Output 'The equalizer sliders are visible.'
 
     # Close the window like a user: the app must shut down without errors and exit with code 0 (#145).
     $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
