@@ -63,6 +63,46 @@ public sealed class AlbumDetailViewModelTests
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
+    public async Task Load_shows_genres_and_links_to_other_sites()
+    {
+        _library.GetAlbumAsync("album-1", Arg.Any<CancellationToken>()).Returns(Discovery with
+        {
+            Genres = [new Genre("g1", "Electronic")],
+            MusicBrainzReleaseGroupId = "group-1",
+        });
+        var sut = CreateSut();
+
+        await sut.LoadAsync("album-1", Ct);
+
+        sut.Genres.Should().Equal(new Genre("g1", "Electronic"));
+        sut.HasGenres.Should().BeTrue();
+        sut.MusicBrainzUrl!.AbsoluteUri.Should().Be("https://musicbrainz.org/release-group/group-1");
+        sut.LastFmUrl!.AbsoluteUri.Should().Be("https://www.last.fm/music/Daft+Punk/Discovery");
+    }
+
+    [Fact]
+    public async Task Without_ids_and_genres_those_parts_are_hidden()
+    {
+        var sut = CreateSut();
+
+        await sut.LoadAsync("album-1", Ct);
+
+        sut.HasGenres.Should().BeFalse();
+        sut.HasMusicBrainz.Should().BeFalse();
+        sut.HasLastFm.Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_genre_opens_its_page()
+    {
+        var sut = CreateSut();
+
+        sut.OpenGenreCommand.Execute(new Genre("g1", "Electronic"));
+
+        _navigation.Received(1).NavigateTo(PageKeys.Genre, "g1");
+    }
+
+    [Fact]
     public async Task Load_fills_the_header()
     {
         var sut = CreateSut();

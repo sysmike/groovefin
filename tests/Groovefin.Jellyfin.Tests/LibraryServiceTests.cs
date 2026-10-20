@@ -1,4 +1,5 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Models;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 
@@ -250,6 +251,27 @@ public sealed class LibraryServiceTests : IDisposable
         album.Name.Should().Be("Discovery");
         album.Year.Should().Be(2001);
         Guid.Parse(LastQuery()["userId"]).ToString("N").Should().Be(JellyfinTestHost.UserId);
+    }
+
+    [Fact]
+    public async Task GetAlbum_maps_genres_and_MusicBrainz_ids()
+    {
+        _host.Server.Given(Request.Create().WithPath($"/Items/{Guid.Parse(AlbumId)}").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200).WithHeader("Content-Type", "application/json").WithBodyAsJson(new
+            {
+                Id = Guid.Parse(AlbumId),
+                Name = "Discovery",
+                Type = "MusicAlbum",
+                GenreItems = new[] { new { Name = "Electronic", Id = Guid.Parse("11111111-2222-3333-4444-555555555555") } },
+                ProviderIds = new { MusicBrainzAlbum = "release-1", MusicBrainzReleaseGroup = "group-1" },
+            }));
+        _host.ConnectAsTestUser();
+
+        var album = await _host.Library.GetAlbumAsync(AlbumId, TestContext.Current.CancellationToken);
+
+        album.Genres.Should().Equal(new Genre("11111111222233334444555555555555", "Electronic"));
+        album.MusicBrainzReleaseId.Should().Be("release-1");
+        album.MusicBrainzReleaseGroupId.Should().Be("group-1");
     }
 
     [Fact]

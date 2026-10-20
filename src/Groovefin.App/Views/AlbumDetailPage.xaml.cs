@@ -98,4 +98,12 @@ internal sealed partial class AlbumDetailPage : Page
             ViewModel.OpenArtistCommand.Execute(artist);
         }
     }
+
+    private void OnGenreClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is Genre genre)
+        {
+            ViewModel.OpenGenreCommand.Execute(genre);
+        }
+    }
 }
