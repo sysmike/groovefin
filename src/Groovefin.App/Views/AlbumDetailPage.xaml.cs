@@ -99,6 +99,15 @@ internal sealed partial class AlbumDetailPage : Page
         }
     }
 
+    /// <summary>A column header: its Tag names the column (<see cref="AlbumTrackSort"/>).</summary>
+    private void OnSortClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is string tag && Enum.TryParse<AlbumTrackSort>(tag, out var column))
+        {
+            ViewModel.SortCommand.Execute(column);
+        }
+    }
+
     private void OnGenreClick(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is Genre genre)
