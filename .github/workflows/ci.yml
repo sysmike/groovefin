@@ -162,7 +162,18 @@ jobs:
         if: matrix.platform == 'x64'
         timeout-minutes: 5
         shell: pwsh
-        run: ./.github/scripts/Test-AppStarts.ps1 -Path "${{ runner.temp }}\out\unpackaged\Groovefin.exe"
+        env:
+          GROOVEFIN_SCREENSHOT_TO_LOG: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
+        run: ./.github/scripts/Test-AppStarts.ps1 -Path "${{ runner.temp }}\out\unpackaged\Groovefin.exe" -ScreenshotDir "${{ runner.temp }}\screenshots"
+
+      - name: Upload smoke test screenshots
+        if: ${{ !cancelled() && matrix.platform == 'x64' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-test-screenshots
+          path: ${{ runner.temp }}/screenshots/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload MSIX
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

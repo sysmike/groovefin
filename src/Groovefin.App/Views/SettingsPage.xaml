@@ -221,10 +221,10 @@
                                                 HorizontalAlignment="Center"
                                                 Style="{StaticResource CaptionTextBlockStyle}"
                                                 Text="{x:Bind GainText, Mode=OneWay}" />
+                                            <!--  Stretched: centred, a vertical Slider in this fixed-width column draws nothing (#165). Its template centres the track.  -->
                                             <Slider
                                                 x:Uid="EqualizerBandSlider"
                                                 Height="160"
-                                                HorizontalAlignment="Center"
                                                 AutomationProperties.Name="{x:Bind Name}"
                                                 Maximum="12"
                                                 Minimum="-12"
