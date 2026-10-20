@@ -1410,4 +1410,31 @@
   <data name="Shortcut_MiniPlayer" xml:space="preserve">
     <value>Mini-Player ein oder aus</value>
   </data>
+  <data name="SettingsTraySwitch.Header" xml:space="preserve">
+    <value>Symbol im Infobereich</value>
+  </data>
+  <data name="SettingsTraySwitch.OnContent" xml:space="preserve">
+    <value>Anzeigen, mit Wiedergabesteuerung</value>
+  </data>
+  <data name="SettingsTraySwitch.OffContent" xml:space="preserve">
+    <value>Nicht anzeigen</value>
+  </data>
+  <data name="SettingsMinimizeToTraySwitch.Header" xml:space="preserve">
+    <value>In den Infobereich minimieren</value>
+  </data>
+  <data name="Tray_PlayPause" xml:space="preserve">
+    <value>Wiedergabe/Pause</value>
+  </data>
+  <data name="Tray_Next" xml:space="preserve">
+    <value>Nächster Titel</value>
+  </data>
+  <data name="Tray_Previous" xml:space="preserve">
+    <value>Vorheriger Titel</value>
+  </data>
+  <data name="Tray_Show" xml:space="preserve">
+    <value>Groovefin anzeigen</value>
+  </data>
+  <data name="Tray_Exit" xml:space="preserve">
+    <value>Beenden</value>
+  </data>
 </root>

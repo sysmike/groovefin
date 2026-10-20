@@ -50,6 +50,20 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void The_tray_icon_and_minimizing_to_it_are_off_by_default_and_saved()
+    {
+        var sut = CreateSut();
+
+        sut.ShowTrayIcon.Should().BeFalse();
+        sut.MinimizeToTray.Should().BeFalse();
+        sut.ShowTrayIcon = true;
+        sut.MinimizeToTray = true;
+
+        _settings.Current.Appearance.ShowTrayIcon.Should().BeTrue();
+        _settings.Current.Appearance.MinimizeToTray.Should().BeTrue();
+    }
+
+    [Fact]
     public void Account_shows_the_signed_in_user()
     {
         _servers.IsSignedIn.Returns(true);

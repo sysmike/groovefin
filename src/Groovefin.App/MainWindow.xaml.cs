@@ -6,6 +6,7 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 using Groovefin.Core.Shortcuts;
 using Groovefin.Core.ViewModels;
 using Microsoft.UI.Composition.SystemBackdrops;
@@ -33,6 +34,8 @@ internal sealed partial class MainWindow : Window
     private readonly AddToPlaylist _addToPlaylist;
     private readonly TrackDrag _trackDrag;
     private readonly IStringResources _strings;
+    private readonly ISettingsService _settings;
+    private readonly NotificationAreaIcon _tray;
     private RectInt32? _restoreBounds;
     private bool _restoreMaximized;
 
@@ -47,7 +50,8 @@ internal sealed partial class MainWindow : Window
         NowPlayingViewModel nowPlaying,
         AddToPlaylist addToPlaylist,
         TrackDrag trackDrag,
-        IStringResources strings)
+        IStringResources strings,
+        ISettingsService settings)
     {
         _navigation = navigation;
         _addToPlaylist = addToPlaylist;
@@ -60,6 +64,7 @@ internal sealed partial class MainWindow : Window
         Suggestions = suggestions;
         InitializeComponent();
 
+        _settings = settings;
         Title = new ResourceLoader().GetString("AppDisplayName");
         AppWindow.SetIcon("Assets/AppIcon.ico");
         ExtendsContentIntoTitleBar = true;
@@ -90,6 +95,22 @@ internal sealed partial class MainWindow : Window
                 Player.IsFullScreen = AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
                 Player.IsMiniPlayer = AppWindow.Presenter.Kind == AppWindowPresenterKind.CompactOverlay;
             }
+
+            // Minimized with "minimize to tray": only the notification area icon stays.
+            if (_tray is { IsVisible: true } && _settings.Current.Appearance.MinimizeToTray && AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized })
+            {
+                AppWindow.Hide();
+            }
+        };
+
+        // The optional notification area icon follows its setting.
+        _tray = new NotificationAreaIcon(Player, strings, Title, ShowFromTray, Close);
+        _tray.SetVisible(settings.Current.Appearance.ShowTrayIcon);
+        settings.Changed += OnSettingsChanged;
+        Closed += (_, _) =>
+        {
+            settings.Changed -= OnSettingsChanged;
+            _tray.Dispose();
         };
 
         // The queue and the lyrics share the right side: opening one closes the other.
@@ -121,6 +142,21 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>Gets the now playing state, also shown by the full-screen player. (The bar itself is named NowPlaying.)</summary>
     public NowPlayingViewModel Player { get; }
+
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e) =>
+        DispatcherQueue.TryEnqueue(() => _tray.SetVisible(_settings.Current.Appearance.ShowTrayIcon));
+
+    /// <summary>Brings the window back from the notification area (or from minimized) and to the front.</summary>
+    private void ShowFromTray()
+    {
+        AppWindow.Show();
+        if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
+        {
+            presenter.Restore();
+        }
+
+        Activate();
+    }
 
     /// <summary>
     /// Shows the presenter the players ask for: compact overlay (mini player), full screen or the normal

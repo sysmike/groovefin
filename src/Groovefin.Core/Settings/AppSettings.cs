@@ -40,6 +40,12 @@ public sealed record AppSettings
 public sealed record AppearanceSettings
 {
     public AppTheme Theme { get; set; } = AppTheme.System;
+
+    /// <summary>Gets or sets a value indicating whether an icon with playback controls is shown in the notification area.</summary>
+    public bool ShowTrayIcon { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether minimizing hides the window to the notification area icon.</summary>
+    public bool MinimizeToTray { get; set; }
 }
 
 /// <summary>Known servers and the active one. Access tokens are in the credential store, not here.</summary>

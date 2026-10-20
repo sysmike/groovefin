@@ -158,6 +158,34 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Gets or sets a value indicating whether the notification area icon is shown.</summary>
+    public bool ShowTrayIcon
+    {
+        get => _settings.Current.Appearance.ShowTrayIcon;
+        set
+        {
+            if (value != ShowTrayIcon)
+            {
+                _settings.Update(s => s with { Appearance = s.Appearance with { ShowTrayIcon = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>Gets or sets a value indicating whether minimizing hides the window to the notification area (with the icon on).</summary>
+    public bool MinimizeToTray
+    {
+        get => _settings.Current.Appearance.MinimizeToTray;
+        set
+        {
+            if (value != MinimizeToTray)
+            {
+                _settings.Update(s => s with { Appearance = s.Appearance with { MinimizeToTray = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public AppVersion Version { get; }
 
     /// <summary>Gets the signed-in user name, or <see langword="null"/> when nobody is signed in.</summary>
