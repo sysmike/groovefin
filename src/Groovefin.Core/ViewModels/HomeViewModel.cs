@@ -63,6 +63,7 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     private readonly INavigationService _navigation;
     private readonly IErrorReporter _errors;
     private CancellationTokenSource _cancellation = new();
+    private bool _disposed;
 
     public HomeViewModel(ILibraryService library, INavigationService navigation, IErrorReporter errors, IStringResources strings)
     {
@@ -122,8 +123,15 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenAlbum(AlbumItem item) => _navigation.NavigateTo(PageKeys.Album, item.Album.Id);
 
+    /// <summary>Cancels loading. Safe to call twice: the page and, at shutdown, the container dispose it.</summary>
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         _cancellation.Cancel();
         _cancellation.Dispose();
     }

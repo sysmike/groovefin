@@ -33,6 +33,18 @@ public sealed class ArtistsViewModelTests
     private ArtistsViewModel CreateSut() => new(_library, _settings, _navigation, _errors);
 
     [Fact]
+    public void Disposing_twice_does_not_throw()
+    {
+        // The page disposes it when the user leaves; the container disposes it again at shutdown (#145).
+        var sut = CreateSut();
+        sut.Dispose();
+
+        var act = sut.Dispose;
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
     public async Task Initialize_loads_the_first_page_of_album_artists()
     {
         using var sut = CreateSut();

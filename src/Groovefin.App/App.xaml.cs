@@ -140,10 +140,12 @@ public partial class App : Application
             _host.Services.GetRequiredService<PlaybackReporting>().FlushAsync().Wait(ReportFlushTimeout);
         }
 
-        _host?.Services.GetRequiredService<ISettingsService>().FlushAsync().GetAwaiter().GetResult();
-        _host?.StopAsync().GetAwaiter().GetResult();
-        _host?.Dispose();
+        // From here on, errors are only logged: the handlers must not ask a host that is being disposed (#145).
+        var host = _host;
         _host = null;
+        host?.Services.GetRequiredService<ISettingsService>().FlushAsync().GetAwaiter().GetResult();
+        host?.StopAsync().GetAwaiter().GetResult();
+        host?.Dispose();
     }
 
     /// <summary>Every exception before the logger exists, handled or not: the last ones explain a start-up crash.</summary>
@@ -218,7 +220,17 @@ public partial class App : Application
         }
     }
 
-    private IErrorReporter? TryGetErrorReporter() => _host?.Services.GetService<IErrorReporter>();
+    private IErrorReporter? TryGetErrorReporter()
+    {
+        try
+        {
+            return _host?.Services.GetService<IErrorReporter>();
+        }
+        catch (ObjectDisposedException)
+        {
+            return null;
+        }
+    }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Groovefin {Version} started (packaged: {IsPackaged}, OS: {OsVersion})")]
     private static partial void LogStarted(ILogger logger, string version, bool isPackaged, string osVersion);

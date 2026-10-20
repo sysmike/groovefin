@@ -42,6 +42,7 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     private readonly INavigationService _navigation;
     private readonly IErrorReporter _errors;
     private CancellationTokenSource _loadCancellation = new();
+    private bool _disposed;
     private int _generation;
     private bool _initialized;
 
@@ -142,8 +143,15 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
         MaxYear = null;
     }
 
+    /// <summary>Cancels loading. Safe to call twice: the page and, at shutdown, the container dispose it.</summary>
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         _loadCancellation.Cancel();
         _loadCancellation.Dispose();
     }
