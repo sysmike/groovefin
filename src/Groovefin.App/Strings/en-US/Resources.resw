@@ -116,6 +116,12 @@
   <data name="Error_Storage" xml:space="preserve">
     <value>Groovefin couldn't read or write its files. Check that there is enough free disk space.</value>
   </data>
+  <data name="Error_StreamRefused" xml:space="preserve">
+    <value>The server refused to stream the track. Sign in again, or check that your account is allowed to play media.</value>
+  </data>
+  <data name="Error_StreamFailed" xml:space="preserve">
+    <value>The track can't be played. Its format may not be supported, or the connection was interrupted.</value>
+  </data>
   <data name="Error_Unexpected" xml:space="preserve">
     <value>An unexpected error occurred. Details are in the log file.</value>
   </data>

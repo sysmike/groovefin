@@ -250,7 +250,18 @@ public sealed class PlayerTests : IDisposable
         _engine.SimulateFailure("MediaSourceNotSupported");
 
         Playing.Should().Be("b");
-        _errors.Received(1).Report(Arg.Is<Exception>(e => e.Message == "MediaSourceNotSupported"), Operations.Playback);
+        _errors.Received(1).Report(Arg.Is<Exception>(e => e is PlaybackException && e.Message == "MediaSourceNotSupported"), Operations.Playback);
+    }
+
+    [Fact]
+    public void A_failure_is_reported_with_the_engine_error_inside()
+    {
+        _sut.Play(Tracks("a", "b"));
+        var denied = new UnauthorizedAccessException();
+
+        _engine.SimulateFailure("SourceNotSupportedError", denied);
+
+        _errors.Received(1).Report(Arg.Is<PlaybackException>(e => e.InnerException == denied), Operations.Playback);
     }
 
     [Fact]
@@ -264,7 +275,7 @@ public sealed class PlayerTests : IDisposable
         }
 
         _engine.Current.Should().BeNull();
-        _errors.Received(Player.MaxConsecutiveFailures).Report(Arg.Any<InvalidOperationException>(), Operations.Playback);
+        _errors.Received(Player.MaxConsecutiveFailures).Report(Arg.Is<PlaybackException>(e => e.InnerException is InvalidOperationException), Operations.Playback);
     }
 
     [Fact]

@@ -281,7 +281,7 @@ public sealed class PlaybackEngineBaseTests
     [Fact]
     public void A_source_never_shows_its_url_when_logged()
     {
-        var source = new PlaybackSource("7", new Uri("https://server/Audio/x/universal?api_key=secret-token"), new Track { Id = "x", Name = "One More Time" });
+        var source = new PlaybackSource("7", new Uri("https://server/Audio/x/universal?ApiKey=secret-token"), new Track { Id = "x", Name = "One More Time" });
 
         source.ToString().Should().Be("7 (One More Time)").And.NotContain("secret-token");
     }
