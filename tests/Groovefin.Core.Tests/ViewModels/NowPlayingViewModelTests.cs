@@ -195,9 +195,13 @@ public sealed class NowPlayingViewModelTests : IDisposable
     }
 
     [Fact]
-    public void The_full_screen_player_has_a_large_cover_a_small_backdrop_and_one_line_of_artists()
+    public void The_full_screen_player_has_a_large_cover_and_a_small_backdrop_only_while_shown()
     {
         PlayOneMoreTime();
+        _sut.LargeCover.Should().BeNull();
+        _sut.BackdropCover.Should().BeNull();
+
+        _sut.IsFullScreen = true;
 
         _sut.LargeCover.Should().Be(new ImageRequest("album-1", ImageKind.Primary, "tag", (int)(NowPlayingViewModel.LargeCoverWidth * 2)));
         _sut.BackdropCover.Should().Be(new ImageRequest("album-1", ImageKind.Primary, "tag", (int)(NowPlayingViewModel.BackdropWidth * 2)));

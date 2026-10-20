@@ -169,15 +169,15 @@
 
         <!--
             Full-screen player (F11, Esc exits): the album art blurred behind everything but the now playing
-            bar, the cover large on the left. The queue and lyrics panes stay usable on top of it. Only loaded
-            while shown, so its images are not fetched otherwise.
+            bar, the cover large on the left. The queue and lyrics panes stay usable on top of it. Its covers
+            are only set while it is shown, so they are not fetched otherwise. (x:Load does not work in a Window.)
         -->
         <Grid
             x:Name="FullScreenBackdrop"
             Grid.RowSpan="2"
             Grid.ColumnSpan="2"
-            x:Load="{x:Bind Player.IsFullScreen, Mode=OneWay}"
-            Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+            Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+            Visibility="{x:Bind Player.IsFullScreen, Mode=OneWay}">
             <Image
                 controls:Artwork.Request="{x:Bind Player.BackdropCover, Mode=OneWay}"
                 AutomationProperties.AccessibilityView="Raw"
@@ -195,8 +195,8 @@
             x:Name="FullScreenContent"
             Grid.RowSpan="2"
             Padding="48,32"
-            x:Load="{x:Bind Player.IsFullScreen, Mode=OneWay}"
-            ColumnSpacing="48">
+            ColumnSpacing="48"
+            Visibility="{x:Bind Player.IsFullScreen, Mode=OneWay}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />

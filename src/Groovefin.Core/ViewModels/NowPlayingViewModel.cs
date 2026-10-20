@@ -76,16 +76,15 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial ImageRequest? Cover { get; private set; }
 
-    /// <summary>Gets the cover of the full-screen player.</summary>
-    [ObservableProperty]
-    public partial ImageRequest? LargeCover { get; private set; }
+    /// <summary>Gets the cover of the full-screen player; <see langword="null"/> while it is closed, so nothing is fetched.</summary>
+    public ImageRequest? LargeCover => IsFullScreen ? CoverOf(Track, LargeCoverWidth) : null;
 
-    /// <summary>Gets the small cover blurred behind the full-screen player.</summary>
-    [ObservableProperty]
-    public partial ImageRequest? BackdropCover { get; private set; }
+    /// <summary>Gets the small cover blurred behind the full-screen player; <see langword="null"/> while it is closed.</summary>
+    public ImageRequest? BackdropCover => IsFullScreen ? CoverOf(Track, BackdropWidth) : null;
 
     /// <summary>Gets or sets a value indicating whether the full-screen player is shown (F11, Esc exits).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LargeCover), nameof(BackdropCover))]
     public partial bool IsFullScreen { get; set; }
 
     public string AlbumName => Track?.AlbumName ?? string.Empty;
@@ -257,8 +256,8 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     {
         var track = Track;
         Cover = CoverOf(track, CoverWidth);
-        LargeCover = CoverOf(track, LargeCoverWidth);
-        BackdropCover = CoverOf(track, BackdropWidth);
+        OnPropertyChanged(nameof(LargeCover));
+        OnPropertyChanged(nameof(BackdropCover));
         IsFavourite = track is not null && _favourites.IsFavourite(track.Id, track.IsFavorite);
         OnPropertyChanged(nameof(Track));
         OnPropertyChanged(nameof(HasTrack));
