@@ -26,6 +26,12 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     /// <summary>How much the volume shortcuts change the volume (0–100).</summary>
     public const double VolumeStep = 5;
 
+    /// <summary>Size of the cover in the full-screen player.</summary>
+    public const double LargeCoverWidth = 480;
+
+    /// <summary>Size of the cover behind the full-screen player; it is blurred, so a small one is enough.</summary>
+    public const double BackdropWidth = 64;
+
     private readonly IPlayer _player;
     private readonly FavouritesService _favourites;
     private readonly IMessenger _messenger;
@@ -69,6 +75,22 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     /// <summary>Gets the cover of the track's album.</summary>
     [ObservableProperty]
     public partial ImageRequest? Cover { get; private set; }
+
+    /// <summary>Gets the cover of the full-screen player; <see langword="null"/> while it is closed, so nothing is fetched.</summary>
+    public ImageRequest? LargeCover => IsFullScreen ? CoverOf(Track, LargeCoverWidth) : null;
+
+    /// <summary>Gets the small cover blurred behind the full-screen player; <see langword="null"/> while it is closed.</summary>
+    public ImageRequest? BackdropCover => IsFullScreen ? CoverOf(Track, BackdropWidth) : null;
+
+    /// <summary>Gets or sets a value indicating whether the full-screen player is shown (F11, Esc exits).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LargeCover), nameof(BackdropCover))]
+    public partial bool IsFullScreen { get; set; }
+
+    public string AlbumName => Track?.AlbumName ?? string.Empty;
+
+    /// <summary>Gets the artists as one line, e.g. "Daft Punk, Romanthony".</summary>
+    public string ArtistNames => string.Join(", ", Artists.Select(a => a.Name));
 
     public bool IsPlaying => Engine.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Opening;
 
@@ -168,6 +190,15 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void VolumeDown() => Volume = Math.Max(0, Volume - VolumeStep);
 
+    [RelayCommand]
+    private void ToggleFullScreen() => IsFullScreen = !IsFullScreen;
+
+    [RelayCommand]
+    private void ExitFullScreen() => IsFullScreen = false;
+
+    private ImageRequest? CoverOf(Track? track, double width) =>
+        track?.AlbumId is { } albumId ? ImageRequest.Primary(albumId, track.AlbumImageTag, width, DisplayScale) : null;
+
     /// <summary>Turns shuffle on or off (Ctrl+S).</summary>
     [RelayCommand]
     private void ToggleShuffle() => Shuffle = !Shuffle;
@@ -224,12 +255,16 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     private void OnCurrentChanged(object? sender, EventArgs e)
     {
         var track = Track;
-        Cover = track?.AlbumId is { } albumId ? ImageRequest.Primary(albumId, track.AlbumImageTag, CoverWidth, DisplayScale) : null;
+        Cover = CoverOf(track, CoverWidth);
+        OnPropertyChanged(nameof(LargeCover));
+        OnPropertyChanged(nameof(BackdropCover));
         IsFavourite = track is not null && _favourites.IsFavourite(track.Id, track.IsFavorite);
         OnPropertyChanged(nameof(Track));
         OnPropertyChanged(nameof(HasTrack));
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(Artists));
+        OnPropertyChanged(nameof(ArtistNames));
+        OnPropertyChanged(nameof(AlbumName));
         PlayPauseCommand.NotifyCanExecuteChanged();
         NextCommand.NotifyCanExecuteChanged();
         PreviousCommand.NotifyCanExecuteChanged();

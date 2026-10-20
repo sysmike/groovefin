@@ -1400,4 +1400,16 @@
   <data name="Taskbar_Next" xml:space="preserve">
     <value>Next track</value>
   </data>
+  <data name="FullScreenExitButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Exit full screen</value>
+  </data>
+  <data name="FullScreenExitButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Exit full screen (Esc)</value>
+  </data>
+  <data name="Key_F11" xml:space="preserve">
+    <value>F11</value>
+  </data>
+  <data name="Shortcut_FullScreen" xml:space="preserve">
+    <value>Full-screen player on or off</value>
+  </data>
 </root>

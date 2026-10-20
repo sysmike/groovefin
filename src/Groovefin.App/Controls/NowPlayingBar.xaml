@@ -215,13 +215,12 @@
                 Style="{StaticResource NowPlayingToggleStyle}">
                 <FontIcon FontSize="14" Glyph="&#xE8D2;" />
             </ToggleButton>
-            <!--  TODO(#43): open the full-screen player.  -->
-            <Button
+            <ToggleButton
                 x:Uid="NowPlayingFullScreenButton"
-                IsEnabled="False"
-                Style="{StaticResource NowPlayingButtonStyle}">
+                IsChecked="{x:Bind ViewModel.IsFullScreen, Mode=TwoWay}"
+                Style="{StaticResource NowPlayingToggleStyle}">
                 <FontIcon FontSize="14" Glyph="&#xE740;" />
-            </Button>
+            </ToggleButton>
             <ToggleButton
                 x:Uid="NowPlayingMuteButton"
                 IsChecked="{x:Bind ViewModel.IsMuted, Mode=TwoWay}"
