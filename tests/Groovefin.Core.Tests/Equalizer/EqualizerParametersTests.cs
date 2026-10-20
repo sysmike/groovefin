@@ -53,6 +53,17 @@ public sealed class EqualizerParametersTests
     }
 
     [Fact]
+    public void Gains_are_rounded_to_hundredths_of_a_decibel()
+    {
+        var parameters = new EqualizerParameters(true, -0.0001, [1.23456, -0.004]);
+
+        parameters.Preamp.Should().Be(0);
+        parameters.Gains.Should().StartWith([1.23, 0]);
+        parameters.Format().Should().StartWith("1;0;1.23,0,");
+        parameters.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
     public void Equal_values_are_equal()
     {
         new EqualizerParameters(true, 1, [1, 2]).Should().Be(new EqualizerParameters(true, 1, [1, 2, 0]));

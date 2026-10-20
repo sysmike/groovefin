@@ -16,6 +16,7 @@ public sealed class EqualizerProcessor
     private readonly PeakingFilter[] _filters;
     private readonly double[] _state;
     private int[] _active = [];
+    private bool _amplify;
     private float _preamp = 1;
 
     /// <summary>Initializes a new instance for audio with <paramref name="channels"/> interleaved channels.</summary>
@@ -30,7 +31,7 @@ public sealed class EqualizerProcessor
     }
 
     /// <summary>Gets a value indicating whether <see cref="Process"/> changes the samples.</summary>
-    public bool IsActive => _active.Length > 0 || _preamp != 1;
+    public bool IsActive => _active.Length > 0 || _amplify;
 
     /// <summary>Applies new parameters. Bands that stay active keep their state, so playback continues without a click.</summary>
     public void Configure(EqualizerParameters parameters)
@@ -56,7 +57,8 @@ public sealed class EqualizerProcessor
         }
 
         _active = [.. active];
-        _preamp = parameters.Enabled ? (float)Math.Pow(10, parameters.Preamp / 20) : 1;
+        _amplify = parameters.Enabled && !EqualizerBands.IsFlat(parameters.Preamp);
+        _preamp = _amplify ? (float)Math.Pow(10, parameters.Preamp / 20) : 1;
     }
 
     /// <summary>Forgets the filter state, e.g. after a seek.</summary>
@@ -79,7 +81,7 @@ public sealed class EqualizerProcessor
             }
         }
 
-        if (_preamp != 1)
+        if (_amplify)
         {
             var end = frames * _channels;
             for (var i = 0; i < end; i++)

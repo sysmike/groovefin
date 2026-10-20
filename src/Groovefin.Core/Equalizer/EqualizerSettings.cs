@@ -23,8 +23,9 @@ public sealed record EqualizerSettings
         new(Enabled, Preamp, EqualizerPresets.GainsOf(Preset) ?? CustomGains ?? []);
 
     public bool Equals(EqualizerSettings? other) =>
-        other is not null && Enabled == other.Enabled && Preset == other.Preset && Preamp == other.Preamp
+        other is not null && Enabled == other.Enabled && Preset == other.Preset && EqualizerBands.AreEqual(Preamp, other.Preamp)
         && (CustomGains ?? []).SequenceEqual(other.CustomGains ?? []);
 
-    public override int GetHashCode() => HashCode.Combine(Enabled, Preset, Preamp, (CustomGains ?? []).Count);
+    // Without the gains: equal within the tolerance does not mean the same hash.
+    public override int GetHashCode() => HashCode.Combine(Enabled, Preset, (CustomGains ?? []).Count);
 }

@@ -125,8 +125,8 @@ public sealed class EqualizerProcessorTests
 
         sut.Process(samples);
 
-        samples.Where((_, i) => i % 2 == 1).Should().OnlyContain(s => s == 0);
-        samples.Where((_, i) => i % 2 == 0).Should().Contain(s => s != 0);
+        samples.Where((_, i) => i % 2 == 1).Should().AllBeEquivalentTo(0f);
+        samples.Where((_, i) => i % 2 == 0).Should().Contain(s => Math.Abs(s) > 0.01f);
     }
 
     [Fact]
@@ -160,7 +160,7 @@ public sealed class EqualizerProcessorTests
         var silence = new float[256];
         sut.Process(silence);
 
-        silence.Should().OnlyContain(s => s == 0);
+        silence.Should().AllBeEquivalentTo(0f);
     }
 
     [Fact]

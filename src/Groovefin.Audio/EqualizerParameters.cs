@@ -35,7 +35,7 @@ public sealed record EqualizerParameters
     public IReadOnlyList<double> Gains { get; }
 
     /// <summary>Gets a value indicating whether the audio changes: on, and the preamp or a band is not 0 dB.</summary>
-    public bool IsActive => Enabled && (Preamp != 0 || Gains.Any(g => g != 0));
+    public bool IsActive => Enabled && (!EqualizerBands.IsFlat(Preamp) || !Gains.All(EqualizerBands.IsFlat));
 
     /// <summary>Parses the text of <see cref="Format"/>.</summary>
     public static bool TryParse(string? text, out EqualizerParameters parameters)
@@ -71,7 +71,8 @@ public sealed record EqualizerParameters
     }
 
     public bool Equals(EqualizerParameters? other) =>
-        other is not null && Enabled == other.Enabled && Preamp == other.Preamp && Gains.SequenceEqual(other.Gains);
+        other is not null && Enabled == other.Enabled && EqualizerBands.AreEqual(Preamp, other.Preamp)
+        && Gains.Zip(other.Gains).All(pair => EqualizerBands.AreEqual(pair.First, pair.Second));
 
     public override int GetHashCode()
     {

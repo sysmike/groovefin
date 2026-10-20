@@ -117,7 +117,7 @@ public sealed partial class EqualizerViewModel : ObservableObject, IDisposable
         set
         {
             var preamp = EqualizerBands.Clamp(value);
-            if (preamp != Preamp)
+            if (!EqualizerBands.AreEqual(preamp, Preamp))
             {
                 Update(e => e with { Preamp = preamp });
             }

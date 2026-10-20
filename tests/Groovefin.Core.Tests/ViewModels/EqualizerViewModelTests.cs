@@ -39,7 +39,8 @@ public sealed class EqualizerViewModelTests : IDisposable
     public void Shows_ten_bands_named_by_frequency_and_every_preset()
     {
         _sut.Bands.Select(b => b.Name).Should().Equal("31 Hz", "62 Hz", "125 Hz", "250 Hz", "500 Hz", "1 kHz", "2 kHz", "4 kHz", "8 kHz", "16 kHz");
-        _sut.Bands.Should().OnlyContain(b => b.Gain == 0 && b.GainText == "0 dB");
+        _sut.Bands.Select(b => b.Gain).Should().AllBeEquivalentTo(0d);
+        _sut.Bands.Should().OnlyContain(b => b.GainText == "0 dB");
         _sut.PresetOptions.Should().HaveCount(EqualizerPresets.All.Count).And.StartWith("EqualizerPreset_Flat").And.EndWith("EqualizerPreset_Custom");
         _sut.PresetIndex.Should().Be(0);
         _sut.IsAvailable.Should().BeTrue();
@@ -110,7 +111,7 @@ public sealed class EqualizerViewModelTests : IDisposable
         _sut.ResetCommand.Execute(null);
 
         Saved.Should().Be(new EqualizerSettings { Enabled = true });
-        _sut.Bands.Should().OnlyContain(b => b.Gain == 0);
+        _sut.Bands.Select(b => b.Gain).Should().AllBeEquivalentTo(0d);
         _sut.Preamp.Should().Be(0);
     }
 

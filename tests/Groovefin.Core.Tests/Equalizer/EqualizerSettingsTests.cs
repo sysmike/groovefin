@@ -15,7 +15,7 @@ public sealed class EqualizerSettingsTests
                 .And.OnlyContain(g => g >= EqualizerBands.MinGain && g <= EqualizerBands.MaxGain);
         }
 
-        EqualizerPresets.GainsOf(EqualizerPreset.Flat).Should().OnlyContain(g => g == 0);
+        EqualizerPresets.GainsOf(EqualizerPreset.Flat).Should().AllBeEquivalentTo(0d);
         EqualizerPresets.GainsOf(EqualizerPreset.Custom).Should().BeNull();
         EqualizerPresets.All[^1].Should().Be(EqualizerPreset.Custom);
     }

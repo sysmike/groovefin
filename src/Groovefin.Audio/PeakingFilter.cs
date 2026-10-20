@@ -14,7 +14,7 @@ public readonly record struct PeakingFilter(double B0, double B1, double B2, dou
     /// <returns><see cref="Identity"/> for 0 dB, and for a centre too close to the Nyquist frequency to filter.</returns>
     public static PeakingFilter Create(double frequency, double gain, double q, int sampleRate)
     {
-        if (gain == 0 || sampleRate <= 0 || frequency >= sampleRate * 0.45)
+        if (EqualizerBands.IsFlat(gain) || sampleRate <= 0 || frequency >= sampleRate * 0.45)
         {
             return Identity;
         }
