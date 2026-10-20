@@ -167,7 +167,7 @@ public sealed record StreamingSettings
         new(NetworkLocation.IsLocal(serverUrl) ? LocalMaxBitrateKbps : RemoteMaxBitrateKbps, Codec);
 }
 
-/// <summary>Playback: loudness, instant mix and resuming the last session.</summary>
+/// <summary>Playback: loudness, instant mix, resuming the last session and the Discord status.</summary>
 public sealed record PlaybackSettings
 {
     public NormalizationMode Normalization { get; set; } = NormalizationMode.Off;
@@ -176,6 +176,9 @@ public sealed record PlaybackSettings
 
     /// <summary>Gets or sets a value indicating whether the queue and position are restored (paused) on the next start.</summary>
     public bool ResumeSession { get; set; } = true;
+
+    /// <summary>Gets or sets a value indicating whether Discord shows the playing track in the user's status.</summary>
+    public bool DiscordPresence { get; set; }
 }
 
 /// <summary>How lines are aligned in the lyrics pane.</summary>

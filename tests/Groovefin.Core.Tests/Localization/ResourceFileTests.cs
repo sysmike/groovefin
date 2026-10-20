@@ -155,8 +155,11 @@ public sealed partial class ResourceFileTests
     [GeneratedRegex("x:Uid=\"([^\"]+)\"")]
     private static partial Regex UidPattern();
 
-    /// <summary>Resource keys are <c>Area_Name</c>, e.g. <c>"NowPlaying_Play"</c>.</summary>
-    [GeneratedRegex("\"([A-Z][A-Za-z]*_[A-Za-z0-9]+)\"")]
+    /// <summary>
+    /// Resource keys are <c>Area_Name</c>, e.g. <c>"NowPlaying_Play"</c>. ALL_CAPS literals such as
+    /// <c>"SET_ACTIVITY"</c> are protocol words, not keys.
+    /// </summary>
+    [GeneratedRegex("\"([A-Z][a-z][A-Za-z]*_[A-Za-z0-9]+)\"")]
     private static partial Regex KeyLiteralPattern();
 
     /// <summary>The fixed start of a key built at run time, e.g. <c>$"Shortcut_{action}"</c>.</summary>

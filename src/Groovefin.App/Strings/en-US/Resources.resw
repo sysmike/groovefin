@@ -1517,6 +1517,12 @@
   <data name="SettingsResumeCard.Description" xml:space="preserve">
     <value>Restore the queue and position on start, paused.</value>
   </data>
+  <data name="SettingsDiscordCard.Header" xml:space="preserve">
+    <value>Show what I'm playing in Discord</value>
+  </data>
+  <data name="SettingsDiscordCard.Description" xml:space="preserve">
+    <value>While Discord runs on this PC, your status shows the title, artist and progress. Groovefin talks only to the Discord app, not to the internet.</value>
+  </data>
   <data name="SettingsStorageHeader.Text" xml:space="preserve">
     <value>Storage</value>
   </data>
