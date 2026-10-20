@@ -185,9 +185,16 @@ public partial class App : Application
         e.SetObserved();
     }
 
-    /// <summary>Picks the <c>.resw</c> language; an empty override follows the Windows display language.</summary>
+    /// <summary>Picks the <c>.resw</c> language; without a choice the Windows display language applies.</summary>
     private void ApplyLanguage(string? language)
     {
+        // The unpackaged app rejects an empty override (E_INVALIDARG), and without identity no override
+        // outlives the process, so "use the Windows language" simply means not setting one.
+        if (language is null && !AppPaths.IsPackaged)
+        {
+            return;
+        }
+
         try
         {
             Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language ?? string.Empty;

@@ -28,13 +28,20 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
     private readonly IDialogService _dialogs;
     private readonly INavigationService _navigation;
     private readonly IStringResources _strings;
+    private readonly IDispatcher _dispatcher;
 
-    public ServersViewModel(IServerManager servers, IDialogService dialogs, INavigationService navigation, IStringResources strings)
+    public ServersViewModel(
+        IServerManager servers,
+        IDialogService dialogs,
+        INavigationService navigation,
+        IStringResources strings,
+        IDispatcher dispatcher)
     {
         _servers = servers;
         _dialogs = dialogs;
         _navigation = navigation;
         _strings = strings;
+        _dispatcher = dispatcher;
         _servers.Changed += OnServersChanged;
         Refresh();
     }
@@ -143,7 +150,18 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
         return false;
     }
 
-    private void OnServersChanged(object? sender, EventArgs e) => Refresh();
+    /// <summary>The server manager raises this after network calls, on a thread-pool thread; the list is bound to the UI.</summary>
+    private void OnServersChanged(object? sender, EventArgs e)
+    {
+        if (_dispatcher.HasThreadAccess)
+        {
+            Refresh();
+        }
+        else
+        {
+            _ = _dispatcher.EnqueueAsync(Refresh);
+        }
+    }
 
     private void Refresh()
     {
