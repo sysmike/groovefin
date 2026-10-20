@@ -93,6 +93,12 @@ internal static class AppHost
         builder.Services.AddSingleton<PlaybackReporting>();
         builder.Services.AddSingleton<ISystemMediaControls, SystemMediaControls>();
         builder.Services.AddSingleton<SystemMediaControlsSync>();
+        builder.Services.AddSingleton<ITaskbar>(sp => new Win32Taskbar(
+            WinRT.Interop.WindowNative.GetWindowHandle(sp.GetRequiredService<MainWindow>()),
+            Path.Join(AppContext.BaseDirectory, "Assets", "Taskbar"),
+            sp.GetRequiredService<IStringResources>(),
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Win32Taskbar>>()));
+        builder.Services.AddSingleton<TaskbarSync>();
         builder.Services.AddSingleton<NowPlayingViewModel>();
         builder.Services.AddSingleton<QueueViewModel>();
         builder.Services.AddSingleton<LyricsViewModel>();
