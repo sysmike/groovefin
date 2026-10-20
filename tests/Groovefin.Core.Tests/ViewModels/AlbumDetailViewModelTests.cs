@@ -102,6 +102,94 @@ public sealed class AlbumDetailViewModelTests
         _navigation.Received(1).NavigateTo(PageKeys.Genre, "g1");
     }
 
+    private static IEnumerable<string> Shown(AlbumDetailViewModel sut) => sut.Discs.SelectMany(d => d.Tracks).Select(t => t.Track.Id);
+
+    [Fact]
+    public async Task Tracks_start_in_album_order_sorted_by_number()
+    {
+        _strings.GetString("AlbumSort_Number").Returns("Track number");
+        _strings.GetString("AlbumSort_Title").Returns("Title");
+        _strings.GetString("AlbumSort_Ascending").Returns("{0}, sorted ascending");
+        _strings.GetString("AlbumSort_SortBy").Returns("Sort by {0}");
+        var sut = CreateSut();
+
+        await sut.LoadAsync("album-1", Ct);
+
+        Shown(sut).Should().Equal("t1", "t2");
+        sut.SortBy.Should().Be(AlbumTrackSort.Number);
+        sut.NumberSortGlyph.Should().Be("\uE70E");
+        sut.TitleSortGlyph.Should().BeEmpty();
+        sut.NumberSortName.Should().Be("Track number, sorted ascending");
+        sut.TitleSortName.Should().Be("Sort by Title");
+    }
+
+    [Fact]
+    public async Task A_column_sorts_and_a_second_click_reverses()
+    {
+        var sut = CreateSut();
+        await sut.LoadAsync("album-1", Ct);
+
+        sut.SortCommand.Execute(AlbumTrackSort.Duration);
+        var shortestFirst = Shown(sut).ToList();
+        sut.SortCommand.Execute(AlbumTrackSort.Duration);
+
+        shortestFirst.Should().Equal("t2", "t1");
+        Shown(sut).Should().Equal("t1", "t2");
+        sut.SortDescending.Should().BeTrue();
+        sut.DurationSortGlyph.Should().Be("\uE70D");
+        sut.Discs.Should().ContainSingle().Which.HasHeader.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Sorting_by_number_keeps_the_discs_and_reversing_turns_them_around()
+    {
+        _library.GetAlbumTracksAsync("album-1", Arg.Any<CancellationToken>()).Returns(
+        [
+            Track("a", 1, 1, 100, DaftPunk),
+            Track("b", 2, 1, 100, DaftPunk),
+            Track("c", 1, 2, 100, DaftPunk),
+        ]);
+        var sut = CreateSut();
+        await sut.LoadAsync("album-1", Ct);
+
+        sut.SortCommand.Execute(AlbumTrackSort.Number);
+
+        sut.Discs.Select(d => d.Header).Should().Equal("Disc 2", "Disc 1");
+        Shown(sut).Should().Equal("c", "b", "a");
+    }
+
+    [Fact]
+    public async Task Favourites_come_first_and_ties_keep_the_album_order()
+    {
+        _library.GetAlbumTracksAsync("album-1", Arg.Any<CancellationToken>()).Returns(
+        [
+            Track("a", 1, null, 100, DaftPunk),
+            Track("b", 2, null, 100, DaftPunk) with { IsFavorite = true },
+            Track("c", 3, null, 100, DaftPunk),
+            Track("d", 4, null, 100, DaftPunk) with { IsFavorite = true },
+        ]);
+        var sut = CreateSut();
+        await sut.LoadAsync("album-1", Ct);
+
+        sut.SortCommand.Execute(AlbumTrackSort.Favourite);
+
+        Shown(sut).Should().Equal("b", "d", "a", "c");
+    }
+
+    [Fact]
+    public async Task Playing_follows_the_order_shown()
+    {
+        var sut = CreateSut();
+        await sut.LoadAsync("album-1", Ct);
+        sut.SortCommand.Execute(AlbumTrackSort.Duration);
+
+        sut.PlayCommand.Execute(null);
+        sut.PlayTrackCommand.Execute(sut.Discs[0].Tracks[1]);
+
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "t2", "t1" })), 0);
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "t2", "t1" })), 1);
+    }
+
     [Fact]
     public async Task Load_fills_the_header()
     {
