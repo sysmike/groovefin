@@ -294,6 +294,7 @@ try {
         if ($slider.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView(); Start-Sleep -Milliseconds 300 }
         $r = $slider.Current.BoundingRectangle
         $colours = if ($slider.Current.IsOffscreen) { 0 } else { Get-ColourCount $slider }
+        if ($slider.Current.Name -match '^Variant (\w) .* 31 Hz$') { Save-Screenshot "variant-$($Matches[1])" }
         Write-Output ("Slider '{0}': {1:0}x{2:0} at {3:0},{4:0}, offscreen {5}, {6} colours" -f $slider.Current.Name, $r.Width, $r.Height, $r.X, $r.Y, $slider.Current.IsOffscreen, $colours)
     }
     if (-not $band) {
