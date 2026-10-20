@@ -26,6 +26,9 @@ public enum PlaybackState
 /// <remarks><see cref="Url"/> can carry the access token (stream URLs do): never log it.</remarks>
 public sealed record PlaybackSource(string Id, Uri Url, Track Track, double Gain = 1)
 {
+    /// <summary>Gets where playback starts, e.g. a restored session's position; zero for the start.</summary>
+    public TimeSpan StartPosition { get; init; }
+
     /// <summary>Describes the source without its URL, so logging it cannot leak a token.</summary>
     public override string ToString() => $"{Id} ({Track.Name})";
 }

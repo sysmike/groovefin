@@ -248,6 +248,12 @@ public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
     /// <summary>A source and the playlist item made for it.</summary>
     private sealed record Entry(PlaybackSource Source, MediaPlaybackItem Item)
     {
-        public static Entry For(PlaybackSource source) => new(source, new MediaPlaybackItem(MediaSource.CreateFromUri(source.Url)));
+        public static Entry For(PlaybackSource source)
+        {
+            var media = MediaSource.CreateFromUri(source.Url);
+
+            // The item starts at the position itself: a seek right after loading is not reliable.
+            return new(source, source.StartPosition > TimeSpan.Zero ? new MediaPlaybackItem(media, source.StartPosition) : new MediaPlaybackItem(media));
+        }
     }
 }

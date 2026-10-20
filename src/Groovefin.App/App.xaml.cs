@@ -2,6 +2,7 @@ using Groovefin.App.Hosting;
 using Groovefin.Core;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
+using Groovefin.Core.Session;
 using Groovefin.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -58,6 +59,9 @@ public partial class App : Application
 
         // Lives as long as the app: the taskbar thumbnail buttons and progress (needs the shown window).
         _host.Services.GetRequiredService<TaskbarSync>();
+
+        // The window has restored the server connection: bring back the last queue (paused) and keep saving it.
+        await _host.Services.GetRequiredService<SessionPersistence>().RestoreAsync();
     }
 
     private void OnMainWindowClosed(object sender, WindowEventArgs args)
@@ -71,6 +75,8 @@ public partial class App : Application
         // Saves and reports complete on the thread pool, so blocking the UI thread here cannot deadlock.
         if (_host is not null)
         {
+            // Before stopping: the position of the playing track is saved too.
+            _host.Services.GetRequiredService<SessionPersistence>().SaveAsync().Wait(ReportFlushTimeout);
             _host.Services.GetRequiredService<IPlaybackEngine>().Stop();
             _host.Services.GetRequiredService<PlaybackReporting>().FlushAsync().Wait(ReportFlushTimeout);
         }
