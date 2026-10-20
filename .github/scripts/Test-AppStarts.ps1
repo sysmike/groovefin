@@ -1,11 +1,14 @@
 <#
 .SYNOPSIS
 Starts Groovefin and checks that it finishes starting: the window is shown and the app logs its
-"Start-up took ..." line. Fails if the app exits (a crash) or does not get there in time.
+"Start-up took ..." line. Then it uses the first-run server page through UI Automation: it adds an
+unreachable server, so the page shows its progress ring while the connection is retried. Fails if the
+app exits, does not finish starting in time, or logs an unhandled XAML exception.
 
 .DESCRIPTION
 On failure it prints the start-up error file, the end of the app's log and the latest error events
-from the Windows Application log. Either way it closes the app again.
+from the Windows Application log. Either way it closes the app again. The runner must be a clean
+profile: the server page only shows on the first run.
 #>
 param(
     [Parameter(Mandatory)]
@@ -61,4 +64,38 @@ if (-not $ready) {
 }
 
 Write-Output "Groovefin started: $($ready.Line)"
+
+# Add an unreachable server (nothing listens on the discard port): the progress ring spins while the
+# connection is retried, then the page shows its inline error.
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+$automation = [System.Windows.Automation.AutomationElement]
+$scope = [System.Windows.Automation.TreeScope]
+$window = $automation::RootElement.FindFirst($scope::Children,
+    [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $process.Id))
+$box = $window.FindFirst($scope::Descendants,
+    [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'AddressBox'))
+$add = $window.FindFirst($scope::Descendants,
+    [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Add server'))
+if (-not $box -or -not $add) {
+    Write-Output '::error title=Smoke test::The server page (address box and Add server button) was not found.'
+    Write-Diagnostics
+    Stop-Process -Id $process.Id -Force
+    exit 1
+}
+
+$box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('http://127.0.0.1:9')
+$add.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+Start-Sleep -Seconds 10
+
+$log = Get-AppLog
+$unhandled = Select-String -Path $log.FullName -Pattern 'Unhandled' -SimpleMatch
+if ($process.HasExited -or $unhandled) {
+    $state = if ($process.HasExited) { "exited with code $($process.ExitCode)" } else { 'logged an unhandled exception' }
+    Write-Output "::error title=Server page::Groovefin $state while adding a server."
+    Write-Diagnostics
+    if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+    exit 1
+}
+
+Write-Output 'Adding an unreachable server showed the progress ring and its error without problems.'
 Stop-Process -Id $process.Id -Force
