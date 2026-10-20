@@ -667,10 +667,10 @@
     <value>Lyrics (Ctrl+L)</value>
   </data>
   <data name="NowPlayingFullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Full screen (F11)</value>
+    <value>Full screen</value>
   </data>
   <data name="NowPlayingFullScreenButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Full screen (F11)</value>
+    <value>Full screen</value>
   </data>
   <data name="NowPlayingMuteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Mute</value>
@@ -1384,6 +1384,21 @@
   </data>
   <data name="Operation_LoadFolder" xml:space="preserve">
     <value>Couldn't load the folder</value>
+  </data>
+  <data name="SettingsTaskbarProgressSwitch.Header" xml:space="preserve">
+    <value>Playback progress on the taskbar button</value>
+  </data>
+  <data name="Taskbar_Previous" xml:space="preserve">
+    <value>Previous track</value>
+  </data>
+  <data name="Taskbar_Play" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="Taskbar_Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Taskbar_Next" xml:space="preserve">
+    <value>Next track</value>
   </data>
   <data name="FullScreenExitButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Exit full screen</value>
