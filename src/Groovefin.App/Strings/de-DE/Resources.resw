@@ -653,10 +653,10 @@
     <value>Liedtext (Strg+L)</value>
   </data>
   <data name="NowPlayingFullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Vollbild</value>
+    <value>Vollbild (F11)</value>
   </data>
   <data name="NowPlayingFullScreenButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Vollbild</value>
+    <value>Vollbild (F11)</value>
   </data>
   <data name="NowPlayingMuteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Stummschalten</value>
@@ -1370,5 +1370,17 @@
   </data>
   <data name="Operation_LoadFolder" xml:space="preserve">
     <value>Ordner konnte nicht geladen werden</value>
+  </data>
+  <data name="FullScreenExitButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Vollbild beenden</value>
+  </data>
+  <data name="FullScreenExitButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Vollbild beenden (Esc)</value>
+  </data>
+  <data name="Key_F11" xml:space="preserve">
+    <value>F11</value>
+  </data>
+  <data name="Shortcut_FullScreen" xml:space="preserve">
+    <value>Vollbild-Player ein oder aus</value>
   </data>
 </root>

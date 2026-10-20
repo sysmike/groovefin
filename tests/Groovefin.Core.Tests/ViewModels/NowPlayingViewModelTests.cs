@@ -195,6 +195,33 @@ public sealed class NowPlayingViewModelTests : IDisposable
     }
 
     [Fact]
+    public void The_full_screen_player_has_a_large_cover_and_a_small_backdrop_only_while_shown()
+    {
+        PlayOneMoreTime();
+        _sut.LargeCover.Should().BeNull();
+        _sut.BackdropCover.Should().BeNull();
+
+        _sut.IsFullScreen = true;
+
+        _sut.LargeCover.Should().Be(new ImageRequest("album-1", ImageKind.Primary, "tag", (int)(NowPlayingViewModel.LargeCoverWidth * 2)));
+        _sut.BackdropCover.Should().Be(new ImageRequest("album-1", ImageKind.Primary, "tag", (int)(NowPlayingViewModel.BackdropWidth * 2)));
+        _sut.ArtistNames.Should().Be("Daft Punk");
+        _changed.Should().Contain([nameof(_sut.LargeCover), nameof(_sut.ArtistNames), nameof(_sut.AlbumName)]);
+    }
+
+    [Fact]
+    public void Full_screen_toggles_and_exits()
+    {
+        _sut.ToggleFullScreenCommand.Execute(null);
+        _sut.IsFullScreen.Should().BeTrue();
+
+        _sut.ExitFullScreenCommand.Execute(null);
+        _sut.IsFullScreen.Should().BeFalse();
+        _sut.ExitFullScreenCommand.Execute(null);
+        _sut.IsFullScreen.Should().BeFalse();
+    }
+
+    [Fact]
     public void Toggle_shuffle_turns_shuffle_on_and_off()
     {
         _sut.ToggleShuffleCommand.Execute(null);
