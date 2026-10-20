@@ -185,6 +185,9 @@ flowchart TD
   Keys are `Area_Name` (code) or `XUid.Property` (XAML). Numbers and dates are formatted with
   `CultureInfo.CurrentCulture`.
 - Every custom control sets `AutomationProperties`.
+- Access keys (Alt) for the navigation, the search box and the now playing bar come from `.resw`
+  (`XUid.AccessKey`), because the letters follow the localized labels. They share the window's
+  scope, so a letter is used once per language; `ResourceFileTests` checks it.
 - Animations are subtle and native (connected animation for album covers) and are skipped when the
   Windows "Animation effects" setting is off.
 

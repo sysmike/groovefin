@@ -1551,4 +1551,130 @@
   <data name="Operation_OpenLogFolder" xml:space="preserve">
     <value>Couldn't open the log folder</value>
   </data>
+  <data name="SettingsAccentCard.Header" xml:space="preserve">
+    <value>Accent colour</value>
+  </data>
+  <data name="SettingsAccentCard.Description" xml:space="preserve">
+    <value>Highlights use your Windows accent colour. When off, they are neutral grey.</value>
+  </data>
+  <data name="SettingsLanguageCard.Header" xml:space="preserve">
+    <value>App language</value>
+  </data>
+  <data name="SettingsLanguageCard.Description" xml:space="preserve">
+    <value>Applies the next time Groovefin starts.</value>
+  </data>
+  <data name="SettingsStartPageCard.Header" xml:space="preserve">
+    <value>Start page</value>
+  </data>
+  <data name="SettingsStartPageCard.Description" xml:space="preserve">
+    <value>The page Groovefin opens with.</value>
+  </data>
+  <data name="Settings_LanguageSystem" xml:space="preserve">
+    <value>Use Windows language</value>
+  </data>
+  <data name="Settings_LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+    <comment>Shown in its own language</comment>
+  </data>
+  <data name="Settings_LanguageGerman" xml:space="preserve">
+    <value>Deutsch</value>
+    <comment>Shown in its own language</comment>
+  </data>
+  <data name="StartPage_home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="StartPage_albums" xml:space="preserve">
+    <value>Albums</value>
+  </data>
+  <data name="StartPage_artists" xml:space="preserve">
+    <value>Artists</value>
+  </data>
+  <data name="StartPage_songs" xml:space="preserve">
+    <value>Songs</value>
+  </data>
+  <data name="StartPage_genres" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="StartPage_playlists" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="StartPage_folders" xml:space="preserve">
+    <value>Folders</value>
+  </data>
+  <data name="StartPage_favourites" xml:space="preserve">
+    <value>Favourites</value>
+  </data>
+  <data name="SearchBox.AccessKey" xml:space="preserve">
+    <value>K</value>
+  </data>
+  <data name="NavHome.AccessKey" xml:space="preserve">
+    <value>H</value>
+  </data>
+  <data name="NavAlbums.AccessKey" xml:space="preserve">
+    <value>A</value>
+  </data>
+  <data name="NavArtists.AccessKey" xml:space="preserve">
+    <value>R</value>
+  </data>
+  <data name="NavSongs.AccessKey" xml:space="preserve">
+    <value>S</value>
+  </data>
+  <data name="NavGenres.AccessKey" xml:space="preserve">
+    <value>G</value>
+  </data>
+  <data name="NavPlaylists.AccessKey" xml:space="preserve">
+    <value>L</value>
+  </data>
+  <data name="NavFolders.AccessKey" xml:space="preserve">
+    <value>F</value>
+  </data>
+  <data name="NavFavourites.AccessKey" xml:space="preserve">
+    <value>V</value>
+  </data>
+  <data name="NowPlayingShuffleButton.AccessKey" xml:space="preserve">
+    <value>U</value>
+  </data>
+  <data name="NowPlayingPreviousButton.AccessKey" xml:space="preserve">
+    <value>B</value>
+  </data>
+  <data name="NowPlayingPlayPauseButton.AccessKey" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="NowPlayingNextButton.AccessKey" xml:space="preserve">
+    <value>N</value>
+  </data>
+  <data name="NowPlayingFavouriteButton.AccessKey" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="NowPlayingQueueButton.AccessKey" xml:space="preserve">
+    <value>Q</value>
+  </data>
+  <data name="NowPlayingLyricsButton.AccessKey" xml:space="preserve">
+    <value>Y</value>
+  </data>
+  <data name="NowPlayingMiniButton.AccessKey" xml:space="preserve">
+    <value>M</value>
+  </data>
+  <data name="NowPlayingFullScreenButton.AccessKey" xml:space="preserve">
+    <value>W</value>
+  </data>
+  <data name="NowPlayingMuteButton.AccessKey" xml:space="preserve">
+    <value>E</value>
+  </data>
+  <data name="Nav_SettingsAccessKey" xml:space="preserve">
+    <value>T</value>
+    <comment>Access key of the Settings item in the navigation pane</comment>
+  </data>
+  <data name="SettingsDensityCard.Header" xml:space="preserve">
+    <value>Density</value>
+  </data>
+  <data name="SettingsDensityCard.Description" xml:space="preserve">
+    <value>Compact fits more rows on the screen.</value>
+  </data>
+  <data name="SettingsDensityStandard.Content" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="SettingsDensityCompact.Content" xml:space="preserve">
+    <value>Compact</value>
+  </data>
 </root>

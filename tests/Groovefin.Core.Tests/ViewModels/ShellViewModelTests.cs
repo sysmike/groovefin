@@ -2,6 +2,7 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -12,6 +13,7 @@ public sealed class ShellViewModelTests
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly INotificationService _notifications = Substitute.For<INotificationService>();
     private readonly IServerManager _servers = Substitute.For<IServerManager>();
+    private readonly InMemorySettingsService _settings = new();
 
     public ShellViewModelTests()
     {
@@ -19,7 +21,7 @@ public sealed class ShellViewModelTests
         _servers.IsSignedIn.Returns(true);
     }
 
-    private ShellViewModel CreateSut() => new(_navigation, _notifications, _servers, NullLogger<ShellViewModel>.Instance);
+    private ShellViewModel CreateSut() => new(_navigation, _notifications, _servers, _settings, NullLogger<ShellViewModel>.Instance);
 
     [Fact]
     public void Start_restores_the_connection_and_navigates_to_home()
@@ -30,6 +32,21 @@ public sealed class ShellViewModelTests
 
         _servers.Received(1).Restore();
         _navigation.Received(1).NavigateTo(PageKeys.Home);
+    }
+
+    [Theory]
+    [InlineData(PageKeys.Albums, PageKeys.Albums)]
+    [InlineData(PageKeys.Favourites, PageKeys.Favourites)]
+    [InlineData(PageKeys.Settings, PageKeys.Home)]
+    [InlineData("removed-section", PageKeys.Home)]
+    public void Start_opens_the_chosen_start_page_if_it_is_a_main_section(string startPage, string expected)
+    {
+        _settings.Update(s => s with { Appearance = s.Appearance with { StartPage = startPage } });
+        using var sut = CreateSut();
+
+        sut.Start();
+
+        _navigation.Received(1).NavigateTo(expected);
     }
 
     [Fact]
