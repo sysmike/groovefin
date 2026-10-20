@@ -168,6 +168,22 @@ try {
 
     $invoke = [System.Windows.Automation.InvokePattern]::Pattern
 
+    # Counts the colours on screen within an element: one flat colour means it draws nothing.
+    function Get-ColourCount([System.Windows.Automation.AutomationElement] $element) {
+        Add-Type -AssemblyName System.Drawing
+        $r = $element.Current.BoundingRectangle
+        $bitmap = [System.Drawing.Bitmap]::new([int] $r.Width, [int] $r.Height)
+        $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+        $graphics.CopyFromScreen([int] $r.X, [int] $r.Y, 0, 0, $bitmap.Size)
+        $colours = [System.Collections.Generic.HashSet[int]]::new()
+        for ($x = 0; $x -lt $bitmap.Width; $x += 2) {
+            for ($y = 0; $y -lt $bitmap.Height; $y += 2) { $null = $colours.Add($bitmap.GetPixel($x, $y).ToArgb()) }
+        }
+        $graphics.Dispose()
+        $bitmap.Dispose()
+        $colours.Count
+    }
+
     # Saves the window as it is on screen to $ScreenshotDir\<name>.png, for a look at the layout.
     function Save-Screenshot([string] $name) {
         if (-not $ScreenshotDir) { return }
@@ -178,10 +194,18 @@ try {
             $bitmap = [System.Drawing.Bitmap]::new([int] $r.Width, [int] $r.Height)
             $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
             $graphics.CopyFromScreen([int] $r.X, [int] $r.Y, 0, 0, $bitmap.Size)
-            $bitmap.Save((Join-Path $ScreenshotDir "$name.png"), [System.Drawing.Imaging.ImageFormat]::Png)
+            $file = Join-Path $ScreenshotDir "$name.png"
+            $bitmap.Save($file, [System.Drawing.Imaging.ImageFormat]::Png)
             $graphics.Dispose()
             $bitmap.Dispose()
             Write-Output "Saved screenshot $name.png"
+            if ($env:GROOVEFIN_SCREENSHOT_TO_LOG -eq '1') {
+                # For a look without downloading the artifact.
+                $text = [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
+                for ($i = 0; $i -lt $text.Length; $i += 4000) {
+                    Write-Output "SCREENSHOT $name $($text.Substring($i, [Math]::Min(4000, $text.Length - $i)))"
+                }
+            }
         }
         catch {
             Write-Output "No screenshot ${name}: $($_.Exception.Message)"
@@ -266,7 +290,8 @@ try {
     Save-Screenshot 'settings-equalizer'
     foreach ($slider in $sliders) {
         $r = $slider.Current.BoundingRectangle
-        Write-Output ("Slider '{0}': {1:0}x{2:0} at {3:0},{4:0}, offscreen {5}" -f $slider.Current.Name, $r.Width, $r.Height, $r.X, $r.Y, $slider.Current.IsOffscreen)
+        $colours = if ($slider.Current.IsOffscreen) { 0 } else { Get-ColourCount $slider }
+        Write-Output ("Slider '{0}': {1:0}x{2:0} at {3:0},{4:0}, offscreen {5}, {6} colours" -f $slider.Current.Name, $r.Width, $r.Height, $r.X, $r.Y, $slider.Current.IsOffscreen, $colours)
     }
     if (-not $band) {
         Stop-Test 'Smoke test' "The equalizer slider '1 kHz' was not found ($($sliders.Count) sliders on the page)."
@@ -274,6 +299,9 @@ try {
     $bandRect = $band.Current.BoundingRectangle
     if ($band.Current.IsOffscreen -or $bandRect.Width -lt 16 -or $bandRect.Height -lt 100) {
         Stop-Test 'Smoke test' "The equalizer slider '1 kHz' has no visible size: $($bandRect.Width)x$($bandRect.Height)."
+    }
+    if ((Get-ColourCount $band) -lt 3) {
+        Stop-Test 'Smoke test' "The equalizer slider '1 kHz' draws nothing: its area is one flat colour."
     }
     Test-Running 'with the equalizer expanded'
     Write-Output 'The equalizer sliders are visible.'

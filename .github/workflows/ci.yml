@@ -162,6 +162,8 @@ jobs:
         if: matrix.platform == 'x64'
         timeout-minutes: 5
         shell: pwsh
+        env:
+          GROOVEFIN_SCREENSHOT_TO_LOG: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: ./.github/scripts/Test-AppStarts.ps1 -Path "${{ runner.temp }}\out\unpackaged\Groovefin.exe" -ScreenshotDir "${{ runner.temp }}\screenshots"
 
       - name: Upload smoke test screenshots
