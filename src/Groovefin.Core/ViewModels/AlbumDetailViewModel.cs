@@ -54,6 +54,20 @@ public sealed record DiscGroup(string Header, IReadOnlyList<TrackItem> Tracks)
 /// Album detail page: hero header (cover, title, artists, year, track count, length), tracks grouped by
 /// disc, favourite, and the playback actions that M2 wires up.
 /// </summary>
+/// <summary>The column the album page orders its tracks by.</summary>
+public enum AlbumTrackSort
+{
+    /// <summary>Disc and track number: the album order, in disc groups.</summary>
+    Number,
+
+    Title,
+
+    Duration,
+
+    /// <summary>Favourites first (reversed: last).</summary>
+    Favourite,
+}
+
 public sealed partial class AlbumDetailViewModel(
     ILibraryService library,
     IPlayer player,
@@ -65,6 +79,9 @@ public sealed partial class AlbumDetailViewModel(
     InstantMix instantMix) : ObservableObject
 {
     private IReadOnlyList<Track> _tracks = [];
+
+    /// <summary>The tracks in the order shown, which playing follows.</summary>
+    private IReadOnlyList<Track> _shown = [];
 
     /// <summary>Cover width in device-independent pixels.</summary>
     public const double CoverWidth = 232;
@@ -118,6 +135,30 @@ public sealed partial class AlbumDetailViewModel(
 
     public bool HasGenres => Genres.Count > 0;
 
+    /// <summary>Gets the column the tracks are ordered by.</summary>
+    [ObservableProperty]
+    public partial AlbumTrackSort SortBy { get; private set; }
+
+    /// <summary>Gets a value indicating whether the order is reversed.</summary>
+    [ObservableProperty]
+    public partial bool SortDescending { get; private set; }
+
+    public string NumberSortGlyph => SortGlyph(AlbumTrackSort.Number);
+
+    public string TitleSortGlyph => SortGlyph(AlbumTrackSort.Title);
+
+    public string DurationSortGlyph => SortGlyph(AlbumTrackSort.Duration);
+
+    public string FavouriteSortGlyph => SortGlyph(AlbumTrackSort.Favourite);
+
+    public string NumberSortName => SortName(AlbumTrackSort.Number, "AlbumSort_Number");
+
+    public string TitleSortName => SortName(AlbumTrackSort.Title, "AlbumSort_Title");
+
+    public string DurationSortName => SortName(AlbumTrackSort.Duration, "AlbumSort_Duration");
+
+    public string FavouriteSortName => SortName(AlbumTrackSort.Favourite, "AlbumSort_Favourite");
+
     /// <summary>Gets the album on MusicBrainz, when the server knows its ID.</summary>
     public Uri? MusicBrainzUrl => Album is null ? null : ExternalLinks.MusicBrainz(Album);
 
@@ -150,8 +191,8 @@ public sealed partial class AlbumDetailViewModel(
             Cover = ImageRequest.Primary(album.Id, album.PrimaryImageTag, CoverWidth, DisplayScale);
             Background = ImageRequest.Primary(album.Id, album.PrimaryImageTag, BackgroundWidth, 1);
             Details = BuildDetails(album, tracks);
-            BuildDiscs(album, tracks);
             _tracks = tracks;
+            BuildDiscs(album, tracks);
             OnPropertyChanged(nameof(Tracks));
             OnPropertyChanged(nameof(HasTracks));
             PlayCommand.NotifyCanExecuteChanged();
@@ -197,13 +238,13 @@ public sealed partial class AlbumDetailViewModel(
     private bool CanPlay() => _tracks.Count > 0;
 
     [RelayCommand(CanExecute = nameof(CanPlay))]
-    private void Play() => player.Play(_tracks);
+    private void Play() => player.Play(_shown);
 
     [RelayCommand(CanExecute = nameof(CanPlay))]
     private void Shuffle() => player.Shuffle(_tracks);
 
     [RelayCommand(CanExecute = nameof(CanPlay))]
-    private void AddToQueue() => player.AddToQueue(_tracks);
+    private void AddToQueue() => player.AddToQueue(_shown);
 
     [RelayCommand(CanExecute = nameof(HasAlbum))]
     private Task InstantMixAsync() => instantMix.StartAsync(Album!.Id);
@@ -215,10 +256,10 @@ public sealed partial class AlbumDetailViewModel(
     [RelayCommand]
     private void PlayTrack(TrackItem item)
     {
-        var index = _tracks.ToList().IndexOf(item.Track);
+        var index = _shown.ToList().IndexOf(item.Track);
         if (index >= 0)
         {
-            player.Play(_tracks, index);
+            player.Play(_shown, index);
         }
     }
 
@@ -271,20 +312,96 @@ public sealed partial class AlbumDetailViewModel(
         return string.Join(" · ", parts);
     }
 
+    /// <summary>Orders by <paramref name="column"/>; the same column again reverses the order.</summary>
+    [RelayCommand]
+    private void Sort(AlbumTrackSort column)
+    {
+        SortDescending = column == SortBy && !SortDescending;
+        SortBy = column;
+        if (Album is { } album)
+        {
+            BuildDiscs(album, _tracks);
+        }
+
+        OnPropertyChanged(nameof(NumberSortGlyph));
+        OnPropertyChanged(nameof(TitleSortGlyph));
+        OnPropertyChanged(nameof(DurationSortGlyph));
+        OnPropertyChanged(nameof(FavouriteSortGlyph));
+        OnPropertyChanged(nameof(NumberSortName));
+        OnPropertyChanged(nameof(TitleSortName));
+        OnPropertyChanged(nameof(DurationSortName));
+        OnPropertyChanged(nameof(FavouriteSortName));
+    }
+
+    /// <summary>Chevron up or down on the sorted column, nothing on the others.</summary>
+    private string SortGlyph(AlbumTrackSort column) =>
+        column != SortBy ? string.Empty : SortDescending ? "\uE70D" : "\uE70E";
+
+    /// <summary>The header's accessible name: the column, and how it is sorted if it is.</summary>
+    private string SortName(AlbumTrackSort column, string columnKey)
+    {
+        var name = strings.GetString(columnKey);
+        if (column != SortBy)
+        {
+            return strings.GetString("AlbumSort_SortBy").Replace("{0}", name, StringComparison.Ordinal);
+        }
+
+        return strings.GetString(SortDescending ? "AlbumSort_Descending" : "AlbumSort_Ascending").Replace("{0}", name, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Fills <see cref="Discs"/> in the chosen order: by number in disc groups (as the album is), by any
+    /// other column in one list. Ties keep the album order.
+    /// </summary>
     private void BuildDiscs(Album album, IReadOnlyList<Track> tracks)
     {
         Discs.Clear();
-        var groups = tracks.GroupBy(t => t.DiscNumber ?? 1).OrderBy(g => g.Key).ToList();
-        var multiDisc = groups.Count > 1;
+        var items = tracks.Select(t => new TrackItem(t, TrackArtist(album, t), favourites.IsFavourite(t.Id, t.IsFavorite))).ToList();
 
-        foreach (var group in groups)
+        if (SortBy == AlbumTrackSort.Number)
         {
-            var header = multiDisc
-                ? strings.GetString("Album_Disc").Replace("{0}", group.Key.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)
-                : string.Empty;
-            var items = group.Select(t => new TrackItem(t, TrackArtist(album, t), favourites.IsFavourite(t.Id, t.IsFavorite))).ToList();
-            Discs.Add(new DiscGroup(header, items));
+            var groups = items.GroupBy(i => i.Track.DiscNumber ?? 1).OrderBy(g => g.Key).ToList();
+            var multiDisc = groups.Count > 1;
+            if (SortDescending)
+            {
+                groups.Reverse();
+            }
+
+            foreach (var group in groups)
+            {
+                var header = multiDisc
+                    ? strings.GetString("Album_Disc").Replace("{0}", group.Key.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)
+                    : string.Empty;
+                var discItems = group.ToList();
+                if (SortDescending)
+                {
+                    discItems.Reverse();
+                }
+
+                Discs.Add(new DiscGroup(header, discItems));
+            }
         }
+        else
+        {
+            Discs.Add(new DiscGroup(string.Empty, Ordered(items)));
+        }
+
+        _shown = Discs.SelectMany(d => d.Tracks).Select(i => i.Track).ToList();
+    }
+
+    private List<TrackItem> Ordered(List<TrackItem> items)
+    {
+        Comparison<TrackItem> compare = SortBy switch
+        {
+            AlbumTrackSort.Title => (a, b) => string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase),
+            AlbumTrackSort.Duration => (a, b) => (a.Track.Duration ?? TimeSpan.Zero).CompareTo(b.Track.Duration ?? TimeSpan.Zero),
+            AlbumTrackSort.Favourite => (a, b) => b.IsFavourite.CompareTo(a.IsFavourite),
+            _ => (_, _) => 0,
+        };
+        var sign = SortDescending ? -1 : 1;
+
+        // Order is stable: equal values keep the album order, in both directions.
+        return items.Order(Comparer<TrackItem>.Create((a, b) => sign * compare(a, b))).ToList();
     }
 
     /// <summary>Shows a track's artists only when they differ from the album artist (compilations, features).</summary>
