@@ -90,6 +90,9 @@ Release files for `v1.2.0`:
 | `Groovefin_1.2.0_x64_unpackaged.zip`, `Groovefin_1.2.0_ARM64_unpackaged.zip` | Portable app; extract and run `Groovefin.exe` |
 | `SHA256SUMS.txt` | Checksums of all files |
 
+The MSIX packages need the Windows App Runtime (a framework package from Microsoft) on the PC. The
+unpackaged ZIPs are self-contained and need nothing installed.
+
 Verify a download with `gh attestation verify <file> --repo sysmike/groovefin`.
 
 **Signing.** The jobs decode `SIGNING_CERT_PFX_BASE64` to a file in the runner's temp folder, sign

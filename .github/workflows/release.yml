@@ -89,8 +89,11 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
         run: |
           $out = Join-Path $env:RUNNER_TEMP 'out'
-          $msix = @(Get-ChildItem (Join-Path $out 'msix') -Recurse -Filter *.msix)
-          if ($msix.Count -ne 1) { throw "Expected one MSIX, found $($msix.Count)." }
+          # The package folder also holds the Windows App Runtime packages it depends on (Dependencies\).
+          $all = Get-ChildItem (Join-Path $out 'msix') -Recurse -Filter *.msix
+          $all | ForEach-Object { Write-Output $_.FullName }
+          $msix = @($all | Where-Object { $_.FullName -notmatch '\\Dependencies\\' })
+          if ($msix.Count -ne 1) { throw "Expected one app MSIX, found $($msix.Count)." }
           New-Item -ItemType Directory dist | Out-Null
           Copy-Item $msix[0].FullName "dist/Groovefin_${env:VERSION}_${env:PLATFORM}.msix"
           Compress-Archive -Path (Join-Path $out 'unpackaged\*') -DestinationPath "dist/Groovefin_${env:VERSION}_${env:PLATFORM}_unpackaged.zip"
