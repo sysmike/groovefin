@@ -24,6 +24,15 @@ public sealed record Album
     public int PlayCount { get; init; }
 
     public DateTimeOffset? DateAdded { get; init; }
+
+    /// <summary>Gets the genres; the album page links to their pages.</summary>
+    public IReadOnlyList<Genre> Genres { get; init; } = [];
+
+    /// <summary>Gets the MusicBrainz release group ID, if the server knows it.</summary>
+    public string? MusicBrainzReleaseGroupId { get; init; }
+
+    /// <summary>Gets the MusicBrainz release ID, if the server knows it.</summary>
+    public string? MusicBrainzReleaseId { get; init; }
 }
 
 /// <summary>A link to an artist.</summary>

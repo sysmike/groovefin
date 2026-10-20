@@ -81,6 +81,23 @@
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Style="{StaticResource BodyTextBlockStyle}"
                             Text="{x:Bind ViewModel.Details, Mode=OneWay}" />
+                        <!--  Genres, each a link to its page.  -->
+                        <ItemsRepeater
+                            x:Uid="AlbumGenres"
+                            ItemsSource="{x:Bind ViewModel.Genres, Mode=OneWay}"
+                            Visibility="{x:Bind ViewModel.HasGenres, Mode=OneWay}">
+                            <ItemsRepeater.Layout>
+                                <StackLayout Orientation="Horizontal" Spacing="4" />
+                            </ItemsRepeater.Layout>
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="models:Genre">
+                                    <HyperlinkButton
+                                        Padding="4,2"
+                                        Click="OnGenreClick"
+                                        Content="{x:Bind Name}" />
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
 
                         <StackPanel
                             Margin="0,8,0,0"
@@ -117,15 +134,28 @@
                                 IsChecked="{x:Bind ViewModel.IsFavourite, Mode=OneWay}">
                                 <FontIcon FontSize="14" Glyph="{x:Bind conv:Glyphs.Heart(ViewModel.IsFavourite), Mode=OneWay}" />
                             </ToggleButton>
+
+                            <!--  The album on other sites; they open in the browser.  -->
+                            <HyperlinkButton
+                                x:Uid="AlbumMusicBrainzLink"
+                                Margin="12,0,0,0"
+                                NavigateUri="{x:Bind ViewModel.MusicBrainzUrl, Mode=OneWay}"
+                                Visibility="{x:Bind ViewModel.HasMusicBrainz, Mode=OneWay}" />
+                            <HyperlinkButton
+                                x:Uid="AlbumLastFmLink"
+                                NavigateUri="{x:Bind ViewModel.LastFmUrl, Mode=OneWay}"
+                                Visibility="{x:Bind ViewModel.HasLastFm, Mode=OneWay}" />
                         </StackPanel>
                     </StackPanel>
                 </Grid>
             </Grid>
 
+            <!--  Collapsed when idle: an inactive ring still takes its space (#155).  -->
             <ProgressRing
                 Margin="36,48"
                 HorizontalAlignment="Left"
-                IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+                IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
             <TextBlock
                 x:Uid="AlbumLoadFailed"
                 Margin="36,24"

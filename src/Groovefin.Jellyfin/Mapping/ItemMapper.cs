@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Groovefin.Core.Models;
 using Jellyfin.Sdk.Generated.Models;
+using Microsoft.Kiota.Abstractions.Serialization;
 
 namespace Groovefin.Jellyfin.Mapping;
 
@@ -22,6 +24,9 @@ internal static class ItemMapper
             IsFavorite = dto.UserData?.IsFavorite ?? false,
             PlayCount = dto.UserData?.PlayCount ?? 0,
             DateAdded = dto.DateCreated,
+            Genres = ToGenres(dto.GenreItems),
+            MusicBrainzReleaseGroupId = ProviderId(dto.ProviderIds, "MusicBrainzReleaseGroup"),
+            MusicBrainzReleaseId = ProviderId(dto.ProviderIds, "MusicBrainzAlbum"),
         };
     }
 
@@ -67,6 +72,30 @@ internal static class ItemMapper
 
     /// <summary>Formats a Jellyfin ID the way the server writes it in URLs (32 hex digits).</summary>
     public static string? FormatId(Guid? id) => id is { } value && value != Guid.Empty ? value.ToString("N") : null;
+
+    private static List<Genre> ToGenres(List<NameGuidPair>? pairs) =>
+        pairs?
+            .Where(p => p.Id is not null && p.Id != Guid.Empty && !string.IsNullOrEmpty(p.Name))
+            .Select(p => new Genre(FormatId(p.Id)!, p.Name!))
+            .ToList() ?? [];
+
+    /// <summary>Gets a provider ID such as "MusicBrainzAlbum"; the SDK keeps them as untyped additional data.</summary>
+    private static string? ProviderId(BaseItemDto_ProviderIds? ids, string key)
+    {
+        if (ids?.AdditionalData is not { } data || !data.TryGetValue(key, out var value))
+        {
+            return null;
+        }
+
+        var text = value switch
+        {
+            string s => s,
+            UntypedString u => u.GetValue(),
+            JsonElement { ValueKind: JsonValueKind.String } e => e.GetString(),
+            _ => null,
+        };
+        return string.IsNullOrWhiteSpace(text) ? null : text;
+    }
 
     private static List<ArtistRef> ToArtistRefs(List<NameGuidPair>? pairs) =>
         pairs?

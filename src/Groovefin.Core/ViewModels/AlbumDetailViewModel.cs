@@ -7,6 +7,7 @@ using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
+using Groovefin.Core.Links;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -81,7 +82,8 @@ public sealed partial class AlbumDetailViewModel(
     public double DisplayScale { get; set; } = 1;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasAlbum))]
+    [NotifyPropertyChangedFor(nameof(HasAlbum), nameof(Genres), nameof(HasGenres))]
+    [NotifyPropertyChangedFor(nameof(MusicBrainzUrl), nameof(HasMusicBrainz), nameof(LastFmUrl), nameof(HasLastFm))]
     [NotifyCanExecuteChangedFor(nameof(ToggleFavouriteCommand), nameof(InstantMixCommand))]
     public partial Album? Album { get; private set; }
 
@@ -111,6 +113,20 @@ public sealed partial class AlbumDetailViewModel(
     public IReadOnlyList<ArtistRef> Artists => Album?.AlbumArtists ?? [];
 
     public string ArtistText => Album?.AlbumArtist ?? string.Empty;
+
+    public IReadOnlyList<Genre> Genres => Album?.Genres ?? [];
+
+    public bool HasGenres => Genres.Count > 0;
+
+    /// <summary>Gets the album on MusicBrainz, when the server knows its ID.</summary>
+    public Uri? MusicBrainzUrl => Album is null ? null : ExternalLinks.MusicBrainz(Album);
+
+    public bool HasMusicBrainz => MusicBrainzUrl is not null;
+
+    /// <summary>Gets the album on Last.fm.</summary>
+    public Uri? LastFmUrl => Album is null ? null : ExternalLinks.LastFm(Album);
+
+    public bool HasLastFm => LastFmUrl is not null;
 
     public async Task LoadAsync(string albumId, CancellationToken cancellationToken = default)
     {
@@ -193,6 +209,9 @@ public sealed partial class AlbumDetailViewModel(
     private Task InstantMixAsync() => instantMix.StartAsync(Album!.Id);
 
     /// <summary>Plays the album from <paramref name="item"/> on (a track row was clicked).</summary>
+    [RelayCommand]
+    private void OpenGenre(Genre genre) => navigation.NavigateTo(PageKeys.Genre, genre.Id);
+
     [RelayCommand]
     private void PlayTrack(TrackItem item)
     {
