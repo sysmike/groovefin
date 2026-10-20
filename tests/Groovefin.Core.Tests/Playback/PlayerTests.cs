@@ -37,6 +37,37 @@ public sealed class PlayerTests : IDisposable
     private string? Playing => _engine.Current?.Track.Id;
 
     [Fact]
+    public void The_crossfade_setting_reaches_the_engine()
+    {
+        _engine.Crossfade.Should().Be(TimeSpan.Zero);
+
+        _settings.Update(s => s with { Playback = s.Playback with { CrossfadeSeconds = 6 } });
+        _engine.Crossfade.Should().Be(TimeSpan.FromSeconds(6));
+
+        _settings.Update(s => s with { Playback = s.Playback with { CrossfadeSeconds = -3 } });
+        _engine.Crossfade.Should().Be(TimeSpan.Zero);
+    }
+
+    [Fact]
+    public void A_crossfade_moves_the_queue_on_like_a_gapless_transition()
+    {
+        // A fake clock: the fade timer must not run on its own during the test.
+        var queue = new QueueManager(new Random(1));
+        var engine = new FakePlaybackEngine(time: new Microsoft.Extensions.Time.Testing.FakeTimeProvider());
+        _settings.Update(s => s with { Playback = s.Playback with { CrossfadeSeconds = 4 } });
+        using var player = new Player(queue, engine, _streams, _client, _settings, _errors, NullLogger<Player>.Instance, new Random(7));
+        player.Play([new Track { Id = "a", Name = "a", AlbumId = "x", Duration = TimeSpan.FromSeconds(200) },
+            new Track { Id = "b", Name = "b", AlbumId = "y", Duration = TimeSpan.FromSeconds(200) }]);
+        engine.SimulateState(PlaybackState.Playing);
+
+        engine.SimulatePosition(TimeSpan.FromSeconds(197), TimeSpan.Zero);
+
+        engine.Calls.Should().Contain($"crossfade {queue.Current!.Id}");
+        engine.Current!.Track.Id.Should().Be("b");
+        engine.Calls.Count(c => c.StartsWith("load", StringComparison.Ordinal)).Should().Be(1);
+    }
+
+    [Fact]
     public void Play_queues_the_tracks_and_loads_the_chosen_one_with_local_stream_options()
     {
         _sut.Play(Tracks("a", "b", "c"), startIndex: 1);

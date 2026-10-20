@@ -68,6 +68,34 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void Crossfade_is_off_by_default_and_offers_seconds()
+    {
+        _strings.GetString("Settings_CrossfadeOff").Returns("Off");
+        _strings.GetString("Settings_Seconds").Returns("{0} s");
+        var sut = CreateSut();
+        var changed = new List<string?>();
+        sut.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        sut.CrossfadeOptions.Should().Equal("Off", "1 s", "2 s", "3 s", "4 s", "5 s", "6 s", "8 s", "10 s", "12 s");
+        sut.CrossfadeIndex.Should().Be(0);
+
+        sut.CrossfadeIndex = 6;
+
+        _settings.Current.Playback.CrossfadeSeconds.Should().Be(6);
+        changed.Should().Equal(nameof(SettingsViewModel.CrossfadeIndex));
+    }
+
+    [Theory]
+    [InlineData(7, 7)]
+    [InlineData(99, 9)]
+    public void A_crossfade_from_an_edited_file_shows_as_the_next_longer_choice(int seconds, int index)
+    {
+        _settings.Update(s => s with { Playback = s.Playback with { CrossfadeSeconds = seconds } });
+
+        CreateSut().CrossfadeIndex.Should().Be(index);
+    }
+
+    [Fact]
     public void Taskbar_progress_is_on_by_default_and_can_be_turned_off()
     {
         var sut = CreateSut();

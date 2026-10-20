@@ -49,6 +49,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private static readonly InstantMixMode[] InstantMixOrder = [InstantMixMode.Replace, InstantMixMode.Append];
     private static readonly ListDensity[] DensityOrder = [ListDensity.Standard, ListDensity.Compact];
     private static readonly int[] CacheLimits = [100, 250, 500, 1000, 2000, 5000];
+    private static readonly int[] CrossfadeSeconds = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12];
 
     /// <summary>The UI languages: Windows' choice first, then each translation (<c>.resw</c> folder).</summary>
     private static readonly string?[] Languages = [null, "en-US", "de-DE"];
@@ -102,6 +103,12 @@ public sealed partial class SettingsViewModel : ObservableObject
         ];
         StartPageOptions = [.. PageKeys.MainSections.Select(key => strings.GetString($"StartPage_{key}"))];
         CacheLimitOptions = [.. CacheLimits.Select(mb => ByteSizes.Format(mb * 1024L * 1024L, strings))];
+        CrossfadeOptions =
+        [
+            .. CrossfadeSeconds.Select(s => s == 0
+                ? strings.GetString("Settings_CrossfadeOff")
+                : strings.GetString("Settings_Seconds").Replace("{0}", s.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)),
+        ];
         Shortcuts = [.. KeyboardShortcuts.All.Select(k => new ShortcutRow(KeyboardShortcuts.Gesture(k, strings), KeyboardShortcuts.Describe(k, strings)))];
     }
 
@@ -190,6 +197,29 @@ public sealed partial class SettingsViewModel : ObservableObject
             if (value != ResumeSession)
             {
                 _settings.Update(s => s with { Playback = s.Playback with { ResumeSession = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>Gets the crossfade choices: off, then seconds.</summary>
+    public IReadOnlyList<string> CrossfadeOptions { get; }
+
+    /// <summary>Gets or sets the crossfade as an index into <see cref="CrossfadeOptions"/>; a value from an edited file shows as the next longer choice.</summary>
+    public int CrossfadeIndex
+    {
+        get
+        {
+            var seconds = _settings.Current.Playback.CrossfadeSeconds;
+            var index = Array.FindIndex(CrossfadeSeconds, s => s >= seconds);
+            return index < 0 ? CrossfadeSeconds.Length - 1 : index;
+        }
+
+        set
+        {
+            if (value >= 0 && value < CrossfadeSeconds.Length && value != CrossfadeIndex)
+            {
+                _settings.Update(s => s with { Playback = s.Playback with { CrossfadeSeconds = CrossfadeSeconds[value] } });
                 OnPropertyChanged();
             }
         }
