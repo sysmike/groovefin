@@ -32,6 +32,7 @@ internal sealed partial class MainWindow : Window
     private readonly AddToPlaylist _addToPlaylist;
     private readonly TrackDrag _trackDrag;
     private readonly IStringResources _strings;
+    private readonly NowPlayingViewModel _nowPlaying;
 
     public MainWindow(
         ShellViewModel viewModel,
@@ -53,7 +54,7 @@ internal sealed partial class MainWindow : Window
         ViewModel = viewModel;
         Queue = queue;
         Lyrics = lyrics;
-        NowPlaying = nowPlaying;
+        _nowPlaying = nowPlaying;
         Suggestions = suggestions;
         InitializeComponent();
 
@@ -97,8 +98,6 @@ internal sealed partial class MainWindow : Window
     public SearchSuggestionsViewModel Suggestions { get; }
 
     public LyricsViewModel Lyrics { get; }
-
-    public NowPlayingViewModel NowPlaying { get; }
 
     /// <summary>Mica when supported, Desktop Acrylic as fallback, otherwise the default solid background.</summary>
     private static SystemBackdrop? CreateBackdrop()
@@ -275,25 +274,25 @@ internal sealed partial class MainWindow : Window
         switch (action)
         {
             case ShortcutAction.PlayPause:
-                Execute(NowPlaying.PlayPauseCommand);
+                Execute(_nowPlaying.PlayPauseCommand);
                 break;
             case ShortcutAction.Next:
-                Execute(NowPlaying.NextCommand);
+                Execute(_nowPlaying.NextCommand);
                 break;
             case ShortcutAction.Previous:
-                Execute(NowPlaying.PreviousCommand);
+                Execute(_nowPlaying.PreviousCommand);
                 break;
             case ShortcutAction.VolumeUp:
-                Execute(NowPlaying.VolumeUpCommand);
+                Execute(_nowPlaying.VolumeUpCommand);
                 break;
             case ShortcutAction.VolumeDown:
-                Execute(NowPlaying.VolumeDownCommand);
+                Execute(_nowPlaying.VolumeDownCommand);
                 break;
             case ShortcutAction.Shuffle:
-                Execute(NowPlaying.ToggleShuffleCommand);
+                Execute(_nowPlaying.ToggleShuffleCommand);
                 break;
             case ShortcutAction.Repeat:
-                Execute(NowPlaying.CycleRepeatCommand);
+                Execute(_nowPlaying.CycleRepeatCommand);
                 break;
             case ShortcutAction.Search:
                 SearchBox.Focus(FocusState.Keyboard);
