@@ -283,12 +283,15 @@ try {
         }
     }
     Write-Output "Expanded the equalizer: $expanded"
+    $visual = $null
+    if ($window.TryGetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern, [ref] $visual)) { $visual.SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized) }
     Start-Sleep -Seconds 2
     $sliders = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider)))
     $band = $sliders | Where-Object { $_.Current.Name -eq '1 kHz' } | Select-Object -First 1
     if ($band -and $band.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView(); Start-Sleep -Seconds 1 }
     Save-Screenshot 'settings-equalizer'
     foreach ($slider in $sliders) {
+        if ($slider.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView(); Start-Sleep -Milliseconds 300 }
         $r = $slider.Current.BoundingRectangle
         $colours = if ($slider.Current.IsOffscreen) { 0 } else { Get-ColourCount $slider }
         Write-Output ("Slider '{0}': {1:0}x{2:0} at {3:0},{4:0}, offscreen {5}, {6} colours" -f $slider.Current.Name, $r.Width, $r.Height, $r.X, $r.Y, $slider.Current.IsOffscreen, $colours)
@@ -296,6 +299,7 @@ try {
     if (-not $band) {
         Stop-Test 'Smoke test' "The equalizer slider '1 kHz' was not found ($($sliders.Count) sliders on the page)."
     }
+    if ($band.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView(); Start-Sleep -Milliseconds 300 }
     $bandRect = $band.Current.BoundingRectangle
     if ($band.Current.IsOffscreen -or $bandRect.Width -lt 16 -or $bandRect.Height -lt 100) {
         Stop-Test 'Smoke test' "The equalizer slider '1 kHz' has no visible size: $($bandRect.Width)x$($bandRect.Height)."

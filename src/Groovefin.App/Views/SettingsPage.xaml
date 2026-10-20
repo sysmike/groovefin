@@ -8,10 +8,13 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="using:CommunityToolkit.WinUI"
+    xmlns:local="using:Groovefin.App.Views"
     xmlns:vm="using:Groovefin.Core.ViewModels"
     mc:Ignorable="d">
 
     <Page.Resources>
+        <local:ProbeNameConverter x:Key="ProbeC" Prefix="Variant C " />
+        <local:ProbeNameConverter x:Key="ProbeD" Prefix="Variant D " />
         <!--  Group headers like in Windows Settings: some space above, little below.  -->
         <Style
             x:Key="SettingsSectionHeaderStyle"
@@ -236,6 +239,28 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
+                    </controls:SettingsCard>
+                    <!--  TEMPORARY (#165): slider variants for the CI screenshot; removed before the PR.  -->
+                    <controls:SettingsCard Header="Probe" ContentAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Slider AutomationProperties.Name="Variant B plain" Height="160" Orientation="Vertical" Minimum="-12" Maximum="12" />
+                            <Slider AutomationProperties.Name="Variant B2 ticks" Height="160" Orientation="Vertical" Minimum="-12" Maximum="12" TickFrequency="6" TickPlacement="Outside" />
+                            <ItemsControl ItemsSource="{x:Bind Equalizer.Bands}" IsTabStop="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:EqualizerBandViewModel">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Slider AutomationProperties.Name="{x:Bind Name, Converter={StaticResource ProbeC}}" Width="40" Height="160" Orientation="Vertical" Minimum="-12" Maximum="12" Value="{x:Bind Gain, Mode=TwoWay}" />
+                                            <Slider AutomationProperties.Name="{x:Bind Name, Converter={StaticResource ProbeD}}" Height="160" HorizontalAlignment="Center" Orientation="Vertical" Minimum="-12" Maximum="12" Value="{x:Bind Gain, Mode=TwoWay}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </controls:SettingsCard>
                     <controls:SettingsCard x:Uid="SettingsEqualizerPreampCard">
                         <StackPanel Orientation="Horizontal" Spacing="12">
