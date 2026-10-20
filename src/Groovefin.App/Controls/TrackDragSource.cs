@@ -8,12 +8,13 @@ using Windows.ApplicationModel.DataTransfer;
 
 namespace Groovefin.App.Controls;
 
+// Public: XAML sets these properties at run time and generates no setter for an internal class (#140).
 /// <summary>
 /// Makes tracks and albums draggable onto the queue panel and the playlists in the navigation pane:
 /// <c>controls:TrackDragSource.IsEnabled="True"</c> on a <see cref="ListView"/> of tracks (the selected
 /// rows are dragged) or on an album tile. Context menus offer the same without a mouse.
 /// </summary>
-internal static class TrackDragSource
+public static class TrackDragSource
 {
     public static readonly DependencyProperty IsEnabledProperty = DependencyProperty.RegisterAttached(
         "IsEnabled", typeof(bool), typeof(TrackDragSource), new PropertyMetadata(false, OnIsEnabledChanged));

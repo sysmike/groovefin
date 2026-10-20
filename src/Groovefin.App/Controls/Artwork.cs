@@ -9,13 +9,14 @@ using Windows.Storage.Streams;
 
 namespace Groovefin.App.Controls;
 
+// Public: XAML sets these properties at run time and generates no setter for an internal class (#140).
 /// <summary>
 /// Attached property that loads artwork into an <see cref="Image"/> through the disk cache and an
 /// in-memory cache of decoded bitmaps:
 /// <c>&lt;Image controls:Artwork.Request="{x:Bind ViewModel.Cover}" /&gt;</c>.
 /// Works with virtualized lists: a recycled container only shows the image of its latest request.
 /// </summary>
-internal static class Artwork
+public static class Artwork
 {
     private const int DecodedCapacity = 300;
 

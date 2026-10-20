@@ -10,12 +10,13 @@ using Microsoft.UI.Xaml.Input;
 
 namespace Groovefin.App.Controls;
 
+// Public: XAML sets these properties at run time and generates no setter for an internal class (#140).
 /// <summary>
 /// The shared context menu (<see cref="ContextMenus"/>) for list rows and tiles of tracks, albums,
 /// artists, playlists, genres and folders: <c>&lt;ListView controls:ItemMenu.IsEnabled="True" /&gt;</c>. It opens on
 /// right-click, the Menu key and Shift+F10, for the item under the pointer or with focus.
 /// </summary>
-internal static class ItemMenu
+public static class ItemMenu
 {
     public static readonly DependencyProperty IsEnabledProperty = DependencyProperty.RegisterAttached(
         "IsEnabled", typeof(bool), typeof(ItemMenu), new PropertyMetadata(false, OnIsEnabledChanged));

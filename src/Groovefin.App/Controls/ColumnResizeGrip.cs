@@ -8,11 +8,12 @@ using Microsoft.UI.Xaml.Shapes;
 
 namespace Groovefin.App.Controls;
 
+// Public: XAML sets these properties at run time and generates no setter for an internal class (#140).
 /// <summary>
 /// The draggable right edge of a table column header: a thin line with the left–right resize cursor.
 /// It reports how far it was dragged; keyboard users resize from the header's context menu.
 /// </summary>
-internal sealed partial class ColumnResizeGrip : Grid
+public sealed partial class ColumnResizeGrip : Grid
 {
     public static readonly DependencyProperty LineBrushProperty = DependencyProperty.Register(
         nameof(LineBrush), typeof(Brush), typeof(ColumnResizeGrip), new PropertyMetadata(null, OnLineBrushChanged));
