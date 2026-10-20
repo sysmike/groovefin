@@ -317,8 +317,12 @@ public sealed partial class Player : IPlayer, IDisposable
     private PlaybackSource SourceFor(QueueItem item)
     {
         var server = _client.Connection?.ServerUrl ?? throw new InvalidOperationException("Not connected to a server.");
-        var url = _streams.GetStreamUrl(item.Track.Id, _settings.Current.Streaming.OptionsFor(server));
-        return new PlaybackSource(item.Id, url, item.Track, Normalization.VolumeFactor(item.Track, _settings.Current.Playback.Normalization));
+        var options = _settings.Current.Streaming.OptionsFor(server);
+        var url = _streams.GetStreamUrl(item.Track.Id, options);
+        return new PlaybackSource(item.Id, url, item.Track, Normalization.VolumeFactor(item.Track, _settings.Current.Playback.Normalization))
+        {
+            UrlAt = position => _streams.GetStreamUrl(item.Track.Id, options with { StartPosition = position }),
+        };
     }
 
     private void Stop()

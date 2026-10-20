@@ -53,6 +53,16 @@ public sealed class StreamUrlBuilderTests : IDisposable
     }
 
     [Fact]
+    public void A_start_position_becomes_start_time_ticks()
+    {
+        _host.ConnectAsTestUser();
+
+        var query = Query(Sut.GetStreamUrl(TrackId, new StreamOptions(320, TranscodingCodec.Aac) { StartPosition = TimeSpan.FromSeconds(90) }));
+
+        query["StartTimeTicks"].Should().Be("900000000");
+    }
+
+    [Fact]
     public void A_base_path_is_kept_and_the_id_is_normalized()
     {
         var server = new Uri("https://media.example.com/jellyfin/");

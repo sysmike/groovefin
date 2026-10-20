@@ -29,6 +29,12 @@ public sealed record PlaybackSource(string Id, Uri Url, Track Track, double Gain
     /// <summary>Gets where playback starts, e.g. a restored session's position; zero for the start.</summary>
     public TimeSpan StartPosition { get; init; }
 
+    /// <summary>
+    /// Gets the URL of the same stream starting at a position, or <see langword="null"/>. The engine uses it
+    /// to seek where the player cannot: in a transcoded stream past the part that has arrived (#154).
+    /// </summary>
+    public Func<TimeSpan, Uri>? UrlAt { get; init; }
+
     /// <summary>Describes the source without its URL, so logging it cannot leak a token.</summary>
     public override string ToString() => $"{Id} ({Track.Name})";
 }

@@ -23,6 +23,9 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
     private bool _isMuted;
     private long _lastPositionReport = long.MinValue;
 
+    /// <summary>Where in the track the loaded stream starts: not zero after a transcode was restarted to seek.</summary>
+    private TimeSpan _streamStart;
+
     /// <summary>Sources passed to <see cref="SetNext"/> since the last load, oldest first. The player can
     /// move on to one that was replaced a moment ago, before the replacement reached it.</summary>
     private readonly List<PlaybackSource> _queuedNext = [];
@@ -80,6 +83,7 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
 
         Current = source;
         ClearNext();
+        _streamStart = TimeSpan.Zero;
         Position = source.StartPosition;
         Duration = source.Track.Duration ?? TimeSpan.Zero;
         _lastPositionReport = long.MinValue;
@@ -134,7 +138,22 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
             target = Duration;
         }
 
-        SeekCore(target);
+        // A transcoded stream can only be read from the front: where the player cannot seek, the stream
+        // starts again at the target (#154). Positions in the stream are relative to where it started.
+        if (target >= _streamStart && CanSeekCore(target - _streamStart))
+        {
+            SeekCore(target - _streamStart);
+        }
+        else if (Current.UrlAt is { } urlAt)
+        {
+            _streamStart = target;
+            RestartCore(urlAt(target));
+        }
+        else
+        {
+            SeekCore(target > _streamStart ? target - _streamStart : TimeSpan.Zero);
+        }
+
         Position = target;
         PositionChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -149,6 +168,7 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
         StopCore();
         Current = null;
         ClearNext();
+        _streamStart = TimeSpan.Zero;
         Position = TimeSpan.Zero;
         Duration = TimeSpan.Zero;
         SetState(PlaybackState.Idle);
@@ -165,7 +185,17 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
 
     protected abstract void PauseCore();
 
+    /// <summary>Moves to <paramref name="position"/> in the loaded stream (relative to where it started).</summary>
     protected abstract void SeekCore(TimeSpan position);
+
+    /// <summary>
+    /// Gets a value indicating whether the player can move to <paramref name="position"/> in the loaded
+    /// stream. When not, <see cref="Seek"/> restarts the stream there (<see cref="RestartCore"/>).
+    /// </summary>
+    protected virtual bool CanSeekCore(TimeSpan position) => true;
+
+    /// <summary>Replaces the current stream with <paramref name="url"/>, the same track from a later or earlier point, keeping play or pause.</summary>
+    protected abstract void RestartCore(Uri url);
 
     protected abstract void StopCore();
 
@@ -201,7 +231,7 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
             }
 
             _lastPositionReport = now;
-            Position = position;
+            Position = _streamStart + position;
             if (durationChanged)
             {
                 Duration = duration;
@@ -241,6 +271,7 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
 
         ApplyVolume();
 
+        _streamStart = TimeSpan.Zero;
         Position = TimeSpan.Zero;
         Duration = source.Track.Duration ?? TimeSpan.Zero;
         _lastPositionReport = long.MinValue;
