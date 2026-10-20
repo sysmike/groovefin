@@ -210,6 +210,33 @@
   <data name="AlbumKind.Text" xml:space="preserve">
     <value>ALBUM</value>
   </data>
+  <data name="AlbumColumnNumber.Text" xml:space="preserve">
+    <value>#</value>
+  </data>
+  <data name="AlbumColumnTitle.Text" xml:space="preserve">
+    <value>TITLE</value>
+  </data>
+  <data name="AlbumSort_Number" xml:space="preserve">
+    <value>Track number</value>
+  </data>
+  <data name="AlbumSort_Title" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="AlbumSort_Duration" xml:space="preserve">
+    <value>Length</value>
+  </data>
+  <data name="AlbumSort_Favourite" xml:space="preserve">
+    <value>Favourite</value>
+  </data>
+  <data name="AlbumSort_SortBy" xml:space="preserve">
+    <value>Sort by {0}</value>
+  </data>
+  <data name="AlbumSort_Ascending" xml:space="preserve">
+    <value>{0}, sorted ascending</value>
+  </data>
+  <data name="AlbumSort_Descending" xml:space="preserve">
+    <value>{0}, sorted descending</value>
+  </data>
   <data name="AlbumGenres.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Genres</value>
   </data>
