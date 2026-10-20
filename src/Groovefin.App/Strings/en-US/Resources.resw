@@ -1551,4 +1551,57 @@
   <data name="Operation_OpenLogFolder" xml:space="preserve">
     <value>Couldn't open the log folder</value>
   </data>
+  <data name="SettingsAccentCard.Header" xml:space="preserve">
+    <value>Accent colour</value>
+  </data>
+  <data name="SettingsAccentCard.Description" xml:space="preserve">
+    <value>Highlights use your Windows accent colour. When off, they are neutral grey.</value>
+  </data>
+  <data name="SettingsLanguageCard.Header" xml:space="preserve">
+    <value>App language</value>
+  </data>
+  <data name="SettingsLanguageCard.Description" xml:space="preserve">
+    <value>Applies the next time Groovefin starts.</value>
+  </data>
+  <data name="SettingsStartPageCard.Header" xml:space="preserve">
+    <value>Start page</value>
+  </data>
+  <data name="SettingsStartPageCard.Description" xml:space="preserve">
+    <value>The page Groovefin opens with.</value>
+  </data>
+  <data name="Settings_LanguageSystem" xml:space="preserve">
+    <value>Use Windows language</value>
+  </data>
+  <data name="Settings_LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+    <comment>Shown in its own language</comment>
+  </data>
+  <data name="Settings_LanguageGerman" xml:space="preserve">
+    <value>Deutsch</value>
+    <comment>Shown in its own language</comment>
+  </data>
+  <data name="StartPage_home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="StartPage_albums" xml:space="preserve">
+    <value>Albums</value>
+  </data>
+  <data name="StartPage_artists" xml:space="preserve">
+    <value>Artists</value>
+  </data>
+  <data name="StartPage_songs" xml:space="preserve">
+    <value>Songs</value>
+  </data>
+  <data name="StartPage_genres" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="StartPage_playlists" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="StartPage_folders" xml:space="preserve">
+    <value>Folders</value>
+  </data>
+  <data name="StartPage_favourites" xml:space="preserve">
+    <value>Favourites</value>
+  </data>
 </root>
