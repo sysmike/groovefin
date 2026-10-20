@@ -18,6 +18,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Graphics;
 using Windows.System;
 using Windows.UI.Core;
 
@@ -32,6 +33,8 @@ internal sealed partial class MainWindow : Window
     private readonly AddToPlaylist _addToPlaylist;
     private readonly TrackDrag _trackDrag;
     private readonly IStringResources _strings;
+    private RectInt32? _restoreBounds;
+    private bool _restoreMaximized;
 
     public MainWindow(
         ShellViewModel viewModel,
@@ -71,12 +74,13 @@ internal sealed partial class MainWindow : Window
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         Closed += (_, _) => ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
 
-        // The full-screen player puts the window into full screen; leaving it by other means closes the player.
+        // The full-screen and mini players switch the window's presenter; leaving them by other means
+        // (Windows' own controls) closes them too.
         Player.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(NowPlayingViewModel.IsFullScreen))
+            if (e.PropertyName is nameof(NowPlayingViewModel.IsFullScreen) or nameof(NowPlayingViewModel.IsMiniPlayer))
             {
-                AppWindow.SetPresenter(Player.IsFullScreen ? AppWindowPresenterKind.FullScreen : AppWindowPresenterKind.Default);
+                ApplyPresenter();
             }
         };
         AppWindow.Changed += (_, args) =>
@@ -84,6 +88,7 @@ internal sealed partial class MainWindow : Window
             if (args.DidPresenterChange)
             {
                 Player.IsFullScreen = AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
+                Player.IsMiniPlayer = AppWindow.Presenter.Kind == AppWindowPresenterKind.CompactOverlay;
             }
         };
 
@@ -116,6 +121,54 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>Gets the now playing state, also shown by the full-screen player. (The bar itself is named NowPlaying.)</summary>
     public NowPlayingViewModel Player { get; }
+
+    /// <summary>
+    /// Shows the presenter the players ask for: compact overlay (mini player), full screen or the normal
+    /// window. The normal window's place and size are kept while the mini player is open and come back after.
+    /// </summary>
+    private void ApplyPresenter()
+    {
+        var wanted = Player.IsMiniPlayer ? AppWindowPresenterKind.CompactOverlay
+            : Player.IsFullScreen ? AppWindowPresenterKind.FullScreen
+            : AppWindowPresenterKind.Overlapped;
+        var current = AppWindow.Presenter.Kind;
+        if (wanted == current)
+        {
+            return;
+        }
+
+        if (wanted == AppWindowPresenterKind.CompactOverlay && AppWindow.Presenter is OverlappedPresenter overlapped)
+        {
+            _restoreBounds = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+            _restoreMaximized = overlapped.State == OverlappedPresenterState.Maximized;
+        }
+
+        if (wanted == AppWindowPresenterKind.CompactOverlay)
+        {
+            var compact = CompactOverlayPresenter.Create();
+            compact.InitialSize = CompactOverlaySize.Medium;
+            AppWindow.SetPresenter(compact);
+        }
+        else
+        {
+            AppWindow.SetPresenter(wanted);
+        }
+
+        // Also after mini player → full screen → window.
+        if (wanted == AppWindowPresenterKind.Overlapped && _restoreBounds is { } bounds)
+        {
+            AppWindow.MoveAndResize(bounds);
+            if (_restoreMaximized && AppWindow.Presenter is OverlappedPresenter restored)
+            {
+                restored.Maximize();
+            }
+
+            _restoreBounds = null;
+        }
+
+        // Only the mini player's top strip can move the small window.
+        SetTitleBar(Player.IsMiniPlayer ? MiniTitleBar : AppTitleBar);
+    }
 
     /// <summary>Mica when supported, Desktop Acrylic as fallback, otherwise the default solid background.</summary>
     private static SystemBackdrop? CreateBackdrop()
@@ -266,10 +319,11 @@ internal sealed partial class MainWindow : Window
     /// </summary>
     private void OnPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        // Esc leaves the full-screen player (popups such as menus handle their own Esc first).
-        if (e.Key == VirtualKey.Escape && Player.IsFullScreen)
+        // Esc leaves the full-screen or mini player (popups such as menus handle their own Esc first).
+        if (e.Key == VirtualKey.Escape && (Player.IsFullScreen || Player.IsMiniPlayer))
         {
             Player.ExitFullScreenCommand.Execute(null);
+            Player.ExitMiniPlayerCommand.Execute(null);
             e.Handled = true;
             return;
         }
@@ -322,6 +376,9 @@ internal sealed partial class MainWindow : Window
                 break;
             case ShortcutAction.FullScreen:
                 Player.ToggleFullScreenCommand.Execute(null);
+                break;
+            case ShortcutAction.MiniPlayer:
+                Player.ToggleMiniPlayerCommand.Execute(null);
                 break;
             case ShortcutAction.Search:
                 SearchBox.Focus(FocusState.Keyboard);

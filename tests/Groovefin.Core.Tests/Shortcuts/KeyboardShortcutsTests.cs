@@ -27,6 +27,7 @@ public sealed class KeyboardShortcutsTests
     [InlineData("S", true, ShortcutAction.Shuffle)]
     [InlineData("R", true, ShortcutAction.Repeat)]
     [InlineData("F11", false, ShortcutAction.FullScreen)]
+    [InlineData("M", true, ShortcutAction.MiniPlayer)]
     public void Every_documented_shortcut_is_found(string key, bool control, ShortcutAction expected) =>
         KeyboardShortcuts.Find(key, control).Should().Be(expected);
 

@@ -216,6 +216,12 @@
                 <FontIcon FontSize="14" Glyph="&#xE8D2;" />
             </ToggleButton>
             <ToggleButton
+                x:Uid="NowPlayingMiniButton"
+                IsChecked="{x:Bind ViewModel.IsMiniPlayer, Mode=TwoWay}"
+                Style="{StaticResource NowPlayingToggleStyle}">
+                <FontIcon FontSize="14" Glyph="&#xE8A7;" />
+            </ToggleButton>
+            <ToggleButton
                 x:Uid="NowPlayingFullScreenButton"
                 IsChecked="{x:Bind ViewModel.IsFullScreen, Mode=TwoWay}"
                 Style="{StaticResource NowPlayingToggleStyle}">

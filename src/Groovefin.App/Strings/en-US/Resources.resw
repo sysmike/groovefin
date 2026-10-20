@@ -1421,4 +1421,31 @@
   <data name="Shortcut_FullScreen" xml:space="preserve">
     <value>Full-screen player on or off</value>
   </data>
+  <data name="NowPlayingMiniButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mini player (Ctrl+M)</value>
+  </data>
+  <data name="NowPlayingMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Mini player (Ctrl+M)</value>
+  </data>
+  <data name="MiniExitButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Back to the full window</value>
+  </data>
+  <data name="MiniExitButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Back to the full window (Ctrl+M)</value>
+  </data>
+  <data name="MiniPreviousButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Previous track</value>
+  </data>
+  <data name="MiniPreviousButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous track</value>
+  </data>
+  <data name="MiniNextButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Next track</value>
+  </data>
+  <data name="MiniNextButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next track</value>
+  </data>
+  <data name="Shortcut_MiniPlayer" xml:space="preserve">
+    <value>Mini player on or off</value>
+  </data>
 </root>
