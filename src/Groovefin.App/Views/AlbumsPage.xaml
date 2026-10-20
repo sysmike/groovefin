@@ -47,16 +47,16 @@
         <!--  List: thumbnail, name, artist, year.  -->
         <DataTemplate x:Key="AlbumListTemplate" x:DataType="vm:AlbumItem">
             <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
-                <Grid Padding="8,4" ColumnSpacing="12">
+                <Grid Padding="{ThemeResource ListItemPadding}" ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="40" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="64" />
                     </Grid.ColumnDefinitions>
                     <Grid
-                        Width="40"
-                        Height="40"
+                        Width="{ThemeResource ListThumbnailSize}"
+                        Height="{ThemeResource ListThumbnailSize}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                         CornerRadius="{StaticResource ControlCornerRadius}">
                         <Image

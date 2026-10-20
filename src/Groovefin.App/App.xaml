@@ -13,6 +13,16 @@
             <Thickness x:Key="PageContentMargin">36,24,36,36</Thickness>
             <x:Double x:Key="PageContentMaxWidth">1000</x:Double>
             <x:Double x:Key="SearchBoxMaxWidth">480</x:Double>
+
+            <!--
+                List density (standard values). ThemeService replaces them for the compact density;
+                views use {ThemeResource} so a change applies at once.
+            -->
+            <x:Double x:Key="ListThumbnailSize">40</x:Double>
+            <Thickness x:Key="ListRowPadding">0,4</Thickness>
+            <Thickness x:Key="ListItemPadding">8,4</Thickness>
+            <Thickness x:Key="TrackRowPadding">0,6</Thickness>
+            <x:Double x:Key="TableRowHeight">36</x:Double>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
