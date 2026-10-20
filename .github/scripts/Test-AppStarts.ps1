@@ -195,16 +195,35 @@ try {
         else { $item.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
     }
 
-    # The position slider must move by at least two seconds within 15 seconds, and the log must not show
-    # a failed track or the engine taking the equalizer effect out (#167).
+    # GitHub's Windows runners have no sound card: Media Foundation then fails at the audio output
+    # (0xC00D36FA, "failed to create mediasink"), after the equalizer effect has been negotiated.
+    $hasAudio = [bool] (Get-CimInstance Win32_SoundDevice -ErrorAction SilentlyContinue)
+
+    # With an audio device, the position slider must move by at least two seconds within 15 seconds and no
+    # track may fail. Without one, the only failure allowed is the missing audio output: the stream got past
+    # the equalizer effect. Either way the log must not show an exception from .NET code inside Media
+    # Foundation (0x8013xxxx, the effect) or the engine taking the effect out (#167).
     function Test-Playing([string] $step) {
         $range = $position.GetCurrentPattern([System.Windows.Automation.RangeValuePattern]::Pattern)
         $start = $range.Current.Value
         $until = (Get-Date).AddSeconds(15)
-        while ($range.Current.Value -lt $start + 2 -and (Get-Date) -lt $until -and -not $process.HasExited) { Start-Sleep -Milliseconds 500 }
-        $failed = Select-String -Path (Get-AppLog).FullName -Pattern 'Playback of', 'Equalizer effect failed' -SimpleMatch
-        if ($failed) { Stop-Test 'Playback' "Playback failed $step`: $($failed[0].Line)" }
-        if ($range.Current.Value -lt $start + 2) { Stop-Test 'Playback' "The position did not move $step (at $($range.Current.Value) s)." }
+        do {
+            Start-Sleep -Milliseconds 500
+            $text = Get-Content (Get-AppLog).FullName -Raw
+            $done = $range.Current.Value -ge $start + 2 -or (-not $hasAudio -and $text -match '0xC00D36FA')
+        } while (-not $done -and (Get-Date) -lt $until -and -not $process.HasExited)
+
+        if ($text -match '\(0x8013[0-9A-F]{4}\)' -or $text -match 'Equalizer effect failed') {
+            Stop-Test 'Playback' "The equalizer effect failed $step`: $(($text -split "`n" | Select-String '0x8013|Equalizer effect failed' | Select-Object -First 1).Line)"
+        }
+        if ($hasAudio) {
+            $failed = Select-String -Path (Get-AppLog).FullName -Pattern 'Playback of' -SimpleMatch
+            if ($failed) { Stop-Test 'Playback' "Playback failed $step`: $($failed[0].Line)" }
+            if ($range.Current.Value -lt $start + 2) { Stop-Test 'Playback' "The position did not move $step (at $($range.Current.Value) s)." }
+        }
+        elseif ($text -notmatch '0xC00D36FA') {
+            Stop-Test 'Playback' "No sound card here, so playback should fail at the audio output (0xC00D36FA) $step, but the log does not show it."
+        }
         Test-Running $step
     }
 
@@ -329,7 +348,8 @@ try {
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Position'),
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider))) "position slider"
     Test-Playing 'after pressing Play album'
-    Write-Output 'Playback runs through the equalizer effect.'
+    if ($hasAudio) { Write-Output 'Playback runs through the equalizer effect.' }
+    else { Write-Output 'No sound card: the stream passed the equalizer effect and stopped only at the audio output.' }
 
     # Settings, with the equalizer's sliders.
     Select-Navigation 'Settings'
@@ -386,7 +406,7 @@ try {
     if ($switch -and $switch.TryGetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern, [ref] $toggle)) {
         $toggle.Toggle()
         Test-Playing 'with the equalizer on'
-        Write-Output 'Playback goes on with the equalizer on.'
+        Write-Output 'The equalizer is on without errors.'
     }
     else {
         Stop-Test 'Smoke test' 'The equalizer switch was not found.'

@@ -252,12 +252,14 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
     }
 
     /// <summary>
-    /// The safety net for the equalizer (#167): when a track fails while the effect is in the audio path, the
-    /// effect leaves both players and the track starts again without it, once. If it fails again, the error
-    /// is the track's and is reported as usual. Settings no longer offers the equalizer.
+    /// The safety net for the equalizer (#167): when a track fails with an exception from .NET code (HRESULT
+    /// facility URT, 0x8013xxxx) while the effect is in the audio path, the effect is the one .NET code in
+    /// Media Foundation that can have thrown it. The effect leaves both players and the track starts again
+    /// without it, once; Settings no longer offers the equalizer. Any other error (a bad file, no audio
+    /// output) is the track's and is reported as usual.
     /// </summary>
     /// <returns>Whether the track was started again (do not report the failure).</returns>
-    private bool RetryWithoutEffect(Deck deck, string error)
+    private bool RetryWithoutEffect(Deck deck, int? result, string error)
     {
         Deck[] decks;
         lock (_gate)
@@ -268,7 +270,7 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
                 return true;
             }
 
-            if (!_equalizerAdded || _effectDropped || !IsActive(deck))
+            if (!_equalizerAdded || _effectDropped || !IsActive(deck) || result is not { } hr || (hr & 0x1FFF0000) != 0x00130000)
             {
                 return false;
             }
@@ -551,8 +553,8 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
 
             if (failedCurrent is not null)
             {
-                var error = $"{args.Error.ErrorCode} (0x{args.Error.ExtendedError?.HResult:X8})";
-                if (!_engine.RetryWithoutEffect(this, error))
+                var result = args.Error.ExtendedError?.HResult;
+                if (!_engine.RetryWithoutEffect(this, result, $"{args.Error.ErrorCode} (0x{result:X8})"))
                 {
                     _engine.ReportFailed(failedCurrent, args.Error.ErrorCode.ToString(), args.Error.ExtendedError);
                 }
@@ -590,7 +592,8 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
 
         private void OnMediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
         {
-            if (ReportedSource is { } source && !_engine.RetryWithoutEffect(this, $"{args.Error} (0x{args.ExtendedErrorCode?.HResult:X8})"))
+            if (ReportedSource is { } source
+                && !_engine.RetryWithoutEffect(this, args.ExtendedErrorCode?.HResult, $"{args.Error} (0x{args.ExtendedErrorCode?.HResult:X8})"))
             {
                 _engine.ReportFailed(source, $"{args.Error}: {args.ErrorMessage}", args.ExtendedErrorCode);
             }
