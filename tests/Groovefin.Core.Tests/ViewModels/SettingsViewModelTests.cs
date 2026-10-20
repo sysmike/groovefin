@@ -50,6 +50,20 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void Resuming_the_session_is_on_by_default_and_can_be_turned_off()
+    {
+        var sut = CreateSut();
+        var changed = new List<string?>();
+        sut.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        sut.ResumeSession.Should().BeTrue();
+        sut.ResumeSession = false;
+
+        _settings.Current.Playback.ResumeSession.Should().BeFalse();
+        changed.Should().Equal(nameof(SettingsViewModel.ResumeSession));
+    }
+
+    [Fact]
     public void Taskbar_progress_is_on_by_default_and_can_be_turned_off()
     {
         var sut = CreateSut();

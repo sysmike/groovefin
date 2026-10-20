@@ -158,6 +158,20 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Gets or sets a value indicating whether the queue and position are restored (paused) on the next start.</summary>
+    public bool ResumeSession
+    {
+        get => _settings.Current.Playback.ResumeSession;
+        set
+        {
+            if (value != ResumeSession)
+            {
+                _settings.Update(s => s with { Playback = s.Playback with { ResumeSession = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
     /// <summary>Gets or sets a value indicating whether the taskbar button shows the playback progress.</summary>
     public bool ShowTaskbarProgress
     {

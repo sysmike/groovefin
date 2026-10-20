@@ -229,6 +229,46 @@ public sealed class QueueManager
         return true;
     }
 
+    /// <summary>Gets the queue for saving; see <see cref="Restore"/>.</summary>
+    public QueueSnapshot Snapshot()
+    {
+        var positions = _original.Select((item, index) => (item, index)).ToDictionary(p => p.item, p => p.index);
+        var order = _order.Select(item => positions[item]).ToList();
+        return new QueueSnapshot
+        {
+            Tracks = [.. _original.Select(i => i.Track)],
+            PlayOrder = order.SequenceEqual(Enumerable.Range(0, order.Count)) ? [] : order,
+            CurrentIndex = CurrentIndex,
+            Shuffle = _shuffle,
+            Repeat = _repeat,
+        };
+    }
+
+    /// <summary>
+    /// Replaces the queue with a saved one (entries get new IDs, history starts empty). Returns
+    /// <see langword="false"/> and changes nothing when the snapshot is empty or damaged.
+    /// </summary>
+    public bool Restore(QueueSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        if (!snapshot.IsValid)
+        {
+            return false;
+        }
+
+        var items = Wrap(snapshot.Tracks);
+        _original.Clear();
+        _original.AddRange(items);
+        _order.Clear();
+        _order.AddRange(snapshot.PlayOrder.Count == 0 ? items : snapshot.PlayOrder.Select(i => items[i]));
+        _history.Clear();
+        CurrentIndex = snapshot.CurrentIndex;
+        _shuffle = snapshot.Shuffle;
+        _repeat = snapshot.Repeat;
+        OnChanged();
+        return true;
+    }
+
     /// <summary>Empties the queue. History is kept.</summary>
     public void Clear()
     {

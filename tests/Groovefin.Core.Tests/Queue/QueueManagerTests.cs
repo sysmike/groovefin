@@ -192,6 +192,75 @@ public sealed class QueueManagerTests
     }
 
     [Fact]
+    public void A_snapshot_restores_order_current_entry_and_repeat()
+    {
+        Start("a", "b", "c");
+        _sut.Next();
+        _sut.Repeat = RepeatMode.One;
+        var snapshot = _sut.Snapshot();
+
+        var restored = new QueueManager();
+        restored.Restore(snapshot).Should().BeTrue();
+
+        snapshot.PlayOrder.Should().BeEmpty();
+        restored.Items.Select(i => i.Track.Name).Should().Equal("a", "b", "c");
+        restored.Current!.Track.Name.Should().Be("b");
+        restored.Repeat.Should().Be(RepeatMode.One);
+        restored.History.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void A_shuffled_snapshot_keeps_the_play_order_and_unshuffles_to_the_original()
+    {
+        Start("a", "b", "c", "d", "e");
+        _sut.Shuffle = true;
+        var playOrder = Order.ToList();
+        var current = CurrentName;
+
+        var restored = new QueueManager();
+        restored.Restore(_sut.Snapshot()).Should().BeTrue();
+
+        restored.Shuffle.Should().BeTrue();
+        restored.Items.Select(i => i.Track.Name).Should().Equal(playOrder);
+        restored.Current!.Track.Name.Should().Be(current);
+        restored.Shuffle = false;
+        restored.Items.Select(i => i.Track.Name).Should().Equal("a", "b", "c", "d", "e");
+        restored.Current!.Track.Name.Should().Be(current);
+    }
+
+    [Fact]
+    public void A_restored_queue_gets_new_entry_ids()
+    {
+        Start("a", "a");
+        var restored = new QueueManager();
+        restored.Restore(_sut.Snapshot());
+
+        restored.Items.Select(i => i.Id).Should().OnlyHaveUniqueItems();
+    }
+
+    [Theory]
+    [InlineData(new int[0], 5)]
+    [InlineData(new[] { 0, 0 }, 0)]
+    [InlineData(new[] { 0, 2 }, 0)]
+    [InlineData(new[] { 1, 0, 2 }, 0)]
+    public void A_damaged_snapshot_is_rejected(int[] playOrder, int currentIndex)
+    {
+        Start("x");
+        _changes = 0;
+        var snapshot = new QueueSnapshot
+        {
+            Tracks = playOrder.Length == 3 ? [] : Tracks("a", "b"),
+            PlayOrder = playOrder,
+            CurrentIndex = currentIndex,
+        };
+
+        _sut.Restore(snapshot).Should().BeFalse();
+
+        Order.Should().Equal("x");
+        _changes.Should().Be(0);
+    }
+
+    [Fact]
     public void Adding_nothing_changes_nothing()
     {
         Start("a");
