@@ -50,6 +50,17 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void Taskbar_progress_is_on_by_default_and_can_be_turned_off()
+    {
+        var sut = CreateSut();
+
+        sut.ShowTaskbarProgress.Should().BeTrue();
+        sut.ShowTaskbarProgress = false;
+
+        _settings.Current.Appearance.ShowTaskbarProgress.Should().BeFalse();
+    }
+
+    [Fact]
     public void The_tray_icon_and_minimizing_to_it_are_off_by_default_and_saved()
     {
         var sut = CreateSut();

@@ -41,6 +41,9 @@ public sealed record AppearanceSettings
 {
     public AppTheme Theme { get; set; } = AppTheme.System;
 
+    /// <summary>Gets or sets a value indicating whether the taskbar button shows the playback progress.</summary>
+    public bool ShowTaskbarProgress { get; set; } = true;
+
     /// <summary>Gets or sets a value indicating whether an icon with playback controls is shown in the notification area.</summary>
     public bool ShowTrayIcon { get; set; }
 

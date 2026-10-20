@@ -158,6 +158,20 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Gets or sets a value indicating whether the taskbar button shows the playback progress.</summary>
+    public bool ShowTaskbarProgress
+    {
+        get => _settings.Current.Appearance.ShowTaskbarProgress;
+        set
+        {
+            if (value != ShowTaskbarProgress)
+            {
+                _settings.Update(s => s with { Appearance = s.Appearance with { ShowTaskbarProgress = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
     /// <summary>Gets or sets a value indicating whether the notification area icon is shown.</summary>
     public bool ShowTrayIcon
     {

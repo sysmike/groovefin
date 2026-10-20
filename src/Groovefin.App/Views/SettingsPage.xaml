@@ -31,6 +31,7 @@
                 <RadioButton x:Uid="SettingsThemeLight" />
                 <RadioButton x:Uid="SettingsThemeDark" />
             </RadioButtons>
+            <ToggleSwitch x:Uid="SettingsTaskbarProgressSwitch" IsOn="{x:Bind ViewModel.ShowTaskbarProgress, Mode=TwoWay}" />
             <ToggleSwitch x:Uid="SettingsTraySwitch" IsOn="{x:Bind ViewModel.ShowTrayIcon, Mode=TwoWay}" />
             <ToggleSwitch
                 x:Uid="SettingsMinimizeToTraySwitch"
