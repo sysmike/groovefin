@@ -73,48 +73,6 @@
   <data name="NavFavourites.Content" xml:space="preserve">
     <value>Favourites</value>
   </data>
-  <data name="SectionTitle_home" xml:space="preserve">
-    <value>Home</value>
-    <comment>Page header</comment>
-  </data>
-  <data name="SectionTitle_albums" xml:space="preserve">
-    <value>Albums</value>
-    <comment>Page header</comment>
-  </data>
-  <data name="SectionTitle_artists" xml:space="preserve">
-    <value>Artists</value>
-    <comment>Page header</comment>
-  </data>
-  <data name="SectionTitle_songs" xml:space="preserve">
-    <value>Songs</value>
-    <comment>Page header</comment>
-  </data>
-  <data name="SectionTitle_genres" xml:space="preserve">
-    <value>Genres</value>
-    <comment>Page header</comment>
-  </data>
-  <data name="SectionTitle_playlists" xml:space="preserve">
-    <value>Playlists</value>
-    <comment>Page header</comment>
-  </data>
-  <data name="SectionTitle_folders" xml:space="preserve">
-    <value>Folders</value>
-    <comment>Page header</comment>
-  </data>
-  <data name="SectionTitle_favourites" xml:space="preserve">
-    <value>Favourites</value>
-    <comment>Page header</comment>
-  </data>
-  <data name="SectionTitle_search" xml:space="preserve">
-    <value>Search</value>
-    <comment>Page header</comment>
-  </data>
-  <data name="SectionPlaceholderInfo.Title" xml:space="preserve">
-    <value>Coming soon</value>
-  </data>
-  <data name="SectionPlaceholderInfo.Message" xml:space="preserve">
-    <value>This section is not available yet.</value>
-  </data>
   <data name="SettingsHeader.Text" xml:space="preserve">
     <value>Settings</value>
   </data>
@@ -252,9 +210,6 @@
   <data name="AlbumsEmpty.Text" xml:space="preserve">
     <value>No albums match.</value>
   </data>
-  <data name="SectionTitle_album" xml:space="preserve">
-    <value>Album</value>
-  </data>
   <data name="AlbumKind.Text" xml:space="preserve">
     <value>ALBUM</value>
   </data>
@@ -308,9 +263,6 @@
   </data>
   <data name="Operation_SetFavourite" xml:space="preserve">
     <value>Couldn't update favourites</value>
-  </data>
-  <data name="SectionTitle_artist" xml:space="preserve">
-    <value>Artist</value>
   </data>
   <data name="ServersHeader.Text" xml:space="preserve">
     <value>Servers</value>
@@ -1335,5 +1287,48 @@
   </data>
   <data name="Operation_LoadLyrics" xml:space="preserve">
     <value>Couldn't load the lyrics</value>
+  </data>
+  <data name="FoldersHeader.Text" xml:space="preserve">
+    <value>Folders</value>
+  </data>
+  <data name="FoldersPath.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Folder path</value>
+  </data>
+  <data name="FoldersUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Up one folder</value>
+  </data>
+  <data name="FoldersUpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Up one folder (Alt+Up)</value>
+  </data>
+  <data name="FoldersPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Play folder</value>
+  </data>
+  <data name="FoldersPlayText.Text" xml:space="preserve">
+    <value>Play folder</value>
+  </data>
+  <data name="FoldersQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Add folder to queue</value>
+  </data>
+  <data name="FoldersQueueText.Text" xml:space="preserve">
+    <value>Add to queue</value>
+  </data>
+  <data name="FoldersList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Folders</value>
+  </data>
+  <data name="FoldersTracks.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Songs in this folder</value>
+  </data>
+  <data name="FoldersEmpty.Text" xml:space="preserve">
+    <value>This folder is empty.</value>
+  </data>
+  <data name="FoldersLoadFailed.Text" xml:space="preserve">
+    <value>This folder couldn't be loaded.</value>
+  </data>
+  <data name="Folders_Top" xml:space="preserve">
+    <value>Library</value>
+    <comment>First step of the folder path</comment>
+  </data>
+  <data name="Operation_LoadFolder" xml:space="preserve">
+    <value>Couldn't load the folder</value>
   </data>
 </root>

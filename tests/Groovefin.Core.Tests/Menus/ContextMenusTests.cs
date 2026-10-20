@@ -79,6 +79,19 @@ public sealed class ContextMenusTests
     }
 
     [Fact]
+    public async Task A_folder_plays_and_queues_its_tracks_with_subfolders()
+    {
+        _library.GetFolderTracksAsync("f1", ContextMenus.FolderTrackLimit, Arg.Any<CancellationToken>()).Returns(AlbumTracks);
+        var actions = _sut.ForFolder(new Folder("f1", "Daft Punk"));
+
+        actions.Select(a => a.Kind).Should().Equal(
+            MenuActionKind.PlayNow, MenuActionKind.PlayNext, MenuActionKind.AddToQueue, MenuActionKind.AddToPlaylist);
+        await Find(actions, MenuActionKind.AddToQueue).InvokeAsync();
+
+        _player.Received(1).AddToQueue(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(AlbumTracks)));
+    }
+
+    [Fact]
     public void A_single_selected_track_gets_the_track_menu() =>
         _sut.ForTracks([Song]).Select(a => a.Kind).Should().Equal(_sut.ForTrack(Song).Select(a => a.Kind));
 
