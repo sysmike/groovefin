@@ -68,6 +68,51 @@ analysed too. Results appear under Security → Code scanning. A PR must not add
 
 The job needs `security-events: write` to upload results; everything else is read-only.
 
+## `release.yml`
+
+Triggers: a pushed tag `v*.*.*` (`v1.2.0`, `v1.3.0-beta.1`). Manual runs (`workflow_dispatch`) and
+pull requests that change `release.yml` or `.github/scripts/*.ps1` are dry runs: they build, sign
+and checksum everything as artifacts but publish no release (pull requests also skip the
+attestations).
+
+| Job | Runner | What it does |
+|---|---|---|
+| `build (x64)`, `build (ARM64)` | Windows | Builds the MSIX and the unpackaged, self-contained app for the platform, the same way as CI. Zips the unpackaged app and signs the MSIX (if the certificate is set). Artifact `release-<platform>`. |
+| `bundle` | Windows | Combines both MSIX into one `.msixbundle` with `makeappx` and signs it. Artifact `release-bundle`. |
+| `publish` | Ubuntu | Writes `SHA256SUMS.txt`, creates build provenance attestations for every package, and (tag only) runs `gh release create --generate-notes`. A tag with a pre-release part (`-beta.1`) becomes a pre-release. |
+
+Release files for `v1.2.0`:
+
+| File | What |
+|---|---|
+| `Groovefin_1.2.0.msixbundle` | Installer for both architectures (recommended) |
+| `Groovefin_1.2.0_x64.msix`, `Groovefin_1.2.0_ARM64.msix` | Installer for one architecture |
+| `Groovefin_1.2.0_x64_unpackaged.zip`, `Groovefin_1.2.0_ARM64_unpackaged.zip` | Portable app; extract and run `Groovefin.exe` |
+| `SHA256SUMS.txt` | Checksums of all files |
+
+Verify a download with `gh attestation verify <file> --repo sysmike/groovefin`.
+
+**Signing.** The jobs decode `SIGNING_CERT_PFX_BASE64` to a file in the runner's temp folder, sign
+with `.github/scripts/Sign-Package.ps1` (signtool, SHA-256, RFC 3161 timestamp) and delete the file
+in an `always()` step. Without the secret the workflow still runs: it publishes unsigned packages,
+adds a warning annotation, and the release notes say that the packages are unsigned.
+`Sign-Package.ps1` is the only place that knows how to sign, so moving to Azure Artifact Signing
+means replacing that script and the certificate steps.
+
+The certificate subject must be the Publisher in `Package.appxmanifest` (`CN=Groovefin`). A
+self-signed certificate for testing (users must trust it before they can install):
+
+```powershell
+$cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=Groovefin' `
+  -CertStoreLocation Cert:\CurrentUser\My -NotAfter (Get-Date).AddYears(3)
+$password = Read-Host -AsSecureString 'PFX password'
+Export-PfxCertificate -Cert $cert -FilePath groovefin.pfx -Password $password
+[Convert]::ToBase64String([IO.File]::ReadAllBytes('groovefin.pfx')) | Set-Clipboard
+```
+
+Paste the clipboard into the `SIGNING_CERT_PFX_BASE64` secret and the password into
+`SIGNING_CERT_PASSWORD`. Then delete `groovefin.pfx`.
+
 ## Dependabot
 
 `.github/dependabot.yml` checks every Monday:
@@ -103,7 +148,7 @@ reference in `Directory.Packages.props`, tag prefix `v`).
 - MinVer needs the full history. Every CI checkout uses `fetch-depth: 0`. In a shallow clone the
   version falls back to `0.0.0-alpha.0`.
 
-To release, push a tag: `git tag v0.1.0 && git push origin v0.1.0` (see `release.yml`, #56).
+To release, push a tag: `git tag v0.1.0 && git push origin v0.1.0` (see [`release.yml`](#releaseyml)).
 
 ## Variables and secrets
 
