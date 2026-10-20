@@ -66,23 +66,50 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
     $albums = 1..3 | ForEach-Object {
         @{ Id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa$_"; Name = "Album $_"; Type = 'MusicAlbum'; AlbumArtist = 'Artist'; ImageTags = @{} }
     }
+    $tracks = 1..2 | ForEach-Object {
+        @{ Id = "ccccccccccccccccccccccccccccccc$_"; Name = "Track $_"; Type = 'Audio'; MediaType = 'Audio'; IndexNumber = $_
+           AlbumId = $albums[0].Id; Album = 'Album 1'; AlbumArtist = 'Artist'; RunTimeTicks = 300000000; ImageTags = @{} }
+    }
+
+    # Thirty seconds of a quiet 440 Hz tone: 16-bit mono PCM at 22.05 kHz in a WAV file, for every stream.
+    $rate = 22050
+    $samples = $rate * 30
+    $stream = [System.IO.MemoryStream]::new()
+    $writer = [System.IO.BinaryWriter]::new($stream)
+    $writer.Write([Text.Encoding]::ASCII.GetBytes('RIFF')); $writer.Write([int] (36 + $samples * 2))
+    $writer.Write([Text.Encoding]::ASCII.GetBytes('WAVEfmt ')); $writer.Write([int] 16); $writer.Write([int16] 1); $writer.Write([int16] 1)
+    $writer.Write([int] $rate); $writer.Write([int] ($rate * 2)); $writer.Write([int16] 2); $writer.Write([int16] 16)
+    $writer.Write([Text.Encoding]::ASCII.GetBytes('data')); $writer.Write([int] ($samples * 2))
+    for ($i = 0; $i -lt $samples; $i++) { $writer.Write([int16] (3000 * [Math]::Sin(2 * [Math]::PI * 440 * $i / $rate))) }
+    $writer.Flush()
+    $wav = $stream.ToArray()
     while ($listener.IsListening) {
         try { $context = $listener.GetContext() } catch { break }
         $request = $context.Request
         $path = $request.Url.AbsolutePath.ToLowerInvariant()
+        if ($path -eq '/items' -and $request.Url.Query -match 'includeItemTypes=Audio') { $path = '/items/tracks' }
         $status = 200
+        $raw = $null
         $body = switch -Regex ($path) {
             '^/system/info/public$' { @{ Id = $serverId; ServerName = 'Smoke test'; Version = '10.11.0'; ProductName = 'Jellyfin Server'; StartupWizardCompleted = $true } }
             '^/users/authenticatebyname$' { @{ User = @{ Id = 'fedcba9876543210fedcba9876543210'; Name = 'smoke'; ServerId = $serverId }; AccessToken = 'smoke-test-token'; ServerId = $serverId } }
             '^/quickconnect/enabled$' { $false }
             '^/userviews$' { @{ Items = @(@{ Id = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'; Name = 'Music'; Type = 'CollectionFolder'; CollectionType = 'music' }); TotalRecordCount = 1; StartIndex = 0 } }
             '/images/' { $status = 404; $null }
+            '^/items/tracks$' { @{ Items = $tracks; TotalRecordCount = $tracks.Count; StartIndex = 0 } }
+            '^/items/[0-9a-f-]{32,36}$' { $albums[0] }
+            '^/audio/[0-9a-f-]{32,36}/universal$' { $raw = $wav; $null }
             '^/items$' { @{ Items = $albums; TotalRecordCount = $albums.Count; StartIndex = 0 } }
             default { @{ Items = @(); TotalRecordCount = 0; StartIndex = 0 } }
         }
         "$($request.HttpMethod) $($request.Url.PathAndQuery) -> $status"
         $context.Response.StatusCode = $status
-        if ($null -ne $body) {
+        if ($null -ne $raw) {
+            $context.Response.ContentType = 'audio/wav'
+            $context.Response.ContentLength64 = $raw.Length
+            try { $context.Response.OutputStream.Write($raw, 0, $raw.Length) } catch { }
+        }
+        elseif ($null -ne $body) {
             $bytes = [System.Text.Encoding]::UTF8.GetBytes((ConvertTo-Json $body -Depth 5 -Compress))
             $context.Response.ContentType = 'application/json'
             $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
@@ -156,6 +183,29 @@ try {
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $name),
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))
         Find-Element $condition "button '$name'"
+    }
+
+    # Selects a page in the navigation pane by its name.
+    function Select-Navigation([string] $name) {
+        $item = Find-Element ([System.Windows.Automation.AndCondition]::new(
+                [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $name),
+                [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) "navigation item '$name'"
+        $selection = $null
+        if ($item.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref] $selection)) { $selection.Select() }
+        else { $item.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
+    }
+
+    # The position slider must move by at least two seconds within 15 seconds, and the log must not show
+    # a failed track or the engine taking the equalizer effect out (#167).
+    function Test-Playing([string] $step) {
+        $range = $position.GetCurrentPattern([System.Windows.Automation.RangeValuePattern]::Pattern)
+        $start = $range.Current.Value
+        $until = (Get-Date).AddSeconds(15)
+        while ($range.Current.Value -lt $start + 2 -and (Get-Date) -lt $until -and -not $process.HasExited) { Start-Sleep -Milliseconds 500 }
+        $failed = Select-String -Path (Get-AppLog).FullName -Pattern 'Playback of', 'Equalizer effect failed' -SimpleMatch
+        if ($failed) { Stop-Test 'Playback' "Playback failed $step`: $($failed[0].Line)" }
+        if ($range.Current.Value -lt $start + 2) { Stop-Test 'Playback' "The position did not move $step (at $($range.Current.Value) s)." }
+        Test-Running $step
     }
 
     function Test-Running([string] $step) {
@@ -257,12 +307,32 @@ try {
     Test-Running 'on the folders page'
     Write-Output 'The folders page opened.'
 
+    # Playback (#167): an album from Home, played through the equalizer effect. The position must move,
+    # and no track may fail, nor may the engine have to take the effect out to play it.
+    Select-Navigation 'Home'
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        $album = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) |
+            Where-Object { $_.Current.Name -like 'Album 1*' } | Select-Object -First 1
+        if (-not $album) { Start-Sleep -Milliseconds 500 }
+    } while (-not $album -and (Get-Date) -lt $until)
+    if (-not $album) { Stop-Test 'Smoke test' "The album 'Album 1' was not found on the home page." }
+    $pattern = $null
+    if ($album.TryGetCurrentPattern($invoke, [ref] $pattern)) { $pattern.Invoke() }
+    else {
+        Add-Type -AssemblyName System.Windows.Forms
+        $album.SetFocus()
+        [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+    }
+    (Find-Button 'Play album').GetCurrentPattern($invoke).Invoke()
+    $position = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Position'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider))) "position slider"
+    Test-Playing 'after pressing Play album'
+    Write-Output 'Playback runs through the equalizer effect.'
+
     # Settings, with the equalizer's sliders.
-    $settings = Find-Element ([System.Windows.Automation.AndCondition]::new(
-            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Settings'),
-            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) "navigation item 'Settings'"
-    if ($settings.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref] $selection)) { $selection.Select() }
-    else { $settings.GetCurrentPattern($invoke).Invoke() }
+    Select-Navigation 'Settings'
     $equalizerCard = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) "equalizer settings"
     Start-Sleep -Seconds 2
     Test-Running 'on the settings page'
@@ -309,6 +379,18 @@ try {
     }
     Test-Running 'with the equalizer expanded'
     Write-Output 'The equalizer sliders are visible.'
+
+    # The equalizer on while the track plays: the effect processes it now, and it must go on playing.
+    $switch = $named | Where-Object { $_.Current.ClassName -eq 'ToggleSwitch' } | Select-Object -First 1
+    $toggle = $null
+    if ($switch -and $switch.TryGetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern, [ref] $toggle)) {
+        $toggle.Toggle()
+        Test-Playing 'with the equalizer on'
+        Write-Output 'Playback goes on with the equalizer on.'
+    }
+    else {
+        Stop-Test 'Smoke test' 'The equalizer switch was not found.'
+    }
 
     # Close the window like a user: the app must shut down without errors and exit with code 0 (#145).
     $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
