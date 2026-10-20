@@ -57,6 +57,9 @@ public partial class App : Application
         // Lives as long as the app: media keys and the Windows media flyout.
         _host.Services.GetRequiredService<SystemMediaControlsSync>();
 
+        // Lives as long as the app: the taskbar thumbnail buttons and progress (needs the shown window).
+        _host.Services.GetRequiredService<TaskbarSync>();
+
         // The window has restored the server connection: bring back the last queue (paused) and keep saving it.
         await _host.Services.GetRequiredService<SessionPersistence>().RestoreAsync();
     }

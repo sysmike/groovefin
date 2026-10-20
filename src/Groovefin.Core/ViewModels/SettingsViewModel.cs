@@ -172,6 +172,20 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Gets or sets a value indicating whether the taskbar button shows the playback progress.</summary>
+    public bool ShowTaskbarProgress
+    {
+        get => _settings.Current.Appearance.ShowTaskbarProgress;
+        set
+        {
+            if (value != ShowTaskbarProgress)
+            {
+                _settings.Update(s => s with { Appearance = s.Appearance with { ShowTaskbarProgress = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public AppVersion Version { get; }
 
     /// <summary>Gets the signed-in user name, or <see langword="null"/> when nobody is signed in.</summary>

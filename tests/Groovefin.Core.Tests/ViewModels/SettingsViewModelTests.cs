@@ -64,6 +64,17 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void Taskbar_progress_is_on_by_default_and_can_be_turned_off()
+    {
+        var sut = CreateSut();
+
+        sut.ShowTaskbarProgress.Should().BeTrue();
+        sut.ShowTaskbarProgress = false;
+
+        _settings.Current.Appearance.ShowTaskbarProgress.Should().BeFalse();
+    }
+
+    [Fact]
     public void Account_shows_the_signed_in_user()
     {
         _servers.IsSignedIn.Returns(true);

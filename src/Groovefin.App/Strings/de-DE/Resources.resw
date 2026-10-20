@@ -1380,4 +1380,31 @@
   <data name="SettingsResumeSwitch.OffContent" xml:space="preserve">
     <value>Mit leerer Warteschlange starten</value>
   </data>
+  <data name="SettingsTaskbarProgressSwitch.Header" xml:space="preserve">
+    <value>Wiedergabefortschritt auf der Taskleistenschaltfläche</value>
+  </data>
+  <data name="Taskbar_Previous" xml:space="preserve">
+    <value>Vorheriger Titel</value>
+  </data>
+  <data name="Taskbar_Play" xml:space="preserve">
+    <value>Wiedergabe</value>
+  </data>
+  <data name="Taskbar_Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Taskbar_Next" xml:space="preserve">
+    <value>Nächster Titel</value>
+  </data>
+  <data name="FullScreenExitButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Vollbild beenden</value>
+  </data>
+  <data name="FullScreenExitButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Vollbild beenden (Esc)</value>
+  </data>
+  <data name="Key_F11" xml:space="preserve">
+    <value>F11</value>
+  </data>
+  <data name="Shortcut_FullScreen" xml:space="preserve">
+    <value>Vollbild-Player ein oder aus</value>
+  </data>
 </root>

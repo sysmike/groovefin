@@ -44,6 +44,7 @@
   <ItemGroup>
     <Content Include="Assets\**\*.png" />
     <Content Include="Assets\AppIcon.ico" />
+    <Content Include="Assets\Taskbar\*.ico" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 

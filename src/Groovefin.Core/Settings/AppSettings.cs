@@ -40,6 +40,9 @@ public sealed record AppSettings
 public sealed record AppearanceSettings
 {
     public AppTheme Theme { get; set; } = AppTheme.System;
+
+    /// <summary>Gets or sets a value indicating whether the taskbar button shows the playback progress.</summary>
+    public bool ShowTaskbarProgress { get; set; } = true;
 }
 
 /// <summary>Known servers and the active one. Access tokens are in the credential store, not here.</summary>
