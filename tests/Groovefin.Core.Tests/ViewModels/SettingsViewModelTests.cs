@@ -445,4 +445,58 @@ public sealed class SettingsViewModelTests
         sut.HasCommit.Should().BeFalse();
         sut.CommitUri.Should().BeNull();
     }
+
+    [Fact]
+    public void The_accent_colour_is_on_by_default_and_can_be_turned_off()
+    {
+        var sut = CreateSut();
+        var changed = new List<string?>();
+        sut.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        sut.UseAccentColor.Should().BeTrue();
+        sut.UseAccentColor = false;
+
+        _settings.Current.Appearance.UseAccentColor.Should().BeFalse();
+        changed.Should().Equal(nameof(SettingsViewModel.UseAccentColor));
+    }
+
+    [Fact]
+    public void The_language_follows_windows_until_one_is_chosen()
+    {
+        _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
+        var sut = CreateSut();
+
+        sut.LanguageOptions.Should().Equal("Settings_LanguageSystem", "Settings_LanguageEnglish", "Settings_LanguageGerman");
+        sut.LanguageIndex.Should().Be(0);
+
+        sut.LanguageIndex = 2;
+        _settings.Current.Appearance.Language.Should().Be("de-DE");
+
+        sut.LanguageIndex = 9;
+        sut.LanguageIndex = 0;
+        _settings.Current.Appearance.Language.Should().BeNull();
+    }
+
+    [Fact]
+    public void An_unknown_stored_language_shows_as_windows_language()
+    {
+        _settings.Update(s => s with { Appearance = s.Appearance with { Language = "fr-FR" } });
+
+        CreateSut().LanguageIndex.Should().Be(0);
+    }
+
+    [Fact]
+    public void The_start_page_is_one_of_the_main_sections()
+    {
+        _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
+        var sut = CreateSut();
+
+        sut.StartPageOptions.Should().Equal(PageKeys.MainSections.Select(k => $"StartPage_{k}"));
+        sut.StartPageIndex.Should().Be(0);
+
+        sut.StartPageIndex = PageKeys.MainSections.ToList().IndexOf(PageKeys.Songs);
+        sut.StartPageIndex = -1;
+
+        _settings.Current.Appearance.StartPage.Should().Be(PageKeys.Songs);
+    }
 }

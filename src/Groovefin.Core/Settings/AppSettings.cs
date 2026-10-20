@@ -1,4 +1,5 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Navigation;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
@@ -40,6 +41,15 @@ public sealed record AppSettings
 public sealed record AppearanceSettings
 {
     public AppTheme Theme { get; set; } = AppTheme.System;
+
+    /// <summary>Gets or sets a value indicating whether highlights use the Windows accent colour (otherwise neutral grey).</summary>
+    public bool UseAccentColor { get; set; } = true;
+
+    /// <summary>Gets or sets the UI language tag, e.g. <c>de-DE</c>; <see langword="null"/> follows Windows.</summary>
+    public string? Language { get; set; }
+
+    /// <summary>Gets or sets the main section shown after start-up (a key of <see cref="PageKeys.MainSections"/>).</summary>
+    public string StartPage { get; set; } = PageKeys.Home;
 
     /// <summary>Gets or sets a value indicating whether the taskbar button shows the playback progress.</summary>
     public bool ShowTaskbarProgress { get; set; } = true;

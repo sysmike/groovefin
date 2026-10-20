@@ -45,6 +45,21 @@
                     <ComboBoxItem x:Uid="SettingsThemeDark" />
                 </ComboBox>
             </controls:SettingsCard>
+            <controls:SettingsCard x:Uid="SettingsAccentCard" HeaderIcon="{ui:FontIcon Glyph=&#xE771;}">
+                <ToggleSwitch IsOn="{x:Bind ViewModel.UseAccentColor, Mode=TwoWay}" />
+            </controls:SettingsCard>
+            <controls:SettingsCard x:Uid="SettingsLanguageCard" HeaderIcon="{ui:FontIcon Glyph=&#xE774;}">
+                <ComboBox
+                    MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                    ItemsSource="{x:Bind ViewModel.LanguageOptions}"
+                    SelectedIndex="{x:Bind ViewModel.LanguageIndex, Mode=TwoWay}" />
+            </controls:SettingsCard>
+            <controls:SettingsCard x:Uid="SettingsStartPageCard" HeaderIcon="{ui:FontIcon Glyph=&#xE80F;}">
+                <ComboBox
+                    MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                    ItemsSource="{x:Bind ViewModel.StartPageOptions}"
+                    SelectedIndex="{x:Bind ViewModel.StartPageIndex, Mode=TwoWay}" />
+            </controls:SettingsCard>
             <controls:SettingsCard x:Uid="SettingsTaskbarProgressCard" HeaderIcon="{ui:FontIcon Glyph=&#xE7C4;}">
                 <ToggleSwitch IsOn="{x:Bind ViewModel.ShowTaskbarProgress, Mode=TwoWay}" />
             </controls:SettingsCard>

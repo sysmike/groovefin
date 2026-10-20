@@ -1537,4 +1537,57 @@
   <data name="Operation_OpenLogFolder" xml:space="preserve">
     <value>Protokollordner konnte nicht geöffnet werden</value>
   </data>
+  <data name="SettingsAccentCard.Header" xml:space="preserve">
+    <value>Akzentfarbe</value>
+  </data>
+  <data name="SettingsAccentCard.Description" xml:space="preserve">
+    <value>Hervorhebungen nutzen deine Windows-Akzentfarbe. Ausgeschaltet sind sie neutral grau.</value>
+  </data>
+  <data name="SettingsLanguageCard.Header" xml:space="preserve">
+    <value>App-Sprache</value>
+  </data>
+  <data name="SettingsLanguageCard.Description" xml:space="preserve">
+    <value>Gilt ab dem nächsten Start von Groovefin.</value>
+  </data>
+  <data name="SettingsStartPageCard.Header" xml:space="preserve">
+    <value>Startseite</value>
+  </data>
+  <data name="SettingsStartPageCard.Description" xml:space="preserve">
+    <value>Die Seite, mit der Groovefin startet.</value>
+  </data>
+  <data name="Settings_LanguageSystem" xml:space="preserve">
+    <value>Windows-Sprache verwenden</value>
+  </data>
+  <data name="Settings_LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+    <comment>Shown in its own language</comment>
+  </data>
+  <data name="Settings_LanguageGerman" xml:space="preserve">
+    <value>Deutsch</value>
+    <comment>Shown in its own language</comment>
+  </data>
+  <data name="StartPage_home" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="StartPage_albums" xml:space="preserve">
+    <value>Alben</value>
+  </data>
+  <data name="StartPage_artists" xml:space="preserve">
+    <value>Interpreten</value>
+  </data>
+  <data name="StartPage_songs" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="StartPage_genres" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="StartPage_playlists" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="StartPage_folders" xml:space="preserve">
+    <value>Ordner</value>
+  </data>
+  <data name="StartPage_favourites" xml:space="preserve">
+    <value>Favoriten</value>
+  </data>
 </root>

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Groovefin.App.Hosting;
 using Groovefin.Core;
 using Groovefin.Core.Notifications;
@@ -45,7 +46,11 @@ public partial class App : Application
         LogStarted(_logger, version.DisplayText, AppPaths.IsPackaged, Environment.OSVersion.VersionString);
 
         // Settings must be loaded before any view reads them. LoadAsync falls back to defaults on errors.
-        await _host.Services.GetRequiredService<ISettingsService>().LoadAsync();
+        var settings = _host.Services.GetRequiredService<ISettingsService>();
+        await settings.LoadAsync();
+
+        // Before the first window loads its strings; a changed language applies on the next start.
+        ApplyLanguage(settings.Current.Appearance.Language);
 
         var window = _host.Services.GetRequiredService<MainWindow>();
         window.Closed += OnMainWindowClosed;
@@ -121,10 +126,26 @@ public partial class App : Application
         e.SetObserved();
     }
 
+    /// <summary>Picks the <c>.resw</c> language; an empty override follows the Windows display language.</summary>
+    private void ApplyLanguage(string? language)
+    {
+        try
+        {
+            Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language ?? string.Empty;
+        }
+        catch (Exception ex) when (ex is COMException or ArgumentException)
+        {
+            LogLanguageFailed(_logger!, ex, language);
+        }
+    }
+
     private IErrorReporter? TryGetErrorReporter() => _host?.Services.GetService<IErrorReporter>();
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Groovefin {Version} started (packaged: {IsPackaged}, OS: {OsVersion})")]
     private static partial void LogStarted(ILogger logger, string version, bool isPackaged, string osVersion);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The UI language {Language} could not be applied")]
+    private static partial void LogLanguageFailed(ILogger logger, Exception exception, string? language);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Groovefin is shutting down")]
     private static partial void LogStopping(ILogger logger);

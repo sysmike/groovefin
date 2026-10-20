@@ -36,7 +36,7 @@ public sealed record LibraryOption(string? Id, string Name)
 }
 
 /// <summary>
-/// Settings page: appearance, account and servers, the music library to browse, stream quality,
+/// Settings page: appearance (theme, accent colour, language, start page), account and servers, the music library to browse, stream quality,
 /// playback, storage (image cache and logs), the keyboard shortcut reference and About.
 /// </summary>
 public sealed partial class SettingsViewModel : ObservableObject
@@ -47,6 +47,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     private static readonly NormalizationMode[] NormalizationOrder = [NormalizationMode.Off, NormalizationMode.Track, NormalizationMode.Album];
     private static readonly InstantMixMode[] InstantMixOrder = [InstantMixMode.Replace, InstantMixMode.Append];
     private static readonly int[] CacheLimits = [100, 250, 500, 1000, 2000, 5000];
+
+    /// <summary>The UI languages: Windows' choice first, then each translation (<c>.resw</c> folder).</summary>
+    private static readonly string?[] Languages = [null, "en-US", "de-DE"];
 
     private readonly IThemeService _themeService;
     private readonly INavigationService _navigation;
@@ -89,6 +92,13 @@ public sealed partial class SettingsViewModel : ObservableObject
                     ? strings.GetString("Settings_Kbps").Replace("{0}", value.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)
                     : strings.GetString("Settings_OriginalQuality")))
             .ToList();
+        LanguageOptions =
+        [
+            strings.GetString("Settings_LanguageSystem"),
+            strings.GetString("Settings_LanguageEnglish"),
+            strings.GetString("Settings_LanguageGerman"),
+        ];
+        StartPageOptions = [.. PageKeys.MainSections.Select(key => strings.GetString($"StartPage_{key}"))];
         CacheLimitOptions = [.. CacheLimits.Select(mb => ByteSizes.Format(mb * 1024L * 1024L, strings))];
         Shortcuts = [.. KeyboardShortcuts.All.Select(k => new ShortcutRow(KeyboardShortcuts.Gesture(k, strings), KeyboardShortcuts.Describe(k, strings)))];
     }
@@ -220,6 +230,54 @@ public sealed partial class SettingsViewModel : ObservableObject
             if (value != MinimizeToTray)
             {
                 _settings.Update(s => s with { Appearance = s.Appearance with { MinimizeToTray = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>Gets or sets a value indicating whether highlights use the Windows accent colour (otherwise neutral grey).</summary>
+    public bool UseAccentColor
+    {
+        get => _settings.Current.Appearance.UseAccentColor;
+        set
+        {
+            if (value != UseAccentColor)
+            {
+                _settings.Update(s => s with { Appearance = s.Appearance with { UseAccentColor = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>Gets the UI languages to choose from: "Use Windows language", then each language in its own name.</summary>
+    public IReadOnlyList<string> LanguageOptions { get; }
+
+    /// <summary>Gets or sets the UI language as an index into <see cref="LanguageOptions"/>; applies on the next start.</summary>
+    public int LanguageIndex
+    {
+        get => Math.Max(0, Array.IndexOf(Languages, _settings.Current.Appearance.Language));
+        set
+        {
+            if (value >= 0 && value < Languages.Length && value != LanguageIndex)
+            {
+                _settings.Update(s => s with { Appearance = s.Appearance with { Language = Languages[value] } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>Gets the names of the main sections, the choices for the start page.</summary>
+    public IReadOnlyList<string> StartPageOptions { get; }
+
+    /// <summary>Gets or sets the start page as an index into <see cref="PageKeys.MainSections"/>.</summary>
+    public int StartPageIndex
+    {
+        get => Math.Max(0, PageKeys.MainSections.ToList().IndexOf(_settings.Current.Appearance.StartPage));
+        set
+        {
+            if (value >= 0 && value < PageKeys.MainSections.Count && value != StartPageIndex)
+            {
+                _settings.Update(s => s with { Appearance = s.Appearance with { StartPage = PageKeys.MainSections[value] } });
                 OnPropertyChanged();
             }
         }
