@@ -19,7 +19,7 @@ depend on which, and the conventions every feature follows.
 | `Groovefin.App` | `net10.0-windows10.0.22000.0`, WinUI 3, single-project MSIX | Composition root (generic host + DI), XAML views, styles, `.resw` resources, platform services (navigation, dialogs, theme, dispatcher, credentials, settings storage location). |
 | `Groovefin.Core` | `net10.0` | Domain models, service interfaces, ViewModels, `QueueManager`, settings model, messages. **No WinUI or Windows references.** |
 | `Groovefin.Audio` | `net10.0` | The equalizer's signal processing (peaking filters, parameters), without dependencies. Used by Core and by the audio effect. |
-| `Groovefin.Audio.Effects` | `net10.0-windows10.0.22000.0`, C#/WinRT component, NativeAOT | The equalizer as a Media Foundation audio effect (`IBasicAudioEffect`). Published as a native DLL next to `Groovefin.exe`; see [Audio effects](#audio-effects). |
+| `Groovefin.Audio.Effects` | `net10.0-windows10.0.26100.0` (minimum 10.0.22000), C#/WinRT component, NativeAOT | The equalizer as a Media Foundation audio effect (`IBasicAudioEffect`). Published as a native DLL next to `Groovefin.exe`; see [Audio effects](#audio-effects). |
 | `Groovefin.Jellyfin` | `net10.0` | Implements the Core API interfaces with `Jellyfin.Sdk`: authentication, DTO→domain mapping, stream URLs, image URLs, playback reporting, resilient HTTP pipeline. |
 | `Groovefin.Playback.Windows` | `net10.0-windows10.0.22000.0` | `IPlaybackEngine` implementation using `Windows.Media.Playback.MediaPlayer` + `MediaPlaybackList`. System Media Transport Controls. |
 | `Groovefin.Core.Tests` | `net10.0` | Unit tests for Core (ViewModels, queue, parsers). |
