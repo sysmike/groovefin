@@ -253,7 +253,9 @@ public sealed partial class Player : IPlayer, IDisposable
         }
     }
 
-    private void LoadCurrent(bool autoPlay = true)
+    public void Resume(TimeSpan position) => LoadCurrent(autoPlay: false, position < TimeSpan.Zero ? TimeSpan.Zero : position);
+
+    private void LoadCurrent(bool autoPlay = true, TimeSpan startPosition = default)
     {
         if (Queue.Current is not { } item)
         {
@@ -263,7 +265,7 @@ public sealed partial class Player : IPlayer, IDisposable
 
         try
         {
-            var source = SourceFor(item);
+            var source = SourceFor(item) with { StartPosition = startPosition };
             _loadedItemId = item.Id;
             _loading = true;
             try

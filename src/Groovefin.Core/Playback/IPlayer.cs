@@ -35,6 +35,9 @@ public interface IPlayer
     /// <summary>Restarts the track after a few seconds of playback, otherwise goes to the previous one.</summary>
     void Previous();
 
+    /// <summary>Loads the queue's current entry paused at <paramref name="position"/>, e.g. after restoring a session.</summary>
+    void Resume(TimeSpan position);
+
     /// <summary>Plays a queue entry, e.g. picked in the queue panel.</summary>
     void JumpTo(string queueItemId);
 }

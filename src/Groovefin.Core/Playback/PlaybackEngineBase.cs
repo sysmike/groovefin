@@ -80,7 +80,7 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
 
         Current = source;
         ClearNext();
-        Position = TimeSpan.Zero;
+        Position = source.StartPosition;
         Duration = source.Track.Duration ?? TimeSpan.Zero;
         _lastPositionReport = long.MinValue;
         ApplyVolume();
