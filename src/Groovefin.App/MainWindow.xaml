@@ -167,6 +167,98 @@
             </Grid>
         </NavigationView>
 
+        <!--
+            Full-screen player (F11, Esc exits): the album art blurred behind everything but the now playing
+            bar, the cover large on the left. The queue and lyrics panes stay usable on top of it. Only loaded
+            while shown, so its images are not fetched otherwise.
+        -->
+        <Grid
+            x:Name="FullScreenBackdrop"
+            Grid.RowSpan="2"
+            Grid.ColumnSpan="2"
+            x:Load="{x:Bind Player.IsFullScreen, Mode=OneWay}"
+            Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+            <Image
+                controls:Artwork.Request="{x:Bind Player.BackdropCover, Mode=OneWay}"
+                AutomationProperties.AccessibilityView="Raw"
+                Stretch="UniformToFill" />
+            <Rectangle>
+                <Rectangle.Fill>
+                    <AcrylicBrush
+                        FallbackColor="{ThemeResource SolidBackgroundFillColorBase}"
+                        TintColor="{ThemeResource SolidBackgroundFillColorBase}"
+                        TintOpacity="0.55" />
+                </Rectangle.Fill>
+            </Rectangle>
+        </Grid>
+        <Grid
+            x:Name="FullScreenContent"
+            Grid.RowSpan="2"
+            Padding="48,32"
+            x:Load="{x:Bind Player.IsFullScreen, Mode=OneWay}"
+            ColumnSpacing="48">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Button
+                x:Uid="FullScreenExitButton"
+                Grid.ColumnSpan="2"
+                HorizontalAlignment="Right"
+                Command="{x:Bind Player.ExitFullScreenCommand}">
+                <FontIcon FontSize="16" Glyph="&#xE73F;" />
+            </Button>
+            <Viewbox
+                Grid.Row="1"
+                MaxWidth="480"
+                MaxHeight="480"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center">
+                <Grid
+                    Width="480"
+                    Height="480"
+                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                    CornerRadius="{StaticResource OverlayCornerRadius}">
+                    <FontIcon
+                        FontSize="96"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        Glyph="&#xE93C;" />
+                    <Image
+                        controls:Artwork.Request="{x:Bind Player.LargeCover, Mode=OneWay}"
+                        AutomationProperties.AccessibilityView="Raw"
+                        Stretch="UniformToFill" />
+                </Grid>
+            </Viewbox>
+            <StackPanel
+                Grid.Row="1"
+                Grid.Column="1"
+                VerticalAlignment="Center"
+                Spacing="8">
+                <TextBlock
+                    AutomationProperties.HeadingLevel="Level1"
+                    MaxLines="3"
+                    Style="{StaticResource TitleLargeTextBlockStyle}"
+                    Text="{x:Bind Player.Title, Mode=OneWay}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Text="{x:Bind Player.ArtistNames, Mode=OneWay}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    FontSize="18"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    Text="{x:Bind Player.AlbumName, Mode=OneWay}"
+                    TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </Grid>
+
         <!--  Ctrl+Q or the now playing bar's queue button.  -->
         <controls:QueuePanel
             x:Name="QueuePane"

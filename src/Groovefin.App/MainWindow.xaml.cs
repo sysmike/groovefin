@@ -32,7 +32,6 @@ internal sealed partial class MainWindow : Window
     private readonly AddToPlaylist _addToPlaylist;
     private readonly TrackDrag _trackDrag;
     private readonly IStringResources _strings;
-    private readonly NowPlayingViewModel _nowPlaying;
 
     public MainWindow(
         ShellViewModel viewModel,
@@ -54,7 +53,7 @@ internal sealed partial class MainWindow : Window
         ViewModel = viewModel;
         Queue = queue;
         Lyrics = lyrics;
-        _nowPlaying = nowPlaying;
+        Player = nowPlaying;
         Suggestions = suggestions;
         InitializeComponent();
 
@@ -71,6 +70,22 @@ internal sealed partial class MainWindow : Window
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         Closed += (_, _) => ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+
+        // The full-screen player puts the window into full screen; leaving it by other means closes the player.
+        Player.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(NowPlayingViewModel.IsFullScreen))
+            {
+                AppWindow.SetPresenter(Player.IsFullScreen ? AppWindowPresenterKind.FullScreen : AppWindowPresenterKind.Default);
+            }
+        };
+        AppWindow.Changed += (_, args) =>
+        {
+            if (args.DidPresenterChange)
+            {
+                Player.IsFullScreen = AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
+            }
+        };
 
         // The queue and the lyrics share the right side: opening one closes the other.
         Queue.PropertyChanged += (_, e) =>
@@ -98,6 +113,9 @@ internal sealed partial class MainWindow : Window
     public SearchSuggestionsViewModel Suggestions { get; }
 
     public LyricsViewModel Lyrics { get; }
+
+    /// <summary>Gets the now playing state, also shown by the full-screen player. (The bar itself is named NowPlaying.)</summary>
+    public NowPlayingViewModel Player { get; }
 
     /// <summary>Mica when supported, Desktop Acrylic as fallback, otherwise the default solid background.</summary>
     private static SystemBackdrop? CreateBackdrop()
@@ -248,6 +266,14 @@ internal sealed partial class MainWindow : Window
     /// </summary>
     private void OnPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
+        // Esc leaves the full-screen player (popups such as menus handle their own Esc first).
+        if (e.Key == VirtualKey.Escape && Player.IsFullScreen)
+        {
+            Player.ExitFullScreenCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
         if (IsDown(VirtualKey.Shift) || IsDown(VirtualKey.Menu) || IsDown(VirtualKey.LeftWindows) || IsDown(VirtualKey.RightWindows)
             || KeyboardShortcuts.Find(e.Key.ToString(), IsDown(VirtualKey.Control)) is not { } action)
         {
@@ -274,25 +300,28 @@ internal sealed partial class MainWindow : Window
         switch (action)
         {
             case ShortcutAction.PlayPause:
-                Execute(_nowPlaying.PlayPauseCommand);
+                Execute(Player.PlayPauseCommand);
                 break;
             case ShortcutAction.Next:
-                Execute(_nowPlaying.NextCommand);
+                Execute(Player.NextCommand);
                 break;
             case ShortcutAction.Previous:
-                Execute(_nowPlaying.PreviousCommand);
+                Execute(Player.PreviousCommand);
                 break;
             case ShortcutAction.VolumeUp:
-                Execute(_nowPlaying.VolumeUpCommand);
+                Execute(Player.VolumeUpCommand);
                 break;
             case ShortcutAction.VolumeDown:
-                Execute(_nowPlaying.VolumeDownCommand);
+                Execute(Player.VolumeDownCommand);
                 break;
             case ShortcutAction.Shuffle:
-                Execute(_nowPlaying.ToggleShuffleCommand);
+                Execute(Player.ToggleShuffleCommand);
                 break;
             case ShortcutAction.Repeat:
-                Execute(_nowPlaying.CycleRepeatCommand);
+                Execute(Player.CycleRepeatCommand);
+                break;
+            case ShortcutAction.FullScreen:
+                Player.ToggleFullScreenCommand.Execute(null);
                 break;
             case ShortcutAction.Search:
                 SearchBox.Focus(FocusState.Keyboard);

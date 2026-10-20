@@ -26,6 +26,7 @@ public sealed class KeyboardShortcutsTests
     [InlineData("L", true, ShortcutAction.Lyrics)]
     [InlineData("S", true, ShortcutAction.Shuffle)]
     [InlineData("R", true, ShortcutAction.Repeat)]
+    [InlineData("F11", false, ShortcutAction.FullScreen)]
     public void Every_documented_shortcut_is_found(string key, bool control, ShortcutAction expected) =>
         KeyboardShortcuts.Find(key, control).Should().Be(expected);
 
@@ -50,6 +51,7 @@ public sealed class KeyboardShortcutsTests
         KeyboardShortcuts.Gesture(KeyboardShortcuts.All.Single(s => s.Action == ShortcutAction.Next), _strings).Should().Be("Strg+Nach-rechts");
         KeyboardShortcuts.Gesture(KeyboardShortcuts.All.Single(s => s.Action == ShortcutAction.PlayPause), _strings).Should().Be("Leertaste");
         KeyboardShortcuts.Gesture(KeyboardShortcuts.All.Single(s => s.Action == ShortcutAction.Search), _strings).Should().Be("Strg+K");
+        KeyboardShortcuts.Gesture(KeyboardShortcuts.All.Single(s => s.Action == ShortcutAction.FullScreen), _strings).Should().Be("Key_F11");
         KeyboardShortcuts.Describe(KeyboardShortcuts.All[0], _strings).Should().Be("Shortcut_PlayPause");
     }
 }
