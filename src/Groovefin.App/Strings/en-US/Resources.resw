@@ -1665,4 +1665,16 @@
     <value>T</value>
     <comment>Access key of the Settings item in the navigation pane</comment>
   </data>
+  <data name="SettingsDensityCard.Header" xml:space="preserve">
+    <value>Density</value>
+  </data>
+  <data name="SettingsDensityCard.Description" xml:space="preserve">
+    <value>Compact fits more rows on the screen.</value>
+  </data>
+  <data name="SettingsDensityStandard.Content" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="SettingsDensityCompact.Content" xml:space="preserve">
+    <value>Compact</value>
+  </data>
 </root>

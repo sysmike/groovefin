@@ -36,7 +36,7 @@ public sealed record LibraryOption(string? Id, string Name)
 }
 
 /// <summary>
-/// Settings page: appearance (theme, accent colour, language, start page), account and servers, the music library to browse, stream quality,
+/// Settings page: appearance (theme, accent colour, density, language, start page), account and servers, the music library to browse, stream quality,
 /// playback, storage (image cache and logs), the keyboard shortcut reference and About.
 /// </summary>
 public sealed partial class SettingsViewModel : ObservableObject
@@ -46,6 +46,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private static readonly TranscodingCodec[] CodecOrder = [TranscodingCodec.Aac, TranscodingCodec.Mp3];
     private static readonly NormalizationMode[] NormalizationOrder = [NormalizationMode.Off, NormalizationMode.Track, NormalizationMode.Album];
     private static readonly InstantMixMode[] InstantMixOrder = [InstantMixMode.Replace, InstantMixMode.Append];
+    private static readonly ListDensity[] DensityOrder = [ListDensity.Standard, ListDensity.Compact];
     private static readonly int[] CacheLimits = [100, 250, 500, 1000, 2000, 5000];
 
     /// <summary>The UI languages: Windows' choice first, then each translation (<c>.resw</c> folder).</summary>
@@ -244,6 +245,20 @@ public sealed partial class SettingsViewModel : ObservableObject
             if (value != UseAccentColor)
             {
                 _settings.Update(s => s with { Appearance = s.Appearance with { UseAccentColor = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>Gets or sets the list density as an index into standard, compact.</summary>
+    public int DensityIndex
+    {
+        get => Array.IndexOf(DensityOrder, _settings.Current.Appearance.Density);
+        set
+        {
+            if (value >= 0 && value < DensityOrder.Length && value != DensityIndex)
+            {
+                _settings.Update(s => s with { Appearance = s.Appearance with { Density = DensityOrder[value] } });
                 OnPropertyChanged();
             }
         }
