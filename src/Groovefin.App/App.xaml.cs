@@ -70,8 +70,16 @@ public partial class App : Application
         _host = AppHost.Build();
         _host.Start();
 
-        _logger = _host.Services.GetRequiredService<ILogger<App>>();
+        var logger = _host.Services.GetRequiredService<ILogger<App>>();
+        _logger = logger;
         AppDomain.CurrentDomain.FirstChanceException -= OnStartupFirstChanceException;
+
+        // XAML reports failed resource lookups and bindings only here; they explain otherwise bare layout errors.
+        DebugSettings.IsXamlResourceReferenceTracingEnabled = true;
+        DebugSettings.XamlResourceReferenceFailed += (_, e) => LogXamlProblem(logger, "resource reference", e.Message);
+        DebugSettings.IsBindingTracingEnabled = true;
+        DebugSettings.BindingFailed += (_, e) => LogXamlProblem(logger, "binding", e.Message);
+
         var version = _host.Services.GetRequiredService<AppVersion>();
         LogStarted(_logger, version.DisplayText, AppPaths.IsPackaged, Environment.OSVersion.VersionString);
 
@@ -141,11 +149,11 @@ public partial class App : Application
     {
         if (_logger is not null)
         {
-            LogUnhandled(_logger, e.Exception, "XAML");
+            // XAML's message names the failing resource or element even when the exception is generic.
+            LogUnhandled(_logger, e.Exception, "XAML", e.Message);
         }
         else
         {
-            // XAML's message names the failing resource or element even when the exception is generic.
             StartupCrashLog.Write(e.Exception, $"unhandled (XAML): {e.Message}");
         }
 
@@ -166,7 +174,7 @@ public partial class App : Application
 
         if (_logger is not null)
         {
-            LogUnhandled(_logger, ex, "AppDomain");
+            LogUnhandled(_logger, ex, "AppDomain", ex.Message);
         }
         else
         {
@@ -178,7 +186,7 @@ public partial class App : Application
     {
         if (_logger is not null)
         {
-            LogUnhandled(_logger, e.Exception, "Task");
+            LogUnhandled(_logger, e.Exception, "Task", e.Exception.Message);
         }
 
         TryGetErrorReporter()?.Report(e.Exception.GetBaseException(), Operations.Unexpected);
@@ -222,6 +230,9 @@ public partial class App : Application
     [LoggerMessage(Level = LogLevel.Information, Message = "Groovefin is shutting down")]
     private static partial void LogStopping(ILogger logger);
 
-    [LoggerMessage(Level = LogLevel.Critical, Message = "Unhandled {Source} exception")]
-    private static partial void LogUnhandled(ILogger logger, Exception exception, string source);
+    [LoggerMessage(Level = LogLevel.Critical, Message = "Unhandled {Source} exception: {Message}")]
+    private static partial void LogUnhandled(ILogger logger, Exception exception, string source, string message);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "XAML {Kind} failed: {Message}")]
+    private static partial void LogXamlProblem(ILogger logger, string kind, string message);
 }
