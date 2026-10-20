@@ -3,185 +3,265 @@
     x:Class="Groovefin.App.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:about="using:Groovefin.Core.About"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:vm="using:Groovefin.Core.ViewModels"
     mc:Ignorable="d">
+
+    <Page.Resources>
+        <!--  Group headers like in Windows Settings: some space above, little below.  -->
+        <Style
+            x:Key="SettingsSectionHeaderStyle"
+            BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+            TargetType="TextBlock">
+            <Setter Property="Margin" Value="1,28,0,4" />
+        </Style>
+        <x:Double x:Key="SettingsChoiceMinWidth">220</x:Double>
+    </Page.Resources>
 
     <ScrollViewer>
         <StackPanel
             MaxWidth="{StaticResource PageContentMaxWidth}"
             Margin="{StaticResource PageContentMargin}"
             HorizontalAlignment="Stretch"
-            Spacing="16">
+            Spacing="4">
             <TextBlock
                 x:Uid="SettingsHeader"
                 AutomationProperties.HeadingLevel="Level1"
                 Style="{StaticResource TitleTextBlockStyle}" />
 
+            <!--  Appearance  -->
             <TextBlock
                 x:Uid="SettingsAppearanceHeader"
                 AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource BodyStrongTextBlockStyle}" />
-            <RadioButtons
-                x:Name="ThemeRadioButtons"
-                x:Uid="SettingsTheme"
-                SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}">
-                <RadioButton x:Uid="SettingsThemeSystem" />
-                <RadioButton x:Uid="SettingsThemeLight" />
-                <RadioButton x:Uid="SettingsThemeDark" />
-            </RadioButtons>
-            <ToggleSwitch x:Uid="SettingsTaskbarProgressSwitch" IsOn="{x:Bind ViewModel.ShowTaskbarProgress, Mode=TwoWay}" />
-            <ToggleSwitch x:Uid="SettingsTraySwitch" IsOn="{x:Bind ViewModel.ShowTrayIcon, Mode=TwoWay}" />
-            <ToggleSwitch
-                x:Uid="SettingsMinimizeToTraySwitch"
-                IsEnabled="{x:Bind ViewModel.ShowTrayIcon, Mode=OneWay}"
-                IsOn="{x:Bind ViewModel.MinimizeToTray, Mode=TwoWay}" />
+                Style="{StaticResource SettingsSectionHeaderStyle}" />
+            <controls:SettingsCard x:Uid="SettingsThemeCard" HeaderIcon="{ui:FontIcon Glyph=&#xE790;}">
+                <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}">
+                    <ComboBoxItem x:Uid="SettingsThemeSystem" />
+                    <ComboBoxItem x:Uid="SettingsThemeLight" />
+                    <ComboBoxItem x:Uid="SettingsThemeDark" />
+                </ComboBox>
+            </controls:SettingsCard>
+            <controls:SettingsCard x:Uid="SettingsTaskbarProgressCard" HeaderIcon="{ui:FontIcon Glyph=&#xE7C4;}">
+                <ToggleSwitch IsOn="{x:Bind ViewModel.ShowTaskbarProgress, Mode=TwoWay}" />
+            </controls:SettingsCard>
+            <controls:SettingsExpander x:Uid="SettingsTrayCard" HeaderIcon="{ui:FontIcon Glyph=&#xE7E7;}">
+                <ToggleSwitch IsOn="{x:Bind ViewModel.ShowTrayIcon, Mode=TwoWay}" />
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard x:Uid="SettingsMinimizeToTrayCard" IsEnabled="{x:Bind ViewModel.ShowTrayIcon, Mode=OneWay}">
+                        <ToggleSwitch IsOn="{x:Bind ViewModel.MinimizeToTray, Mode=TwoWay}" />
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
 
+            <!--  Account and servers  -->
             <TextBlock
                 x:Uid="SettingsAccountHeader"
                 AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource BodyStrongTextBlockStyle}" />
-            <StackPanel Orientation="Horizontal" Spacing="12">
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind ViewModel.UserName}" />
-                    <TextBlock
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind ViewModel.ServerName}" />
-                </StackPanel>
-                <Button
-                    x:Uid="SettingsSignOutButton"
-                    VerticalAlignment="Center"
-                    Command="{x:Bind ViewModel.SignOutCommand}" />
-            </StackPanel>
-
-            <TextBlock
-                x:Uid="SettingsServersHeader"
-                AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource BodyStrongTextBlockStyle}" />
-            <Button x:Uid="SettingsManageServersButton" Command="{x:Bind ViewModel.ManageServersCommand}" />
+                Style="{StaticResource SettingsSectionHeaderStyle}" />
+            <controls:SettingsCard
+                Description="{x:Bind ViewModel.ServerName}"
+                Header="{x:Bind ViewModel.UserName}"
+                HeaderIcon="{ui:FontIcon Glyph=&#xE77B;}">
+                <Button x:Uid="SettingsSignOutButton" Command="{x:Bind ViewModel.SignOutCommand}" />
+            </controls:SettingsCard>
+            <controls:SettingsCard
+                x:Uid="SettingsServersCard"
+                Command="{x:Bind ViewModel.ManageServersCommand}"
+                HeaderIcon="{ui:FontIcon Glyph=&#xE968;}"
+                IsClickEnabled="True" />
             <!--  Only shown when the server has more than one music library.  -->
-            <ComboBox
-                x:Uid="SettingsLibraryBox"
-                MinWidth="260"
-                ItemsSource="{x:Bind ViewModel.Libraries}"
-                SelectedIndex="{x:Bind ViewModel.SelectedLibraryIndex, Mode=TwoWay}"
+            <controls:SettingsCard
+                x:Uid="SettingsLibraryCard"
+                HeaderIcon="{ui:FontIcon Glyph=&#xE8F1;}"
                 Visibility="{x:Bind ViewModel.HasLibraryChoice, Mode=OneWay}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:LibraryOption">
-                        <TextBlock Text="{x:Bind Name}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
+                <ComboBox
+                    MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                    ItemsSource="{x:Bind ViewModel.Libraries}"
+                    SelectedIndex="{x:Bind ViewModel.SelectedLibraryIndex, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LibraryOption">
+                            <TextBlock Text="{x:Bind Name}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:SettingsCard>
 
+            <!--  Streaming  -->
             <TextBlock
                 x:Uid="SettingsStreamingHeader"
                 AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource BodyStrongTextBlockStyle}" />
-            <TextBlock
-                x:Uid="SettingsStreamingIntro"
-                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Style="{StaticResource CaptionTextBlockStyle}" />
-            <ComboBox
-                x:Uid="SettingsLocalBitrateBox"
-                MinWidth="260"
-                ItemsSource="{x:Bind ViewModel.BitrateOptions}"
-                SelectedIndex="{x:Bind ViewModel.LocalBitrateIndex, Mode=TwoWay}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:BitrateOption">
-                        <TextBlock Text="{x:Bind Label}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-            <ComboBox
-                x:Uid="SettingsRemoteBitrateBox"
-                MinWidth="260"
-                ItemsSource="{x:Bind ViewModel.BitrateOptions}"
-                SelectedIndex="{x:Bind ViewModel.RemoteBitrateIndex, Mode=TwoWay}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:BitrateOption">
-                        <TextBlock Text="{x:Bind Label}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-            <ComboBox
-                x:Uid="SettingsCodecBox"
-                MinWidth="260"
-                SelectedIndex="{x:Bind ViewModel.CodecIndex, Mode=TwoWay}">
-                <ComboBoxItem x:Uid="SettingsCodecAac" />
-                <ComboBoxItem x:Uid="SettingsCodecMp3" />
-            </ComboBox>
+                Style="{StaticResource SettingsSectionHeaderStyle}" />
+            <controls:SettingsExpander
+                x:Uid="SettingsStreamingCard"
+                HeaderIcon="{ui:FontIcon Glyph=&#xE93E;}"
+                IsExpanded="True">
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard x:Uid="SettingsLocalBitrateCard">
+                        <ComboBox
+                            MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                            ItemsSource="{x:Bind ViewModel.BitrateOptions}"
+                            SelectedIndex="{x:Bind ViewModel.LocalBitrateIndex, Mode=TwoWay}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:BitrateOption">
+                                    <TextBlock Text="{x:Bind Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsRemoteBitrateCard">
+                        <ComboBox
+                            MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                            ItemsSource="{x:Bind ViewModel.BitrateOptions}"
+                            SelectedIndex="{x:Bind ViewModel.RemoteBitrateIndex, Mode=TwoWay}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:BitrateOption">
+                                    <TextBlock Text="{x:Bind Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsCodecCard">
+                        <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.CodecIndex, Mode=TwoWay}">
+                            <ComboBoxItem x:Uid="SettingsCodecAac" />
+                            <ComboBoxItem x:Uid="SettingsCodecMp3" />
+                        </ComboBox>
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
 
+            <!--  Playback  -->
             <TextBlock
                 x:Uid="SettingsPlaybackHeader"
                 AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource BodyStrongTextBlockStyle}" />
-            <ComboBox
-                x:Uid="SettingsNormalizationBox"
-                MinWidth="260"
-                SelectedIndex="{x:Bind ViewModel.NormalizationIndex, Mode=TwoWay}">
-                <ComboBoxItem x:Uid="SettingsNormalizationOff" />
-                <ComboBoxItem x:Uid="SettingsNormalizationTrack" />
-                <ComboBoxItem x:Uid="SettingsNormalizationAlbum" />
-            </ComboBox>
+                Style="{StaticResource SettingsSectionHeaderStyle}" />
+            <controls:SettingsCard x:Uid="SettingsNormalizationCard" HeaderIcon="{ui:FontIcon Glyph=&#xE995;}">
+                <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.NormalizationIndex, Mode=TwoWay}">
+                    <ComboBoxItem x:Uid="SettingsNormalizationOff" />
+                    <ComboBoxItem x:Uid="SettingsNormalizationTrack" />
+                    <ComboBoxItem x:Uid="SettingsNormalizationAlbum" />
+                </ComboBox>
+            </controls:SettingsCard>
+            <controls:SettingsCard x:Uid="SettingsInstantMixCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8B1;}">
+                <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.InstantMixIndex, Mode=TwoWay}">
+                    <ComboBoxItem x:Uid="SettingsInstantMixReplace" />
+                    <ComboBoxItem x:Uid="SettingsInstantMixAppend" />
+                </ComboBox>
+            </controls:SettingsCard>
+            <controls:SettingsCard x:Uid="SettingsResumeCard" HeaderIcon="{ui:FontIcon Glyph=&#xE81C;}">
+                <ToggleSwitch IsOn="{x:Bind ViewModel.ResumeSession, Mode=TwoWay}" />
+            </controls:SettingsCard>
+
+            <!--  Storage  -->
             <TextBlock
-                x:Uid="SettingsNormalizationHint"
-                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Style="{StaticResource CaptionTextBlockStyle}"
-                TextWrapping="Wrap" />
-            <ComboBox
-                x:Uid="SettingsInstantMixBox"
-                MinWidth="260"
-                SelectedIndex="{x:Bind ViewModel.InstantMixIndex, Mode=TwoWay}">
-                <ComboBoxItem x:Uid="SettingsInstantMixReplace" />
-                <ComboBoxItem x:Uid="SettingsInstantMixAppend" />
-            </ComboBox>
-            <ToggleSwitch x:Uid="SettingsResumeSwitch" IsOn="{x:Bind ViewModel.ResumeSession, Mode=TwoWay}" />
+                x:Uid="SettingsStorageHeader"
+                AutomationProperties.HeadingLevel="Level2"
+                Style="{StaticResource SettingsSectionHeaderStyle}" />
+            <controls:SettingsExpander
+                x:Uid="SettingsImageCacheCard"
+                Description="{x:Bind ViewModel.CacheSizeText, Mode=OneWay}"
+                HeaderIcon="{ui:FontIcon Glyph=&#xE91B;}">
+                <Button x:Uid="SettingsClearCacheButton" Command="{x:Bind ViewModel.ClearCacheCommand}" />
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard x:Uid="SettingsCacheLimitCard">
+                        <ComboBox
+                            MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                            ItemsSource="{x:Bind ViewModel.CacheLimitOptions}"
+                            SelectedIndex="{x:Bind ViewModel.CacheLimitIndex, Mode=TwoWay}" />
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
+            <controls:SettingsCard x:Uid="SettingsLogsCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8A5;}">
+                <Button x:Uid="SettingsOpenLogsButton" Command="{x:Bind ViewModel.OpenLogFolderCommand}" />
+            </controls:SettingsCard>
 
             <!--  Reference only: the shortcuts work anywhere in the window, except while typing.  -->
             <TextBlock
                 x:Uid="SettingsShortcutsHeader"
                 AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource BodyStrongTextBlockStyle}" />
-            <ItemsControl x:Uid="SettingsShortcutsList" ItemsSource="{x:Bind ViewModel.Shortcuts}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ShortcutRow">
-                        <Grid
-                            Padding="0,2"
-                            AutomationProperties.Name="{x:Bind AccessibleName}"
-                            ColumnSpacing="16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Gesture}" />
-                            <TextBlock
-                                Grid.Column="1"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Style="{StaticResource BodyTextBlockStyle}"
-                                Text="{x:Bind Description}" />
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                Style="{StaticResource SettingsSectionHeaderStyle}" />
+            <controls:SettingsExpander x:Uid="SettingsShortcutsCard" HeaderIcon="{ui:FontIcon Glyph=&#xE765;}">
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard ContentAlignment="Left">
+                        <ItemsControl x:Uid="SettingsShortcutsList" ItemsSource="{x:Bind ViewModel.Shortcuts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ShortcutRow">
+                                    <Grid
+                                        Padding="0,2"
+                                        AutomationProperties.Name="{x:Bind AccessibleName}"
+                                        ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="200" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Gesture}" />
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Style="{StaticResource BodyTextBlockStyle}"
+                                            Text="{x:Bind Description}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
 
+            <!--  About  -->
             <TextBlock
                 x:Uid="SettingsAboutHeader"
                 AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource BodyStrongTextBlockStyle}" />
-            <StackPanel Spacing="4">
-                <TextBlock x:Uid="SettingsAppName" Style="{StaticResource BodyTextBlockStyle}" />
+                Style="{StaticResource SettingsSectionHeaderStyle}" />
+            <controls:SettingsExpander
+                x:Uid="SettingsAboutCard"
+                Description="{x:Bind ViewModel.VersionText}"
+                HeaderIcon="{ui:FontIcon Glyph=&#xE946;}">
                 <TextBlock
+                    VerticalAlignment="Center"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     IsTextSelectionEnabled="True"
-                    Style="{StaticResource CaptionTextBlockStyle}"
                     Text="{x:Bind ViewModel.Version.DisplayText}" />
-                <TextBlock
-                    x:Uid="SettingsLicense"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Style="{StaticResource CaptionTextBlockStyle}" />
-            </StackPanel>
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard x:Uid="SettingsCommitCard" Visibility="{x:Bind ViewModel.HasCommit}">
+                        <HyperlinkButton Content="{x:Bind ViewModel.Version.Commit}" NavigateUri="{x:Bind ViewModel.CommitUri}" />
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsSourceCard">
+                        <HyperlinkButton x:Uid="SettingsSourceLink" NavigateUri="{x:Bind ViewModel.RepositoryUri}" />
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsIssuesCard">
+                        <HyperlinkButton x:Uid="SettingsIssuesLink" NavigateUri="{x:Bind ViewModel.IssuesUri}" />
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsLicenseCard" />
+                    <controls:SettingsCard x:Uid="SettingsThirdPartyCard" ContentAlignment="Vertical">
+                        <ItemsControl x:Uid="SettingsThirdPartyList" ItemsSource="{x:Bind ViewModel.Licenses}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="about:ThirdPartyComponent">
+                                    <Grid ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="320" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <HyperlinkButton
+                                            Padding="0,4"
+                                            Content="{x:Bind Name}"
+                                            NavigateUri="{x:Bind Project}" />
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Style="{StaticResource BodyTextBlockStyle}"
+                                            Text="{x:Bind License}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
         </StackPanel>
     </ScrollViewer>
 </Page>

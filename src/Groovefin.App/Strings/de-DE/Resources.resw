@@ -76,9 +76,6 @@
   <data name="SettingsAppearanceHeader.Text" xml:space="preserve">
     <value>Darstellung</value>
   </data>
-  <data name="SettingsTheme.Header" xml:space="preserve">
-    <value>App-Design</value>
-  </data>
   <data name="SettingsThemeSystem.Content" xml:space="preserve">
     <value>Systemeinstellung verwenden</value>
   </data>
@@ -90,12 +87,6 @@
   </data>
   <data name="SettingsAboutHeader.Text" xml:space="preserve">
     <value>Info</value>
-  </data>
-  <data name="SettingsAppName.Text" xml:space="preserve">
-    <value>Groovefin</value>
-  </data>
-  <data name="SettingsLicense.Text" xml:space="preserve">
-    <value>Lizenziert unter der MIT-Lizenz.</value>
   </data>
   <data name="Operation_Unexpected" xml:space="preserve">
     <value>Etwas ist schiefgelaufen</value>
@@ -331,12 +322,6 @@
   <data name="Dialog_Cancel" xml:space="preserve">
     <value>Abbrechen</value>
   </data>
-  <data name="SettingsServersHeader.Text" xml:space="preserve">
-    <value>Server</value>
-  </data>
-  <data name="SettingsManageServersButton.Content" xml:space="preserve">
-    <value>Server verwalten</value>
-  </data>
   <data name="SignInHeader.Text" xml:space="preserve">
     <value>Anmelden</value>
   </data>
@@ -362,7 +347,7 @@
     <value>Die Anmeldung hat nicht funktioniert. Versuche es später erneut.</value>
   </data>
   <data name="SettingsAccountHeader.Text" xml:space="preserve">
-    <value>Konto</value>
+    <value>Konto und Server</value>
   </data>
   <data name="SettingsSignOutButton.Content" xml:space="preserve">
     <value>Abmelden</value>
@@ -535,12 +520,6 @@
   <data name="Operation_LoadHome" xml:space="preserve">
     <value>Startseite konnte nicht geladen werden</value>
   </data>
-  <data name="SettingsLibraryBox.Header" xml:space="preserve">
-    <value>Musikbibliothek</value>
-  </data>
-  <data name="SettingsLibraryBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Musikbibliothek</value>
-  </data>
   <data name="Settings_AllLibraries" xml:space="preserve">
     <value>Alle Musikbibliotheken</value>
   </data>
@@ -570,27 +549,6 @@
   </data>
   <data name="SettingsStreamingHeader.Text" xml:space="preserve">
     <value>Streaming</value>
-  </data>
-  <data name="SettingsStreamingIntro.Text" xml:space="preserve">
-    <value>Groovefin spielt nach Möglichkeit die Originaldateien. Mit einem Limit wandelt der Server Titel darüber um.</value>
-  </data>
-  <data name="SettingsLocalBitrateBox.Header" xml:space="preserve">
-    <value>Qualität im Heimnetz</value>
-  </data>
-  <data name="SettingsLocalBitrateBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Qualität im Heimnetz</value>
-  </data>
-  <data name="SettingsRemoteBitrateBox.Header" xml:space="preserve">
-    <value>Qualität für entfernte Server</value>
-  </data>
-  <data name="SettingsRemoteBitrateBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Qualität für entfernte Server</value>
-  </data>
-  <data name="SettingsCodecBox.Header" xml:space="preserve">
-    <value>Format bei Umwandlung</value>
-  </data>
-  <data name="SettingsCodecBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Format bei Umwandlung</value>
   </data>
   <data name="SettingsCodecAac.Content" xml:space="preserve">
     <value>AAC (empfohlen)</value>
@@ -761,12 +719,6 @@
   <data name="SettingsPlaybackHeader.Text" xml:space="preserve">
     <value>Wiedergabe</value>
   </data>
-  <data name="SettingsNormalizationBox.Header" xml:space="preserve">
-    <value>Lautstärke angleichen</value>
-  </data>
-  <data name="SettingsNormalizationBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Lautstärke angleichen</value>
-  </data>
   <data name="SettingsNormalizationOff.Content" xml:space="preserve">
     <value>Aus</value>
   </data>
@@ -775,9 +727,6 @@
   </data>
   <data name="SettingsNormalizationAlbum.Content" xml:space="preserve">
     <value>Jedes Album gleich laut</value>
-  </data>
-  <data name="SettingsNormalizationHint.Text" xml:space="preserve">
-    <value>Nutzt die Lautheit, die dein Jellyfin-Server gemessen hat (LUFS-Scan in den Bibliothekseinstellungen aktivieren). Laute Titel werden leiser gestellt, nie lauter, damit nichts übersteuert. Gilt ab dem nächsten Titel.</value>
   </data>
   <data name="SearchArtistsHeader.Text" xml:space="preserve">
     <value>Interpreten</value>
@@ -1118,12 +1067,6 @@
   <data name="ArtistMixButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Instant-Mix aus diesem Interpreten</value>
   </data>
-  <data name="SettingsInstantMixBox.Header" xml:space="preserve">
-    <value>Instant-Mix</value>
-  </data>
-  <data name="SettingsInstantMixBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Instant-Mix</value>
-  </data>
   <data name="SettingsInstantMixReplace.Content" xml:space="preserve">
     <value>Warteschlange ersetzen und abspielen</value>
   </data>
@@ -1371,18 +1314,6 @@
   <data name="Operation_LoadFolder" xml:space="preserve">
     <value>Ordner konnte nicht geladen werden</value>
   </data>
-  <data name="SettingsResumeSwitch.Header" xml:space="preserve">
-    <value>Dort weitermachen, wo ich aufgehört habe</value>
-  </data>
-  <data name="SettingsResumeSwitch.OnContent" xml:space="preserve">
-    <value>Warteschlange beim Start wiederherstellen (pausiert)</value>
-  </data>
-  <data name="SettingsResumeSwitch.OffContent" xml:space="preserve">
-    <value>Mit leerer Warteschlange starten</value>
-  </data>
-  <data name="SettingsTaskbarProgressSwitch.Header" xml:space="preserve">
-    <value>Wiedergabefortschritt auf der Taskleistenschaltfläche</value>
-  </data>
   <data name="Taskbar_Previous" xml:space="preserve">
     <value>Vorheriger Titel</value>
   </data>
@@ -1434,18 +1365,6 @@
   <data name="Shortcut_MiniPlayer" xml:space="preserve">
     <value>Mini-Player ein oder aus</value>
   </data>
-  <data name="SettingsTraySwitch.Header" xml:space="preserve">
-    <value>Symbol im Infobereich</value>
-  </data>
-  <data name="SettingsTraySwitch.OnContent" xml:space="preserve">
-    <value>Anzeigen, mit Wiedergabesteuerung</value>
-  </data>
-  <data name="SettingsTraySwitch.OffContent" xml:space="preserve">
-    <value>Nicht anzeigen</value>
-  </data>
-  <data name="SettingsMinimizeToTraySwitch.Header" xml:space="preserve">
-    <value>In den Infobereich minimieren</value>
-  </data>
   <data name="Tray_PlayPause" xml:space="preserve">
     <value>Wiedergabe/Pause</value>
   </data>
@@ -1460,5 +1379,162 @@
   </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Beenden</value>
+  </data>
+  <data name="SettingsThemeCard.Header" xml:space="preserve">
+    <value>App-Design</value>
+  </data>
+  <data name="SettingsThemeCard.Description" xml:space="preserve">
+    <value>Hell oder dunkel, oder wie in Windows.</value>
+  </data>
+  <data name="SettingsTaskbarProgressCard.Header" xml:space="preserve">
+    <value>Wiedergabefortschritt auf der Taskleistenschaltfläche</value>
+  </data>
+  <data name="SettingsTaskbarProgressCard.Description" xml:space="preserve">
+    <value>Die Taskleistenschaltfläche füllt sich, während der Titel läuft.</value>
+  </data>
+  <data name="SettingsTrayCard.Header" xml:space="preserve">
+    <value>Symbol im Infobereich</value>
+  </data>
+  <data name="SettingsTrayCard.Description" xml:space="preserve">
+    <value>Mit Wiedergabesteuerung im Menü.</value>
+  </data>
+  <data name="SettingsMinimizeToTrayCard.Header" xml:space="preserve">
+    <value>In den Infobereich minimieren</value>
+  </data>
+  <data name="SettingsMinimizeToTrayCard.Description" xml:space="preserve">
+    <value>Beim Minimieren wird das Fenster ausgeblendet. Das Symbol holt es zurück.</value>
+  </data>
+  <data name="SettingsServersCard.Header" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="SettingsServersCard.Description" xml:space="preserve">
+    <value>Jellyfin-Server hinzufügen, wechseln oder entfernen.</value>
+  </data>
+  <data name="SettingsLibraryCard.Header" xml:space="preserve">
+    <value>Musikbibliothek</value>
+  </data>
+  <data name="SettingsLibraryCard.Description" xml:space="preserve">
+    <value>Die Bibliothek, die Groovefin von diesem Server anzeigt.</value>
+  </data>
+  <data name="SettingsStreamingCard.Header" xml:space="preserve">
+    <value>Streamingqualität</value>
+  </data>
+  <data name="SettingsStreamingCard.Description" xml:space="preserve">
+    <value>Groovefin spielt nach Möglichkeit die Originaldateien. Mit einem Limit wandelt der Server Titel darüber um.</value>
+  </data>
+  <data name="SettingsLocalBitrateCard.Header" xml:space="preserve">
+    <value>Qualität im Heimnetz</value>
+  </data>
+  <data name="SettingsRemoteBitrateCard.Header" xml:space="preserve">
+    <value>Qualität für entfernte Server</value>
+  </data>
+  <data name="SettingsCodecCard.Header" xml:space="preserve">
+    <value>Format bei Umwandlung</value>
+  </data>
+  <data name="SettingsNormalizationCard.Header" xml:space="preserve">
+    <value>Lautstärke angleichen</value>
+  </data>
+  <data name="SettingsNormalizationCard.Description" xml:space="preserve">
+    <value>Nutzt die Lautheit, die dein Jellyfin-Server gemessen hat (LUFS-Scan in den Bibliothekseinstellungen aktivieren). Laute Titel werden leiser gestellt, nie lauter, damit nichts übersteuert. Gilt ab dem nächsten Titel.</value>
+  </data>
+  <data name="SettingsInstantMixCard.Header" xml:space="preserve">
+    <value>Instant-Mix</value>
+  </data>
+  <data name="SettingsInstantMixCard.Description" xml:space="preserve">
+    <value>Was ein Instant-Mix mit der Warteschlange macht.</value>
+  </data>
+  <data name="SettingsResumeCard.Header" xml:space="preserve">
+    <value>Dort weitermachen, wo ich aufgehört habe</value>
+  </data>
+  <data name="SettingsResumeCard.Description" xml:space="preserve">
+    <value>Warteschlange und Position beim Start wiederherstellen, pausiert.</value>
+  </data>
+  <data name="SettingsStorageHeader.Text" xml:space="preserve">
+    <value>Speicher</value>
+  </data>
+  <data name="SettingsImageCacheCard.Header" xml:space="preserve">
+    <value>Bildcache</value>
+  </data>
+  <data name="SettingsClearCacheButton.Content" xml:space="preserve">
+    <value>Leeren</value>
+  </data>
+  <data name="SettingsCacheLimitCard.Header" xml:space="preserve">
+    <value>Maximale Größe</value>
+  </data>
+  <data name="SettingsCacheLimitCard.Description" xml:space="preserve">
+    <value>Darüber werden die am längsten nicht genutzten Cover gelöscht.</value>
+  </data>
+  <data name="SettingsLogsCard.Header" xml:space="preserve">
+    <value>Protokolldateien</value>
+  </data>
+  <data name="SettingsLogsCard.Description" xml:space="preserve">
+    <value>Hilfreich, wenn du ein Problem meldest.</value>
+  </data>
+  <data name="SettingsOpenLogsButton.Content" xml:space="preserve">
+    <value>Ordner öffnen</value>
+  </data>
+  <data name="SettingsShortcutsCard.Header" xml:space="preserve">
+    <value>Tastenkombinationen</value>
+  </data>
+  <data name="SettingsShortcutsCard.Description" xml:space="preserve">
+    <value>Sie funktionieren überall im Fenster, außer während du tippst.</value>
+  </data>
+  <data name="SettingsAboutCard.Header" xml:space="preserve">
+    <value>Groovefin</value>
+  </data>
+  <data name="SettingsCommitCard.Header" xml:space="preserve">
+    <value>Commit</value>
+  </data>
+  <data name="SettingsCommitCard.Description" xml:space="preserve">
+    <value>Der Quellcode, aus dem diese Version erstellt wurde.</value>
+  </data>
+  <data name="SettingsSourceCard.Header" xml:space="preserve">
+    <value>Quellcode</value>
+  </data>
+  <data name="SettingsSourceLink.Content" xml:space="preserve">
+    <value>GitHub</value>
+  </data>
+  <data name="SettingsIssuesCard.Header" xml:space="preserve">
+    <value>Problem melden oder Funktion vorschlagen</value>
+  </data>
+  <data name="SettingsIssuesLink.Content" xml:space="preserve">
+    <value>GitHub Issues</value>
+  </data>
+  <data name="SettingsLicenseCard.Header" xml:space="preserve">
+    <value>Lizenz</value>
+  </data>
+  <data name="SettingsLicenseCard.Description" xml:space="preserve">
+    <value>Groovefin ist freie Software unter der MIT-Lizenz.</value>
+  </data>
+  <data name="SettingsThirdPartyCard.Header" xml:space="preserve">
+    <value>Software von Drittanbietern</value>
+  </data>
+  <data name="SettingsThirdPartyCard.Description" xml:space="preserve">
+    <value>Groovefin nutzt diese Komponenten. Die Lizenztexte stehen auf den Projektseiten.</value>
+  </data>
+  <data name="SettingsThirdPartyList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Software von Drittanbietern</value>
+  </data>
+  <data name="Settings_CacheUsed" xml:space="preserve">
+    <value>{0} belegt</value>
+    <comment>{0} = size, e.g. 120 MB</comment>
+  </data>
+  <data name="Settings_Version" xml:space="preserve">
+    <value>Version {0}</value>
+    <comment>{0} = version number</comment>
+  </data>
+  <data name="Size_Megabytes" xml:space="preserve">
+    <value>{0} MB</value>
+    <comment>{0} = number</comment>
+  </data>
+  <data name="Size_Gigabytes" xml:space="preserve">
+    <value>{0} GB</value>
+    <comment>{0} = number</comment>
+  </data>
+  <data name="Operation_ClearCache" xml:space="preserve">
+    <value>Bildcache konnte nicht geleert werden</value>
+  </data>
+  <data name="Operation_OpenLogFolder" xml:space="preserve">
+    <value>Protokollordner konnte nicht geöffnet werden</value>
   </data>
 </root>

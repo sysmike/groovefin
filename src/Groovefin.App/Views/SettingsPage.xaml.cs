@@ -6,7 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 namespace Groovefin.App.Views;
 
 /// <summary>
-/// Settings page. The full settings scope is tracked in #53.
+/// Settings page in the style of Windows Settings: groups of cards, with details in expanders.
 /// </summary>
 internal sealed partial class SettingsPage : Page
 {
@@ -15,6 +15,7 @@ internal sealed partial class SettingsPage : Page
         ViewModel = App.Services.GetRequiredService<SettingsViewModel>();
         InitializeComponent();
         Loaded += OnFirstLoaded;
+        Loaded += OnLoaded;
     }
 
     public SettingsViewModel ViewModel { get; }
@@ -24,4 +25,7 @@ internal sealed partial class SettingsPage : Page
         Loaded -= OnFirstLoaded;
         await ViewModel.LoadLibrariesAsync();
     }
+
+    // The cache grows while browsing, so it is measured on every visit.
+    private async void OnLoaded(object sender, RoutedEventArgs e) => await ViewModel.RefreshCacheSizeAsync();
 }
