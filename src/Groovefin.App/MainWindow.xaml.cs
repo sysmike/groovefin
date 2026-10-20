@@ -76,6 +76,15 @@ internal sealed partial class MainWindow : Window
         themeService.Attach(this);
         RootGrid.Loaded += (_, _) => dialogs.Attach(RootGrid.XamlRoot);
 
+        // The built-in Settings item has no x:Uid; its access key comes from the resources like the others.
+        NavView.Loaded += (_, _) =>
+        {
+            if (NavView.SettingsItem is NavigationViewItem settingsItem)
+            {
+                settingsItem.AccessKey = _strings.GetString("Nav_SettingsAccessKey");
+            }
+        };
+
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         Closed += (_, _) => ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
 
