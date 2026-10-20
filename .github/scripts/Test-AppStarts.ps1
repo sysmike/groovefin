@@ -45,19 +45,11 @@ function Write-Diagnostics {
         Format-List TimeCreated, ProviderName, Message
 }
 
+# The finally block at the end closes the app and the fake server.
 function Stop-Test([string] $title, [string] $message) {
     Write-Output "::error title=$title::$message"
     Write-Diagnostics
-    if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
-    Stop-FakeServer
     exit 1
-}
-
-# Stopping the listener ends the server job's wait for the next request.
-function Stop-FakeServer {
-    $listener.Stop()
-    $server | Wait-Job -Timeout 10 | Out-Null
-    $server | Remove-Job -Force
 }
 
 # The fake Jellyfin server. It answers until the listener is stopped and writes one line per request.
@@ -95,70 +87,108 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
     }
 }
 
-$process = Start-Process -FilePath $Path -PassThru
-$deadline = $started.AddSeconds($Seconds)
-$ready = $null
+try {
+    $process = Start-Process -FilePath $Path -PassThru
+    $deadline = $started.AddSeconds($Seconds)
+    $ready = $null
 
-while ((Get-Date) -lt $deadline -and -not $process.HasExited) {
-    Start-Sleep -Seconds 1
-    if ($log = Get-AppLog) {
-        $ready = Select-String -Path $log.FullName -Pattern 'Start-up took' -SimpleMatch | Select-Object -Last 1
-        if ($ready) { break }
+    while ((Get-Date) -lt $deadline -and -not $process.HasExited) {
+        Start-Sleep -Seconds 1
+        if ($log = Get-AppLog) {
+            $ready = Select-String -Path $log.FullName -Pattern 'Start-up took' -SimpleMatch | Select-Object -Last 1
+            if ($ready) { break }
+        }
     }
-}
 
-if ($process.HasExited) {
-    Stop-Test 'Start-up crash' "Groovefin exited with code $($process.ExitCode) while starting."
-}
-
-if (-not $ready) {
-    Stop-Test 'Start-up incomplete' "Groovefin is running but did not finish starting within $Seconds seconds."
-}
-
-Write-Output "Groovefin started: $($ready.Line)"
-
-Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
-$automation = [System.Windows.Automation.AutomationElement]
-$scope = [System.Windows.Automation.TreeScope]
-$window = $automation::RootElement.FindFirst($scope::Children,
-    [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $process.Id))
-
-# Waits for an element of the window (pages appear after navigation) and returns it.
-function Find-Element([System.Windows.Automation.AutomationProperty] $property, [string] $value) {
-    $condition = [System.Windows.Automation.PropertyCondition]::new($property, $value)
-    $until = (Get-Date).AddSeconds(10)
-    do {
-        if ($element = $window.FindFirst($scope::Descendants, $condition)) { return $element }
-        Start-Sleep -Milliseconds 500
-    } while ((Get-Date) -lt $until -and -not $process.HasExited)
-    Stop-Test 'Smoke test' "The element '$value' was not found."
-}
-
-function Test-Running([string] $step) {
-    $unhandled = Select-String -Path (Get-AppLog).FullName -Pattern 'Unhandled' -SimpleMatch
-    if ($process.HasExited -or $unhandled) {
-        $state = if ($process.HasExited) { "exited with code $($process.ExitCode)" } else { 'logged an unhandled exception' }
-        Stop-Test 'Smoke test' "Groovefin $state $step."
+    if ($process.HasExited) {
+        Stop-Test 'Start-up crash' "Groovefin exited with code $($process.ExitCode) while starting."
     }
+
+    if (-not $ready) {
+        Stop-Test 'Start-up incomplete' "Groovefin is running but did not finish starting within $Seconds seconds."
+    }
+
+    Write-Output "Groovefin started: $($ready.Line)"
+
+    Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+    $automation = [System.Windows.Automation.AutomationElement]
+    $scope = [System.Windows.Automation.TreeScope]
+    $window = $automation::RootElement.FindFirst($scope::Children,
+        [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $process.Id))
+
+    # Waits for an element of the window (pages appear after navigation) and returns it.
+    function Find-Element([System.Windows.Automation.Condition] $condition, [string] $description) {
+        $until = (Get-Date).AddSeconds(10)
+        do {
+            if ($element = $window.FindFirst($scope::Descendants, $condition)) { return $element }
+            Start-Sleep -Milliseconds 500
+        } while ((Get-Date) -lt $until -and -not $process.HasExited)
+        Stop-Test 'Smoke test' "The $description was not found."
+    }
+
+    function Find-ById([string] $id) {
+        Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, $id)) "element '$id'"
+    }
+
+    # By name and control type: the sign-in page's heading and button are both called "Sign in".
+    function Find-Button([string] $name) {
+        $condition = [System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $name),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))
+        Find-Element $condition "button '$name'"
+    }
+
+    function Test-Running([string] $step) {
+        $unhandled = Select-String -Path (Get-AppLog).FullName -Pattern 'Unhandled' -SimpleMatch
+        if ($process.HasExited -or $unhandled) {
+            $state = if ($process.HasExited) { "exited with code $($process.ExitCode)" } else { 'logged an unhandled exception' }
+            Stop-Test 'Smoke test' "Groovefin $state $step."
+        }
+    }
+
+    $invoke = [System.Windows.Automation.InvokePattern]::Pattern
+
+    # Sets the text of a text box. A page that is still being shown may not offer the value pattern yet;
+    # if it never does, the text is typed into the focused box.
+    function Set-Text([System.Windows.Automation.AutomationElement] $element, [string] $text) {
+        $pattern = $null
+        $until = (Get-Date).AddSeconds(10)
+        while (-not $element.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref] $pattern) -and (Get-Date) -lt $until) {
+            Start-Sleep -Milliseconds 500
+        }
+        if ($pattern) {
+            $pattern.SetValue($text)
+        }
+        else {
+            Add-Type -AssemblyName System.Windows.Forms
+            $element.SetFocus()
+            [System.Windows.Forms.SendKeys]::SendWait($text)
+        }
+    }
+
+    # First run: add the server, which opens the sign-in page.
+    Set-Text (Find-ById 'AddressBox') "http://127.0.0.1:$Port"
+    (Find-Button 'Add server').GetCurrentPattern($invoke).Invoke()
+    $userName = Find-ById 'UserNameBox'
+    Test-Running 'while adding a server'
+    Write-Output 'Added the fake server.'
+
+    # The fake server accepts any user; the password may be empty.
+    Set-Text $userName 'smoke'
+    (Find-Button 'Sign in').GetCurrentPattern($invoke).Invoke()
+    $null = Find-Button 'Refresh'
+    Start-Sleep -Seconds 5
+    Test-Running 'on the home page after signing in'
+    Write-Output 'Signed in; the home page shows its lists.'
 }
+catch {
+    Stop-Test 'Smoke test' "The test failed: $($_.Exception.Message)"
+}
+finally {
+    if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
 
-$value = [System.Windows.Automation.ValuePattern]::Pattern
-$invoke = [System.Windows.Automation.InvokePattern]::Pattern
-
-# First run: add the server, which opens the sign-in page.
-(Find-Element $automation::AutomationIdProperty 'AddressBox').GetCurrentPattern($value).SetValue("http://127.0.0.1:$Port")
-(Find-Element $automation::NameProperty 'Add server').GetCurrentPattern($invoke).Invoke()
-$userName = Find-Element $automation::AutomationIdProperty 'UserNameBox'
-Test-Running 'while adding a server'
-Write-Output 'Added the fake server.'
-
-# The fake server accepts any user; the password may be empty.
-$userName.GetCurrentPattern($value).SetValue('smoke')
-(Find-Element $automation::NameProperty 'Sign in').GetCurrentPattern($invoke).Invoke()
-$null = Find-Element $automation::NameProperty 'Refresh'
-Start-Sleep -Seconds 5
-Test-Running 'on the home page after signing in'
-Write-Output 'Signed in; the home page shows its lists.'
-
-Stop-Process -Id $process.Id -Force
-Stop-FakeServer
+    # Stopping the listener ends the server job's wait for the next request.
+    $listener.Stop()
+    $server | Wait-Job -Timeout 10 | Out-Null
+    $server | Remove-Job -Force
+}
