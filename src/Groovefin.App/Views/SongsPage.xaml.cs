@@ -45,7 +45,7 @@ internal sealed partial class SongsPage : Page
 
     public SongsPage()
     {
-        ViewModel = App.Services.GetRequiredService<SongsViewModel>();
+        ViewModel = App.CreateViewModel<SongsViewModel>();
         _strings = App.Services.GetRequiredService<IStringResources>();
         InitializeComponent();
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
