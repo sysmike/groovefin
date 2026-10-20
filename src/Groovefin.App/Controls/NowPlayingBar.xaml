@@ -187,7 +187,8 @@
                     VerticalAlignment="Center"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Style="{StaticResource CaptionTextBlockStyle}"
-                    Text="{x:Bind ViewModel.RemainingText, Mode=OneWay}" />
+                    Text="{x:Bind ViewModel.RemainingText, Mode=OneWay}"
+                    TextWrapping="NoWrap" />
             </Grid>
         </StackPanel>
 

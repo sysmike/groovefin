@@ -121,6 +121,16 @@ public sealed class NowPlayingViewModelTests : IDisposable
     }
 
     [Fact]
+    public void Remaining_time_does_not_go_below_zero()
+    {
+        PlayOneMoreTime();
+
+        _engine.SimulatePosition(TimeSpan.FromSeconds(325), TimeSpan.Zero);
+
+        _sut.RemainingText.Should().Be("-0:00");
+    }
+
+    [Fact]
     public void Seek_goes_to_the_engine_and_negative_values_mean_the_start()
     {
         PlayOneMoreTime();
