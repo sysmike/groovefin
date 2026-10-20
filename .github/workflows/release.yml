@@ -73,14 +73,12 @@ jobs:
 
       - name: Publish unpackaged (self-contained)
         shell: pwsh
-        run: >
-          dotnet publish src/Groovefin.App/Groovefin.App.csproj
-          --configuration Release
-          -p:Platform=${{ matrix.platform }}
-          -p:WindowsPackageType=None
-          -p:WindowsAppSDKSelfContained=true
-          --self-contained true
-          --output "${{ runner.temp }}\out\unpackaged"
+        # The MSIX build above leaves a resources.pri without the Windows App SDK's own resources (a
+        # package gets them from the runtime package). The PRI step would reuse it as up to date, and
+        # the unpackaged app then crashes looking for its theme resources, so build it from scratch.
+        run: |
+          Remove-Item src/Groovefin.App/obj/${{ matrix.platform }}, src/Groovefin.App/bin/${{ matrix.platform }} -Recurse -Force -ErrorAction SilentlyContinue
+          dotnet publish src/Groovefin.App/Groovefin.App.csproj --configuration Release -p:Platform=${{ matrix.platform }} -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true --self-contained true --output "${{ runner.temp }}\out\unpackaged"
 
       - name: Smoke test (unpackaged)
         # Starts the exact build that gets released. ARM64 builds cannot run on the x64 runner.
