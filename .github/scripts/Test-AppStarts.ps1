@@ -247,23 +247,29 @@ try {
     # The band sliders: expanded and scrolled into view, each must have a visible size (#165).
     # The header text is named "Equalizer" too: expand the element that can be expanded.
     $pattern = $null
+    $expanded = $false
     $named = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer'))
     foreach ($element in @($equalizerCard) + @($named)) {
-        if ($element.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $pattern)) {
+        Write-Output "Element 'Equalizer': $($element.Current.ControlType.ProgrammaticName), class $($element.Current.ClassName)"
+        if (-not $expanded -and $element.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $pattern)) {
+            if ($element.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
             $pattern.Expand()
-            break
+            $expanded = $true
         }
     }
-    $band = Find-Element ([System.Windows.Automation.AndCondition]::new(
-            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, '1 kHz'),
-            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider))) "equalizer slider '1 kHz'"
-    if ($band.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $pattern)) { $pattern.ScrollIntoView() }
-    Start-Sleep -Seconds 1
+    Write-Output "Expanded the equalizer: $expanded"
+    Start-Sleep -Seconds 2
+    $sliders = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider)))
+    $band = $sliders | Where-Object { $_.Current.Name -eq '1 kHz' } | Select-Object -First 1
+    $scroll = $null
+    if ($band -and $band.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView(); Start-Sleep -Seconds 1 }
     Save-Screenshot 'settings-equalizer'
-    $sliders = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider))
     foreach ($slider in $sliders) {
         $r = $slider.Current.BoundingRectangle
         Write-Output ("Slider '{0}': {1:0}x{2:0} at {3:0},{4:0}, offscreen {5}" -f $slider.Current.Name, $r.Width, $r.Height, $r.X, $r.Y, $slider.Current.IsOffscreen)
+    }
+    if (-not $band) {
+        Stop-Test 'Smoke test' "The equalizer slider '1 kHz' was not found ($($sliders.Count) sliders on the page)."
     }
     $bandRect = $band.Current.BoundingRectangle
     if ($band.Current.IsOffscreen -or $bandRect.Width -lt 16 -or $bandRect.Height -lt 100) {
