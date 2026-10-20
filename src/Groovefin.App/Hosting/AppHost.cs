@@ -118,13 +118,11 @@ internal static class AppHost
         // Servers
         builder.Services.AddSingleton<IServerManager, ServerManager>();
 
-        // ViewModels
+        // ViewModels. The disposable page view models (Home, Albums, Artists, Songs, Servers) are not
+        // registered: pages create them with App.CreateViewModel, so the container does not keep them (#147).
         builder.Services.AddSingleton<ShellViewModel>();
         builder.Services.AddTransient<SettingsViewModel>();
-        builder.Services.AddTransient<HomeViewModel>();
-        builder.Services.AddTransient<AlbumsViewModel>();
         builder.Services.AddTransient<AlbumDetailViewModel>();
-        builder.Services.AddTransient<ArtistsViewModel>();
         builder.Services.AddTransient<ArtistDetailViewModel>();
         builder.Services.AddTransient<SearchViewModel>();
         builder.Services.AddTransient<PlaylistsViewModel>();
@@ -132,9 +130,7 @@ internal static class AppHost
         builder.Services.AddTransient<FavouritesViewModel>();
         builder.Services.AddTransient<GenresViewModel>();
         builder.Services.AddTransient<GenreDetailViewModel>();
-        builder.Services.AddTransient<SongsViewModel>();
         builder.Services.AddTransient<FoldersViewModel>();
-        builder.Services.AddTransient<ServersViewModel>();
         builder.Services.AddTransient<SignInViewModel>();
 
         // Views

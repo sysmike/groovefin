@@ -42,6 +42,14 @@ public partial class App : Application
     public static IServiceProvider Services =>
         ((App)Current)._host?.Services ?? throw new InvalidOperationException("The host is not built yet.");
 
+    /// <summary>
+    /// Creates a disposable page view model with its dependencies from <see cref="Services"/>, but outside
+    /// the container: the container would keep every disposable transient until the app closes (#147).
+    /// The page owns it and disposes it when the user leaves (or, for a cached page, the GC collects it).
+    /// </summary>
+    public static T CreateViewModel<T>()
+        where T : class, IDisposable => ActivatorUtilities.CreateInstance<T>(Services);
+
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         try

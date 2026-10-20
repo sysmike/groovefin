@@ -29,7 +29,7 @@ internal sealed partial class AlbumsPage : Page
 
     public AlbumsPage()
     {
-        ViewModel = App.Services.GetRequiredService<AlbumsViewModel>();
+        ViewModel = App.CreateViewModel<AlbumsViewModel>();
         _strings = App.Services.GetRequiredService<IStringResources>();
         InitializeComponent();
 

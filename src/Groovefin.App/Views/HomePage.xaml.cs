@@ -1,6 +1,5 @@
 using Groovefin.App.Controls;
 using Groovefin.Core.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
@@ -12,7 +11,7 @@ internal sealed partial class HomePage : Page
 {
     public HomePage()
     {
-        ViewModel = App.Services.GetRequiredService<HomeViewModel>();
+        ViewModel = App.CreateViewModel<HomeViewModel>();
         InitializeComponent();
     }
 

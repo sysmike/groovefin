@@ -25,7 +25,7 @@ internal sealed partial class ArtistsPage : Page
 
     public ArtistsPage()
     {
-        ViewModel = App.Services.GetRequiredService<ArtistsViewModel>();
+        ViewModel = App.CreateViewModel<ArtistsViewModel>();
         _strings = App.Services.GetRequiredService<IStringResources>();
         InitializeComponent();
 

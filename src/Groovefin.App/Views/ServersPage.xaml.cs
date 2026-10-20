@@ -1,5 +1,4 @@
 using Groovefin.Core.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -13,7 +12,7 @@ internal sealed partial class ServersPage : Page
 {
     public ServersPage()
     {
-        ViewModel = App.Services.GetRequiredService<ServersViewModel>();
+        ViewModel = App.CreateViewModel<ServersViewModel>();
         InitializeComponent();
         Loaded += (_, _) => AddressBox.Focus(FocusState.Programmatic);
     }
