@@ -1,6 +1,7 @@
 using System.Net;
 using Groovefin.Core.Api;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
@@ -27,6 +28,9 @@ public sealed class ErrorReporterTests
         { new JellyfinException("x", statusCode: null), "Error_Unreachable" },
         { new IOException("disk full"), "Error_Storage" },
         { new UnauthorizedAccessException("denied"), "Error_Storage" },
+        { new PlaybackException("SourceNotSupportedError", new UnauthorizedAccessException()), "Error_StreamRefused" },
+        { new PlaybackException("SourceNotSupportedError", new InvalidOperationException()), "Error_StreamFailed" },
+        { new PlaybackException("NetworkError", innerException: null), "Error_StreamFailed" },
         { new InvalidOperationException("bug"), "Error_Unexpected" },
     };
 

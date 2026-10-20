@@ -36,7 +36,7 @@ public sealed class StreamUrlBuilderTests : IDisposable
             ["AudioCodec"] = "aac",
             ["EnableRedirection"] = "true",
             ["EnableRemoteMedia"] = "false",
-            ["api_key"] = JellyfinTestHost.Token,
+            ["ApiKey"] = JellyfinTestHost.Token,
         });
     }
 
@@ -61,7 +61,7 @@ public sealed class StreamUrlBuilderTests : IDisposable
         var url = Sut.GetStreamUrl("11112222-3333-4444-5555-666677778888", new StreamOptions(null, TranscodingCodec.Aac));
 
         url.AbsolutePath.Should().Be($"/jellyfin/Audio/{TrackId}/universal");
-        Query(url)["api_key"].Should().Be("token with space");
+        Query(url)["ApiKey"].Should().Be("token with space");
     }
 
     [Fact]
