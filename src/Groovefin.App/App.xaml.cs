@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Groovefin.App.Hosting;
 using Groovefin.Core;
@@ -67,6 +68,16 @@ public partial class App : Application
 
         // The window has restored the server connection: bring back the last queue (paused) and keep saving it.
         await _host.Services.GetRequiredService<SessionPersistence>().RestoreAsync();
+
+        LogStartupMeasured(_logger);
+    }
+
+    /// <summary>Start-up time (process start to a shown window with the session restored) and memory, see docs/performance.md.</summary>
+    private static void LogStartupMeasured(ILogger logger)
+    {
+        using var process = Process.GetCurrentProcess();
+        var elapsed = DateTime.Now - process.StartTime;
+        LogStartup(logger, (long)elapsed.TotalMilliseconds, process.WorkingSet64 / (1024 * 1024), GC.GetTotalMemory(forceFullCollection: false) / (1024 * 1024));
     }
 
     private void OnMainWindowClosed(object sender, WindowEventArgs args)
@@ -146,6 +157,9 @@ public partial class App : Application
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The UI language {Language} could not be applied")]
     private static partial void LogLanguageFailed(ILogger logger, Exception exception, string? language);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Start-up took {ElapsedMs} ms; working set {WorkingSetMb} MB, managed heap {ManagedMb} MB")]
+    private static partial void LogStartup(ILogger logger, long elapsedMs, long workingSetMb, long managedMb);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Groovefin is shutting down")]
     private static partial void LogStopping(ILogger logger);
