@@ -11,7 +11,8 @@
     xmlns:vm="using:Groovefin.Core.ViewModels"
     mc:Ignorable="d">
 
-    <Grid x:Name="RootGrid">
+    <!--  Keyboard shortcuts (Space, Ctrl+…) are handled in PreviewKeyDown, see KeyboardShortcuts.  -->
+    <Grid x:Name="RootGrid" PreviewKeyDown="OnPreviewKeyDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -22,20 +23,6 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <Grid.KeyboardAccelerators>
-            <KeyboardAccelerator
-                Key="K"
-                Invoked="OnFocusSearchInvoked"
-                Modifiers="Control" />
-            <KeyboardAccelerator
-                Key="Q"
-                Invoked="OnToggleQueueInvoked"
-                Modifiers="Control" />
-            <KeyboardAccelerator
-                Key="L"
-                Invoked="OnToggleLyricsInvoked"
-                Modifiers="Control" />
-        </Grid.KeyboardAccelerators>
 
         <TitleBar
             x:Name="AppTitleBar"

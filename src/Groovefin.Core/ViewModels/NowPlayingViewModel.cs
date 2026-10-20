@@ -23,6 +23,9 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     /// <summary>Cover size in device-independent pixels.</summary>
     public const double CoverWidth = 56;
 
+    /// <summary>How much the volume shortcuts change the volume (0–100).</summary>
+    public const double VolumeStep = 5;
+
     private readonly IPlayer _player;
     private readonly FavouritesService _favourites;
     private readonly IMessenger _messenger;
@@ -156,6 +159,18 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void ToggleMute() => IsMuted = !IsMuted;
+
+    /// <summary>Raises the volume by <see cref="VolumeStep"/> (Ctrl+Up).</summary>
+    [RelayCommand]
+    private void VolumeUp() => Volume = Math.Min(100, Volume + VolumeStep);
+
+    /// <summary>Lowers the volume by <see cref="VolumeStep"/> (Ctrl+Down).</summary>
+    [RelayCommand]
+    private void VolumeDown() => Volume = Math.Max(0, Volume - VolumeStep);
+
+    /// <summary>Turns shuffle on or off (Ctrl+S).</summary>
+    [RelayCommand]
+    private void ToggleShuffle() => Shuffle = !Shuffle;
 
     [RelayCommand(CanExecute = nameof(HasTrack))]
     private async Task ToggleFavouriteAsync()

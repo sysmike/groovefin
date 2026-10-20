@@ -1288,6 +1288,60 @@
   <data name="Operation_LoadLyrics" xml:space="preserve">
     <value>Couldn't load the lyrics</value>
   </data>
+  <data name="SettingsShortcutsHeader.Text" xml:space="preserve">
+    <value>Keyboard shortcuts</value>
+  </data>
+  <data name="SettingsShortcutsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Keyboard shortcuts</value>
+  </data>
+  <data name="Key_Ctrl" xml:space="preserve">
+    <value>Ctrl</value>
+  </data>
+  <data name="Key_Space" xml:space="preserve">
+    <value>Space</value>
+  </data>
+  <data name="Key_Right" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="Key_Left" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="Key_Up" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="Key_Down" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="Shortcut_PlayPause" xml:space="preserve">
+    <value>Play or pause</value>
+  </data>
+  <data name="Shortcut_Next" xml:space="preserve">
+    <value>Next track</value>
+  </data>
+  <data name="Shortcut_Previous" xml:space="preserve">
+    <value>Previous track</value>
+  </data>
+  <data name="Shortcut_VolumeUp" xml:space="preserve">
+    <value>Volume up</value>
+  </data>
+  <data name="Shortcut_VolumeDown" xml:space="preserve">
+    <value>Volume down</value>
+  </data>
+  <data name="Shortcut_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Shortcut_Queue" xml:space="preserve">
+    <value>Show or hide the queue</value>
+  </data>
+  <data name="Shortcut_Lyrics" xml:space="preserve">
+    <value>Show or hide the lyrics</value>
+  </data>
+  <data name="Shortcut_Shuffle" xml:space="preserve">
+    <value>Shuffle on or off</value>
+  </data>
+  <data name="Shortcut_Repeat" xml:space="preserve">
+    <value>Repeat off, all or one</value>
+  </data>
   <data name="FoldersHeader.Text" xml:space="preserve">
     <value>Folders</value>
   </data>

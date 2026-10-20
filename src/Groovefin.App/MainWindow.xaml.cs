@@ -6,15 +6,20 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Shortcuts;
 using Groovefin.Core.ViewModels;
 using Microsoft.UI.Composition.SystemBackdrops;
+using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.System;
+using Windows.UI.Core;
 
 namespace Groovefin.App;
 
@@ -27,6 +32,7 @@ internal sealed partial class MainWindow : Window
     private readonly AddToPlaylist _addToPlaylist;
     private readonly TrackDrag _trackDrag;
     private readonly IStringResources _strings;
+    private readonly NowPlayingViewModel _nowPlaying;
 
     public MainWindow(
         ShellViewModel viewModel,
@@ -36,6 +42,7 @@ internal sealed partial class MainWindow : Window
         QueueViewModel queue,
         SearchSuggestionsViewModel suggestions,
         LyricsViewModel lyrics,
+        NowPlayingViewModel nowPlaying,
         AddToPlaylist addToPlaylist,
         TrackDrag trackDrag,
         IStringResources strings)
@@ -47,6 +54,7 @@ internal sealed partial class MainWindow : Window
         ViewModel = viewModel;
         Queue = queue;
         Lyrics = lyrics;
+        _nowPlaying = nowPlaying;
         Suggestions = suggestions;
         InitializeComponent();
 
@@ -195,18 +203,6 @@ internal sealed partial class MainWindow : Window
         }
     }
 
-    /// <summary>Ctrl+L opens the lyrics pane and moves focus into it, or closes it.</summary>
-    private void OnToggleLyricsInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        Lyrics.ToggleCommand.Execute(null);
-        if (Lyrics.IsOpen)
-        {
-            _ = DispatcherQueue.TryEnqueue(LyricsPane.FocusPanel);
-        }
-
-        args.Handled = true;
-    }
-
     private void OnTitleBarBackRequested(TitleBar sender, object args) => ViewModel.GoBackCommand.Execute(null);
 
     private void OnTitleBarPaneToggleRequested(TitleBar sender, object args) => NavView.IsPaneOpen = !NavView.IsPaneOpen;
@@ -245,22 +241,94 @@ internal sealed partial class MainWindow : Window
         }
     }
 
-    private void OnFocusSearchInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    /// <summary>
+    /// The app-wide shortcuts (<see cref="KeyboardShortcuts"/>), before the focused control sees the key.
+    /// Nothing fires while the user types in a text box, Space is left to controls that use it (buttons,
+    /// list items), and held keys repeat only the volume.
+    /// </summary>
+    private void OnPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        SearchBox.Focus(FocusState.Keyboard);
-        args.Handled = true;
-    }
-
-    /// <summary>Ctrl+Q opens the queue panel and moves focus into it, or closes it.</summary>
-    private void OnToggleQueueInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        Queue.ToggleCommand.Execute(null);
-        if (Queue.IsOpen)
+        if (IsDown(VirtualKey.Shift) || IsDown(VirtualKey.Menu) || IsDown(VirtualKey.LeftWindows) || IsDown(VirtualKey.RightWindows)
+            || KeyboardShortcuts.Find(e.Key.ToString(), IsDown(VirtualKey.Control)) is not { } action)
         {
-            // The panel becomes visible with the next layout pass; focus it once it is there.
-            _ = DispatcherQueue.TryEnqueue(QueuePane.FocusPanel);
+            return;
         }
 
-        args.Handled = true;
+        var focused = FocusManager.GetFocusedElement(RootGrid.XamlRoot);
+        if (focused is TextBox or PasswordBox or RichEditBox || (action == ShortcutAction.PlayPause && UsesSpace(focused)))
+        {
+            return;
+        }
+
+        e.Handled = true;
+        if (e.KeyStatus.WasKeyDown && action is not (ShortcutAction.VolumeUp or ShortcutAction.VolumeDown))
+        {
+            return;
+        }
+
+        Run(action);
     }
+
+    private void Run(ShortcutAction action)
+    {
+        switch (action)
+        {
+            case ShortcutAction.PlayPause:
+                Execute(_nowPlaying.PlayPauseCommand);
+                break;
+            case ShortcutAction.Next:
+                Execute(_nowPlaying.NextCommand);
+                break;
+            case ShortcutAction.Previous:
+                Execute(_nowPlaying.PreviousCommand);
+                break;
+            case ShortcutAction.VolumeUp:
+                Execute(_nowPlaying.VolumeUpCommand);
+                break;
+            case ShortcutAction.VolumeDown:
+                Execute(_nowPlaying.VolumeDownCommand);
+                break;
+            case ShortcutAction.Shuffle:
+                Execute(_nowPlaying.ToggleShuffleCommand);
+                break;
+            case ShortcutAction.Repeat:
+                Execute(_nowPlaying.CycleRepeatCommand);
+                break;
+            case ShortcutAction.Search:
+                SearchBox.Focus(FocusState.Keyboard);
+                break;
+            case ShortcutAction.Queue:
+                // The panel becomes visible with the next layout pass; focus it once it is there.
+                Queue.ToggleCommand.Execute(null);
+                if (Queue.IsOpen)
+                {
+                    _ = DispatcherQueue.TryEnqueue(QueuePane.FocusPanel);
+                }
+
+                break;
+            case ShortcutAction.Lyrics:
+                Lyrics.ToggleCommand.Execute(null);
+                if (Lyrics.IsOpen)
+                {
+                    _ = DispatcherQueue.TryEnqueue(LyricsPane.FocusPanel);
+                }
+
+                break;
+        }
+    }
+
+    private static void Execute(System.Windows.Input.ICommand command)
+    {
+        if (command.CanExecute(null))
+        {
+            command.Execute(null);
+        }
+    }
+
+    private static bool IsDown(VirtualKey key) =>
+        InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
+
+    /// <summary>Controls that act on Space themselves: buttons, toggles, list and menu items, combo boxes.</summary>
+    private static bool UsesSpace(object? focused) =>
+        focused is ButtonBase or ToggleSwitch or SelectorItem or ComboBox or ItemContainer or NavigationViewItemBase or MenuFlyoutItemBase or BreadcrumbBarItem;
 }
