@@ -1,8 +1,10 @@
+using System.Runtime.InteropServices;
 using Groovefin.Core.Images;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.Storage;
 using Windows.Storage.Streams;
 
 namespace Groovefin.App.Controls;
@@ -56,11 +58,11 @@ internal static class Artwork
             bitmap = new BitmapImage { DecodePixelWidth = request.BucketWidth, DecodePixelType = DecodePixelType.Physical };
             try
             {
-                using var file = File.OpenRead(path);
-                using var stream = file.AsRandomAccessStream();
+                // Opened asynchronously: this runs on the UI thread for every cover that scrolls into view.
+                using var stream = await FileRandomAccessStream.OpenAsync(path, FileAccessMode.Read);
                 await bitmap.SetSourceAsync(stream);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or COMException)
             {
                 // A truncated or evicted file: show the placeholder; the next request downloads again.
                 return;

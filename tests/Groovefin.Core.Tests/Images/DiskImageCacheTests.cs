@@ -143,6 +143,22 @@ public sealed class DiskImageCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task Hits_mark_a_file_as_used_at_most_once_a_minute()
+    {
+        var sut = CreateSut();
+        var path = await sut.GetAsync(Request("a"), Ct);
+        var downloaded = File.GetLastWriteTimeUtc(path!);
+
+        _time.Advance(TimeSpan.FromSeconds(30));
+        await sut.GetAsync(Request("a"), Ct);
+        File.GetLastWriteTimeUtc(path!).Should().Be(downloaded);
+
+        _time.Advance(DiskImageCache.TouchInterval);
+        await sut.GetAsync(Request("a"), Ct);
+        File.GetLastWriteTimeUtc(path!).Should().Be(_time.GetUtcNow().UtcDateTime);
+    }
+
+    [Fact]
     public async Task Lowered_limit_applies_on_the_next_download()
     {
         var sut = CreateSut();

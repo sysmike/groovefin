@@ -10,6 +10,8 @@ namespace Groovefin.Core.Images;
 /// <see cref="IImageCache"/> that stores one file per server, item, image kind, tag and width bucket.
 /// The file's last-write time is its last use; above <see cref="ImageCacheOptions.MaxBytes"/> the least
 /// recently used files are deleted. Concurrent requests for the same image share one download.
+/// Views ask for every visible cover on the UI thread, so even a hit (file check and timestamp) runs on
+/// the thread pool.
 /// </summary>
 public sealed partial class DiskImageCache(
     ImageCacheOptions options,
@@ -17,6 +19,9 @@ public sealed partial class DiskImageCache(
     TimeProvider time,
     ILogger<DiskImageCache> logger) : IImageCache
 {
+    /// <summary>A hit marks its file as used at most this often, so scrolling back and forth writes little.</summary>
+    internal static readonly TimeSpan TouchInterval = TimeSpan.FromMinutes(1);
+
     private readonly ConcurrentDictionary<string, Lazy<Task<string?>>> _inFlight = new();
     private readonly SemaphoreSlim _evictionGate = new(1, 1);
 
@@ -30,15 +35,7 @@ public sealed partial class DiskImageCache(
         }
 
         var path = PathFor(serverKey, request);
-        if (File.Exists(path))
-        {
-            Touch(path);
-            return Task.FromResult<string?>(path);
-        }
-
-        // One download per file; the shared download is not cancelled by a single caller.
-        var lazy = _inFlight.GetOrAdd(path, p => new Lazy<Task<string?>>(() => DownloadAsync(request, p)));
-        return lazy.Value.WaitAsync(cancellationToken);
+        return Task.Run(() => LookUpAsync(request, path, cancellationToken), cancellationToken);
     }
 
     public Task<long> GetSizeAsync(CancellationToken cancellationToken = default) =>
@@ -69,6 +66,19 @@ public sealed partial class DiskImageCache(
 
         // Two-character sub-folders keep directories small for large libraries.
         return Path.Join(options.Directory, hash[..2], hash + ".img");
+    }
+
+    private Task<string?> LookUpAsync(ImageRequest request, string path, CancellationToken cancellationToken)
+    {
+        if (File.Exists(path))
+        {
+            TouchIfStale(path);
+            return Task.FromResult<string?>(path);
+        }
+
+        // One download per file; the shared download is not cancelled by a single caller.
+        var lazy = _inFlight.GetOrAdd(path, p => new Lazy<Task<string?>>(() => DownloadAsync(request, p)));
+        return lazy.Value.WaitAsync(cancellationToken);
     }
 
     private async Task<string?> DownloadAsync(ImageRequest request, string path)
@@ -147,6 +157,21 @@ public sealed partial class DiskImageCache(
         return root.Exists
             ? root.EnumerateFiles("*.img", SearchOption.AllDirectories)
             : [];
+    }
+
+    private void TouchIfStale(string path)
+    {
+        try
+        {
+            if (time.GetUtcNow().UtcDateTime - File.GetLastWriteTimeUtc(path) >= TouchInterval)
+            {
+                Touch(path);
+            }
+        }
+        catch (IOException)
+        {
+            // Only affects eviction order.
+        }
     }
 
     private void Touch(string path)
