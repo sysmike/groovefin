@@ -44,6 +44,13 @@ internal sealed class FakePlaybackEngine(IDispatcher? dispatcher = null, TimePro
 
     protected override void SeekCore(TimeSpan position) => Calls.Add($"seek {position.TotalSeconds}");
 
+    /// <summary>Gets or sets whether the stream can be seeked, like a file played as it is (or not, like a transcode).</summary>
+    public bool CanSeek { get; set; } = true;
+
+    protected override bool CanSeekCore(TimeSpan position) => CanSeek;
+
+    protected override void RestartCore(Uri url) => Calls.Add($"restart {url}");
+
     protected override void StopCore() => Calls.Add("stop");
 
     protected override void SetVolumeCore(double volume) => Calls.Add($"volume {volume}");

@@ -59,6 +59,17 @@ public sealed class PlayerTests : IDisposable
     }
 
     [Fact]
+    public void A_source_can_build_its_stream_from_a_later_point()
+    {
+        _client.Connection.Returns(new ServerConnection(new Uri("https://media.example.com/"), "user", "token"));
+        _sut.Play(Tracks("a"));
+
+        _engine.Current!.UrlAt!(TimeSpan.FromSeconds(60));
+
+        _streams.Received(1).GetStreamUrl("a", new StreamOptions(320, TranscodingCodec.Aac) { StartPosition = TimeSpan.FromSeconds(60) });
+    }
+
+    [Fact]
     public void Playing_nothing_changes_nothing()
     {
         _sut.Play([]);
