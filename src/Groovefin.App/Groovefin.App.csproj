@@ -42,9 +42,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Assets\**\*.png" />
-    <Content Include="Assets\AppIcon.ico" />
-    <Content Include="Assets\Taskbar\*.ico" />
+    <!-- Copied to the output too: MSIX packaging takes all content, the unpackaged publish only copied files. -->
+    <Content Include="Assets\**\*.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Taskbar\*.ico" CopyToOutputDirectory="PreserveNewest" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 

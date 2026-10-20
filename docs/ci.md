@@ -37,7 +37,12 @@ Triggers: `pull_request`, `push` to `main`, manual (`workflow_dispatch`).
 |---|---|---|
 | `format` | Ubuntu | `dotnet format Groovefin.sln --verify-no-changes`. Fails when code does not match `.editorconfig`. Fix locally with `dotnet format Groovefin.sln`. |
 | `test-core` | Ubuntu | Builds and tests `Groovefin.CrossPlatform.slnf` (Core, Jellyfin and their tests) on Microsoft.Testing.Platform. Writes a TRX results table and a Cobertura coverage summary to the job summary, and uploads TRX + coverage as the `test-results` artifact (7 days). |
-| `build-windows (x64)`, `build-windows (ARM64)` | Windows | Release build of the full solution for each platform, then packages `Groovefin.App`: an unsigned MSIX (`groovefin-msix-<platform>`) and an unpackaged, self-contained build (`WindowsPackageType=None`, `WindowsAppSDKSelfContained=true`, artifact `groovefin-unpackaged-<platform>`). Artifacts are kept for 7 days so every PR has a testable build. |
+| `build-windows (x64)`, `build-windows (ARM64)` | Windows | Release build of the full solution for each platform, then packages `Groovefin.App`: an unsigned MSIX (`groovefin-msix-<platform>`) and an unpackaged, self-contained build (`WindowsPackageType=None`, `WindowsAppSDKSelfContained=true`, artifact `groovefin-unpackaged-<platform>`). Artifacts are kept for 7 days so every PR has a testable build. The x64 job then starts the unpackaged app (`.github/scripts/Test-AppStarts.ps1`) and fails if it exits within 20 seconds, printing `%LOCALAPPDATA%\Groovefin\startup-error.log`, the app log and the Windows error events. |
+
+The unpackaged publish first deletes the App project's `bin` and `obj` folders for the platform. The
+MSIX build leaves a `resources.pri` without the Windows App SDK's own resources (packages get them
+from the runtime package), and an incremental publish would reuse it, so the unpackaged app could not
+find its theme resources and crashed on start (#133).
 
 If the Windows build fails, every MSBuild error (including XAML compiler `WMC…` errors, which the
 default problem matcher misses) is also reported as an annotation on the check run, so the cause is

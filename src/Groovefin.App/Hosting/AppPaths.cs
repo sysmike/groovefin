@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Windows.ApplicationModel;
 using Windows.Storage;
 
@@ -36,9 +37,9 @@ internal static class AppPaths
         {
             return Package.Current is not null;
         }
-        catch (InvalidOperationException)
+        catch (Exception ex) when (ex is InvalidOperationException or COMException)
         {
-            // Thrown when the process has no package identity.
+            // No package identity (the unpackaged ZIP): APPMODEL_ERROR_NO_PACKAGE arrives as a COMException.
             return false;
         }
     }
