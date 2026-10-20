@@ -19,6 +19,7 @@ WinUI 3.
 **Playback**
 - Gapless playback, volume normalization from the server's loudness data (track or album), and
   stream quality limits for the home network and remote servers.
+- A 10-band equalizer with presets and a preamp, heard as you move the sliders.
 - A queue panel with drag and drop, shuffle and repeat.
 - Synced lyrics that follow the song (LRC), with click-to-seek and an offset.
 - Resume where you left off: the queue and position come back after a restart.
@@ -67,8 +68,10 @@ with your Jellyfin user, or with Quick Connect.
 
 ## Build from source
 
-You need Windows 11 and either Visual Studio 2026 (workloads *.NET desktop development* and *WinUI
-application development*) or the .NET 10 SDK.
+You need Windows 11 and either Visual Studio 2026 (workloads *.NET desktop development*, *WinUI
+application development* and *Desktop development with C++*) or the .NET 10 SDK with the Visual C++
+build tools. The C++ tools link the equalizer's audio effect (NativeAOT); without them, build with
+`-p:GroovefinAudioEffects=false` and the app runs without the equalizer.
 
 ```powershell
 git clone https://github.com/sysmike/groovefin.git

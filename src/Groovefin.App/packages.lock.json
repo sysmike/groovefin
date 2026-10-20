@@ -703,10 +703,14 @@
         "resolved": "8.0.0",
         "contentHash": "7mu9v0QDv66ar3DpGSZHg9NuNcxDaaAcnMULuZlaTpP9+hwXhrxNGsF5GmLkSHxFdb5bBc1TzeujsRgTrPWi+Q=="
       },
+      "groovefin.audio": {
+        "type": "Project"
+      },
       "groovefin.core": {
         "type": "Project",
         "dependencies": {
           "CommunityToolkit.Mvvm": "[8.4.2, )",
+          "Groovefin.Audio": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.Options": "[10.0.13, )"

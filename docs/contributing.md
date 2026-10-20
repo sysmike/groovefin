@@ -5,8 +5,10 @@ and what a pull request needs before it can be merged.
 
 ## Prerequisites
 
-- Windows 11 with Visual Studio 2026 (workloads: *.NET desktop development* and *WinUI application
-  development*), or the .NET 10 SDK plus the Windows App SDK build tools.
+- Windows 11 with Visual Studio 2026 (workloads: *.NET desktop development*, *WinUI application
+  development* and *Desktop development with C++*), or the .NET 10 SDK plus the Windows App SDK build
+  tools and the Visual C++ build tools (x64 and ARM64). The C++ linker is needed for the equalizer's
+  NativeAOT audio effect (`Groovefin.Audio.Effects`); `-p:GroovefinAudioEffects=false` skips it.
 - The SDK version is pinned in [`global.json`](../global.json).
 - `Groovefin.Core`, `Groovefin.Jellyfin` and their tests also build on Linux and macOS:
 

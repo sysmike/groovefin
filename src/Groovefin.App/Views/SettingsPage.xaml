@@ -182,6 +182,82 @@
                 Visibility="{x:Bind ViewModel.IsDiscordAvailable}">
                 <ToggleSwitch IsOn="{x:Bind ViewModel.DiscordPresence, Mode=TwoWay}" />
             </controls:SettingsCard>
+            <!--  Hidden when the audio effect could not be loaded (the reason is in the log).  -->
+            <controls:SettingsExpander
+                x:Uid="SettingsEqualizerCard"
+                HeaderIcon="{ui:FontIcon Glyph=&#xE9E9;}"
+                Visibility="{x:Bind Equalizer.IsAvailable}">
+                <ToggleSwitch IsOn="{x:Bind Equalizer.IsEnabled, Mode=TwoWay}" />
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard x:Uid="SettingsEqualizerPresetCard">
+                        <ComboBox
+                            MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                            ItemsSource="{x:Bind Equalizer.PresetOptions}"
+                            SelectedIndex="{x:Bind Equalizer.PresetIndex, Mode=TwoWay}" />
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsEqualizerBandsCard" ContentAlignment="Vertical">
+                        <!--  Scrolls sideways in a narrow window instead of squeezing the sliders.  -->
+                        <ScrollViewer
+                            HorizontalScrollBarVisibility="Auto"
+                            HorizontalScrollMode="Auto"
+                            VerticalScrollBarVisibility="Disabled"
+                            VerticalScrollMode="Disabled">
+                            <ItemsControl ItemsSource="{x:Bind Equalizer.Bands}" IsTabStop="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="4" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:EqualizerBandViewModel">
+                                        <StackPanel Width="56" Spacing="4">
+                                            <TextBlock
+                                                HorizontalAlignment="Center"
+                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                Text="{x:Bind GainText, Mode=OneWay}" />
+                                            <Slider
+                                                x:Uid="EqualizerBandSlider"
+                                                Height="160"
+                                                HorizontalAlignment="Center"
+                                                AutomationProperties.Name="{x:Bind Name}"
+                                                Maximum="12"
+                                                Minimum="-12"
+                                                Orientation="Vertical"
+                                                StepFrequency="0.5"
+                                                TickFrequency="6"
+                                                TickPlacement="Outside"
+                                                Value="{x:Bind Gain, Mode=TwoWay}" />
+                                            <TextBlock
+                                                HorizontalAlignment="Center"
+                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                Text="{x:Bind Name}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsEqualizerPreampCard">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock
+                                MinWidth="48"
+                                VerticalAlignment="Center"
+                                Text="{x:Bind Equalizer.PreampText, Mode=OneWay}"
+                                TextAlignment="Right" />
+                            <Slider
+                                x:Uid="SettingsEqualizerPreampSlider"
+                                Width="{StaticResource SettingsChoiceMinWidth}"
+                                Maximum="{x:Bind Equalizer.MaxGain}"
+                                Minimum="{x:Bind Equalizer.MinGain}"
+                                StepFrequency="0.5"
+                                Value="{x:Bind Equalizer.Preamp, Mode=TwoWay}" />
+                        </StackPanel>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsEqualizerResetCard">
+                        <Button x:Uid="SettingsEqualizerResetButton" Command="{x:Bind Equalizer.ResetCommand}" />
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
 
             <!--  Storage  -->
             <TextBlock

@@ -21,6 +21,10 @@
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
   </ItemGroup>
 
+  <ItemGroup Label="Audio effects">
+    <PackageVersion Include="Microsoft.Windows.CsWinRT" Version="2.3.1" />
+  </ItemGroup>
+
   <ItemGroup Label="App">
     <PackageVersion Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
     <PackageVersion Include="H.NotifyIcon.WinUI" Version="2.4.1" />

@@ -13,6 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Groovefin.Audio\Groovefin.Audio.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Groovefin.Core.Tests" />
   </ItemGroup>
 

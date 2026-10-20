@@ -18,6 +18,8 @@ depend on which, and the conventions every feature follows.
 |---|---|---|
 | `Groovefin.App` | `net10.0-windows10.0.22000.0`, WinUI 3, single-project MSIX | Composition root (generic host + DI), XAML views, styles, `.resw` resources, platform services (navigation, dialogs, theme, dispatcher, credentials, settings storage location). |
 | `Groovefin.Core` | `net10.0` | Domain models, service interfaces, ViewModels, `QueueManager`, settings model, messages. **No WinUI or Windows references.** |
+| `Groovefin.Audio` | `net10.0` | The equalizer's signal processing (peaking filters, parameters), without dependencies. Used by Core and by the audio effect. |
+| `Groovefin.Audio.Effects` | `net10.0-windows10.0.26100.0` (minimum 10.0.22000), C#/WinRT component, NativeAOT | The equalizer as a Media Foundation audio effect (`IBasicAudioEffect`). Published as a native DLL next to `Groovefin.exe`; see [Audio effects](#audio-effects). |
 | `Groovefin.Jellyfin` | `net10.0` | Implements the Core API interfaces with `Jellyfin.Sdk`: authentication, DTO→domain mapping, stream URLs, image URLs, playback reporting, resilient HTTP pipeline. |
 | `Groovefin.Playback.Windows` | `net10.0-windows10.0.22000.0` | `IPlaybackEngine` implementation using `Windows.Media.Playback.MediaPlayer` + `MediaPlaybackList`. System Media Transport Controls. |
 | `Groovefin.Core.Tests` | `net10.0` | Unit tests for Core (ViewModels, queue, parsers). |
@@ -77,13 +79,17 @@ flowchart TD
     App[Groovefin.App] --> Core[Groovefin.Core]
     App --> Jellyfin[Groovefin.Jellyfin]
     App --> Playback[Groovefin.Playback.Windows]
+    App -. native build .-> Effects[Groovefin.Audio.Effects]
     Jellyfin --> Core
     Playback --> Core
+    Core --> Audio[Groovefin.Audio]
+    Effects --> Audio
     CoreTests[Groovefin.Core.Tests] --> Core
     JellyfinTests[Groovefin.Jellyfin.Tests] --> Jellyfin
 ```
 
-1. `Groovefin.Core` references no other Groovefin project and no WinUI / WinRT API.
+1. `Groovefin.Core` references no other Groovefin project but `Groovefin.Audio` (plain signal processing,
+   no dependencies), and no WinUI / WinRT API.
 2. `Groovefin.Jellyfin` and `Groovefin.Playback.Windows` reference only `Groovefin.Core`. They never
    reference each other.
 3. Only `Groovefin.App` references everything. It is the only place that registers implementations
@@ -110,6 +116,7 @@ flowchart TD
 | `QueueManager` | Core | — (concrete, pure) | Queue order, shuffle with stable original order, repeat modes, history. |
 | `IPlayer` | Core | Core (`Player`) | Queue and engine together: play/shuffle/queue tracks, transport, auto-advance, skipping failed tracks, keeping the engine's next source on the queue's next entry (gapless). Stream URLs come from `IStreamUrlProvider` with the streaming settings for the active server. |
 | `ISystemMediaControls` | Core | Playback.Windows | Media keys and the Windows media flyout (SMTC of the engine's `MediaPlayer`, its command manager off). `SystemMediaControlsSync` (Core) shows the playing track, status and timeline and sends the buttons to `IPlayer`. |
+| `IAudioEqualizer` | Core | Playback.Windows | The equalizer in the audio path: whether the effect could be added, and its parameters. `EqualizerSync` (Core) passes the settings on. |
 | `IStreamUrlProvider` | Core | Jellyfin | `/Audio/{id}/universal` URLs (direct play or transcode, bitrate limit). |
 | `INavigationService` | Core | App | Navigate by ViewModel type + parameter, back stack. |
 | `IDialogService` | Core | App | Content dialogs, confirmations, pickers. |
@@ -117,6 +124,27 @@ flowchart TD
 | `ISettingsService` | Core | Core + App storage location | Strongly typed settings persisted as JSON. |
 | `IDispatcher` | Core | App | Marshal work to the UI thread. The only way code outside views touches the UI thread. |
 | `ICredentialStore` | Core | App | Access tokens in `PasswordVault`. |
+
+## Audio effects
+
+`MediaPlayer` takes audio effects only as registered WinRT classes (`AddAudioEffect(classId, …)`):
+Media Foundation creates them with `RoActivateInstance`. So the equalizer runs as follows:
+
+- `Groovefin.Audio.Effects` implements `IBasicAudioEffect` with C#/WinRT authoring. `Groovefin.App`
+  publishes it with NativeAOT for its runtime identifier (`PublishAudioEffects` target), and ships the
+  native `Groovefin.Audio.Effects.dll`, which exports `DllGetActivationFactory`. NativeAOT is used instead
+  of C#/WinRT's `WinRT.Host.dll` because that host needs an installed .NET runtime, while the unpackaged
+  app is self-contained.
+- `Package.appxmanifest` (MSIX) and `app.manifest` (unpackaged, registration-free WinRT) register the
+  class `Groovefin.Audio.Effects.EqualizerEffect` in that DLL.
+- `MediaPlayerEngine` asks Windows for the class's activation factory first, logs the result
+  ("Equalizer effect is available"), and only then adds it, as optional. Without it, Settings hides the
+  equalizer and playback works as before. The CI smoke test fails if the log says otherwise.
+- The app passes the parameters as one string in the effect's property set
+  (`EqualizerEffectContract`, `EqualizerParameters.Format`). The effect and the app run different .NET
+  runtimes in one process, so nothing else is shared.
+- The filter maths lives in `Groovefin.Audio` and is unit-tested on every platform. The effect project
+  itself builds only on Windows (`cswinrt.exe`).
 
 ## Jellyfin layer
 

@@ -16,7 +16,8 @@ public sealed record ThirdPartyComponent(string Name, string License, Uri Projec
 
 /// <summary>
 /// The third-party components in the app package, for the About section. A test checks the list against
-/// the app's NuGet lock file, so a new dependency needs an entry here.
+/// the app's NuGet lock file and the packages compiled into the equalizer effect, so a new dependency needs
+/// an entry here.
 /// </summary>
 public static class ThirdPartyNotices
 {
@@ -24,6 +25,7 @@ public static class ThirdPartyNotices
     public static IReadOnlyList<ThirdPartyComponent> All { get; } =
     [
         new(".NET and Microsoft.Extensions", "MIT", new("https://github.com/dotnet/runtime"), ["Microsoft.Extensions.", "Microsoft.Win32.", "System."]),
+        new("C#/WinRT", "MIT", new("https://github.com/microsoft/CsWinRT"), ["Microsoft.Windows.CsWinRT"]),
         new("H.NotifyIcon", "MIT", new("https://github.com/HavenDV/H.NotifyIcon"), ["H.NotifyIcon.", "H.NotifyIcon", "H.GeneratedIcons."]),
         new("Jellyfin SDK", "MIT", new("https://github.com/jellyfin/jellyfin-sdk-csharp"), ["Jellyfin.Sdk"]),
         new("Microsoft Kiota", "MIT", new("https://github.com/microsoft/kiota-dotnet"), ["Microsoft.Kiota."]),

@@ -1,5 +1,9 @@
+using Groovefin.Audio;
+using Groovefin.Core.Equalizer;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Microsoft.Extensions.Logging;
+using Windows.Foundation.Collections;
 using Windows.Media;
 using Windows.Media.Core;
 using Windows.Media.Playback;
@@ -10,14 +14,19 @@ namespace Groovefin.Playback.Windows;
 /// <see cref="IPlaybackEngine"/> on <c>Windows.Media.Playback.MediaPlayer</c>. Every load gets a
 /// <see cref="MediaPlaybackList"/> holding the current item and the queued next one, so the next one is
 /// pre-buffered and follows without a gap. MediaPlayer raises its events on background threads;
-/// <see cref="PlaybackEngineBase"/> moves them to the UI thread.
+/// <see cref="PlaybackEngineBase"/> moves them to the UI thread. The equalizer is an audio effect on the
+/// player (<see cref="EqualizerEffectContract"/>), added once for everything it plays.
 /// </summary>
-public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
+public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable, IAudioEqualizer
 {
     /// <summary>How long before the end of the current item the next one starts buffering.</summary>
     public static readonly TimeSpan PrefetchTime = TimeSpan.FromSeconds(30);
 
     private readonly MediaPlayer _player;
+
+    /// <summary>The equalizer effect's configuration; the effect follows its changes.</summary>
+    private readonly PropertySet _equalizer = new();
+    private readonly ILogger<MediaPlayerEngine> _logger;
 
     /// <summary>Guards the list and its items below, which MediaPlayer's event threads read.</summary>
     private readonly Lock _gate = new();
@@ -26,9 +35,10 @@ public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
     private Entry? _next;
     private bool _disposed;
 
-    public MediaPlayerEngine(IDispatcher dispatcher, TimeProvider time)
+    public MediaPlayerEngine(IDispatcher dispatcher, TimeProvider time, ILogger<MediaPlayerEngine> logger)
         : base(dispatcher, time)
     {
+        _logger = logger;
         _player = new MediaPlayer
         {
             AutoPlay = false,
@@ -44,7 +54,11 @@ public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
         _player.PlaybackSession.NaturalDurationChanged += OnPositionChanged;
         _player.MediaEnded += OnMediaEnded;
         _player.MediaFailed += OnMediaFailed;
+        IsAvailable = AddEqualizer();
     }
+
+    /// <summary>Gets a value indicating whether the equalizer effect is in the audio path.</summary>
+    public bool IsAvailable { get; }
 
     /// <summary>Gets the System Media Transport Controls of the player (media keys, the media flyout).</summary>
     public SystemMediaTransportControls TransportControls => _player.SystemMediaTransportControls;
@@ -84,6 +98,16 @@ public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
         _player.MediaEnded -= OnMediaEnded;
         _player.MediaFailed -= OnMediaFailed;
         _player.Dispose();
+    }
+
+    /// <summary>Passes new parameters to the effect, which applies them from its next buffer.</summary>
+    public void Apply(EqualizerParameters parameters)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+        if (IsAvailable)
+        {
+            _equalizer[EqualizerEffectContract.ParametersKey] = parameters.Format();
+        }
     }
 
     protected override void LoadCore(PlaybackSource source, bool autoPlay)
@@ -216,6 +240,26 @@ public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
 
     protected override void SetMutedCore(bool isMuted) => _player.IsMuted = isMuted;
 
+    /// <summary>
+    /// Adds the equalizer effect, if Windows can create it: with a missing DLL or registration MediaPlayer
+    /// would only skip it without a word, so this asks first and logs the answer. The effect is optional
+    /// either way: if it fails later, the music plays without it.
+    /// </summary>
+    private bool AddEqualizer()
+    {
+        var result = AudioEffectRegistration.Check(EqualizerEffectContract.ClassId);
+        if (result < 0)
+        {
+            LogEqualizerUnavailable(result);
+            return false;
+        }
+
+        _equalizer[EqualizerEffectContract.ParametersKey] = EqualizerParameters.Off.Format();
+        _player.AddAudioEffect(EqualizerEffectContract.ClassId, effectOptional: true, _equalizer);
+        LogEqualizerAvailable();
+        return true;
+    }
+
     private static PlaybackState Map(MediaPlaybackState state) => state switch
     {
         MediaPlaybackState.Opening => PlaybackState.Opening,
@@ -328,4 +372,10 @@ public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
             return new(source, source.StartPosition > TimeSpan.Zero ? new MediaPlaybackItem(media, source.StartPosition) : new MediaPlaybackItem(media));
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Equalizer effect is available")]
+    private partial void LogEqualizerAvailable();
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Equalizer effect is not available (0x{Result:X8}); playing without it")]
+    private partial void LogEqualizerUnavailable(int result);
 }
