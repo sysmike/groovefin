@@ -31,6 +31,18 @@ public sealed class HomeViewModelTests
 
     private HomeViewModel CreateSut() => new(_library, _navigation, _errors, _strings);
 
+    [Fact]
+    public void Disposing_twice_does_not_throw()
+    {
+        // The page disposes it when the user leaves; the container disposes it again at shutdown (#145).
+        var sut = CreateSut();
+        sut.Dispose();
+
+        var act = sut.Dispose;
+
+        act.Should().NotThrow();
+    }
+
     private void FailFor(HomeShelfKind kind, Exception exception) =>
         _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q == HomeViewModel.QueryFor(kind)), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<PagedResult<Album>>(exception));

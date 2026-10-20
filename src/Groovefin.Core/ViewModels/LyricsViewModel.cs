@@ -108,6 +108,7 @@ public sealed partial class LyricsViewModel : ObservableObject, IDisposable
         _player.Engine.PositionChanged -= OnPositionChanged;
         _loading?.Cancel();
         _loading?.Dispose();
+        _loading = null;
     }
 
     [RelayCommand]

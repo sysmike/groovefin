@@ -41,6 +41,16 @@ public sealed class LyricsViewModelTests : IDisposable
 
     public void Dispose() => _sut.Dispose();
 
+    [Fact]
+    public void Disposing_twice_does_not_throw()
+    {
+        _sut.Dispose();
+
+        var act = _sut.Dispose;
+
+        act.Should().NotThrow();
+    }
+
     private void Play(Track track) => _engine.Load(new PlaybackSource("q-" + track.Id, new Uri("http://stream/" + track.Id), track));
 
     /// <summary>Reports a position; the engine passes on at most a few a second, so time moves on first.</summary>

@@ -97,6 +97,7 @@ public sealed partial class SongsViewModel : ObservableObject, IDisposable
     private readonly IErrorReporter _errors;
     private readonly IStringResources _strings;
     private CancellationTokenSource _loadCancellation = new();
+    private bool _disposed;
     private int _generation;
     private bool _initialized;
 
@@ -170,8 +171,15 @@ public sealed partial class SongsViewModel : ObservableObject, IDisposable
         return LoadPageAsync(generation);
     }
 
+    /// <summary>Cancels loading. Safe to call twice: the page and, at shutdown, the container dispose it.</summary>
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         _loadCancellation.Cancel();
         _loadCancellation.Dispose();
     }

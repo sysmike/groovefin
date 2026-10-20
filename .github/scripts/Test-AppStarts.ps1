@@ -2,8 +2,9 @@
 .SYNOPSIS
 Starts Groovefin and checks that it finishes starting: the window is shown and the app logs its
 "Start-up took ..." line. Then it goes through the first run with UI Automation against a small fake
-Jellyfin server: it adds the server, signs in, shows the home page and opens the folders page. Fails
-if the app exits, does not finish starting in time, or logs an unhandled exception.
+Jellyfin server: it adds the server, signs in, shows the home page, opens the folders page and closes
+the window. Fails if the app exits too early, does not finish starting in time, logs an unhandled
+exception, or does not exit cleanly after the window is closed.
 
 .DESCRIPTION
 On failure it prints the start-up error file, the end of the app's log and the latest error events
@@ -91,6 +92,8 @@ try {
     # The start-up error file then lists every exception thrown, also the ones XAML wraps in its own.
     $env:GROOVEFIN_TRACE_EXCEPTIONS = '1'
     $process = Start-Process -FilePath $Path -PassThru
+    # Keeps the process handle open, so ExitCode is still known after the process has exited.
+    $null = $process.Handle
     $deadline = $started.AddSeconds($Seconds)
     $ready = $null
 
@@ -194,6 +197,17 @@ try {
     Start-Sleep -Seconds 2
     Test-Running 'on the folders page'
     Write-Output 'The folders page opened.'
+
+    # Close the window like a user: the app must shut down without errors and exit with code 0 (#145).
+    $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
+    if (-not $process.WaitForExit(20000)) {
+        Stop-Test 'Smoke test' 'Groovefin was still running 20 seconds after its window was closed.'
+    }
+    $unhandled = Select-String -Path (Get-AppLog).FullName -Pattern 'Unhandled' -SimpleMatch
+    if ($unhandled -or $process.ExitCode -ne 0) {
+        Stop-Test 'Smoke test' "Groovefin exited with code $($process.ExitCode) or logged an unhandled exception while closing."
+    }
+    Write-Output 'Closing the window shut Groovefin down cleanly.'
 }
 catch {
     Stop-Test 'Smoke test' "The test failed: $($_.Exception.Message)"

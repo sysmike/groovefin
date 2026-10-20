@@ -24,6 +24,7 @@ public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
     private MediaPlaybackList? _list;
     private Entry? _current;
     private Entry? _next;
+    private bool _disposed;
 
     public MediaPlayerEngine(IDispatcher dispatcher, TimeProvider time)
         : base(dispatcher, time)
@@ -60,8 +61,18 @@ public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
         }
     }
 
+    /// <summary>
+    /// Releases the player. Safe to call twice: the container disposes it once for each of its
+    /// registrations (itself and <see cref="IPlaybackEngine"/>), and the closed player throws E_ABORT (#145).
+    /// </summary>
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         lock (_gate)
         {
             DetachList();
