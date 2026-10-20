@@ -8,15 +8,10 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:local="using:Groovefin.App.Views"
     xmlns:vm="using:Groovefin.Core.ViewModels"
     mc:Ignorable="d">
 
     <Page.Resources>
-        <local:ProbeNameConverter x:Key="ProbeH" Prefix="Variant H (no x:Uid) " />
-        <local:ProbeNameConverter x:Key="ProbeI" Prefix="Variant I (parent without width) " />
-        <local:ProbeNameConverter x:Key="ProbeJ" Prefix="Variant J (stretched) " />
-        <local:ProbeNameConverter x:Key="ProbeK" Prefix="Variant K (slider width 40) " />
         <!--  Group headers like in Windows Settings: some space above, little below.  -->
         <Style
             x:Key="SettingsSectionHeaderStyle"
@@ -220,10 +215,10 @@
                                                 HorizontalAlignment="Center"
                                                 Style="{StaticResource CaptionTextBlockStyle}"
                                                 Text="{x:Bind GainText, Mode=OneWay}" />
+                                            <!--  Stretched: centred, a vertical Slider in this fixed-width column draws nothing (#165). Its template centres the track.  -->
                                             <Slider
                                                 x:Uid="EqualizerBandSlider"
                                                 Height="160"
-                                                HorizontalAlignment="Center"
                                                 AutomationProperties.Name="{x:Bind Name}"
                                                 Maximum="12"
                                                 Minimum="-12"
@@ -236,130 +231,6 @@
                                                 HorizontalAlignment="Center"
                                                 Style="{StaticResource CaptionTextBlockStyle}"
                                                 Text="{x:Bind Name}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </controls:SettingsCard>
-                    <!--  TEMPORARY (#165): slider variants for the CI screenshot; removed before the PR.  -->
-                    <controls:SettingsCard Header="ProbeH" ContentAlignment="Vertical">
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Auto" VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
-                            <ItemsControl ItemsSource="{x:Bind Equalizer.Bands}" IsTabStop="False">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="4" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:EqualizerBandViewModel">
-                                        <StackPanel Width="56" Spacing="4">
-                                            <TextBlock HorizontalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind GainText, Mode=OneWay}" />
-                                            <Slider
-                                                Height="160"
-                                                HorizontalAlignment="Center"
-                                                AutomationProperties.Name="{x:Bind Name, Converter={StaticResource ProbeH}}"
-                                                Maximum="12"
-                                                Minimum="-12"
-                                                Orientation="Vertical"
-                                                StepFrequency="0.5"
-                                                TickFrequency="6"
-                                                TickPlacement="Outside"
-                                                Value="{x:Bind Gain, Mode=TwoWay}" />
-                                            <TextBlock HorizontalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Name}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </controls:SettingsCard>
-                    <controls:SettingsCard Header="ProbeI" ContentAlignment="Vertical">
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Auto" VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
-                            <ItemsControl ItemsSource="{x:Bind Equalizer.Bands}" IsTabStop="False">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="4" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:EqualizerBandViewModel">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock HorizontalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind GainText, Mode=OneWay}" />
-                                            <Slider
-                                                x:Uid="EqualizerBandSlider"
-                                                Height="160"
-                                                HorizontalAlignment="Center"
-                                                AutomationProperties.Name="{x:Bind Name, Converter={StaticResource ProbeI}}"
-                                                Maximum="12"
-                                                Minimum="-12"
-                                                Orientation="Vertical"
-                                                StepFrequency="0.5"
-                                                TickFrequency="6"
-                                                TickPlacement="Outside"
-                                                Value="{x:Bind Gain, Mode=TwoWay}" />
-                                            <TextBlock HorizontalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Name}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </controls:SettingsCard>
-                    <controls:SettingsCard Header="ProbeJ" ContentAlignment="Vertical">
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Auto" VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
-                            <ItemsControl ItemsSource="{x:Bind Equalizer.Bands}" IsTabStop="False">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="4" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:EqualizerBandViewModel">
-                                        <StackPanel Width="56" Spacing="4">
-                                            <TextBlock HorizontalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind GainText, Mode=OneWay}" />
-                                            <Slider
-                                                x:Uid="EqualizerBandSlider"
-                                                Height="160"
-                                                AutomationProperties.Name="{x:Bind Name, Converter={StaticResource ProbeJ}}"
-                                                Maximum="12"
-                                                Minimum="-12"
-                                                Orientation="Vertical"
-                                                StepFrequency="0.5"
-                                                TickFrequency="6"
-                                                TickPlacement="Outside"
-                                                Value="{x:Bind Gain, Mode=TwoWay}" />
-                                            <TextBlock HorizontalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Name}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </controls:SettingsCard>
-                    <controls:SettingsCard Header="ProbeK" ContentAlignment="Vertical">
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Auto" VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
-                            <ItemsControl ItemsSource="{x:Bind Equalizer.Bands}" IsTabStop="False">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="4" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:EqualizerBandViewModel">
-                                        <StackPanel Width="56" Spacing="4">
-                                            <TextBlock HorizontalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind GainText, Mode=OneWay}" />
-                                            <Slider
-                                                x:Uid="EqualizerBandSlider"
-                                                Height="160"
-                                                HorizontalAlignment="Center"
-                                                Width="40"
-                                                AutomationProperties.Name="{x:Bind Name, Converter={StaticResource ProbeK}}"
-                                                Maximum="12"
-                                                Minimum="-12"
-                                                Orientation="Vertical"
-                                                StepFrequency="0.5"
-                                                TickFrequency="6"
-                                                TickPlacement="Outside"
-                                                Value="{x:Bind Gain, Mode=TwoWay}" />
-                                            <TextBlock HorizontalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Name}" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
