@@ -9,7 +9,8 @@ namespace Groovefin.Jellyfin;
 /// and it fits the bitrate limit; otherwise it transcodes to the chosen codec over plain HTTP.
 /// </summary>
 /// <remarks>
-/// <c>MediaPlayer</c> cannot send headers, so the access token goes into the URL as <c>api_key</c>.
+/// <c>MediaPlayer</c> cannot send headers, so the access token goes into the URL as <c>ApiKey</c>. Not the
+/// older <c>api_key</c>: servers with legacy authorization off (the default from Jellyfin 10.12) ignore it.
 /// </remarks>
 internal sealed class StreamUrlBuilder(JellyfinClient client, ClientIdentity identity) : IStreamUrlProvider
 {
@@ -51,7 +52,7 @@ internal sealed class StreamUrlBuilder(JellyfinClient client, ClientIdentity ide
             query.Add(("MaxStreamingBitrate", (kbps * 1000L).ToString(CultureInfo.InvariantCulture)));
         }
 
-        query.Add(("api_key", connection.AccessToken));
+        query.Add(("ApiKey", connection.AccessToken));
 
         // Keep a base path such as https://host/jellyfin.
         var builder = new UriBuilder(connection.ServerUrl)
