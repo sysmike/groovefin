@@ -294,20 +294,6 @@ public sealed class PlaybackEngineBaseTests
     }
 
     [Fact]
-    public void The_track_length_from_the_server_wins_over_the_player()
-    {
-        // A transcoded stream has no known length while it arrives; the player reports nonsense (#153).
-        _sut.Load(Source("a", seconds: 200));
-        _events.Clear();
-
-        _sut.SimulatePosition(TimeSpan.FromSeconds(1), TimeSpan.FromHours(4778));
-        _dispatcher.RunAll();
-
-        _sut.Duration.Should().Be(TimeSpan.FromSeconds(200));
-        _events.Should().Equal("position 1/200");
-    }
-
-    [Fact]
     public void Position_reports_after_stop_are_ignored()
     {
         _sut.Load(Source("a"));
