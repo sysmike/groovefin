@@ -42,17 +42,15 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
+            <!--
+                No item template: BreadcrumbBar also realizes an ellipsis item without data, which a typed
+                x:Bind template cannot cast (#144). The bar shows FolderCrumb.ToString(), the folder name.
+            -->
             <BreadcrumbBar
                 x:Uid="FoldersPath"
                 VerticalAlignment="Center"
                 ItemClicked="OnCrumbClicked"
-                ItemsSource="{x:Bind ViewModel.Path}">
-                <BreadcrumbBar.ItemTemplate>
-                    <DataTemplate x:DataType="vm:FolderCrumb">
-                        <BreadcrumbBarItem AutomationProperties.Name="{x:Bind Name}" Content="{x:Bind Name}" />
-                    </DataTemplate>
-                </BreadcrumbBar.ItemTemplate>
-            </BreadcrumbBar>
+                ItemsSource="{x:Bind ViewModel.Path}" />
             <StackPanel
                 Grid.Column="1"
                 Orientation="Horizontal"

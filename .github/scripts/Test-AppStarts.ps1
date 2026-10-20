@@ -2,8 +2,8 @@
 .SYNOPSIS
 Starts Groovefin and checks that it finishes starting: the window is shown and the app logs its
 "Start-up took ..." line. Then it goes through the first run with UI Automation against a small fake
-Jellyfin server: it adds the server, signs in and shows the home page. Fails if the app exits, does
-not finish starting in time, or logs an unhandled exception.
+Jellyfin server: it adds the server, signs in, shows the home page and opens the folders page. Fails
+if the app exits, does not finish starting in time, or logs an unhandled exception.
 
 .DESCRIPTION
 On failure it prints the start-up error file, the end of the app's log and the latest error events
@@ -182,6 +182,18 @@ try {
     Start-Sleep -Seconds 5
     Test-Running 'on the home page after signing in'
     Write-Output 'Signed in; the home page shows its lists.'
+
+    # Folders: its breadcrumb once crashed the app (#144).
+    $folders = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Folders'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) "navigation item 'Folders'"
+    $selection = $null
+    if ($folders.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref] $selection)) { $selection.Select() }
+    else { $folders.GetCurrentPattern($invoke).Invoke() }
+    $null = Find-Button 'Up one folder'
+    Start-Sleep -Seconds 2
+    Test-Running 'on the folders page'
+    Write-Output 'The folders page opened.'
 }
 catch {
     Stop-Test 'Smoke test' "The test failed: $($_.Exception.Message)"
