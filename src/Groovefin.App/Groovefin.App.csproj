@@ -70,12 +70,12 @@
   </PropertyGroup>
 
   <Target Name="PublishAudioEffects" BeforeTargets="AssignTargetPaths" Condition="'$(GroovefinAudioEffects)' == 'true'">
-    <!-- The app's packaging and publish settings do not apply to the effect. -->
+    <!-- The app's packaging and publish settings do not apply to the effect; NativeAOT is always self-contained. -->
     <MSBuild
       Projects="..\Groovefin.Audio.Effects\Groovefin.Audio.Effects.csproj"
       Targets="Publish"
-      Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);PublishDir=$(GroovefinAudioEffectsDir)"
-      RemoveProperties="Platform;SelfContained;WindowsPackageType;WindowsAppSDKSelfContained;GenerateAppxPackageOnBuild;AppxPackageSigningEnabled;AppxPackageDir;PublishReadyToRun;_IsPublishing" />
+      Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=true;PublishDir=$(GroovefinAudioEffectsDir)"
+      RemoveProperties="Platform;WindowsPackageType;WindowsAppSDKSelfContained;GenerateAppxPackageOnBuild;AppxPackageSigningEnabled;AppxPackageDir;PublishReadyToRun;_IsPublishing" />
     <ItemGroup>
       <Content Include="$(GroovefinAudioEffectsDir)Groovefin.Audio.Effects.dll" Link="Groovefin.Audio.Effects.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
