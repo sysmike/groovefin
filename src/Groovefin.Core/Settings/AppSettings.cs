@@ -45,6 +45,9 @@ public sealed record AppearanceSettings
     /// <summary>Gets or sets a value indicating whether highlights use the Windows accent colour (otherwise neutral grey).</summary>
     public bool UseAccentColor { get; set; } = true;
 
+    /// <summary>Gets or sets how tightly lists and controls are packed.</summary>
+    public ListDensity Density { get; set; } = ListDensity.Standard;
+
     /// <summary>Gets or sets the UI language tag, e.g. <c>de-DE</c>; <see langword="null"/> follows Windows.</summary>
     public string? Language { get; set; }
 
@@ -59,6 +62,16 @@ public sealed record AppearanceSettings
 
     /// <summary>Gets or sets a value indicating whether minimizing hides the window to the notification area icon.</summary>
     public bool MinimizeToTray { get; set; }
+}
+
+/// <summary>How tightly lists and controls are packed.</summary>
+public enum ListDensity
+{
+    /// <summary>The Windows default sizes.</summary>
+    Standard,
+
+    /// <summary>Smaller rows and controls, so more fits on the screen.</summary>
+    Compact,
 }
 
 /// <summary>Known servers and the active one. Access tokens are in the credential store, not here.</summary>

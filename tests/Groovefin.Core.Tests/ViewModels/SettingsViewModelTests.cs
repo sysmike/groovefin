@@ -499,4 +499,17 @@ public sealed class SettingsViewModelTests
 
         _settings.Current.Appearance.StartPage.Should().Be(PageKeys.Songs);
     }
+
+    [Fact]
+    public void The_density_is_standard_until_compact_is_chosen()
+    {
+        var sut = CreateSut();
+        sut.DensityIndex.Should().Be(0);
+
+        sut.DensityIndex = 1;
+        sut.DensityIndex = 5;
+
+        _settings.Current.Appearance.Density.Should().Be(ListDensity.Compact);
+        sut.DensityIndex.Should().Be(1);
+    }
 }

@@ -1590,4 +1590,16 @@
   <data name="StartPage_favourites" xml:space="preserve">
     <value>Favoriten</value>
   </data>
+  <data name="SettingsDensityCard.Header" xml:space="preserve">
+    <value>Dichte</value>
+  </data>
+  <data name="SettingsDensityCard.Description" xml:space="preserve">
+    <value>Kompakt zeigt mehr Zeilen auf einmal.</value>
+  </data>
+  <data name="SettingsDensityStandard.Content" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="SettingsDensityCompact.Content" xml:space="preserve">
+    <value>Kompakt</value>
+  </data>
 </root>
