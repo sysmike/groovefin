@@ -12,7 +12,7 @@ namespace Groovefin.App.Controls;
 
 /// <summary>
 /// The shared context menu (<see cref="ContextMenus"/>) for list rows and tiles of tracks, albums,
-/// artists and playlists: <c>&lt;ListView controls:ItemMenu.IsEnabled="True" /&gt;</c>. It opens on
+/// artists, playlists, genres and folders: <c>&lt;ListView controls:ItemMenu.IsEnabled="True" /&gt;</c>. It opens on
 /// right-click, the Menu key and Shift+F10, for the item under the pointer or with focus.
 /// </summary>
 internal static class ItemMenu
@@ -41,6 +41,7 @@ internal static class ItemMenu
             ArtistItem tile => menus.ForArtist(tile.Artist),
             PlaylistItem tile => menus.ForPlaylist(tile.Playlist),
             GenreItem tile => menus.ForGenre(tile.Genre),
+            Folder folder => menus.ForFolder(folder),
             _ => null,
         };
     }

@@ -163,6 +163,69 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         return new PagedResult<Track>(items, result.TotalRecordCount ?? items.Count, result.StartIndex ?? query.StartIndex);
     }
 
+    public async Task<FolderContent> GetFolderAsync(string? folderId, CancellationToken cancellationToken = default)
+    {
+        var (api, connection) = client.Active;
+        var parentId = folderId is null ? LibraryFolder(connection) : ParseId(folderId);
+        if (parentId is not { } parent)
+        {
+            var libraries = await GetMusicLibrariesAsync(cancellationToken).ConfigureAwait(false);
+            return new FolderContent([.. libraries.Select(l => new Folder(l.Id, l.Name))], []);
+        }
+
+        var userId = Guid.Parse(connection.UserId);
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items.GetAsync(
+                request =>
+                {
+                    var p = request.QueryParameters;
+                    p.UserId = userId;
+                    p.ParentId = parent;
+                    p.SortBy = [ItemSortBy.SortName];
+                    p.EnableUserData = true;
+                    // Primary only: the track DTO then carries AlbumPrimaryImageTag for covers.
+                    p.ImageTypeLimit = 1;
+                    p.EnableImageTypes = [ImageType.Primary];
+                    p.EnableTotalRecordCount = false;
+                },
+                cancellationToken),
+            "Loading folder").ConfigureAwait(false);
+
+        var items = result.Items ?? [];
+        return new FolderContent(
+            [.. items.Where(i => i.IsFolder == true && i.Id is not null).Select(i => new Folder(ItemMapper.FormatId(i.Id)!, i.Name ?? string.Empty))],
+            [.. items.Where(i => i.Type == BaseItemDto_Type.Audio && i.Id is not null).Select(ItemMapper.ToTrack)]);
+    }
+
+    public async Task<IReadOnlyList<Track>> GetFolderTracksAsync(string folderId, int limit, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(folderId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items.GetAsync(
+                request =>
+                {
+                    var p = request.QueryParameters;
+                    p.UserId = userId;
+                    p.ParentId = id;
+                    p.IncludeItemTypes = [BaseItemKind.Audio];
+                    p.Recursive = true;
+                    p.SortBy = [ItemSortBy.AlbumArtist, ItemSortBy.Album, ItemSortBy.ParentIndexNumber, ItemSortBy.IndexNumber, ItemSortBy.SortName];
+                    p.Limit = limit;
+                    p.EnableUserData = true;
+                    p.ImageTypeLimit = 1;
+                    p.EnableImageTypes = [ImageType.Primary];
+                    p.EnableTotalRecordCount = false;
+                },
+                cancellationToken),
+            "Loading folder tracks").ConfigureAwait(false);
+
+        return (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
+    }
+
     public async Task<PagedResult<Artist>> GetArtistsAsync(ArtistQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);

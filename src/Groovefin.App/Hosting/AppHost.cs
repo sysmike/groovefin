@@ -121,6 +121,7 @@ internal static class AppHost
         builder.Services.AddTransient<GenresViewModel>();
         builder.Services.AddTransient<GenreDetailViewModel>();
         builder.Services.AddTransient<SongsViewModel>();
+        builder.Services.AddTransient<FoldersViewModel>();
         builder.Services.AddTransient<ServersViewModel>();
         builder.Services.AddTransient<SignInViewModel>();
 
