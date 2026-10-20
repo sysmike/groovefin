@@ -24,6 +24,7 @@ public partial class App : Application
 
     private IHost? _host;
     private ILogger<App>? _logger;
+    private bool _windowShown;
 
     public App()
     {
@@ -47,9 +48,20 @@ public partial class App : Application
         {
             await StartAsync();
         }
-        catch (Exception ex) when (_logger is null && StartupCrashLog.Write(ex, "start-up"))
+        catch (Exception ex) when (!_windowShown)
         {
-            // Never entered: the filter records the exception and returns false, so it still ends the app.
+            // Without a window there is nowhere to show the error. Record it and end the app; otherwise
+            // it stays open invisibly, and every new start adds another invisible copy.
+            if (_logger is not null)
+            {
+                LogStartupFailed(_logger, ex);
+            }
+            else
+            {
+                StartupCrashLog.Write(ex, "start-up");
+            }
+
+            Exit();
         }
     }
 
@@ -73,6 +85,7 @@ public partial class App : Application
         var window = _host.Services.GetRequiredService<MainWindow>();
         window.Closed += OnMainWindowClosed;
         window.Activate();
+        _windowShown = true;
 
         // Lives as long as the app: tells the server what is playing (play counts, recently played).
         _host.Services.GetRequiredService<PlaybackReporting>();
@@ -179,7 +192,7 @@ public partial class App : Application
         {
             Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language ?? string.Empty;
         }
-        catch (Exception ex) when (ex is COMException or ArgumentException)
+        catch (Exception ex) when (ex is COMException or ArgumentException or InvalidOperationException)
         {
             LogLanguageFailed(_logger!, ex, language);
         }
@@ -195,6 +208,9 @@ public partial class App : Application
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Start-up took {ElapsedMs} ms; working set {WorkingSetMb} MB, managed heap {ManagedMb} MB")]
     private static partial void LogStartup(ILogger logger, long elapsedMs, long workingSetMb, long managedMb);
+
+    [LoggerMessage(Level = LogLevel.Critical, Message = "Start-up failed before the window was shown; exiting")]
+    private static partial void LogStartupFailed(ILogger logger, Exception exception);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Groovefin is shutting down")]
     private static partial void LogStopping(ILogger logger);
