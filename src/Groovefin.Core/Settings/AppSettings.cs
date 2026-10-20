@@ -181,6 +181,9 @@ public sealed record PlaybackSettings
     /// <summary>Gets or sets a value indicating whether Discord shows the playing track in the user's status.</summary>
     public bool DiscordPresence { get; set; }
 
+    /// <summary>Gets or sets how many seconds the end of a track overlaps the next one; 0 for none (gapless).</summary>
+    public int CrossfadeSeconds { get; set; }
+
     public EqualizerSettings Equalizer { get; set; } = new();
 }
 

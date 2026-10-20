@@ -616,6 +616,12 @@
   <data name="Settings_Kbps" xml:space="preserve">
     <value>{0} kbit/s</value>
   </data>
+  <data name="Settings_CrossfadeOff" xml:space="preserve">
+    <value>Aus</value>
+  </data>
+  <data name="Settings_Seconds" xml:space="preserve">
+    <value>{0} s</value>
+  </data>
   <data name="Equalizer_Decibels" xml:space="preserve">
     <value>{0} dB</value>
   </data>
@@ -1538,6 +1544,12 @@
   </data>
   <data name="SettingsInstantMixCard.Description" xml:space="preserve">
     <value>Was ein Instant-Mix mit der Warteschlange macht.</value>
+  </data>
+  <data name="SettingsCrossfadeCard.Header" xml:space="preserve">
+    <value>Überblenden</value>
+  </data>
+  <data name="SettingsCrossfadeCard.Description" xml:space="preserve">
+    <value>Das Ende eines Titels geht fließend in den nächsten über. Titel desselben Albums folgen immer ohne Pause.</value>
   </data>
   <data name="SettingsResumeCard.Header" xml:space="preserve">
     <value>Dort weitermachen, wo ich aufgehört habe</value>

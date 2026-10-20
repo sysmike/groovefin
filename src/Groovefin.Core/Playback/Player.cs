@@ -56,6 +56,8 @@ public sealed partial class Player : IPlayer, IDisposable
         Engine.Failed += OnFailed;
         Engine.CurrentChanged += OnEngineCurrentChanged;
         Queue.Changed += OnQueueChanged;
+        _settings.Changed += OnSettingsChanged;
+        Engine.Crossfade = CrossfadeFrom(settings.Current.Playback);
     }
 
     public QueueManager Queue { get; }
@@ -168,7 +170,12 @@ public sealed partial class Player : IPlayer, IDisposable
         Engine.Failed -= OnFailed;
         Engine.CurrentChanged -= OnEngineCurrentChanged;
         Queue.Changed -= OnQueueChanged;
+        _settings.Changed -= OnSettingsChanged;
     }
+
+    private static TimeSpan CrossfadeFrom(PlaybackSettings playback) => TimeSpan.FromSeconds(Math.Max(0, playback.CrossfadeSeconds));
+
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e) => Engine.Crossfade = CrossfadeFrom(e.NewSettings.Playback);
 
     private void OnEnded(object? sender, EventArgs e)
     {

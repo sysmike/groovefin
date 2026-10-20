@@ -76,6 +76,12 @@ public interface IPlaybackEngine
 
     bool IsMuted { get; set; }
 
+    /// <summary>
+    /// Gets or sets how long the end of a track overlaps the start of the next (zero for none). Tracks of
+    /// the same album never fade: they stay gapless. Engines that cannot play two streams ignore it.
+    /// </summary>
+    TimeSpan Crossfade { get; set; }
+
     /// <summary>Raised after <see cref="State"/> changed.</summary>
     event EventHandler? StateChanged;
 

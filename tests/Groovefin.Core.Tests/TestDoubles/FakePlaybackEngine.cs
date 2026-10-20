@@ -56,4 +56,15 @@ internal sealed class FakePlaybackEngine(IDispatcher? dispatcher = null, TimePro
     protected override void SetVolumeCore(double volume) => Calls.Add($"volume {volume}");
 
     protected override void SetMutedCore(bool isMuted) => Calls.Add($"muted {isMuted}");
+
+    /// <summary>Gets or sets whether the fake can crossfade, like the Windows engine with its second player.</summary>
+    public bool CanCrossfade { get; set; } = true;
+
+    protected override bool SupportsCrossfade => CanCrossfade;
+
+    protected override void CrossfadeCore(PlaybackSource next) => Calls.Add($"crossfade {next.Id}");
+
+    protected override void SetFadingVolumeCore(double volume) => Calls.Add($"fading volume {volume:0.###}");
+
+    protected override void EndFadeCore() => Calls.Add("end fade");
 }
