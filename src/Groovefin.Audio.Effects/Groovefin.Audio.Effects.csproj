@@ -15,6 +15,15 @@
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <CsWinRTComponent>true</CsWinRTComponent>
     <PublishAot>true</PublishAot>
+    <!--
+      Without a WinUI reference C#/WinRT's AOT generator runs in OptIn mode and generates no marshalling code
+      for what the effect hands to Windows; that threw NotSupportedException inside Media Foundation (#167).
+      Auto finds those types, level 2 makes a missed one a warning (an error here). Auto also needs the
+      exports set by hand: C#/WinRT only turns them on for the value "true".
+    -->
+    <CsWinRTAotOptimizerEnabled>Auto</CsWinRTAotOptimizerEnabled>
+    <CsWinRTAotWarningLevel>2</CsWinRTAotWarningLevel>
+    <CsWinRTAotExportsEnabled>true</CsWinRTAotExportsEnabled>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 

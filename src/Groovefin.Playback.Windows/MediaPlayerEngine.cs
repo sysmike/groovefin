@@ -43,17 +43,36 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
     private bool _isMuted;
     private bool _disposed;
 
+    /// <summary>Whether Windows could create the equalizer effect at start-up.</summary>
+    private readonly bool _equalizerAdded;
+
+    /// <summary>Whether the effect was taken out again because a track failed with it (#167).</summary>
+    private bool _effectDropped;
+
+    /// <summary>When the track was started again without the effect, and on which deck.</summary>
+    private long _retriedAt;
+    private Deck? _retriedDeck;
+
     public MediaPlayerEngine(IDispatcher dispatcher, TimeProvider time, ILogger<MediaPlayerEngine> logger)
         : base(dispatcher, time)
     {
         _logger = logger;
-        IsAvailable = CheckEqualizer();
+        _equalizerAdded = CheckEqualizer();
         _primary = new Deck(this);
         _active = _primary;
     }
 
     /// <summary>Gets a value indicating whether the equalizer effect is in the audio path.</summary>
-    public bool IsAvailable { get; }
+    public bool IsAvailable
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _equalizerAdded && !_effectDropped;
+            }
+        }
+    }
 
     /// <summary>Gets the System Media Transport Controls of the first player (media keys, the media flyout).</summary>
     public SystemMediaTransportControls TransportControls => _primary.Player.SystemMediaTransportControls;
@@ -232,6 +251,46 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
         return true;
     }
 
+    /// <summary>
+    /// The safety net for the equalizer (#167): when a track fails with an exception from .NET code (HRESULT
+    /// facility URT, 0x8013xxxx) while the effect is in the audio path, the effect is the one .NET code in
+    /// Media Foundation that can have thrown it. The effect leaves both players and the track starts again
+    /// without it, once; Settings no longer offers the equalizer. Any other error (a bad file, no audio
+    /// output) is the track's and is reported as usual.
+    /// </summary>
+    /// <returns>Whether the track was started again (do not report the failure).</returns>
+    private bool RetryWithoutEffect(Deck deck, int? result, string error)
+    {
+        Deck[] decks;
+        lock (_gate)
+        {
+            if (_effectDropped && ReferenceEquals(deck, _retriedDeck) && Environment.TickCount64 - _retriedAt < 2000)
+            {
+                // The same failure reported a second time (item and player): the retry is already running.
+                return true;
+            }
+
+            if (!_equalizerAdded || _effectDropped || !IsActive(deck) || result is not { } hr || (hr & 0x1FFF0000) != 0x00130000)
+            {
+                return false;
+            }
+
+            _effectDropped = true;
+            _retriedAt = Environment.TickCount64;
+            _retriedDeck = deck;
+            decks = [.. new[] { _primary, _active, _spare, _fading }.OfType<Deck>().Distinct()];
+        }
+
+        LogEqualizerFailed(error);
+        foreach (var d in decks)
+        {
+            d.Player.RemoveAllEffects();
+        }
+
+        deck.Reload();
+        return true;
+    }
+
     /// <summary>Gets a value indicating whether <paramref name="deck"/> is the one that reports; call with the gate held.</summary>
     private bool IsActive(Deck deck) => ReferenceEquals(deck, _active);
 
@@ -386,6 +445,36 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
             }
         }
 
+        /// <summary>The current and the queued next source again, in a new list: their items start afresh.</summary>
+        public void Reload()
+        {
+            var list = new MediaPlaybackList { AutoRepeatEnabled = false, MaxPrefetchTime = PrefetchTime };
+            lock (_engine._gate)
+            {
+                if (_current is not { } current)
+                {
+                    return;
+                }
+
+                var next = _next;
+                DetachList();
+                _current = Entry.For(current.Source);
+                list.Items.Add(_current.Item);
+                if (next is not null)
+                {
+                    _next = Entry.For(next.Source);
+                    list.Items.Add(_next.Item);
+                }
+
+                _list = list;
+                list.CurrentItemChanged += OnCurrentItemChanged;
+                list.ItemFailed += OnItemFailed;
+            }
+
+            Player.Source = list;
+            Player.Play();
+        }
+
         public void Stop()
         {
             lock (_engine._gate)
@@ -464,7 +553,11 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
 
             if (failedCurrent is not null)
             {
-                _engine.ReportFailed(failedCurrent, args.Error.ErrorCode.ToString(), args.Error.ExtendedError);
+                var result = args.Error.ExtendedError?.HResult;
+                if (!_engine.RetryWithoutEffect(this, result, $"{args.Error.ErrorCode} (0x{result:X8})"))
+                {
+                    _engine.ReportFailed(failedCurrent, args.Error.ErrorCode.ToString(), args.Error.ExtendedError);
+                }
             }
             else if (failedNext is not null)
             {
@@ -499,7 +592,8 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
 
         private void OnMediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
         {
-            if (ReportedSource is { } source)
+            if (ReportedSource is { } source
+                && !_engine.RetryWithoutEffect(this, args.ExtendedErrorCode?.HResult, $"{args.Error} (0x{args.ExtendedErrorCode?.HResult:X8})"))
             {
                 _engine.ReportFailed(source, $"{args.Error}: {args.ErrorMessage}", args.ExtendedErrorCode);
             }
@@ -511,4 +605,7 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Equalizer effect is not available (0x{Result:X8}); playing without it")]
     private partial void LogEqualizerUnavailable(int result);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Equalizer effect failed: a track did not play with it ({Error}). Playing without it from now on")]
+    private partial void LogEqualizerFailed(string error);
 }
