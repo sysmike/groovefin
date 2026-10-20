@@ -32,6 +32,9 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     /// <summary>Size of the cover behind the full-screen player; it is blurred, so a small one is enough.</summary>
     public const double BackdropWidth = 64;
 
+    /// <summary>Size of the cover in the mini player.</summary>
+    public const double MiniCoverWidth = 200;
+
     private readonly IPlayer _player;
     private readonly FavouritesService _favourites;
     private readonly IMessenger _messenger;
@@ -82,10 +85,18 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     /// <summary>Gets the small cover blurred behind the full-screen player; <see langword="null"/> while it is closed.</summary>
     public ImageRequest? BackdropCover => IsFullScreen ? CoverOf(Track, BackdropWidth) : null;
 
-    /// <summary>Gets or sets a value indicating whether the full-screen player is shown (F11, Esc exits).</summary>
+    /// <summary>Gets or sets a value indicating whether the full-screen player is shown (F11, Esc exits). Closes the mini player.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LargeCover), nameof(BackdropCover))]
     public partial bool IsFullScreen { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the window is the small always-on-top mini player (Ctrl+M). Leaves full screen.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MiniCover))]
+    public partial bool IsMiniPlayer { get; set; }
+
+    /// <summary>Gets the cover of the mini player; <see langword="null"/> while it is closed, so nothing is fetched.</summary>
+    public ImageRequest? MiniCover => IsMiniPlayer ? CoverOf(Track, MiniCoverWidth) : null;
 
     public string AlbumName => Track?.AlbumName ?? string.Empty;
 
@@ -196,6 +207,29 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ExitFullScreen() => IsFullScreen = false;
 
+    [RelayCommand]
+    private void ToggleMiniPlayer() => IsMiniPlayer = !IsMiniPlayer;
+
+    [RelayCommand]
+    private void ExitMiniPlayer() => IsMiniPlayer = false;
+
+    // The window has one presenter: full screen and the mini player exclude each other.
+    partial void OnIsFullScreenChanged(bool value)
+    {
+        if (value)
+        {
+            IsMiniPlayer = false;
+        }
+    }
+
+    partial void OnIsMiniPlayerChanged(bool value)
+    {
+        if (value)
+        {
+            IsFullScreen = false;
+        }
+    }
+
     private ImageRequest? CoverOf(Track? track, double width) =>
         track?.AlbumId is { } albumId ? ImageRequest.Primary(albumId, track.AlbumImageTag, width, DisplayScale) : null;
 
@@ -258,6 +292,7 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
         Cover = CoverOf(track, CoverWidth);
         OnPropertyChanged(nameof(LargeCover));
         OnPropertyChanged(nameof(BackdropCover));
+        OnPropertyChanged(nameof(MiniCover));
         IsFavourite = track is not null && _favourites.IsFavourite(track.Id, track.IsFavorite);
         OnPropertyChanged(nameof(Track));
         OnPropertyChanged(nameof(HasTrack));

@@ -16,6 +16,7 @@ public enum ShortcutAction
     Shuffle,
     Repeat,
     FullScreen,
+    MiniPlayer,
 }
 
 /// <summary>A shortcut: Ctrl (or none) plus a key such as "Right", "Space" or "K".</summary>
@@ -28,7 +29,6 @@ public sealed record KeyboardShortcut(ShortcutAction Action, bool Control, strin
 /// </summary>
 public static class KeyboardShortcuts
 {
-    // TODO(#46): Ctrl+M for the mini player.
     public static IReadOnlyList<KeyboardShortcut> All { get; } =
     [
         new(ShortcutAction.PlayPause, false, "Space"),
@@ -42,6 +42,7 @@ public static class KeyboardShortcuts
         new(ShortcutAction.Shuffle, true, "S"),
         new(ShortcutAction.Repeat, true, "R"),
         new(ShortcutAction.FullScreen, false, "F11"),
+        new(ShortcutAction.MiniPlayer, true, "M"),
     ];
 
     /// <summary>Gets the action of <paramref name="key"/> (with or without Ctrl), or <see langword="null"/>.</summary>

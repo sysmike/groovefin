@@ -222,6 +222,30 @@ public sealed class NowPlayingViewModelTests : IDisposable
     }
 
     [Fact]
+    public void The_mini_player_and_full_screen_exclude_each_other()
+    {
+        PlayOneMoreTime();
+        _sut.MiniCover.Should().BeNull();
+
+        _sut.IsFullScreen = true;
+        _sut.ToggleMiniPlayerCommand.Execute(null);
+
+        _sut.IsMiniPlayer.Should().BeTrue();
+        _sut.IsFullScreen.Should().BeFalse();
+        _sut.MiniCover.Should().Be(new ImageRequest("album-1", ImageKind.Primary, "tag", (int)(NowPlayingViewModel.MiniCoverWidth * 2)));
+        _sut.LargeCover.Should().BeNull();
+
+        _sut.IsFullScreen = true;
+        _sut.IsMiniPlayer.Should().BeFalse();
+        _sut.MiniCover.Should().BeNull();
+
+        _sut.ToggleMiniPlayerCommand.Execute(null);
+        _sut.ExitMiniPlayerCommand.Execute(null);
+        _sut.IsMiniPlayer.Should().BeFalse();
+        _sut.IsFullScreen.Should().BeFalse();
+    }
+
+    [Fact]
     public void Toggle_shuffle_turns_shuffle_on_and_off()
     {
         _sut.ToggleShuffleCommand.Execute(null);
