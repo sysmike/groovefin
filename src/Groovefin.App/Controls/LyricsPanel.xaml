@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Groovefin.App.Controls.LyricsPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:conv="using:Groovefin.App.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Groovefin.Core.ViewModels"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <Style
+            x:Key="LyricsPanelButtonStyle"
+            BasedOn="{StaticResource DefaultButtonStyle}"
+            TargetType="Button">
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="{ThemeResource SubtleFillColorTransparentBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid
+        Width="400"
+        Padding="16,12,8,0"
+        Background="{ThemeResource LayerFillColorDefaultBrush}"
+        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+        BorderThickness="1,0,0,0"
+        RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Header: title, text and sync options, close.  -->
+        <Grid ColumnSpacing="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel
+                VerticalAlignment="Center"
+                Orientation="Horizontal"
+                Spacing="12">
+                <TextBlock
+                    x:Uid="LyricsPanelHeader"
+                    AutomationProperties.HeadingLevel="Level1"
+                    Style="{StaticResource SubtitleTextBlockStyle}" />
+                <ProgressRing
+                    Width="16"
+                    Height="16"
+                    IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+            </StackPanel>
+            <Button
+                x:Uid="LyricsOptionsButton"
+                Grid.Column="1"
+                Style="{StaticResource LyricsPanelButtonStyle}">
+                <FontIcon FontSize="14" Glyph="&#xE8D3;" />
+                <Button.Flyout>
+                    <MenuFlyout Opening="OnOptionsOpening" Placement="BottomEdgeAlignedRight">
+                        <MenuFlyoutItem x:Uid="LyricsLargerItem" Command="{x:Bind ViewModel.IncreaseFontSizeCommand}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE8E8;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:Uid="LyricsSmallerItem" Command="{x:Bind ViewModel.DecreaseFontSizeCommand}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE8E7;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <RadioMenuFlyoutItem
+                            x:Name="AlignLeftItem"
+                            x:Uid="LyricsAlignLeftItem"
+                            Click="OnAlignmentClick"
+                            GroupName="LyricsAlignment"
+                            Tag="Left" />
+                        <RadioMenuFlyoutItem
+                            x:Name="AlignCenterItem"
+                            x:Uid="LyricsAlignCenterItem"
+                            Click="OnAlignmentClick"
+                            GroupName="LyricsAlignment"
+                            Tag="Center" />
+                        <RadioMenuFlyoutItem
+                            x:Name="AlignRightItem"
+                            x:Uid="LyricsAlignRightItem"
+                            Click="OnAlignmentClick"
+                            GroupName="LyricsAlignment"
+                            Tag="Right" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem x:Name="OffsetItem" IsEnabled="False" />
+                        <MenuFlyoutItem x:Uid="LyricsEarlierItem" Command="{x:Bind ViewModel.OffsetEarlierCommand}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE892;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:Uid="LyricsLaterItem" Command="{x:Bind ViewModel.OffsetLaterCommand}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE893;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:Uid="LyricsResetOffsetItem" Command="{x:Bind ViewModel.ResetOffsetCommand}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE72C;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </Button.Flyout>
+            </Button>
+            <Button
+                x:Name="CloseButton"
+                x:Uid="LyricsCloseButton"
+                Grid.Column="2"
+                Command="{x:Bind ViewModel.CloseCommand}"
+                Style="{StaticResource LyricsPanelButtonStyle}">
+                <FontIcon FontSize="14" Glyph="&#xE711;" />
+            </Button>
+        </Grid>
+
+        <TextBlock
+            Grid.Row="1"
+            Margin="0,12,8,0"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{x:Bind ViewModel.Status, Mode=OneWay}"
+            TextWrapping="Wrap"
+            Visibility="{x:Bind ViewModel.HasStatus, Mode=OneWay}" />
+
+        <!--  Synced lines follow playback (the sung line stays in the middle) and seek on click.  -->
+        <ListView
+            x:Name="LinesList"
+            x:Uid="LyricsLines"
+            Grid.Row="1"
+            Padding="0,0,0,120"
+            ContainerContentChanging="OnContainerContentChanging"
+            IsItemClickEnabled="{x:Bind ViewModel.IsSynced, Mode=OneWay}"
+            ItemClick="OnLineClick"
+            ItemsSource="{x:Bind ViewModel.Lines}"
+            SelectionMode="None">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="vm:LyricLineItem">
+                    <TextBlock
+                        Padding="0,6"
+                        FontWeight="{x:Bind conv:LyricsStyle.Weight(IsCurrent), Mode=OneWay}"
+                        Opacity="{x:Bind conv:LyricsStyle.Opacity(IsDimmed), Mode=OneWay}"
+                        Text="{x:Bind Text}"
+                        TextWrapping="Wrap" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</UserControl>

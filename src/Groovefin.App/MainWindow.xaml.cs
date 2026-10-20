@@ -35,6 +35,7 @@ internal sealed partial class MainWindow : Window
         ContentDialogService dialogs,
         QueueViewModel queue,
         SearchSuggestionsViewModel suggestions,
+        LyricsViewModel lyrics,
         AddToPlaylist addToPlaylist,
         TrackDrag trackDrag,
         IStringResources strings)
@@ -45,6 +46,7 @@ internal sealed partial class MainWindow : Window
         _strings = strings;
         ViewModel = viewModel;
         Queue = queue;
+        Lyrics = lyrics;
         Suggestions = suggestions;
         InitializeComponent();
 
@@ -62,6 +64,22 @@ internal sealed partial class MainWindow : Window
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         Closed += (_, _) => ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
 
+        // The queue and the lyrics share the right side: opening one closes the other.
+        Queue.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(QueueViewModel.IsOpen) && Queue.IsOpen)
+            {
+                Lyrics.IsOpen = false;
+            }
+        };
+        Lyrics.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(LyricsViewModel.IsOpen) && Lyrics.IsOpen)
+            {
+                Queue.IsOpen = false;
+            }
+        };
+
         ViewModel.Start();
     }
 
@@ -70,6 +88,8 @@ internal sealed partial class MainWindow : Window
     public QueueViewModel Queue { get; }
 
     public SearchSuggestionsViewModel Suggestions { get; }
+
+    public LyricsViewModel Lyrics { get; }
 
     /// <summary>Mica when supported, Desktop Acrylic as fallback, otherwise the default solid background.</summary>
     private static SystemBackdrop? CreateBackdrop()
@@ -173,6 +193,18 @@ internal sealed partial class MainWindow : Window
         {
             deferral.Complete();
         }
+    }
+
+    /// <summary>Ctrl+L opens the lyrics pane and moves focus into it, or closes it.</summary>
+    private void OnToggleLyricsInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        Lyrics.ToggleCommand.Execute(null);
+        if (Lyrics.IsOpen)
+        {
+            _ = DispatcherQueue.TryEnqueue(LyricsPane.FocusPanel);
+        }
+
+        args.Handled = true;
     }
 
     private void OnTitleBarBackRequested(TitleBar sender, object args) => ViewModel.GoBackCommand.Execute(null);

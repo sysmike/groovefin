@@ -661,10 +661,10 @@
     <value>Queue (Ctrl+Q)</value>
   </data>
   <data name="NowPlayingLyricsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Lyrics</value>
+    <value>Lyrics (Ctrl+L)</value>
   </data>
   <data name="NowPlayingLyricsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Lyrics</value>
+    <value>Lyrics (Ctrl+L)</value>
   </data>
   <data name="NowPlayingFullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Full screen</value>
@@ -1229,6 +1229,64 @@
   <data name="Drag_AddToPlaylist" xml:space="preserve">
     <value>Add to {0}</value>
     <comment>{0} = playlist name</comment>
+  </data>
+  <data name="LyricsPanelHeader.Text" xml:space="preserve">
+    <value>Lyrics</value>
+  </data>
+  <data name="LyricsOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Text and sync</value>
+  </data>
+  <data name="LyricsOptionsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Text and sync</value>
+  </data>
+  <data name="LyricsCloseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Close lyrics</value>
+  </data>
+  <data name="LyricsCloseButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Close (Ctrl+L)</value>
+  </data>
+  <data name="LyricsLines.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lyrics</value>
+  </data>
+  <data name="LyricsLargerItem.Text" xml:space="preserve">
+    <value>Larger text</value>
+  </data>
+  <data name="LyricsSmallerItem.Text" xml:space="preserve">
+    <value>Smaller text</value>
+  </data>
+  <data name="LyricsAlignLeftItem.Text" xml:space="preserve">
+    <value>Align left</value>
+  </data>
+  <data name="LyricsAlignCenterItem.Text" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="LyricsAlignRightItem.Text" xml:space="preserve">
+    <value>Align right</value>
+  </data>
+  <data name="LyricsEarlierItem.Text" xml:space="preserve">
+    <value>Show lines earlier</value>
+  </data>
+  <data name="LyricsLaterItem.Text" xml:space="preserve">
+    <value>Show lines later</value>
+  </data>
+  <data name="LyricsResetOffsetItem.Text" xml:space="preserve">
+    <value>Reset sync</value>
+  </data>
+  <data name="Lyrics_OffsetValue" xml:space="preserve">
+    <value>Sync offset: {0} s</value>
+    <comment>{0} = offset in seconds, e.g. +0.25</comment>
+  </data>
+  <data name="Lyrics_NothingPlaying" xml:space="preserve">
+    <value>Nothing is playing.</value>
+  </data>
+  <data name="Lyrics_None" xml:space="preserve">
+    <value>There are no lyrics for this song.</value>
+  </data>
+  <data name="Lyrics_Failed" xml:space="preserve">
+    <value>The lyrics couldn't be loaded.</value>
+  </data>
+  <data name="Operation_LoadLyrics" xml:space="preserve">
+    <value>Couldn't load the lyrics</value>
   </data>
   <data name="FoldersHeader.Text" xml:space="preserve">
     <value>Folders</value>

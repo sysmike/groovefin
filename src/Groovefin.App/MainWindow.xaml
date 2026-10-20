@@ -31,6 +31,10 @@
                 Key="Q"
                 Invoked="OnToggleQueueInvoked"
                 Modifiers="Control" />
+            <KeyboardAccelerator
+                Key="L"
+                Invoked="OnToggleLyricsInvoked"
+                Modifiers="Control" />
         </Grid.KeyboardAccelerators>
 
         <TitleBar
@@ -182,6 +186,13 @@
             Grid.Row="1"
             Grid.Column="1"
             Visibility="{x:Bind Queue.IsOpen, Mode=OneWay}" />
+
+        <!--  Ctrl+L or the now playing bar's lyrics button; it shares the place of the queue.  -->
+        <controls:LyricsPanel
+            x:Name="LyricsPane"
+            Grid.Row="1"
+            Grid.Column="1"
+            Visibility="{x:Bind Lyrics.IsOpen, Mode=OneWay}" />
 
         <!--  Shown once something is queued.  -->
         <controls:NowPlayingBar

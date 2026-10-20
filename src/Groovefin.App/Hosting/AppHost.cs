@@ -95,6 +95,7 @@ internal static class AppHost
         builder.Services.AddSingleton<SystemMediaControlsSync>();
         builder.Services.AddSingleton<NowPlayingViewModel>();
         builder.Services.AddSingleton<QueueViewModel>();
+        builder.Services.AddSingleton<LyricsViewModel>();
         builder.Services.AddSingleton<SearchSuggestionsViewModel>();
         builder.Services.AddSingleton<AddToPlaylist>();
         builder.Services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
