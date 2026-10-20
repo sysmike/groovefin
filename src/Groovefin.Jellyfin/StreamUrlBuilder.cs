@@ -52,6 +52,11 @@ internal sealed class StreamUrlBuilder(JellyfinClient client, ClientIdentity ide
             query.Add(("MaxStreamingBitrate", (kbps * 1000L).ToString(CultureInfo.InvariantCulture)));
         }
 
+        if (options.StartPosition > TimeSpan.Zero)
+        {
+            query.Add(("StartTimeTicks", options.StartPosition.Ticks.ToString(CultureInfo.InvariantCulture)));
+        }
+
         query.Add(("ApiKey", connection.AccessToken));
 
         // Keep a base path such as https://host/jellyfin.

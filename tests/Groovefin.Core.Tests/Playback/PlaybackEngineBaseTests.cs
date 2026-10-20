@@ -190,7 +190,7 @@ public sealed class PlaybackEngineBaseTests
     [Fact]
     public void Position_updates_are_throttled_but_a_new_length_always_comes_through()
     {
-        _sut.Load(Source("a"));
+        _sut.Load(Source("a", seconds: 0));
         _events.Clear();
 
         _sut.SimulatePosition(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(200));
@@ -203,6 +203,94 @@ public sealed class PlaybackEngineBaseTests
         _dispatcher.RunAll();
 
         _events.Should().Equal("position 1/200", "position 1.2/201", "position 1.5/201");
+    }
+
+    private static PlaybackSource Restartable(string id) =>
+        Source(id) with { UrlAt = position => new Uri($"https://server/Audio/{id}?start={position.TotalSeconds}") };
+
+    [Fact]
+    public void A_seekable_stream_seeks_in_place()
+    {
+        _sut.Load(Restartable("a"));
+        _sut.Calls.Clear();
+
+        _sut.Seek(TimeSpan.FromSeconds(60));
+
+        _sut.Calls.Should().Equal("seek 60");
+        _sut.Position.Should().Be(TimeSpan.FromSeconds(60));
+    }
+
+    [Fact]
+    public void Where_the_stream_cannot_seek_it_starts_again_at_the_target()
+    {
+        // A transcode arrives from the front only; seeking past what arrived used to end the track (#154).
+        _sut.Load(Restartable("a"));
+        _sut.CanSeek = false;
+        _sut.Calls.Clear();
+
+        _sut.Seek(TimeSpan.FromSeconds(60));
+        _sut.SimulatePosition(TimeSpan.FromSeconds(5), TimeSpan.Zero);
+        _dispatcher.RunAll();
+
+        _sut.Calls.Should().Equal("restart https://server/Audio/a?start=60");
+        _sut.Position.Should().Be(TimeSpan.FromSeconds(65));
+    }
+
+    [Fact]
+    public void After_a_restart_seeks_are_relative_to_where_the_stream_starts()
+    {
+        _sut.Load(Restartable("a"));
+        _sut.CanSeek = false;
+        _sut.Seek(TimeSpan.FromSeconds(60));
+        _sut.CanSeek = true;
+        _sut.Calls.Clear();
+
+        _sut.Seek(TimeSpan.FromSeconds(90));
+        _sut.Seek(TimeSpan.FromSeconds(30));
+
+        // Before the start of the restarted stream there is nothing to seek to: it starts again.
+        _sut.Calls.Should().Equal("seek 30", "restart https://server/Audio/a?start=30");
+        _sut.Position.Should().Be(TimeSpan.FromSeconds(30));
+    }
+
+    [Fact]
+    public void Without_a_url_for_a_position_the_player_seeks_anyway()
+    {
+        _sut.Load(Source("a"));
+        _sut.CanSeek = false;
+        _sut.Calls.Clear();
+
+        _sut.Seek(TimeSpan.FromSeconds(60));
+
+        _sut.Calls.Should().Equal("seek 60");
+    }
+
+    [Fact]
+    public void A_new_track_counts_from_its_start_again()
+    {
+        _sut.Load(Restartable("a"));
+        _sut.CanSeek = false;
+        _sut.Seek(TimeSpan.FromSeconds(60));
+
+        _sut.Load(Source("b"));
+        _sut.SimulatePosition(TimeSpan.FromSeconds(5), TimeSpan.Zero);
+        _dispatcher.RunAll();
+
+        _sut.Position.Should().Be(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public void The_track_length_from_the_server_wins_over_the_player()
+    {
+        // A transcoded stream has no known length while it arrives; the player reports nonsense (#153).
+        _sut.Load(Source("a", seconds: 200));
+        _events.Clear();
+
+        _sut.SimulatePosition(TimeSpan.FromSeconds(1), TimeSpan.FromHours(4778));
+        _dispatcher.RunAll();
+
+        _sut.Duration.Should().Be(TimeSpan.FromSeconds(200));
+        _events.Should().Equal("position 1/200");
     }
 
     [Fact]

@@ -141,6 +141,66 @@ public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
 
     protected override void SeekCore(TimeSpan position) => _player.PlaybackSession.Position = position;
 
+    /// <summary>
+    /// A file the server plays as it is has a length and supports range requests: any position works. A
+    /// transcode arrives as one stream of unknown length (MediaPlayer reports <see cref="TimeSpan.MaxValue"/>)
+    /// and can only be seeked within what has arrived; anywhere else MediaPlayer would end the item (#154).
+    /// </summary>
+    protected override bool CanSeekCore(TimeSpan position)
+    {
+        var session = _player.PlaybackSession;
+        if (session.NaturalDuration != TimeSpan.MaxValue)
+        {
+            return true;
+        }
+
+        foreach (var range in session.GetBufferedRanges())
+        {
+            if (position >= range.Start && position <= range.End)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>A new list with the restarted stream as the current item; the queued next one is kept.</summary>
+    protected override void RestartCore(Uri url)
+    {
+        var playing = _player.PlaybackSession.PlaybackState is MediaPlaybackState.Playing or MediaPlaybackState.Buffering or MediaPlaybackState.Opening;
+        var list = new MediaPlaybackList { AutoRepeatEnabled = false, MaxPrefetchTime = PrefetchTime };
+        lock (_gate)
+        {
+            if (_current is not { } current)
+            {
+                return;
+            }
+
+            var next = _next;
+            DetachList();
+
+            // The stream now starts at the target itself; StartPosition only applies to a first load.
+            _current = new Entry(current.Source, new MediaPlaybackItem(MediaSource.CreateFromUri(url)));
+            list.Items.Add(_current.Item);
+            if (next is not null)
+            {
+                _next = Entry.For(next.Source);
+                list.Items.Add(_next.Item);
+            }
+
+            _list = list;
+            list.CurrentItemChanged += OnCurrentItemChanged;
+            list.ItemFailed += OnItemFailed;
+        }
+
+        _player.Source = list;
+        if (playing)
+        {
+            _player.Play();
+        }
+    }
+
     protected override void StopCore()
     {
         lock (_gate)
@@ -237,8 +297,9 @@ public sealed class MediaPlayerEngine : PlaybackEngineBase, IDisposable
         }
     }
 
+    // A transcode's length is unknown (MaxValue) until it has arrived: report none.
     private void OnPositionChanged(MediaPlaybackSession session, object args) =>
-        ReportPosition(session.Position, session.NaturalDuration);
+        ReportPosition(session.Position, session.NaturalDuration == TimeSpan.MaxValue ? TimeSpan.Zero : session.NaturalDuration);
 
     private void OnMediaEnded(MediaPlayer sender, object args)
     {

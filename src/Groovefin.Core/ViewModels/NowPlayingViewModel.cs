@@ -115,8 +115,9 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
 
     public string ElapsedText => Durations.Track(Engine.Position);
 
+    /// <summary>Gets the time left, never below zero (a stream can run a little past the track's length).</summary>
     public string RemainingText => Engine.Duration > TimeSpan.Zero
-        ? "-" + Durations.Track(Engine.Duration - Engine.Position)
+        ? "-" + Durations.Track(Engine.Duration > Engine.Position ? Engine.Duration - Engine.Position : TimeSpan.Zero)
         : string.Empty;
 
     /// <summary>Gets or sets the volume from 0 to 100.</summary>
