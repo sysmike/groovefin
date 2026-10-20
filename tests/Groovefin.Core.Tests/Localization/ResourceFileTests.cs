@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Groovefin.Core.Api;
+using Groovefin.Core.Navigation;
 using Groovefin.Core.Queue;
 using Groovefin.Core.Settings;
 using Groovefin.Core.Shortcuts;
@@ -80,6 +81,7 @@ public sealed partial class ResourceFileTests
             .. Enum.GetValues<RepeatMode>().Select(m => $"NowPlaying_Repeat{m}"),
             .. Enum.GetValues<AlbumSortField>().Select(f => $"AlbumSort_{f}"),
             .. Enum.GetValues<ArtistSortField>().Select(f => $"ArtistSort_{f}"),
+            .. PageKeys.MainSections.Select(k => $"StartPage_{k}"),
         ];
 
         built.Where(k => !English.ContainsKey(k)).Should().BeEmpty();
