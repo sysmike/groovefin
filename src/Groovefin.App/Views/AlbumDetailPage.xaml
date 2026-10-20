@@ -15,13 +15,20 @@
         <StackPanel>
             <!--  Hero header: blurred cover behind in-app acrylic, then cover, title and actions.  -->
             <Grid Visibility="{x:Bind ViewModel.HasAlbum, Mode=OneWay}">
+                <!--  As tall as the content (set in code): on its own it would take the image's aspect ratio (#146).  -->
                 <Image
+                    x:Name="HeaderBackground"
+                    Height="0"
+                    VerticalAlignment="Top"
                     controls:Artwork.Request="{x:Bind ViewModel.Background, Mode=OneWay}"
                     AutomationProperties.AccessibilityView="Raw"
                     Stretch="UniformToFill" />
                 <Rectangle Fill="{ThemeResource AcrylicInAppFillColorDefaultBrush}" />
 
-                <Grid Padding="36,32,36,24" ColumnSpacing="28">
+                <Grid
+                    Padding="36,32,36,24"
+                    ColumnSpacing="28"
+                    SizeChanged="OnHeaderContentSizeChanged">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
