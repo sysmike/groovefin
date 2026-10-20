@@ -172,6 +172,12 @@
                     <ComboBoxItem x:Uid="SettingsInstantMixAppend" />
                 </ComboBox>
             </controls:SettingsCard>
+            <controls:SettingsCard x:Uid="SettingsCrossfadeCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8AB;}">
+                <ComboBox
+                    MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                    ItemsSource="{x:Bind ViewModel.CrossfadeOptions}"
+                    SelectedIndex="{x:Bind ViewModel.CrossfadeIndex, Mode=TwoWay}" />
+            </controls:SettingsCard>
             <controls:SettingsCard x:Uid="SettingsResumeCard" HeaderIcon="{ui:FontIcon Glyph=&#xE81C;}">
                 <ToggleSwitch IsOn="{x:Bind ViewModel.ResumeSession, Mode=TwoWay}" />
             </controls:SettingsCard>

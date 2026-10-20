@@ -630,6 +630,13 @@
     <value>{0} kbps</value>
     <comment>Bitrate choice; {0} = kilobits per second</comment>
   </data>
+  <data name="Settings_CrossfadeOff" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Settings_Seconds" xml:space="preserve">
+    <value>{0} s</value>
+    <comment>Duration choice; {0} = number of seconds</comment>
+  </data>
   <data name="Equalizer_Decibels" xml:space="preserve">
     <value>{0} dB</value>
     <comment>Equalizer gain; {0} = signed number, e.g. +3</comment>
@@ -1555,6 +1562,12 @@
   </data>
   <data name="SettingsInstantMixCard.Description" xml:space="preserve">
     <value>What starting an instant mix does to the queue.</value>
+  </data>
+  <data name="SettingsCrossfadeCard.Header" xml:space="preserve">
+    <value>Crossfade</value>
+  </data>
+  <data name="SettingsCrossfadeCard.Description" xml:space="preserve">
+    <value>The end of a track fades into the next one. Tracks of the same album always follow without a gap.</value>
   </data>
   <data name="SettingsResumeCard.Header" xml:space="preserve">
     <value>Resume where I left off</value>

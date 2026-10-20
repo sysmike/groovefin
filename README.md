@@ -20,6 +20,7 @@ WinUI 3.
 - Gapless playback, volume normalization from the server's loudness data (track or album), and
   stream quality limits for the home network and remote servers.
 - A 10-band equalizer with presets and a preamp, heard as you move the sliders.
+- Optional crossfade of up to 12 seconds between tracks; tracks of the same album stay gapless.
 - A queue panel with drag and drop, shuffle and repeat.
 - Synced lyrics that follow the song (LRC), with click-to-seek and an offset.
 - Resume where you left off: the queue and position come back after a restart.
