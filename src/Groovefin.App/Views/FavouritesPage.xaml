@@ -134,18 +134,18 @@
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="vm:FavouriteTrackItem">
                         <Grid
-                            Padding="0,4"
+                            Padding="{ThemeResource ListRowPadding}"
                             AutomationProperties.Name="{x:Bind AccessibleName}"
                             ColumnSpacing="12">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="40" />
+                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Grid
-                                Width="40"
-                                Height="40"
+                                Width="{ThemeResource ListThumbnailSize}"
+                                Height="{ThemeResource ListThumbnailSize}"
                                 Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                                 CornerRadius="{StaticResource ControlCornerRadius}">
                                 <Image

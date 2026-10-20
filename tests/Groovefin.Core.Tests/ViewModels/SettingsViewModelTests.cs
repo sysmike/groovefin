@@ -1,4 +1,6 @@
+using Groovefin.Core.About;
 using Groovefin.Core.Api;
+using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -20,9 +22,11 @@ public sealed class SettingsViewModelTests
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
     private readonly InMemorySettingsService _settings = new();
+    private readonly IImageCache _cache = Substitute.For<IImageCache>();
+    private readonly ILauncherService _launcher = Substitute.For<ILauncherService>();
 
     private SettingsViewModel CreateSut() =>
-        new(_themeService, _navigation, _servers, _library, _strings, _errors, _settings, new AppVersion("1.0.0", "abc1234"));
+        new(_themeService, _navigation, _servers, _library, _strings, _errors, _settings, _cache, _launcher, new AppVersion("1.0.0", "abc1234"));
 
     private void SignedInTo(ServerProfile server)
     {
@@ -345,5 +349,167 @@ public sealed class SettingsViewModelTests
 
         _settings.Current.Playback.InstantMix.Should().Be(InstantMixMode.Append);
         sut.InstantMixIndex.Should().Be(1);
+    }
+
+    [Fact]
+    public void The_cache_limit_is_chosen_from_the_list()
+    {
+        _strings.GetString("Size_Megabytes").Returns("{0} MB");
+        _strings.GetString("Size_Gigabytes").Returns("{0} GB");
+        var sut = CreateSut();
+
+        sut.CacheLimitOptions.Should().HaveCount(6);
+        sut.CacheLimitOptions[2].Should().Be("500 MB");
+        sut.CacheLimitIndex.Should().Be(2);
+
+        sut.CacheLimitIndex = 3;
+        sut.CacheLimitIndex = 42;
+
+        _settings.Current.Cache.ImageCacheSizeMegabytes.Should().Be(1000);
+        sut.CacheLimitIndex.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task The_cache_size_is_measured_and_clearing_measures_again()
+    {
+        _strings.GetString("Size_Megabytes").Returns("{0} MB");
+        _strings.GetString("Settings_CacheUsed").Returns("{0} used");
+        _cache.GetSizeAsync(Arg.Any<CancellationToken>()).Returns(120L * 1024 * 1024, 0L);
+        var sut = CreateSut();
+
+        await sut.RefreshCacheSizeAsync(TestContext.Current.CancellationToken);
+        sut.CacheSizeText.Should().Be("120 MB used");
+
+        await sut.ClearCacheCommand.ExecuteAsync(null);
+
+        await _cache.Received(1).ClearAsync(Arg.Any<CancellationToken>());
+        sut.CacheSizeText.Should().Be("0 MB used");
+    }
+
+    [Fact]
+    public async Task A_cache_that_cannot_be_measured_shows_no_size()
+    {
+        _cache.GetSizeAsync(Arg.Any<CancellationToken>()).Returns<long>(_ => throw new IOException("gone"));
+        var sut = CreateSut();
+
+        await sut.RefreshCacheSizeAsync(TestContext.Current.CancellationToken);
+
+        sut.CacheSizeText.Should().BeEmpty();
+        _errors.DidNotReceiveWithAnyArgs().Report(default!, default!);
+    }
+
+    [Fact]
+    public async Task Failures_to_clear_the_cache_or_open_the_logs_are_reported()
+    {
+        var clear = new IOException("locked");
+        var open = new UnauthorizedAccessException("denied");
+        _cache.ClearAsync(Arg.Any<CancellationToken>()).Returns(Task.FromException(clear));
+        _launcher.OpenLogFolderAsync().Returns(Task.FromException(open));
+        var sut = CreateSut();
+
+        await sut.ClearCacheCommand.ExecuteAsync(null);
+        await sut.OpenLogFolderCommand.ExecuteAsync(null);
+
+        _errors.Received(1).Report(clear, Operations.ClearCache);
+        _errors.Received(1).Report(open, Operations.OpenLogFolder);
+    }
+
+    [Fact]
+    public async Task The_log_folder_opens()
+    {
+        var sut = CreateSut();
+
+        await sut.OpenLogFolderCommand.ExecuteAsync(null);
+
+        await _launcher.Received(1).OpenLogFolderAsync();
+    }
+
+    [Fact]
+    public void About_shows_the_version_commit_and_licenses()
+    {
+        _strings.GetString("Settings_Version").Returns("Version {0}");
+        var sut = CreateSut();
+
+        sut.VersionText.Should().Be("Version 1.0.0");
+        sut.HasCommit.Should().BeTrue();
+        sut.CommitUri.Should().Be(new Uri("https://github.com/sysmike/groovefin/commit/abc1234"));
+        sut.RepositoryUri.Should().Be(ProjectLinks.Repository);
+        sut.Licenses.Should().BeSameAs(ThirdPartyNotices.All);
+    }
+
+    [Fact]
+    public void A_build_without_commit_has_no_commit_link()
+    {
+        var sut = new SettingsViewModel(_themeService, _navigation, _servers, _library, _strings, _errors, _settings, _cache, _launcher, new AppVersion("1.0.0", null));
+
+        sut.HasCommit.Should().BeFalse();
+        sut.CommitUri.Should().BeNull();
+    }
+
+    [Fact]
+    public void The_accent_colour_is_on_by_default_and_can_be_turned_off()
+    {
+        var sut = CreateSut();
+        var changed = new List<string?>();
+        sut.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        sut.UseAccentColor.Should().BeTrue();
+        sut.UseAccentColor = false;
+
+        _settings.Current.Appearance.UseAccentColor.Should().BeFalse();
+        changed.Should().Equal(nameof(SettingsViewModel.UseAccentColor));
+    }
+
+    [Fact]
+    public void The_language_follows_windows_until_one_is_chosen()
+    {
+        _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
+        var sut = CreateSut();
+
+        sut.LanguageOptions.Should().Equal("Settings_LanguageSystem", "Settings_LanguageEnglish", "Settings_LanguageGerman");
+        sut.LanguageIndex.Should().Be(0);
+
+        sut.LanguageIndex = 2;
+        _settings.Current.Appearance.Language.Should().Be("de-DE");
+
+        sut.LanguageIndex = 9;
+        sut.LanguageIndex = 0;
+        _settings.Current.Appearance.Language.Should().BeNull();
+    }
+
+    [Fact]
+    public void An_unknown_stored_language_shows_as_windows_language()
+    {
+        _settings.Update(s => s with { Appearance = s.Appearance with { Language = "fr-FR" } });
+
+        CreateSut().LanguageIndex.Should().Be(0);
+    }
+
+    [Fact]
+    public void The_start_page_is_one_of_the_main_sections()
+    {
+        _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
+        var sut = CreateSut();
+
+        sut.StartPageOptions.Should().Equal(PageKeys.MainSections.Select(k => $"StartPage_{k}"));
+        sut.StartPageIndex.Should().Be(0);
+
+        sut.StartPageIndex = PageKeys.MainSections.ToList().IndexOf(PageKeys.Songs);
+        sut.StartPageIndex = -1;
+
+        _settings.Current.Appearance.StartPage.Should().Be(PageKeys.Songs);
+    }
+
+    [Fact]
+    public void The_density_is_standard_until_compact_is_chosen()
+    {
+        var sut = CreateSut();
+        sut.DensityIndex.Should().Be(0);
+
+        sut.DensityIndex = 1;
+        sut.DensityIndex = 5;
+
+        _settings.Current.Appearance.Density.Should().Be(ListDensity.Compact);
+        sut.DensityIndex.Should().Be(1);
     }
 }

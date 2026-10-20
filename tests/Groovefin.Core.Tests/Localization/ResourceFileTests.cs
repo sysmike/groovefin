@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Groovefin.Core.Api;
+using Groovefin.Core.Navigation;
 using Groovefin.Core.Queue;
 using Groovefin.Core.Settings;
 using Groovefin.Core.Shortcuts;
@@ -51,6 +52,22 @@ public sealed partial class ResourceFileTests
     }
 
     [Fact]
+    public void Access_keys_are_unique_and_short_in_each_language()
+    {
+        foreach (var strings in new[] { English, German })
+        {
+            var keys = strings.Where(e => e.Key.EndsWith("AccessKey", StringComparison.Ordinal)).ToList();
+
+            keys.Should().NotBeEmpty();
+            keys.Where(e => e.Value.Length is < 1 or > 2).Select(e => e.Key).Should().BeEmpty("access keys are one or two characters");
+            keys.GroupBy(e => e.Value, StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .Select(g => $"{g.Key}: {string.Join(", ", g.Select(e => e.Key))}")
+                .Should().BeEmpty("all access keys share the window's scope, so each letter can be used once");
+        }
+    }
+
+    [Fact]
     public void Every_xuid_has_strings_and_every_property_string_has_its_xuid()
     {
         var uids = Sources("*.xaml").SelectMany(text => UidPattern().Matches(text).Select(m => m.Groups[1].Value)).ToHashSet();
@@ -80,6 +97,7 @@ public sealed partial class ResourceFileTests
             .. Enum.GetValues<RepeatMode>().Select(m => $"NowPlaying_Repeat{m}"),
             .. Enum.GetValues<AlbumSortField>().Select(f => $"AlbumSort_{f}"),
             .. Enum.GetValues<ArtistSortField>().Select(f => $"ArtistSort_{f}"),
+            .. PageKeys.MainSections.Select(k => $"StartPage_{k}"),
         ];
 
         built.Where(k => !English.ContainsKey(k)).Should().BeEmpty();

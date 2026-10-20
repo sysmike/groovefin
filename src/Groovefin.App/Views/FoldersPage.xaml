@@ -112,14 +112,15 @@
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="models:Folder">
                             <Grid
-                                Padding="0,4"
+                                Padding="{ThemeResource ListRowPadding}"
                                 AutomationProperties.Name="{x:Bind Name}"
                                 ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="40" />
+                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <FontIcon
+                                    Width="{ThemeResource ListThumbnailSize}"
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                     Glyph="&#xE8B7;" />
                                 <TextBlock
@@ -149,17 +150,17 @@
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:TrackRow">
                             <Grid
-                                Padding="0,4"
+                                Padding="{ThemeResource ListRowPadding}"
                                 AutomationProperties.Name="{x:Bind AccessibleName}"
                                 ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="40" />
+                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <Grid
-                                    Width="40"
-                                    Height="40"
+                                    Width="{ThemeResource ListThumbnailSize}"
+                                    Height="{ThemeResource ListThumbnailSize}"
                                     Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                                     CornerRadius="{StaticResource ControlCornerRadius}">
                                     <Image

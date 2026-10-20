@@ -5,6 +5,7 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace Groovefin.Core.ViewModels;
@@ -18,17 +19,20 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     private readonly INavigationService _navigation;
     private readonly INotificationService _notifications;
     private readonly IServerManager _servers;
+    private readonly ISettingsService _settings;
     private readonly ILogger<ShellViewModel> _logger;
 
     public ShellViewModel(
         INavigationService navigation,
         INotificationService notifications,
         IServerManager servers,
+        ISettingsService settings,
         ILogger<ShellViewModel> logger)
     {
         _navigation = navigation;
         _notifications = notifications;
         _servers = servers;
+        _settings = settings;
         _logger = logger;
         _navigation.Navigated += OnNavigated;
     }
@@ -49,8 +53,8 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     public partial string SearchText { get; set; } = string.Empty;
 
     /// <summary>
-    /// Reconnects to the active server and shows the start page, the sign-in page when no login is
-    /// stored, or the server page on first run.
+    /// Reconnects to the active server and shows the chosen start page (home by default), the sign-in
+    /// page when no login is stored, or the server page on first run.
     /// Called once when the window is ready.
     /// </summary>
     public void Start()
@@ -59,7 +63,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         _navigation.NavigateTo(
             _servers.Servers.Count == 0 ? PageKeys.Servers
             : !_servers.IsSignedIn ? PageKeys.SignIn
-            : PageKeys.Home);
+            : StartPage());
     }
 
     [RelayCommand]
@@ -86,6 +90,10 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         _logger.LogDebug("Search submitted");
         _navigation.NavigateTo(PageKeys.Search, SearchText.Trim());
     }
+
+    /// <summary>A start page that is no longer a main section (older settings) falls back to home.</summary>
+    private string StartPage() =>
+        _settings.Current.Appearance.StartPage is { } page && PageKeys.MainSections.Contains(page) ? page : PageKeys.Home;
 
     private bool CanSubmitSearch() => !string.IsNullOrWhiteSpace(SearchText);
 

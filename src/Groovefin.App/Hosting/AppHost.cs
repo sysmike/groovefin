@@ -84,6 +84,7 @@ internal static class AppHost
         builder.Services.AddSingleton<ICredentialStore, PasswordVaultCredentialStore>();
         builder.Services.AddSingleton<ContentDialogService>();
         builder.Services.AddSingleton<IDialogService>(sp => sp.GetRequiredService<ContentDialogService>());
+        builder.Services.AddSingleton<ILauncherService, LauncherService>();
 
         // Playback
         builder.Services.AddSingleton<MediaPlayerEngine>();

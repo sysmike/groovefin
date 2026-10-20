@@ -92,6 +92,9 @@ flowchart TD
    (`Album`, `Artist`, `Track`, `Playlist`, ...) before they leave the project.
 5. Views bind to ViewModels with `x:Bind`. Views contain no business logic. Code-behind is limited to
    pure view concerns (animations, focus, drag visuals).
+6. Every NuGet package the app ships has a license notice in `ThirdPartyNotices` (Core), which the
+   About section of Settings lists. `ThirdPartyNoticesTests` checks the list against
+   `src/Groovefin.App/packages.lock.json`, so adding a dependency without its notice fails CI.
 
 ## Key abstractions
 
@@ -182,6 +185,9 @@ flowchart TD
   Keys are `Area_Name` (code) or `XUid.Property` (XAML). Numbers and dates are formatted with
   `CultureInfo.CurrentCulture`.
 - Every custom control sets `AutomationProperties`.
+- Access keys (Alt) for the navigation, the search box and the now playing bar come from `.resw`
+  (`XUid.AccessKey`), because the letters follow the localized labels. They share the window's
+  scope, so a letter is used once per language; `ResourceFileTests` checks it.
 - Animations are subtle and native (connected animation for album covers) and are skipped when the
   Windows "Animation effects" setting is off.
 

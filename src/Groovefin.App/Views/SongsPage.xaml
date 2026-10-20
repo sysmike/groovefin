@@ -50,7 +50,7 @@
             TargetType="ListViewItem">
             <Setter Property="Margin" Value="0" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="MinHeight" Value="{ThemeResource TableRowHeight}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
     </Page.Resources>
