@@ -30,6 +30,10 @@ public sealed class FoldersViewModelTests
     }
 
     [Fact]
+    public void A_crumb_shows_its_name() =>
+        new FolderCrumb("f2", "Daft Punk").ToString().Should().Be("Daft Punk");
+
+    [Fact]
     public async Task The_top_lists_the_library_folders_and_cannot_be_played()
     {
         await _sut.LoadAsync(TestContext.Current.CancellationToken);
