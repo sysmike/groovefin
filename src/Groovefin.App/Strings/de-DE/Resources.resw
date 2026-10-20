@@ -1476,6 +1476,12 @@
   <data name="SettingsResumeCard.Description" xml:space="preserve">
     <value>Warteschlange und Position beim Start wiederherstellen, pausiert.</value>
   </data>
+  <data name="SettingsDiscordCard.Header" xml:space="preserve">
+    <value>In Discord zeigen, was ich höre</value>
+  </data>
+  <data name="SettingsDiscordCard.Description" xml:space="preserve">
+    <value>Solange Discord auf diesem PC läuft, zeigt dein Status Titel, Interpret und Fortschritt. Groovefin spricht dabei nur mit der Discord-App, nicht mit dem Internet.</value>
+  </data>
   <data name="SettingsStorageHeader.Text" xml:space="preserve">
     <value>Speicher</value>
   </data>

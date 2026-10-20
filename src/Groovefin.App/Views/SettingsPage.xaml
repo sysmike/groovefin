@@ -175,6 +175,13 @@
             <controls:SettingsCard x:Uid="SettingsResumeCard" HeaderIcon="{ui:FontIcon Glyph=&#xE81C;}">
                 <ToggleSwitch IsOn="{x:Bind ViewModel.ResumeSession, Mode=TwoWay}" />
             </controls:SettingsCard>
+            <!--  Hidden in a build without the Discord application ID.  -->
+            <controls:SettingsCard
+                x:Uid="SettingsDiscordCard"
+                HeaderIcon="{ui:FontIcon Glyph=&#xE8BD;}"
+                Visibility="{x:Bind ViewModel.IsDiscordAvailable}">
+                <ToggleSwitch IsOn="{x:Bind ViewModel.DiscordPresence, Mode=TwoWay}" />
+            </controls:SettingsCard>
 
             <!--  Storage  -->
             <TextBlock

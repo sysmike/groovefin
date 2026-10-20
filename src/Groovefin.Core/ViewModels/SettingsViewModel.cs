@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Groovefin.Core.About;
 using Groovefin.Core.Api;
+using Groovefin.Core.Discord;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
 using Groovefin.Core.Models;
@@ -189,6 +190,23 @@ public sealed partial class SettingsViewModel : ObservableObject
             if (value != ResumeSession)
             {
                 _settings.Update(s => s with { Playback = s.Playback with { ResumeSession = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>Gets a value indicating whether this build can show a Discord status (it has an application ID).</summary>
+    public bool IsDiscordAvailable => DiscordApplication.Groovefin.IsSet;
+
+    /// <summary>Gets or sets a value indicating whether Discord shows the playing track in the user's status.</summary>
+    public bool DiscordPresence
+    {
+        get => _settings.Current.Playback.DiscordPresence;
+        set
+        {
+            if (value != DiscordPresence)
+            {
+                _settings.Update(s => s with { Playback = s.Playback with { DiscordPresence = value } });
                 OnPropertyChanged();
             }
         }

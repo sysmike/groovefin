@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.App.Services;
 using Groovefin.Core;
+using Groovefin.Core.Discord;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Images;
 using Groovefin.Core.Menus;
@@ -104,6 +105,11 @@ internal static class AppHost
             sp.GetRequiredService<IStringResources>(),
             sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Win32Taskbar>>()));
         builder.Services.AddSingleton<TaskbarSync>();
+
+        // Discord status over the local pipe (no key, no network); off until the user turns it on.
+        builder.Services.AddSingleton(DiscordApplication.Groovefin);
+        builder.Services.AddSingleton<IDiscordConnection, DiscordIpcConnection>();
+        builder.Services.AddSingleton<DiscordPresence>();
         builder.Services.AddSingleton<NowPlayingViewModel>();
         builder.Services.AddSingleton<QueueViewModel>();
         builder.Services.AddSingleton<LyricsViewModel>();
