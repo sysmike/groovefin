@@ -26,6 +26,9 @@ internal sealed partial class ArtistDetailPage : Page
         Loaded += OnLoaded;
     }
 
+    /// <summary>The blurred background covers the header content, which alone sets the header's height.</summary>
+    private void OnHeaderContentSizeChanged(object sender, SizeChangedEventArgs e) => HeaderBackground.Height = e.NewSize.Height;
+
     public ArtistDetailViewModel ViewModel { get; }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
