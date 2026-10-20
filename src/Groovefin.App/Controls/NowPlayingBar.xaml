@@ -121,8 +121,10 @@
                     </Button.KeyboardAccelerators>
                     <FontIcon FontSize="14" Glyph="&#xE892;" />
                 </Button>
+                <!--  The x:Uid only supplies the access key; the name follows the play state.  -->
                 <Button
                     x:Name="PlayPauseButton"
+                    x:Uid="NowPlayingPlayPauseButton"
                     Width="40"
                     AutomationProperties.Name="{x:Bind ViewModel.PlayPauseName, Mode=OneWay}"
                     ToolTipService.ToolTip="{x:Bind ViewModel.PlayPauseName, Mode=OneWay}"
