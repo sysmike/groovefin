@@ -190,7 +190,7 @@ public sealed class PlaybackEngineBaseTests
     [Fact]
     public void Position_updates_are_throttled_but_a_new_length_always_comes_through()
     {
-        _sut.Load(Source("a"));
+        _sut.Load(Source("a", seconds: 0));
         _events.Clear();
 
         _sut.SimulatePosition(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(200));
@@ -203,6 +203,20 @@ public sealed class PlaybackEngineBaseTests
         _dispatcher.RunAll();
 
         _events.Should().Equal("position 1/200", "position 1.2/201", "position 1.5/201");
+    }
+
+    [Fact]
+    public void The_track_length_from_the_server_wins_over_the_player()
+    {
+        // A transcoded stream has no known length while it arrives; the player reports nonsense (#153).
+        _sut.Load(Source("a", seconds: 200));
+        _events.Clear();
+
+        _sut.SimulatePosition(TimeSpan.FromSeconds(1), TimeSpan.FromHours(4778));
+        _dispatcher.RunAll();
+
+        _sut.Duration.Should().Be(TimeSpan.FromSeconds(200));
+        _events.Should().Equal("position 1/200");
     }
 
     [Fact]

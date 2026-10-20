@@ -178,7 +178,8 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
 
     /// <summary>
     /// The player's position or length changed. Safe to call from any thread; events are throttled to
-    /// <see cref="PositionInterval"/>, a changed length is always reported.
+    /// <see cref="PositionInterval"/>, a changed length is always reported. The length is only taken when
+    /// the track has none from the server.
     /// </summary>
     protected void ReportPosition(TimeSpan position, TimeSpan duration)
     {
@@ -190,7 +191,10 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
                 return;
             }
 
-            var durationChanged = duration > TimeSpan.Zero && duration != Duration;
+            // The server's track length wins: the player's is wrong while a transcoded stream, which has no
+            // known length, is still arriving (#153). It only fills in for tracks without one.
+            var hasTrackLength = Current.Track.Duration > TimeSpan.Zero;
+            var durationChanged = !hasTrackLength && duration > TimeSpan.Zero && duration != Duration;
             if (!durationChanged && _lastPositionReport != long.MinValue && time.GetElapsedTime(_lastPositionReport, now) < PositionInterval)
             {
                 return;
