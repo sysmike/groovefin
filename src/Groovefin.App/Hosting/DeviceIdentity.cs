@@ -26,9 +26,10 @@ internal static class DeviceIdentity
                 return id.ToString("N");
             }
         }
-        catch (COMException)
+        catch (Exception ex) when (ex is COMException or InvalidOperationException or UnauthorizedAccessException)
         {
-            // Not available on this system; fall back below.
+            // Not available here, e.g. InvalidOperationException in the unpackaged app on some systems;
+            // fall back below.
         }
 
         var seed = Encoding.UTF8.GetBytes($"Groovefin|{Environment.MachineName}|{Environment.UserName}");
