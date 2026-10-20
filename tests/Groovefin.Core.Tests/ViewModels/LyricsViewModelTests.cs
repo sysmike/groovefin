@@ -9,6 +9,7 @@ using Groovefin.Core.Settings;
 using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.Time.Testing;
+using NSubstitute.ReturnsExtensions;
 
 namespace Groovefin.Core.Tests.ViewModels;
 
@@ -142,7 +143,7 @@ public sealed class LyricsViewModelTests : IDisposable
         await _sut.LoadAsync();
         _sut.Status.Should().Be("Lyrics_NothingPlaying");
 
-        _lyrics.GetLyricsAsync("t2", Arg.Any<CancellationToken>()).Returns((TrackLyrics?)null);
+        _lyrics.GetLyricsAsync("t2", Arg.Any<CancellationToken>()).ReturnsNull();
         Play(Other);
         await _sut.LoadAsync();
 
