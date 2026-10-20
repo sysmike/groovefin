@@ -66,7 +66,7 @@ internal sealed partial class MainWindow : Window
 
         _settings = settings;
         Title = new ResourceLoader().GetString("AppDisplayName");
-        AppWindow.SetIcon("Assets/AppIcon.ico");
+        AppWindow.SetIcon(Path.Join(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;

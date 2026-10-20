@@ -3,8 +3,8 @@
 Starts Groovefin and fails if it exits within the first seconds, which means it crashed on start.
 
 .DESCRIPTION
-On a crash it prints the end of the app's log and the latest error events from the Windows
-Application log, which hold the .NET exception. Otherwise it closes the app again.
+On a crash it prints the start-up error file, the end of the app's log and the latest error events
+from the Windows Application log. Otherwise it closes the app again.
 #>
 param(
     [Parameter(Mandatory)]
@@ -22,6 +22,8 @@ Start-Sleep -Seconds $Seconds
 
 if ($process.HasExited) {
     Write-Output "::error title=Start-up crash::Groovefin exited with code $($process.ExitCode) within $Seconds seconds."
+    Write-Output '--- Start-up error ---'
+    Get-Content (Join-Path $env:LOCALAPPDATA 'Groovefin\startup-error.log') -ErrorAction SilentlyContinue
     Write-Output '--- App log ---'
     Get-ChildItem $logs -Filter *.log -ErrorAction SilentlyContinue | Get-Content -Tail 100
     Write-Output '--- Application event log (errors) ---'

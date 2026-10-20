@@ -39,6 +39,18 @@ public partial class App : Application
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+        try
+        {
+            await StartAsync();
+        }
+        catch (Exception ex) when (_logger is null && StartupCrashLog.Write(ex))
+        {
+            // Never entered: the filter records the exception and returns false, so it still ends the app.
+        }
+    }
+
+    private async Task StartAsync()
+    {
         _host = AppHost.Build();
         _host.Start();
 
