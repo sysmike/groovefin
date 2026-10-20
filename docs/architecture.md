@@ -180,6 +180,10 @@ flowchart TD
 - Theme resources and the system accent colour only. No hard-coded colours or fonts.
 - Virtualized lists everywhere (`ItemsView` / `ItemsRepeater`, incremental loading).
 - Every user-visible string comes from `.resw` (`en-US`, `de-DE`).
+  `ResourceFileTests` (Core tests, runs in CI) fails when the two languages differ in keys or
+  `{0}` placeholders, when an `x:Uid` or a key named in code has no string, or when a string is unused.
+  Keys are `Area_Name` (code) or `XUid.Property` (XAML). Numbers and dates are formatted with
+  `CultureInfo.CurrentCulture`.
 - Every custom control sets `AutomationProperties`.
 - Animations are subtle and native (connected animation for album covers) and are skipped when the
   Windows "Animation effects" setting is off.

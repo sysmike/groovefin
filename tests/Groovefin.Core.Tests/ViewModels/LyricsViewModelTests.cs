@@ -35,6 +35,7 @@ public sealed class LyricsViewModelTests : IDisposable
         _lyrics.GetLyricsAsync("t1", Arg.Any<CancellationToken>()).Returns(Synced);
         var strings = Substitute.For<IStringResources>();
         strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
+        strings.GetString("Lyrics_OffsetValue").Returns("{0} s");
         _sut = new LyricsViewModel(_player, _lyrics, _settings, _errors, strings);
     }
 
@@ -100,6 +101,7 @@ public sealed class LyricsViewModelTests : IDisposable
     [Fact]
     public async Task The_offset_moves_the_current_line_and_resets_for_the_next_track()
     {
+        using var culture = new CultureScope("de-DE");
         Play(Song);
         _sut.IsOpen = true;
         await _sut.LoadAsync();
@@ -109,7 +111,7 @@ public sealed class LyricsViewModelTests : IDisposable
         _sut.OffsetEarlierCommand.Execute(null);
 
         _sut.Offset.Should().Be(-LyricsViewModel.OffsetStep);
-        _sut.OffsetText.Should().Be("Lyrics_OffsetValue".Replace("{0}", (-0.25).ToString("+0.00;-0.00;0.00", System.Globalization.CultureInfo.CurrentCulture), StringComparison.Ordinal));
+        _sut.OffsetText.Should().Be("-0,25 s");
         _sut.CurrentIndex.Should().Be(0);
         _sut.ResetOffsetCommand.CanExecute(null).Should().BeTrue();
 
