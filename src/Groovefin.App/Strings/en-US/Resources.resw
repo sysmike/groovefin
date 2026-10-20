@@ -1385,4 +1385,19 @@
   <data name="Operation_LoadFolder" xml:space="preserve">
     <value>Couldn't load the folder</value>
   </data>
+  <data name="SettingsTaskbarProgressSwitch.Header" xml:space="preserve">
+    <value>Playback progress on the taskbar button</value>
+  </data>
+  <data name="Taskbar_Previous" xml:space="preserve">
+    <value>Previous track</value>
+  </data>
+  <data name="Taskbar_Play" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="Taskbar_Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Taskbar_Next" xml:space="preserve">
+    <value>Next track</value>
+  </data>
 </root>
