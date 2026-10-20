@@ -10,6 +10,7 @@ using Groovefin.Core.Queue;
 using Groovefin.Core.Security;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
+using Groovefin.Core.Session;
 using Groovefin.Core.Settings;
 using Groovefin.Core.ViewModels;
 using Groovefin.Jellyfin;
@@ -93,6 +94,9 @@ internal static class AppHost
         builder.Services.AddSingleton<PlaybackReporting>();
         builder.Services.AddSingleton<ISystemMediaControls, SystemMediaControls>();
         builder.Services.AddSingleton<SystemMediaControlsSync>();
+        builder.Services.AddSingleton(new SessionStoreOptions(Path.Join(AppPaths.LocalData, "session.json")));
+        builder.Services.AddSingleton<ISessionStore, JsonSessionStore>();
+        builder.Services.AddSingleton<SessionPersistence>();
         builder.Services.AddSingleton<NowPlayingViewModel>();
         builder.Services.AddSingleton<QueueViewModel>();
         builder.Services.AddSingleton<LyricsViewModel>();

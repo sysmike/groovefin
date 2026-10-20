@@ -1385,4 +1385,13 @@
   <data name="Operation_LoadFolder" xml:space="preserve">
     <value>Couldn't load the folder</value>
   </data>
+  <data name="SettingsResumeSwitch.Header" xml:space="preserve">
+    <value>Resume where I left off</value>
+  </data>
+  <data name="SettingsResumeSwitch.OnContent" xml:space="preserve">
+    <value>Restore the queue on start (paused)</value>
+  </data>
+  <data name="SettingsResumeSwitch.OffContent" xml:space="preserve">
+    <value>Start with an empty queue</value>
+  </data>
 </root>

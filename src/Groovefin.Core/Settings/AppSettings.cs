@@ -135,12 +135,15 @@ public sealed record StreamingSettings
         new(NetworkLocation.IsLocal(serverUrl) ? LocalMaxBitrateKbps : RemoteMaxBitrateKbps, Codec);
 }
 
-/// <summary>How playback evens out loudness differences.</summary>
+/// <summary>Playback: loudness, instant mix and resuming the last session.</summary>
 public sealed record PlaybackSettings
 {
     public NormalizationMode Normalization { get; set; } = NormalizationMode.Off;
 
     public InstantMixMode InstantMix { get; set; } = InstantMixMode.Replace;
+
+    /// <summary>Gets or sets a value indicating whether the queue and position are restored (paused) on the next start.</summary>
+    public bool ResumeSession { get; set; } = true;
 }
 
 /// <summary>How lines are aligned in the lyrics pane.</summary>

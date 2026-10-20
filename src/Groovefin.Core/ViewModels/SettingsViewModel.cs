@@ -158,6 +158,20 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Gets or sets a value indicating whether the queue and position are restored (paused) on the next start.</summary>
+    public bool ResumeSession
+    {
+        get => _settings.Current.Playback.ResumeSession;
+        set
+        {
+            if (value != ResumeSession)
+            {
+                _settings.Update(s => s with { Playback = s.Playback with { ResumeSession = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public AppVersion Version { get; }
 
     /// <summary>Gets the signed-in user name, or <see langword="null"/> when nobody is signed in.</summary>

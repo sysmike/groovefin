@@ -131,6 +131,7 @@
                 <ComboBoxItem x:Uid="SettingsInstantMixReplace" />
                 <ComboBoxItem x:Uid="SettingsInstantMixAppend" />
             </ComboBox>
+            <ToggleSwitch x:Uid="SettingsResumeSwitch" IsOn="{x:Bind ViewModel.ResumeSession, Mode=TwoWay}" />
 
             <!--  Reference only: the shortcuts work anywhere in the window, except while typing.  -->
             <TextBlock

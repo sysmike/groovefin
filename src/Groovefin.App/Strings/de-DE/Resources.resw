@@ -1371,4 +1371,13 @@
   <data name="Operation_LoadFolder" xml:space="preserve">
     <value>Ordner konnte nicht geladen werden</value>
   </data>
+  <data name="SettingsResumeSwitch.Header" xml:space="preserve">
+    <value>Dort weitermachen, wo ich aufgehört habe</value>
+  </data>
+  <data name="SettingsResumeSwitch.OnContent" xml:space="preserve">
+    <value>Warteschlange beim Start wiederherstellen (pausiert)</value>
+  </data>
+  <data name="SettingsResumeSwitch.OffContent" xml:space="preserve">
+    <value>Mit leerer Warteschlange starten</value>
+  </data>
 </root>

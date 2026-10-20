@@ -114,6 +114,19 @@ public sealed class PlayerTests : IDisposable
     }
 
     [Fact]
+    public void Resume_loads_the_current_entry_paused_at_the_position()
+    {
+        _queue.PlayNow(Tracks("a", "b"), 1);
+
+        _sut.Resume(TimeSpan.FromSeconds(42));
+
+        Playing.Should().Be("b");
+        _engine.Calls.Should().Equal($"load {_queue.Current!.Id} autoPlay=False");
+        _engine.Current!.StartPosition.Should().Be(TimeSpan.FromSeconds(42));
+        _engine.Position.Should().Be(TimeSpan.FromSeconds(42));
+    }
+
+    [Fact]
     public void A_track_that_ends_is_followed_by_the_next_one()
     {
         _sut.Play(Tracks("a", "b"));
