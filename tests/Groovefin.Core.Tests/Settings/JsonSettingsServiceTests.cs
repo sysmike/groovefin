@@ -1,3 +1,4 @@
+using Groovefin.Core.Equalizer;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
@@ -53,6 +54,20 @@ public sealed class JsonSettingsServiceTests : IDisposable
         var reloaded = CreateSut();
         await reloaded.LoadAsync(TestContext.Current.CancellationToken);
         reloaded.Current.Appearance.Theme.Should().Be(AppTheme.Dark);
+    }
+
+    [Fact]
+    public async Task Equalizer_settings_survive_a_reload()
+    {
+        var sut = CreateSut();
+        var equalizer = new EqualizerSettings { Enabled = true, Preset = EqualizerPreset.Custom, CustomGains = [3, 2.5, 0, 0, 0, 0, 0, 0, -1, -2], Preamp = -3 };
+        sut.Update(s => s with { Playback = s.Playback with { Equalizer = equalizer } });
+        await sut.FlushAsync();
+
+        var reloaded = CreateSut();
+        await reloaded.LoadAsync(TestContext.Current.CancellationToken);
+
+        reloaded.Current.Playback.Equalizer.Should().Be(equalizer);
     }
 
     [Fact]

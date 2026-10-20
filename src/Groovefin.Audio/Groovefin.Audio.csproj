@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The equalizer's signal processing, without dependencies: the app (through Core) and the NativeAOT
+    audio effect (Groovefin.Audio.Effects) both use it.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Groovefin.Audio</RootNamespace>
+  </PropertyGroup>
+
+</Project>

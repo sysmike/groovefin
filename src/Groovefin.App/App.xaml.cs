@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Groovefin.App.Hosting;
 using Groovefin.Core;
 using Groovefin.Core.Discord;
+using Groovefin.Core.Equalizer;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Session;
@@ -120,6 +121,9 @@ public partial class App : Application
 
         // Lives as long as the app: the Discord status (when turned on).
         _host.Services.GetRequiredService<DiscordPresence>();
+
+        // Lives as long as the app: the equalizer settings reach the audio effect.
+        _host.Services.GetRequiredService<EqualizerSync>();
 
         // The window has restored the server connection: bring back the last queue (paused) and keep saving it.
         await _host.Services.GetRequiredService<SessionPersistence>().RestoreAsync();

@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.App.Services;
 using Groovefin.Core;
 using Groovefin.Core.Discord;
+using Groovefin.Core.Equalizer;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Images;
 using Groovefin.Core.Menus;
@@ -90,6 +91,8 @@ internal static class AppHost
         // Playback
         builder.Services.AddSingleton<MediaPlayerEngine>();
         builder.Services.AddSingleton<IPlaybackEngine>(sp => sp.GetRequiredService<MediaPlayerEngine>());
+        builder.Services.AddSingleton<IAudioEqualizer>(sp => sp.GetRequiredService<MediaPlayerEngine>());
+        builder.Services.AddSingleton<EqualizerSync>();
         builder.Services.AddSingleton(_ => new QueueManager());
         builder.Services.AddSingleton<Player>();
         builder.Services.AddSingleton<IPlayer>(sp => sp.GetRequiredService<Player>());

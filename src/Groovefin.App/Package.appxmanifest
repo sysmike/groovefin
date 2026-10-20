@@ -46,4 +46,14 @@
     <Capability Name="internetClient" />
     <Capability Name="privateNetworkClientServer" />
   </Capabilities>
+
+  <Extensions>
+    <!-- The equalizer's audio effect, which MediaPlayer creates by its class name (#65). -->
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Groovefin.Audio.Effects.dll</Path>
+        <ActivatableClass ActivatableClassId="Groovefin.Audio.Effects.EqualizerEffect" ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+  </Extensions>
 </Package>

@@ -1,4 +1,5 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Equalizer;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Servers;
@@ -179,6 +180,8 @@ public sealed record PlaybackSettings
 
     /// <summary>Gets or sets a value indicating whether Discord shows the playing track in the user's status.</summary>
     public bool DiscordPresence { get; set; }
+
+    public EqualizerSettings Equalizer { get; set; } = new();
 }
 
 /// <summary>How lines are aligned in the lyrics pane.</summary>

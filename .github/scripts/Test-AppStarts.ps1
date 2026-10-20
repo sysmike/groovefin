@@ -2,9 +2,9 @@
 .SYNOPSIS
 Starts Groovefin and checks that it finishes starting: the window is shown and the app logs its
 "Start-up took ..." line. Then it goes through the first run with UI Automation against a small fake
-Jellyfin server: it adds the server, signs in, shows the home page, opens the folders page and closes
-the window. Fails if the app exits too early, does not finish starting in time, logs an unhandled
-exception, or does not exit cleanly after the window is closed.
+Jellyfin server: it adds the server, signs in, shows the home page, opens the folders and settings pages
+and closes the window. Fails if the app exits too early, does not finish starting in time, cannot create
+the equalizer effect, logs an unhandled exception, or does not exit cleanly after the window is closed.
 
 .DESCRIPTION
 On failure it prints the start-up error file, the end of the app's log and the latest error events
@@ -115,6 +115,18 @@ try {
 
     Write-Output "Groovefin started: $($ready.Line)"
 
+    # The equalizer's audio effect: a native DLL that both manifests register (#65). The playback engine asks
+    # Windows whether it can create it and logs the answer when it is created.
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        $equalizer = Select-String -Path $log.FullName -Pattern 'Equalizer effect is' -SimpleMatch | Select-Object -Last 1
+        if (-not $equalizer) { Start-Sleep -Milliseconds 500 }
+    } while (-not $equalizer -and (Get-Date) -lt $until)
+    if (-not $equalizer -or $equalizer.Line -notmatch 'Equalizer effect is available') {
+        Stop-Test 'Equalizer' "Windows could not create the equalizer effect: $($equalizer.Line)"
+    }
+    Write-Output 'The equalizer effect is registered.'
+
     Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
     $automation = [System.Windows.Automation.AutomationElement]
     $scope = [System.Windows.Automation.TreeScope]
@@ -197,6 +209,17 @@ try {
     Start-Sleep -Seconds 2
     Test-Running 'on the folders page'
     Write-Output 'The folders page opened.'
+
+    # Settings, with the equalizer's sliders.
+    $settings = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Settings'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) "navigation item 'Settings'"
+    if ($settings.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref] $selection)) { $selection.Select() }
+    else { $settings.GetCurrentPattern($invoke).Invoke() }
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) "equalizer settings"
+    Start-Sleep -Seconds 2
+    Test-Running 'on the settings page'
+    Write-Output 'The settings page opened with the equalizer.'
 
     # Close the window like a user: the app must shut down without errors and exit with code 0 (#145).
     $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()

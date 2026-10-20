@@ -616,6 +616,48 @@
   <data name="Settings_Kbps" xml:space="preserve">
     <value>{0} kbit/s</value>
   </data>
+  <data name="Equalizer_Decibels" xml:space="preserve">
+    <value>{0} dB</value>
+  </data>
+  <data name="Equalizer_Hertz" xml:space="preserve">
+    <value>{0} Hz</value>
+  </data>
+  <data name="Equalizer_Kilohertz" xml:space="preserve">
+    <value>{0} kHz</value>
+  </data>
+  <data name="EqualizerPreset_Flat" xml:space="preserve">
+    <value>Neutral</value>
+  </data>
+  <data name="EqualizerPreset_BassBoost" xml:space="preserve">
+    <value>Bass-Boost</value>
+  </data>
+  <data name="EqualizerPreset_TrebleBoost" xml:space="preserve">
+    <value>Höhen-Boost</value>
+  </data>
+  <data name="EqualizerPreset_Vocal" xml:space="preserve">
+    <value>Gesang</value>
+  </data>
+  <data name="EqualizerPreset_Rock" xml:space="preserve">
+    <value>Rock</value>
+  </data>
+  <data name="EqualizerPreset_Pop" xml:space="preserve">
+    <value>Pop</value>
+  </data>
+  <data name="EqualizerPreset_Jazz" xml:space="preserve">
+    <value>Jazz</value>
+  </data>
+  <data name="EqualizerPreset_Classical" xml:space="preserve">
+    <value>Klassik</value>
+  </data>
+  <data name="EqualizerPreset_Electronic" xml:space="preserve">
+    <value>Elektronisch</value>
+  </data>
+  <data name="EqualizerPreset_Loudness" xml:space="preserve">
+    <value>Loudness</value>
+  </data>
+  <data name="EqualizerPreset_Custom" xml:space="preserve">
+    <value>Benutzerdefiniert</value>
+  </data>
   <data name="NowPlayingBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Aktuelle Wiedergabe</value>
   </data>
@@ -1508,6 +1550,42 @@
   </data>
   <data name="SettingsDiscordCard.Description" xml:space="preserve">
     <value>Solange Discord auf diesem PC läuft, zeigt dein Status Titel, Interpret und Fortschritt. Groovefin spricht dabei nur mit der Discord-App, nicht mit dem Internet.</value>
+  </data>
+  <data name="SettingsEqualizerCard.Header" xml:space="preserve">
+    <value>Equalizer</value>
+  </data>
+  <data name="SettingsEqualizerCard.Description" xml:space="preserve">
+    <value>Den Klang mit zehn Bändern von 31 Hz bis 16 kHz anpassen. Änderungen sind sofort zu hören.</value>
+  </data>
+  <data name="SettingsEqualizerPresetCard.Header" xml:space="preserve">
+    <value>Voreinstellung</value>
+  </data>
+  <data name="SettingsEqualizerBandsCard.Header" xml:space="preserve">
+    <value>Bänder</value>
+  </data>
+  <data name="SettingsEqualizerBandsCard.Description" xml:space="preserve">
+    <value>Wenn du einen Regler verschiebst, wechselt die Voreinstellung zu „Benutzerdefiniert“.</value>
+  </data>
+  <data name="EqualizerBandSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Verstärkung in Dezibel</value>
+  </data>
+  <data name="SettingsEqualizerPreampCard.Header" xml:space="preserve">
+    <value>Vorverstärkung</value>
+  </data>
+  <data name="SettingsEqualizerPreampCard.Description" xml:space="preserve">
+    <value>Senke sie, wenn angehobene Bänder die Musik verzerren.</value>
+  </data>
+  <data name="SettingsEqualizerPreampSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Vorverstärkung in Dezibel</value>
+  </data>
+  <data name="SettingsEqualizerResetCard.Header" xml:space="preserve">
+    <value>Equalizer zurücksetzen</value>
+  </data>
+  <data name="SettingsEqualizerResetCard.Description" xml:space="preserve">
+    <value>Setzt alle Bänder und die Vorverstärkung auf 0 dB.</value>
+  </data>
+  <data name="SettingsEqualizerResetButton.Content" xml:space="preserve">
+    <value>Zurücksetzen</value>
   </data>
   <data name="SettingsStorageHeader.Text" xml:space="preserve">
     <value>Speicher</value>

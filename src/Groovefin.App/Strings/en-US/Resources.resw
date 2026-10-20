@@ -630,6 +630,51 @@
     <value>{0} kbps</value>
     <comment>Bitrate choice; {0} = kilobits per second</comment>
   </data>
+  <data name="Equalizer_Decibels" xml:space="preserve">
+    <value>{0} dB</value>
+    <comment>Equalizer gain; {0} = signed number, e.g. +3</comment>
+  </data>
+  <data name="Equalizer_Hertz" xml:space="preserve">
+    <value>{0} Hz</value>
+    <comment>Band frequency; {0} = number</comment>
+  </data>
+  <data name="Equalizer_Kilohertz" xml:space="preserve">
+    <value>{0} kHz</value>
+    <comment>Band frequency; {0} = number</comment>
+  </data>
+  <data name="EqualizerPreset_Flat" xml:space="preserve">
+    <value>Flat</value>
+  </data>
+  <data name="EqualizerPreset_BassBoost" xml:space="preserve">
+    <value>Bass boost</value>
+  </data>
+  <data name="EqualizerPreset_TrebleBoost" xml:space="preserve">
+    <value>Treble boost</value>
+  </data>
+  <data name="EqualizerPreset_Vocal" xml:space="preserve">
+    <value>Vocal</value>
+  </data>
+  <data name="EqualizerPreset_Rock" xml:space="preserve">
+    <value>Rock</value>
+  </data>
+  <data name="EqualizerPreset_Pop" xml:space="preserve">
+    <value>Pop</value>
+  </data>
+  <data name="EqualizerPreset_Jazz" xml:space="preserve">
+    <value>Jazz</value>
+  </data>
+  <data name="EqualizerPreset_Classical" xml:space="preserve">
+    <value>Classical</value>
+  </data>
+  <data name="EqualizerPreset_Electronic" xml:space="preserve">
+    <value>Electronic</value>
+  </data>
+  <data name="EqualizerPreset_Loudness" xml:space="preserve">
+    <value>Loudness</value>
+  </data>
+  <data name="EqualizerPreset_Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
   <data name="NowPlayingBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Now playing</value>
   </data>
@@ -1522,6 +1567,42 @@
   </data>
   <data name="SettingsDiscordCard.Description" xml:space="preserve">
     <value>While Discord runs on this PC, your status shows the title, artist and progress. Groovefin talks only to the Discord app, not to the internet.</value>
+  </data>
+  <data name="SettingsEqualizerCard.Header" xml:space="preserve">
+    <value>Equalizer</value>
+  </data>
+  <data name="SettingsEqualizerCard.Description" xml:space="preserve">
+    <value>Shape the sound with ten bands from 31 Hz to 16 kHz. Changes are heard at once.</value>
+  </data>
+  <data name="SettingsEqualizerPresetCard.Header" xml:space="preserve">
+    <value>Preset</value>
+  </data>
+  <data name="SettingsEqualizerBandsCard.Header" xml:space="preserve">
+    <value>Bands</value>
+  </data>
+  <data name="SettingsEqualizerBandsCard.Description" xml:space="preserve">
+    <value>Moving a slider switches to the Custom preset.</value>
+  </data>
+  <data name="EqualizerBandSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Gain in decibels</value>
+  </data>
+  <data name="SettingsEqualizerPreampCard.Header" xml:space="preserve">
+    <value>Preamp</value>
+  </data>
+  <data name="SettingsEqualizerPreampCard.Description" xml:space="preserve">
+    <value>Lower it if raised bands make the music distort.</value>
+  </data>
+  <data name="SettingsEqualizerPreampSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Preamp, in decibels</value>
+  </data>
+  <data name="SettingsEqualizerResetCard.Header" xml:space="preserve">
+    <value>Reset the equalizer</value>
+  </data>
+  <data name="SettingsEqualizerResetCard.Description" xml:space="preserve">
+    <value>Sets all bands and the preamp to 0 dB.</value>
+  </data>
+  <data name="SettingsEqualizerResetButton.Content" xml:space="preserve">
+    <value>Reset</value>
   </data>
   <data name="SettingsStorageHeader.Text" xml:space="preserve">
     <value>Storage</value>

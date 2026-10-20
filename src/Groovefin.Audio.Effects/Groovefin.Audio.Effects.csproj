@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The equalizer as a Media Foundation audio effect (#65). MediaPlayer creates effects by their WinRT
+    class name, so this has to be a native DLL exporting DllGetActivationFactory: Groovefin.App publishes
+    it with NativeAOT for its runtime identifier and ships the DLL next to Groovefin.exe. NativeAOT keeps it
+    independent of a .NET installation (the unpackaged app is self-contained). See docs/architecture.md.
+  -->
+  <PropertyGroup>
+    <TargetFramework>$(GroovefinWindowsTargetFramework)</TargetFramework>
+    <TargetPlatformMinVersion>$(GroovefinWindowsMinVersion)</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>$(GroovefinWindowsMinVersion)</SupportedOSPlatformVersion>
+    <RootNamespace>Groovefin.Audio.Effects</RootNamespace>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <CsWinRTComponent>true</CsWinRTComponent>
+    <PublishAot>true</PublishAot>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Lock file">
+    <!--
+      No lock file: NativeAOT adds the SDK's own ILCompiler and ILLink packages, whose version changes with
+      every .NET patch the build machine installs. The one real package, C#/WinRT, is pinned centrally.
+    -->
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+    <RestoreLockedMode>false</RestoreLockedMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Private: the app keeps the C#/WinRT of its Windows SDK projection. -->
+    <PackageReference Include="Microsoft.Windows.CsWinRT" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Groovefin.Audio\Groovefin.Audio.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Xml.Linq;
 using Groovefin.Core.About;
 
 namespace Groovefin.Core.Tests.About;
@@ -45,16 +46,22 @@ public sealed class ThirdPartyNoticesTests
         component.Covers(id).Should().Be(covered);
     }
 
-    /// <summary>The packages restored for the app (all target frameworks and runtimes), without build tools and projects.</summary>
+    /// <summary>
+    /// The packages restored for the app (all target frameworks and runtimes), without build tools and projects,
+    /// and the packages compiled into the equalizer effect's native DLL (it has no lock file).
+    /// </summary>
     private static List<string> AppPackages()
     {
-        using var lockFile = JsonDocument.Parse(File.ReadAllText(Path.Join(FindRoot(), "src", "Groovefin.App", "packages.lock.json")));
+        var root = FindRoot();
+        using var lockFile = JsonDocument.Parse(File.ReadAllText(Path.Join(root, "src", "Groovefin.App", "packages.lock.json")));
+        var effect = XDocument.Load(Path.Join(root, "src", "Groovefin.Audio.Effects", "Groovefin.Audio.Effects.csproj"));
         return
         [
             .. lockFile.RootElement.GetProperty("dependencies").EnumerateObject()
                 .SelectMany(framework => framework.Value.EnumerateObject())
                 .Where(package => package.Value.GetProperty("type").GetString() != "Project")
                 .Select(package => package.Name)
+                .Concat(effect.Descendants("PackageReference").Select(r => (string)r.Attribute("Include")!))
                 .Where(id => !BuildOnly.Contains(id, StringComparer.OrdinalIgnoreCase) && !id.StartsWith("runtime.", StringComparison.OrdinalIgnoreCase))
                 .Distinct(StringComparer.OrdinalIgnoreCase),
         ];

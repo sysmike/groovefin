@@ -2,6 +2,7 @@
   "solution": {
     "path": "Groovefin.sln",
     "projects": [
+      "src/Groovefin.Audio/Groovefin.Audio.csproj",
       "src/Groovefin.Core/Groovefin.Core.csproj",
       "src/Groovefin.Jellyfin/Groovefin.Jellyfin.csproj",
       "tests/Groovefin.Core.Tests/Groovefin.Core.Tests.csproj",
