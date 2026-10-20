@@ -11,7 +11,11 @@ using Groovefin.Core.Services;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>One step of the folder path; the top has no ID.</summary>
-public sealed record FolderCrumb(string? Id, string Name);
+public sealed record FolderCrumb(string? Id, string Name)
+{
+    /// <summary>Returns the name, which the breadcrumb shows.</summary>
+    public override string ToString() => Name;
+}
 
 /// <summary>
 /// Folders page: the library as it is on disk. A breadcrumb shows the path from the top; the open folder
