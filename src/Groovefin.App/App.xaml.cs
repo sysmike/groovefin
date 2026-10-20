@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using Groovefin.App.Hosting;
 using Groovefin.Core;
@@ -26,11 +27,14 @@ public partial class App : Application
 
     public App()
     {
-        InitializeComponent();
-
+        // Before anything can fail: until the logger exists, StartupCrashLog records what goes wrong,
+        // including while App.xaml loads.
+        AppDomain.CurrentDomain.FirstChanceException += OnStartupFirstChanceException;
         UnhandledException += OnUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnDomainUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+
+        InitializeComponent();
     }
 
     /// <summary>Gets the application's service provider.</summary>
@@ -43,7 +47,7 @@ public partial class App : Application
         {
             await StartAsync();
         }
-        catch (Exception ex) when (_logger is null && StartupCrashLog.Write(ex))
+        catch (Exception ex) when (_logger is null && StartupCrashLog.Write(ex, "start-up"))
         {
             // Never entered: the filter records the exception and returns false, so it still ends the app.
         }
@@ -55,6 +59,7 @@ public partial class App : Application
         _host.Start();
 
         _logger = _host.Services.GetRequiredService<ILogger<App>>();
+        AppDomain.CurrentDomain.FirstChanceException -= OnStartupFirstChanceException;
         var version = _host.Services.GetRequiredService<AppVersion>();
         LogStarted(_logger, version.DisplayText, AppPaths.IsPackaged, Environment.OSVersion.VersionString);
 
@@ -115,11 +120,20 @@ public partial class App : Application
         _host = null;
     }
 
+    /// <summary>Every exception before the logger exists, handled or not: the last ones explain a start-up crash.</summary>
+    private static void OnStartupFirstChanceException(object? sender, FirstChanceExceptionEventArgs e) =>
+        StartupCrashLog.Write(e.Exception, "first chance");
+
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         if (_logger is not null)
         {
             LogUnhandled(_logger, e.Exception, "XAML");
+        }
+        else
+        {
+            // XAML's message names the failing resource or element even when the exception is generic.
+            StartupCrashLog.Write(e.Exception, $"unhandled (XAML): {e.Message}");
         }
 
         // Keep the app running and tell the user; the details are in the log.
@@ -132,9 +146,18 @@ public partial class App : Application
 
     private void OnDomainUnhandledException(object sender, System.UnhandledExceptionEventArgs e)
     {
-        if (_logger is not null && e.ExceptionObject is Exception ex)
+        if (e.ExceptionObject is not Exception ex)
+        {
+            return;
+        }
+
+        if (_logger is not null)
         {
             LogUnhandled(_logger, ex, "AppDomain");
+        }
+        else
+        {
+            StartupCrashLog.Write(ex, "unhandled (AppDomain)");
         }
     }
 

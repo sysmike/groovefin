@@ -23,7 +23,7 @@ Start-Sleep -Seconds $Seconds
 if ($process.HasExited) {
     Write-Output "::error title=Start-up crash::Groovefin exited with code $($process.ExitCode) within $Seconds seconds."
     Write-Output '--- Start-up error ---'
-    Get-Content (Join-Path $env:LOCALAPPDATA 'Groovefin\startup-error.log') -ErrorAction SilentlyContinue
+    Get-Content (Join-Path $env:LOCALAPPDATA 'Groovefin\startup-error.log') -Tail 200 -ErrorAction SilentlyContinue
     Write-Output '--- App log ---'
     Get-ChildItem $logs -Filter *.log -ErrorAction SilentlyContinue | Get-Content -Tail 100
     Write-Output '--- Application event log (errors) ---'
