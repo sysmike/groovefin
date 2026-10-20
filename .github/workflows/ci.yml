@@ -160,6 +160,7 @@ jobs:
       - name: Smoke test (unpackaged)
         # ARM64 builds cannot run on the x64 runner.
         if: matrix.platform == 'x64'
+        timeout-minutes: 5
         shell: pwsh
         run: ./.github/scripts/Test-AppStarts.ps1 -Path "${{ runner.temp }}\out\unpackaged\Groovefin.exe"
 
