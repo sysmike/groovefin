@@ -2,6 +2,7 @@ using Groovefin.Core.Api;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
 namespace Groovefin.Core.Tests.ViewModels;
@@ -15,6 +16,7 @@ public sealed class ServersViewModelTests
     private readonly IDialogService _dialogs = Substitute.For<IDialogService>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
+    private IDispatcher _dispatcher = new ImmediateDispatcher();
 
     public ServersViewModelTests()
     {
@@ -23,7 +25,7 @@ public sealed class ServersViewModelTests
         _servers.ActiveServer.Returns(Alpha);
     }
 
-    private ServersViewModel CreateSut() => new(_servers, _dialogs, _navigation, _strings);
+    private ServersViewModel CreateSut() => new(_servers, _dialogs, _navigation, _strings, _dispatcher);
 
     private void RaiseChanged() => _servers.Changed += Raise.Event();
 
@@ -185,5 +187,23 @@ public sealed class ServersViewModelTests
         sut.SetActiveCommand.Execute(sut.Servers[1]);
 
         _navigation.Received(1).NavigateTo(PageKeys.SignIn, "id-b");
+    }
+
+    [Fact]
+    public void A_change_from_a_background_thread_updates_the_list_on_the_ui_thread()
+    {
+        var ui = new QueuedDispatcher();
+        _dispatcher = ui;
+        using var sut = CreateSut();
+        _servers.Servers.Returns([Alpha]);
+
+        RaiseChanged();
+
+        sut.Servers.Should().HaveCount(2, "the list is bound to the UI and must not change off its thread");
+        ui.Pending.Should().Be(1);
+
+        ui.RunAll();
+
+        sut.Servers.Select(s => s.Name).Should().Equal("Alpha");
     }
 }
