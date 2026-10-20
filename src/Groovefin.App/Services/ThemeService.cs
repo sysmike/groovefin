@@ -16,6 +16,8 @@ namespace Groovefin.App.Services;
 /// With the accent colour off, the app resources override the shades of the Windows accent colour that
 /// the theme brushes are built from with neutral greys: dark ones for light theme fills, light ones for
 /// dark theme fills, so text on them keeps its contrast. High contrast themes use system colours instead.
+/// The compact density adds the Windows App SDK's compact control styles and shrinks the list row
+/// resources from <c>App.xaml</c>.
 /// </remarks>
 internal sealed class ThemeService : IThemeService, IDisposable
 {
@@ -30,8 +32,11 @@ internal sealed class ThemeService : IThemeService, IDisposable
         ("SystemAccentColorDark3", ColorHelper.FromArgb(0xFF, 0x33, 0x33, 0x33)),
     ];
 
+    private static readonly Uri CompactStyles = new("ms-appx:///Microsoft.UI.Xaml/DensityStyles/Compact.xaml");
+
     private readonly ISettingsService _settings;
     private readonly List<Window> _windows = [];
+    private ResourceDictionary? _compactStyles;
 
     public ThemeService(ISettingsService settings)
     {
@@ -48,6 +53,7 @@ internal sealed class ThemeService : IThemeService, IDisposable
         if (_windows.Count == 0)
         {
             ApplyAccent();
+            ApplyDensity();
         }
 
         _windows.Add(window);
@@ -64,7 +70,8 @@ internal sealed class ThemeService : IThemeService, IDisposable
     {
         var themeChanged = e.OldSettings.Appearance.Theme != e.NewSettings.Appearance.Theme;
         var accentChanged = e.OldSettings.Appearance.UseAccentColor != e.NewSettings.Appearance.UseAccentColor;
-        if (!themeChanged && !accentChanged)
+        var densityChanged = e.OldSettings.Appearance.Density != e.NewSettings.Appearance.Density;
+        if (!themeChanged && !accentChanged && !densityChanged)
         {
             return;
         }
@@ -74,9 +81,14 @@ internal sealed class ThemeService : IThemeService, IDisposable
             ApplyAccent();
         }
 
+        if (densityChanged)
+        {
+            ApplyDensity();
+        }
+
         foreach (var window in _windows)
         {
-            if (accentChanged)
+            if (accentChanged || densityChanged)
             {
                 Refresh(window);
             }
@@ -106,9 +118,31 @@ internal sealed class ThemeService : IThemeService, IDisposable
         }
     }
 
+    private void ApplyDensity()
+    {
+        var compact = _settings.Current.Appearance.Density == ListDensity.Compact;
+        var resources = Application.Current.Resources;
+        resources["ListThumbnailSize"] = compact ? 32d : 40d;
+        resources["ListRowPadding"] = compact ? new Thickness(0, 2, 0, 2) : new Thickness(0, 4, 0, 4);
+        resources["ListItemPadding"] = compact ? new Thickness(8, 2, 8, 2) : new Thickness(8, 4, 8, 4);
+        resources["TrackRowPadding"] = compact ? new Thickness(0, 2, 0, 2) : new Thickness(0, 6, 0, 6);
+        resources["TableRowHeight"] = compact ? 28d : 36d;
+
+        if (compact && _compactStyles is null)
+        {
+            _compactStyles = new ResourceDictionary { Source = CompactStyles };
+            resources.MergedDictionaries.Add(_compactStyles);
+        }
+        else if (!compact && _compactStyles is not null)
+        {
+            resources.MergedDictionaries.Remove(_compactStyles);
+            _compactStyles = null;
+        }
+    }
+
     /// <summary>
     /// Theme resources are looked up again when the theme changes, so switching to the other theme
-    /// (and back in <see cref="Apply"/>, before the next frame) makes open pages pick up the new accent.
+    /// (and back in <see cref="Apply"/>, before the next frame) makes open pages pick up the new accent or density.
     /// </summary>
     private static void Refresh(Window window)
     {

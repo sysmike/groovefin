@@ -48,6 +48,12 @@
             <controls:SettingsCard x:Uid="SettingsAccentCard" HeaderIcon="{ui:FontIcon Glyph=&#xE771;}">
                 <ToggleSwitch IsOn="{x:Bind ViewModel.UseAccentColor, Mode=TwoWay}" />
             </controls:SettingsCard>
+            <controls:SettingsCard x:Uid="SettingsDensityCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8FD;}">
+                <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.DensityIndex, Mode=TwoWay}">
+                    <ComboBoxItem x:Uid="SettingsDensityStandard" />
+                    <ComboBoxItem x:Uid="SettingsDensityCompact" />
+                </ComboBox>
+            </controls:SettingsCard>
             <controls:SettingsCard x:Uid="SettingsLanguageCard" HeaderIcon="{ui:FontIcon Glyph=&#xE774;}">
                 <ComboBox
                     MinWidth="{StaticResource SettingsChoiceMinWidth}"
