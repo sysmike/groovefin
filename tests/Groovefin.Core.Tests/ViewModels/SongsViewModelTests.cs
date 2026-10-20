@@ -262,4 +262,15 @@ public sealed class SongsViewModelTests
         row.AccessibleName.Should().Be("Digital Love, Daft Punk, Romanthony, Discovery, 4:58");
         new SongRow(new Track { Id = "x", Name = "Bare" }).Text(SongColumn.Year).Should().BeEmpty();
     }
+
+    [Theory]
+    [InlineData("en-US", "5/1/2024")]
+    [InlineData("de-DE", "01.05.2024")]
+    public void Dates_follow_the_current_culture(string culture, string expected)
+    {
+        using var scope = new CultureScope(culture);
+        var row = new SongRow(new Track { Id = "t", Name = "Digital Love", DateAdded = new DateTimeOffset(2024, 5, 1, 12, 0, 0, TimeSpan.Zero) });
+
+        row.Text(SongColumn.DateAdded).Should().Be(expected);
+    }
 }
