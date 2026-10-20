@@ -179,7 +179,7 @@ public sealed partial class Player : IPlayer, IDisposable
     private void OnFailed(object? sender, PlaybackFailedEventArgs e)
     {
         LogPlaybackFailed(e.Exception, e.Source.ToString(), e.Message);
-        _errors.Report(e.Exception ?? new InvalidOperationException(e.Message), Operations.Playback);
+        _errors.Report(new PlaybackException(e.Message, e.Exception), Operations.Playback);
 
         if (++_failures >= MaxConsecutiveFailures)
         {

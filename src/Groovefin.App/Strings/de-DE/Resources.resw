@@ -112,6 +112,12 @@
   <data name="Error_Storage" xml:space="preserve">
     <value>Groovefin konnte seine Dateien nicht lesen oder schreiben. Prüfe, ob genug Speicherplatz frei ist.</value>
   </data>
+  <data name="Error_StreamRefused" xml:space="preserve">
+    <value>Der Server hat das Streamen des Titels abgelehnt. Melde dich erneut an oder prüfe, ob dein Konto Medien abspielen darf.</value>
+  </data>
+  <data name="Error_StreamFailed" xml:space="preserve">
+    <value>Der Titel kann nicht abgespielt werden. Das Format wird eventuell nicht unterstützt, oder die Verbindung wurde unterbrochen.</value>
+  </data>
   <data name="Error_Unexpected" xml:space="preserve">
     <value>Ein unerwarteter Fehler ist aufgetreten. Details stehen in der Protokolldatei.</value>
   </data>
