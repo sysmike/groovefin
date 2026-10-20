@@ -33,8 +33,8 @@ function Get-AppLog {
 }
 
 function Write-Diagnostics {
-    Write-Output '--- Start-up error ---'
-    Get-Content (Join-Path $data 'startup-error.log') -Tail 200 -ErrorAction SilentlyContinue
+    Write-Output '--- Start-up error file (with every thrown exception) ---'
+    Get-Content (Join-Path $data 'startup-error.log') -Tail 400 -ErrorAction SilentlyContinue
     Write-Output '--- App log ---'
     if ($log = Get-AppLog) { Get-Content $log.FullName -Tail 100 }
     Write-Output '--- Fake server requests ---'
@@ -88,6 +88,8 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
 }
 
 try {
+    # The start-up error file then lists every exception thrown, also the ones XAML wraps in its own.
+    $env:GROOVEFIN_TRACE_EXCEPTIONS = '1'
     $process = Start-Process -FilePath $Path -PassThru
     $deadline = $started.AddSeconds($Seconds)
     $ready = $null

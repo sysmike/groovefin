@@ -72,7 +72,12 @@ public partial class App : Application
 
         var logger = _host.Services.GetRequiredService<ILogger<App>>();
         _logger = logger;
-        AppDomain.CurrentDomain.FirstChanceException -= OnStartupFirstChanceException;
+
+        // GROOVEFIN_TRACE_EXCEPTIONS=1 keeps recording every thrown exception there (the CI smoke test sets it).
+        if (Environment.GetEnvironmentVariable("GROOVEFIN_TRACE_EXCEPTIONS") != "1")
+        {
+            AppDomain.CurrentDomain.FirstChanceException -= OnStartupFirstChanceException;
+        }
 
         // XAML reports failed resource lookups and bindings only here; they explain otherwise bare layout errors.
         DebugSettings.IsXamlResourceReferenceTracingEnabled = true;
