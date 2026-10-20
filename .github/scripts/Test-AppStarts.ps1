@@ -247,6 +247,7 @@ try {
     # The band sliders: expanded and scrolled into view, each must have a visible size (#165).
     # The header text is named "Equalizer" too: expand the element that can be expanded.
     $pattern = $null
+    $scroll = $null
     $expanded = $false
     $named = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer'))
     foreach ($element in @($equalizerCard) + @($named)) {
@@ -261,7 +262,6 @@ try {
     Start-Sleep -Seconds 2
     $sliders = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider)))
     $band = $sliders | Where-Object { $_.Current.Name -eq '1 kHz' } | Select-Object -First 1
-    $scroll = $null
     if ($band -and $band.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView(); Start-Sleep -Seconds 1 }
     Save-Screenshot 'settings-equalizer'
     foreach ($slider in $sliders) {
