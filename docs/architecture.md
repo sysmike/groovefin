@@ -92,6 +92,9 @@ flowchart TD
    (`Album`, `Artist`, `Track`, `Playlist`, ...) before they leave the project.
 5. Views bind to ViewModels with `x:Bind`. Views contain no business logic. Code-behind is limited to
    pure view concerns (animations, focus, drag visuals).
+6. Every NuGet package the app ships has a license notice in `ThirdPartyNotices` (Core), which the
+   About section of Settings lists. `ThirdPartyNoticesTests` checks the list against
+   `src/Groovefin.App/packages.lock.json`, so adding a dependency without its notice fails CI.
 
 ## Key abstractions
 

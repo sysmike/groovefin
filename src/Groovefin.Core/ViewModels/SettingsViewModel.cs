@@ -2,7 +2,10 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Groovefin.Core.About;
 using Groovefin.Core.Api;
+using Groovefin.Core.Formatting;
+using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -33,8 +36,8 @@ public sealed record LibraryOption(string? Id, string Name)
 }
 
 /// <summary>
-/// Settings page: theme, account, servers, the music library to browse, stream quality and volume
-/// normalization. The full page is tracked in #53.
+/// Settings page: appearance, account and servers, the music library to browse, stream quality,
+/// playback, storage (image cache and logs), the keyboard shortcut reference and About.
 /// </summary>
 public sealed partial class SettingsViewModel : ObservableObject
 {
@@ -43,6 +46,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private static readonly TranscodingCodec[] CodecOrder = [TranscodingCodec.Aac, TranscodingCodec.Mp3];
     private static readonly NormalizationMode[] NormalizationOrder = [NormalizationMode.Off, NormalizationMode.Track, NormalizationMode.Album];
     private static readonly InstantMixMode[] InstantMixOrder = [InstantMixMode.Replace, InstantMixMode.Append];
+    private static readonly int[] CacheLimits = [100, 250, 500, 1000, 2000, 5000];
 
     private readonly IThemeService _themeService;
     private readonly INavigationService _navigation;
@@ -51,6 +55,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly IStringResources _strings;
     private readonly IErrorReporter _errors;
     private readonly ISettingsService _settings;
+    private readonly IImageCache _cache;
+    private readonly ILauncherService _launcher;
     private bool _loadingLibraries;
 
     public SettingsViewModel(
@@ -61,6 +67,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         IStringResources strings,
         IErrorReporter errors,
         ISettingsService settings,
+        IImageCache cache,
+        ILauncherService launcher,
         AppVersion version)
     {
         _themeService = themeService;
@@ -70,6 +78,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         _strings = strings;
         _errors = errors;
         _settings = settings;
+        _cache = cache;
+        _launcher = launcher;
         Version = version;
         Theme = themeService.Theme;
         BitrateOptions = Bitrates
@@ -79,6 +89,7 @@ public sealed partial class SettingsViewModel : ObservableObject
                     ? strings.GetString("Settings_Kbps").Replace("{0}", value.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)
                     : strings.GetString("Settings_OriginalQuality")))
             .ToList();
+        CacheLimitOptions = [.. CacheLimits.Select(mb => ByteSizes.Format(mb * 1024L * 1024L, strings))];
         Shortcuts = [.. KeyboardShortcuts.All.Select(k => new ShortcutRow(KeyboardShortcuts.Gesture(k, strings), KeyboardShortcuts.Describe(k, strings)))];
     }
 
@@ -214,7 +225,43 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Gets the image cache size limits to choose from, e.g. "500 MB".</summary>
+    public IReadOnlyList<string> CacheLimitOptions { get; }
+
+    /// <summary>Gets or sets the image cache size limit as an index into <see cref="CacheLimitOptions"/>.</summary>
+    public int CacheLimitIndex
+    {
+        get => Array.IndexOf(CacheLimits, _settings.Current.Cache.ImageCacheSizeMegabytes);
+        set
+        {
+            if (value >= 0 && value < CacheLimits.Length && value != CacheLimitIndex)
+            {
+                _settings.Update(s => s with { Cache = s.Cache with { ImageCacheSizeMegabytes = CacheLimits[value] } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>Gets how much the image cache uses, e.g. "120 MB used"; empty until measured.</summary>
+    [ObservableProperty]
+    public partial string CacheSizeText { get; private set; } = string.Empty;
+
     public AppVersion Version { get; }
+
+    /// <summary>Gets the version for display, e.g. "Version 1.0.0".</summary>
+    public string VersionText => _strings.GetString("Settings_Version").Replace("{0}", Version.Version, StringComparison.Ordinal);
+
+    /// <summary>Gets the page of the commit the app was built from, or <see langword="null"/> when unknown.</summary>
+    public Uri? CommitUri => Version.Commit is { } sha ? ProjectLinks.Commit(sha) : null;
+
+    public bool HasCommit => Version.Commit is not null;
+
+    public Uri RepositoryUri => ProjectLinks.Repository;
+
+    public Uri IssuesUri => ProjectLinks.Issues;
+
+    /// <summary>Gets the third-party components in the app and their licenses.</summary>
+    public IReadOnlyList<ThirdPartyComponent> Licenses => ThirdPartyNotices.All;
 
     /// <summary>Gets the signed-in user name, or <see langword="null"/> when nobody is signed in.</summary>
     public string? UserName => _servers.IsSignedIn ? _servers.ActiveServer?.UserName : null;
@@ -313,6 +360,49 @@ public sealed partial class SettingsViewModel : ObservableObject
         if (!_loadingLibraries && value is not null && _servers.ActiveServer is { } server)
         {
             _servers.SetLibrary(server.Id, value.Id);
+        }
+    }
+
+    /// <summary>Measures the image cache for <see cref="CacheSizeText"/>.</summary>
+    public async Task RefreshCacheSizeAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var bytes = await _cache.GetSizeAsync(cancellationToken);
+            CacheSizeText = _strings.GetString("Settings_CacheUsed").Replace("{0}", ByteSizes.Format(bytes, _strings), StringComparison.Ordinal);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Files can disappear while they are counted (eviction); the size is shown on the next visit.
+            CacheSizeText = string.Empty;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ClearCacheAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _cache.ClearAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _errors.Report(ex, Operations.ClearCache);
+        }
+
+        await RefreshCacheSizeAsync(cancellationToken);
+    }
+
+    [RelayCommand]
+    private async Task OpenLogFolderAsync()
+    {
+        try
+        {
+            await _launcher.OpenLogFolderAsync();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _errors.Report(ex, Operations.OpenLogFolder);
         }
     }
 

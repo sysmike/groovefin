@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup Label="App">
+    <PackageVersion Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
     <PackageVersion Include="H.NotifyIcon.WinUI" Version="2.4.1" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
