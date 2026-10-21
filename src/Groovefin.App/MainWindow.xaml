@@ -280,8 +280,11 @@
             Grid.ColumnSpan="2" />
 
         <!--
-            Mini player (Ctrl+M): the window becomes a small always-on-top overlay with cover, title and
-            transport. The top strip is the title bar while it is shown; the button returns to the full window.
+            Mini player (Ctrl+M): the window becomes a small always-on-top overlay with the cover on the left,
+            title and artist to its right and the transport below them (#181). The window opens at the size of
+            this layout (MiniPlayerWidth × MiniPlayerHeight in code); made larger, the layout stays centred and
+            the cover stays square. The top strip is the title bar while it is shown; the button returns to the
+            full window.
         -->
         <Grid
             x:Name="MiniPlayer"
@@ -292,61 +295,69 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="32" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid x:Name="MiniTitleBar" Background="Transparent" />
             <Grid
                 Grid.Row="1"
-                Margin="16,0"
-                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
-                CornerRadius="{StaticResource OverlayCornerRadius}">
-                <FontIcon
-                    FontSize="48"
-                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                    Glyph="&#xE93C;" />
-                <Image
-                    controls:Artwork.Request="{x:Bind Player.MiniCover, Mode=OneWay}"
-                    AutomationProperties.AccessibilityView="Raw"
-                    Stretch="UniformToFill" />
-            </Grid>
-            <StackPanel Grid.Row="2" Margin="16,8,16,0">
-                <TextBlock
-                    MaxLines="1"
-                    Style="{StaticResource BodyStrongTextBlockStyle}"
-                    Text="{x:Bind Player.Title, Mode=OneWay}"
-                    TextTrimming="CharacterEllipsis" />
-                <TextBlock
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    MaxLines="1"
-                    Style="{StaticResource CaptionTextBlockStyle}"
-                    Text="{x:Bind Player.ArtistNames, Mode=OneWay}"
-                    TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-            <Grid Grid.Row="3" Margin="8,4,8,12">
-                <Button
-                    x:Uid="MiniExitButton"
-                    HorizontalAlignment="Left"
-                    Command="{x:Bind Player.ExitMiniPlayerCommand}">
-                    <FontIcon FontSize="14" Glyph="&#xE73F;" />
-                </Button>
+                Margin="12,0,12,12"
+                VerticalAlignment="Center"
+                ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid
+                    Width="96"
+                    Height="96"
+                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                    CornerRadius="{StaticResource OverlayCornerRadius}">
+                    <FontIcon
+                        FontSize="32"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        Glyph="&#xE93C;" />
+                    <Image
+                        controls:Artwork.Request="{x:Bind Player.MiniCover, Mode=OneWay}"
+                        AutomationProperties.AccessibilityView="Raw"
+                        Stretch="UniformToFill" />
+                </Grid>
                 <StackPanel
-                    HorizontalAlignment="Center"
-                    Orientation="Horizontal"
-                    Spacing="4">
-                    <Button x:Uid="MiniPreviousButton" Command="{x:Bind Player.PreviousCommand}">
-                        <FontIcon FontSize="14" Glyph="&#xE892;" />
-                    </Button>
-                    <Button
-                        AutomationProperties.Name="{x:Bind Player.PlayPauseName, Mode=OneWay}"
-                        Command="{x:Bind Player.PlayPauseCommand}"
-                        Style="{StaticResource AccentButtonStyle}"
-                        ToolTipService.ToolTip="{x:Bind Player.PlayPauseName, Mode=OneWay}">
-                        <FontIcon FontSize="14" Glyph="{x:Bind conv:Glyphs.PlayPause(Player.IsPlaying), Mode=OneWay}" />
-                    </Button>
-                    <Button x:Uid="MiniNextButton" Command="{x:Bind Player.NextCommand}">
-                        <FontIcon FontSize="14" Glyph="&#xE893;" />
-                    </Button>
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Spacing="2">
+                    <TextBlock
+                        MaxLines="1"
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        Text="{x:Bind Player.Title, Mode=OneWay}"
+                        TextTrimming="CharacterEllipsis" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        MaxLines="1"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Player.ArtistNames, Mode=OneWay}"
+                        TextTrimming="CharacterEllipsis" />
+                    <Grid Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Button x:Uid="MiniPreviousButton" Command="{x:Bind Player.PreviousCommand}">
+                                <FontIcon FontSize="14" Glyph="&#xE892;" />
+                            </Button>
+                            <Button
+                                AutomationProperties.Name="{x:Bind Player.PlayPauseName, Mode=OneWay}"
+                                Command="{x:Bind Player.PlayPauseCommand}"
+                                Style="{StaticResource AccentButtonStyle}"
+                                ToolTipService.ToolTip="{x:Bind Player.PlayPauseName, Mode=OneWay}">
+                                <FontIcon FontSize="14" Glyph="{x:Bind conv:Glyphs.PlayPause(Player.IsPlaying), Mode=OneWay}" />
+                            </Button>
+                            <Button x:Uid="MiniNextButton" Command="{x:Bind Player.NextCommand}">
+                                <FontIcon FontSize="14" Glyph="&#xE893;" />
+                            </Button>
+                        </StackPanel>
+                        <Button
+                            x:Uid="MiniExitButton"
+                            HorizontalAlignment="Right"
+                            Command="{x:Bind Player.ExitMiniPlayerCommand}">
+                            <FontIcon FontSize="14" Glyph="&#xE73F;" />
+                        </Button>
+                    </Grid>
                 </StackPanel>
             </Grid>
         </Grid>
