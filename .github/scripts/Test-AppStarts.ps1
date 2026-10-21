@@ -369,6 +369,28 @@ try {
     Test-Running 'on the artist page'
     Write-Output "The album's artist link opened the artist page."
 
+    # Back and forward (#176): the mouse's back button over the artist page's Play button (a control that
+    # handles presses itself), its forward button, then Alt+Left.
+    Add-Type -Namespace Smoke -Name Mouse -MemberDefinition @'
+[DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+[DllImport("user32.dll")] public static extern void mouse_event(uint flags, int dx, int dy, uint data, System.UIntPtr extra);
+'@
+    function Send-MouseButton([System.Windows.Automation.AutomationElement] $over, [uint32] $button) {
+        $r = $over.Current.BoundingRectangle
+        $null = [Smoke.Mouse]::SetCursorPos([int] ($r.X + $r.Width / 2), [int] ($r.Y + $r.Height / 2))
+        [Smoke.Mouse]::mouse_event(0x0080, 0, 0, $button, [UIntPtr]::Zero) # XDOWN
+        [Smoke.Mouse]::mouse_event(0x0100, 0, 0, $button, [UIntPtr]::Zero) # XUP
+    }
+    Send-MouseButton (Find-ById 'ArtistPlayButton') 1
+    $playAlbum = Find-Button 'Play album'
+    Send-MouseButton $playAlbum 2
+    $null = Find-ById 'ArtistPlayButton'
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.SendKeys]::SendWait('%{LEFT}')
+    $null = Find-Button 'Play album'
+    Test-Running 'after going back and forward'
+    Write-Output 'The mouse back and forward buttons and Alt+Left move through the pages.'
+
     # Settings, with the equalizer's sliders.
     Select-Navigation 'Settings'
     $equalizerCard = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) "equalizer settings"

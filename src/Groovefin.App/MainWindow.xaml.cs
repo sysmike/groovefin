@@ -76,6 +76,9 @@ internal sealed partial class MainWindow : Window
         themeService.Attach(this);
         RootGrid.Loaded += (_, _) => dialogs.Attach(RootGrid.XamlRoot);
 
+        // Also when a control under the pointer (a list, a button) has handled the press itself.
+        RootGrid.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(OnRootPointerPressed), handledEventsToo: true);
+
         // The built-in Settings item has no x:Uid; its access key comes from the resources like the others.
         NavView.Loaded += (_, _) =>
         {
@@ -373,8 +376,16 @@ internal sealed partial class MainWindow : Window
             return;
         }
 
-        if (IsDown(VirtualKey.Shift) || IsDown(VirtualKey.Menu) || IsDown(VirtualKey.LeftWindows) || IsDown(VirtualKey.RightWindows)
-            || KeyboardShortcuts.Find(e.Key.ToString(), IsDown(VirtualKey.Control)) is not { } action)
+        // The keyboard's own Back and Forward keys, like the mouse buttons (#176).
+        if (e.Key is VirtualKey.GoBack or VirtualKey.GoForward)
+        {
+            Execute(e.Key == VirtualKey.GoBack ? ViewModel.GoBackCommand : ViewModel.GoForwardCommand);
+            e.Handled = true;
+            return;
+        }
+
+        if (IsDown(VirtualKey.Shift) || IsDown(VirtualKey.LeftWindows) || IsDown(VirtualKey.RightWindows)
+            || KeyboardShortcuts.Find(e.Key.ToString(), IsDown(VirtualKey.Control), IsDown(VirtualKey.Menu)) is not { } action)
         {
             return;
         }
@@ -428,6 +439,12 @@ internal sealed partial class MainWindow : Window
             case ShortcutAction.Search:
                 SearchBox.Focus(FocusState.Keyboard);
                 break;
+            case ShortcutAction.GoBack:
+                Execute(ViewModel.GoBackCommand);
+                break;
+            case ShortcutAction.GoForward:
+                Execute(ViewModel.GoForwardCommand);
+                break;
             case ShortcutAction.Queue:
                 // The panel becomes visible with the next layout pass; focus it once it is there.
                 Queue.ToggleCommand.Execute(null);
@@ -445,6 +462,17 @@ internal sealed partial class MainWindow : Window
                 }
 
                 break;
+        }
+    }
+
+    /// <summary>The mouse's back and forward buttons (XButton1, XButton2) go back and forward (#176).</summary>
+    private void OnRootPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        var properties = e.GetCurrentPoint(RootGrid).Properties;
+        if (properties.IsXButton1Pressed || properties.IsXButton2Pressed)
+        {
+            Execute(properties.IsXButton1Pressed ? ViewModel.GoBackCommand : ViewModel.GoForwardCommand);
+            e.Handled = true;
         }
     }
 

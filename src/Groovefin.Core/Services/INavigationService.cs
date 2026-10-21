@@ -8,6 +8,9 @@ public interface INavigationService
     /// <summary>Gets a value indicating whether there is a page to go back to.</summary>
     bool CanGoBack { get; }
 
+    /// <summary>Gets a value indicating whether there is a page to go forward to (after going back).</summary>
+    bool CanGoForward { get; }
+
     /// <summary>Gets the key of the page that is currently shown, or <see langword="null"/> before the first navigation.</summary>
     string? CurrentPageKey { get; }
 
@@ -21,6 +24,10 @@ public interface INavigationService
     /// <summary>Navigates to the previous page.</summary>
     /// <returns><see langword="true"/> when navigation happened.</returns>
     bool GoBack();
+
+    /// <summary>Navigates to the page the user went back from.</summary>
+    /// <returns><see langword="true"/> when navigation happened.</returns>
+    bool GoForward();
 }
 
 /// <summary>Event data for <see cref="INavigationService.Navigated"/>.</summary>

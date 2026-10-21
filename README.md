@@ -31,6 +31,7 @@ WinUI 3.
 - An optional icon in the notification area, with playback controls.
 - A full-screen player with a blurred cover backdrop, and an always-on-top mini player.
 - Keyboard shortcuts for everything you do often (listed in Settings).
+- The mouse's back and forward buttons (or Alt+Left and Alt+Right) move through the pages you visited.
 - An optional Discord status ("Listening to Groovefin") with title, artist and progress, through
   the Discord app on the PC: no keys, and nothing goes to the internet from Groovefin.
 

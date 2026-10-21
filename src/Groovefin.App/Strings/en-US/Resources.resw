@@ -1346,6 +1346,9 @@
   <data name="Key_Ctrl" xml:space="preserve">
     <value>Ctrl</value>
   </data>
+  <data name="Key_Alt" xml:space="preserve">
+    <value>Alt</value>
+  </data>
   <data name="Key_Space" xml:space="preserve">
     <value>Space</value>
   </data>
@@ -1484,6 +1487,12 @@
   </data>
   <data name="Shortcut_MiniPlayer" xml:space="preserve">
     <value>Mini player on or off</value>
+  </data>
+  <data name="Shortcut_GoBack" xml:space="preserve">
+    <value>Back (also the mouse's back button)</value>
+  </data>
+  <data name="Shortcut_GoForward" xml:space="preserve">
+    <value>Forward (also the mouse's forward button)</value>
   </data>
   <data name="Tray_PlayPause" xml:space="preserve">
     <value>Play/Pause</value>

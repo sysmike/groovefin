@@ -37,6 +37,8 @@ internal sealed partial class FrameNavigationService(ILogger<FrameNavigationServ
 
     public bool CanGoBack => _frame?.CanGoBack ?? false;
 
+    public bool CanGoForward => _frame?.CanGoForward ?? false;
+
     public string? CurrentPageKey { get; private set; }
 
     public event EventHandler<NavigatedEventArgs>? Navigated;
@@ -73,6 +75,17 @@ internal sealed partial class FrameNavigationService(ILogger<FrameNavigationServ
         }
 
         _frame.GoBack();
+        return true;
+    }
+
+    public bool GoForward()
+    {
+        if (_frame is not { CanGoForward: true })
+        {
+            return false;
+        }
+
+        _frame.GoForward();
         return true;
     }
 
