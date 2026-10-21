@@ -14,6 +14,7 @@ using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.Session;
 using Groovefin.Core.Settings;
+using Groovefin.Core.Shortcuts;
 using Groovefin.Core.ViewModels;
 using Groovefin.Jellyfin;
 using Groovefin.Playback.Windows;
@@ -62,6 +63,7 @@ internal static class AppHost
         // Settings: settings.json next to the logs (LocalFolder when packaged, %LOCALAPPDATA%\Groovefin otherwise).
         builder.Services.AddSingleton(new SettingsStoreOptions(Path.Join(AppPaths.LocalData, "settings.json")));
         builder.Services.AddSingleton<ISettingsService, JsonSettingsService>();
+        builder.Services.AddSingleton<ShortcutService>();
 
         // Image cache: Cache\Images in local app data, size limit from settings (applies immediately).
         builder.Services.AddSingleton(sp =>

@@ -1340,9 +1340,6 @@
   <data name="SettingsShortcutsHeader.Text" xml:space="preserve">
     <value>Keyboard shortcuts</value>
   </data>
-  <data name="SettingsShortcutsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Keyboard shortcuts</value>
-  </data>
   <data name="Key_Ctrl" xml:space="preserve">
     <value>Ctrl</value>
   </data>
@@ -1454,9 +1451,6 @@
   </data>
   <data name="FullScreenExitButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Exit full screen (Esc)</value>
-  </data>
-  <data name="Key_F11" xml:space="preserve">
-    <value>F11</value>
   </data>
   <data name="Shortcut_FullScreen" xml:space="preserve">
     <value>Full-screen player on or off</value>
@@ -1654,7 +1648,7 @@
     <value>Keyboard shortcuts</value>
   </data>
   <data name="SettingsShortcutsCard.Description" xml:space="preserve">
-    <value>They work anywhere in the window, except while you type.</value>
+    <value>They work anywhere in the window, except while you type. Change any of them here.</value>
   </data>
   <data name="SettingsAboutCard.Header" xml:space="preserve">
     <value>Groovefin</value>
@@ -1839,5 +1833,83 @@
   </data>
   <data name="SettingsDensityCompact.Content" xml:space="preserve">
     <value>Compact</value>
+  </data>
+  <data name="Key_Shift" xml:space="preserve">
+    <value>Shift</value>
+  </data>
+  <data name="Key_NumberPad" xml:space="preserve">
+    <value>Num {0}</value>
+  </data>
+  <data name="Key_Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Key_End" xml:space="preserve">
+    <value>End</value>
+  </data>
+  <data name="Key_PageUp" xml:space="preserve">
+    <value>Page Up</value>
+  </data>
+  <data name="Key_PageDown" xml:space="preserve">
+    <value>Page Down</value>
+  </data>
+  <data name="Key_Insert" xml:space="preserve">
+    <value>Insert</value>
+  </data>
+  <data name="Key_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Key_Add" xml:space="preserve">
+    <value>Num +</value>
+  </data>
+  <data name="Key_Subtract" xml:space="preserve">
+    <value>Num -</value>
+  </data>
+  <data name="Key_Multiply" xml:space="preserve">
+    <value>Num *</value>
+  </data>
+  <data name="Key_Divide" xml:space="preserve">
+    <value>Num /</value>
+  </data>
+  <data name="Shortcuts_ChangeName" xml:space="preserve">
+    <value>Change the keys for {0}</value>
+  </data>
+  <data name="Shortcuts_ResetName" xml:space="preserve">
+    <value>Reset {0} to {1}</value>
+  </data>
+  <data name="Shortcuts_DialogTitle" xml:space="preserve">
+    <value>Change keys</value>
+  </data>
+  <data name="Shortcuts_Prompt" xml:space="preserve">
+    <value>Press the new keys for “{0}”. Enter saves, Esc cancels.</value>
+  </data>
+  <data name="Shortcuts_Waiting" xml:space="preserve">
+    <value>Waiting for keys…</value>
+  </data>
+  <data name="Shortcuts_Unsupported" xml:space="preserve">
+    <value>This key can't be a shortcut.</value>
+  </data>
+  <data name="Shortcuts_NeedsModifier" xml:space="preserve">
+    <value>Add Ctrl or Alt: lists, menus and boxes use this key on its own.</value>
+  </data>
+  <data name="Shortcuts_Reserved" xml:space="preserve">
+    <value>Windows uses these keys.</value>
+  </data>
+  <data name="Shortcuts_InUse" xml:space="preserve">
+    <value>Already used for “{0}”.</value>
+  </data>
+  <data name="ShortcutChangeButton.Content" xml:space="preserve">
+    <value>Change…</value>
+  </data>
+  <data name="ShortcutResetButton.Content" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="SettingsShortcutsResetAllCard.Header" xml:space="preserve">
+    <value>Reset all shortcuts</value>
+  </data>
+  <data name="SettingsShortcutsResetAllCard.Description" xml:space="preserve">
+    <value>Back to the keys Groovefin comes with.</value>
+  </data>
+  <data name="SettingsShortcutsResetAllButton.Content" xml:space="preserve">
+    <value>Reset all</value>
   </data>
 </root>

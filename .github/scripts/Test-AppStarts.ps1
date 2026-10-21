@@ -452,6 +452,32 @@ try {
         Stop-Test 'Smoke test' 'The equalizer switch was not found.'
     }
 
+    # Keyboard shortcuts (#68): the change dialog records Ctrl+Alt+N for "Next track", Enter saves it, and
+    # "Reset all" brings Ctrl+Right back. The rows are named "<what it does>, <keys>".
+    $expanded = $false
+    $named = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Keyboard shortcuts'))
+    foreach ($element in @($named)) {
+        if (-not $expanded -and $element.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $pattern)) {
+            if ($element.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
+            $pattern.Expand()
+            $expanded = $true
+        }
+    }
+    if (-not $expanded) { Stop-Test 'Smoke test' 'The keyboard shortcuts could not be expanded.' }
+    $change = Find-Button 'Change the keys for Next track'
+    if ($change.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
+    $change.GetCurrentPattern($invoke).Invoke()
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Change keys')) 'shortcut dialog'
+    Start-Sleep -Milliseconds 500
+    [System.Windows.Forms.SendKeys]::SendWait('^%n')
+    Start-Sleep -Milliseconds 500
+    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Next track, Ctrl+Alt+N')) 'the changed shortcut'
+    (Find-Button 'Reset all').GetCurrentPattern($invoke).Invoke()
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Next track, Ctrl+Right')) 'the default shortcut after Reset all'
+    Test-Running 'after changing a shortcut'
+    Write-Output 'A shortcut got new keys in the change dialog and Reset all restored it.'
+
     # Close the window like a user: the app must shut down without errors and exit with code 0 (#145).
     $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
     if (-not $process.WaitForExit(20000)) {
