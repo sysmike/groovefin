@@ -326,6 +326,13 @@ try {
     Test-Running 'on the folders page'
     Write-Output 'The folders page opened.'
 
+    # Songs: its header buttons once could not find their style and the page did not open (#171).
+    Select-Navigation 'Songs'
+    $null = Find-Button 'Columns'
+    Start-Sleep -Seconds 2
+    Test-Running 'on the songs page'
+    Write-Output 'The songs page opened.'
+
     # Playback (#167): an album from Home, played through the equalizer effect. The position must move,
     # and no track may fail, nor may the engine have to take the effect out to play it.
     Select-Navigation 'Home'
