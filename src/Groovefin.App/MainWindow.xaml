@@ -281,8 +281,8 @@
 
         <!--
             Mini player (Ctrl+M): the window becomes a small always-on-top overlay with the cover on the left,
-            title and artist to its right and the transport below them (#181). The window opens at the size of
-            this layout (MiniPlayerWidth × MiniPlayerHeight in code); made larger, the layout stays centred and
+            title and artist to its right and the transport below them (#181). The window opens at 420 × 140 and
+            can be resized within limits (#183, MiniPlayer* in code); made larger, the layout stays centred and
             the cover stays square. The top strip is the title bar while it is shown; the button returns to the
             full window.
         -->
