@@ -43,9 +43,10 @@ internal sealed partial class NowPlayingBar : UserControl
         }
     }
 
+    /// <summary>An artist link: its Tag is the artist (<c>Tag="{x:Bind}"</c>), not its DataContext (#172).</summary>
     private void OnArtistClick(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is ArtistRef artist)
+        if ((sender as FrameworkElement)?.Tag is ArtistRef artist)
         {
             ViewModel.OpenArtistCommand.Execute(artist);
         }
