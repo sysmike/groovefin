@@ -75,7 +75,7 @@ internal sealed partial class AlbumDetailPage : Page
         }
     }
 
-    /// <summary>Right-click or Menu key on a track: go to one of its artists.</summary>
+    /// <summary>The album's tracks to a playlist picked from a menu.</summary>
     private async void OnAddToPlaylistClick(object sender, RoutedEventArgs e) =>
         await PlaylistMenu.ShowAsync(
             AddToPlaylistButton,
@@ -91,9 +91,13 @@ internal sealed partial class AlbumDetailPage : Page
         }
     }
 
+    /// <summary>
+    /// An artist link: its Tag is the artist (<c>Tag="{x:Bind}"</c>). DataContext is not: the template uses x:Bind,
+    /// and the links did nothing (#172).
+    /// </summary>
     private void OnArtistClick(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is ArtistRef artist)
+        if ((sender as FrameworkElement)?.Tag is ArtistRef artist)
         {
             ViewModel.OpenArtistCommand.Execute(artist);
         }
@@ -108,9 +112,10 @@ internal sealed partial class AlbumDetailPage : Page
         }
     }
 
+    /// <summary>A genre link: its Tag is the genre, like the artist links'.</summary>
     private void OnGenreClick(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is Genre genre)
+        if ((sender as FrameworkElement)?.Tag is Genre genre)
         {
             ViewModel.OpenGenreCommand.Execute(genre);
         }

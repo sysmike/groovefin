@@ -63,8 +63,10 @@ $listener.Start()
 $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
     param($listener)
     $serverId = '0123456789abcdef0123456789abcdef'
+    $artist = @{ Id = 'dddddddddddddddddddddddddddddddd'; Name = 'Artist'; Type = 'MusicArtist'; ImageTags = @{} }
     $albums = 1..3 | ForEach-Object {
-        @{ Id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa$_"; Name = "Album $_"; Type = 'MusicAlbum'; AlbumArtist = 'Artist'; ImageTags = @{} }
+        @{ Id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa$_"; Name = "Album $_"; Type = 'MusicAlbum'; AlbumArtist = 'Artist'
+           AlbumArtists = @(@{ Id = $artist.Id; Name = $artist.Name }); ImageTags = @{} }
     }
     $tracks = 1..2 | ForEach-Object {
         @{ Id = "ccccccccccccccccccccccccccccccc$_"; Name = "Track $_"; Type = 'Audio'; MediaType = 'Audio'; IndexNumber = $_
@@ -97,7 +99,7 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             '^/userviews$' { @{ Items = @(@{ Id = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'; Name = 'Music'; Type = 'CollectionFolder'; CollectionType = 'music' }); TotalRecordCount = 1; StartIndex = 0 } }
             '/images/' { $status = 404; $null }
             '^/items/tracks$' { @{ Items = $tracks; TotalRecordCount = $tracks.Count; StartIndex = 0 } }
-            '^/items/[0-9a-f-]{32,36}$' { $albums[0] }
+            '^/items/[0-9a-f-]{32,36}$' { if ($path -eq "/items/$($artist.Id)") { $artist } else { $albums[0] } }
             '^/audio/[0-9a-f-]{32,36}/universal$' { $raw = $wav; $null }
             '^/items$' { @{ Items = $albums; TotalRecordCount = $albums.Count; StartIndex = 0 } }
             default { @{ Items = @(); TotalRecordCount = 0; StartIndex = 0 } }
@@ -357,6 +359,15 @@ try {
     Test-Playing 'after pressing Play album'
     if ($hasAudio) { Write-Output 'Playback runs through the equalizer effect.' }
     else { Write-Output 'No sound card: the stream passed the equalizer effect and stopped only at the audio output.' }
+
+    # The album's artist link opens the artist page (#172).
+    $artistLink = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Artist'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Hyperlink))) "artist link on the album page"
+    $artistLink.GetCurrentPattern($invoke).Invoke()
+    $null = Find-ById 'ArtistPlayButton'
+    Test-Running 'on the artist page'
+    Write-Output "The album's artist link opened the artist page."
 
     # Settings, with the equalizer's sliders.
     Select-Navigation 'Settings'

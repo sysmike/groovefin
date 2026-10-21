@@ -73,7 +73,8 @@
                                     <HyperlinkButton
                                         Padding="4,2"
                                         Click="OnArtistClick"
-                                        Content="{x:Bind Name}" />
+                                        Content="{x:Bind Name}"
+                                        Tag="{x:Bind}" />
                                 </DataTemplate>
                             </ItemsRepeater.ItemTemplate>
                         </ItemsRepeater>
@@ -94,7 +95,8 @@
                                     <HyperlinkButton
                                         Padding="4,2"
                                         Click="OnGenreClick"
-                                        Content="{x:Bind Name}" />
+                                        Content="{x:Bind Name}"
+                                        Tag="{x:Bind}" />
                                 </DataTemplate>
                             </ItemsRepeater.ItemTemplate>
                         </ItemsRepeater>
@@ -287,7 +289,8 @@
                                                                 Padding="0"
                                                                 Click="OnArtistClick"
                                                                 FontSize="12"
-                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                Tag="{x:Bind}">
                                                                 <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
                                                             </HyperlinkButton>
                                                         </DataTemplate>

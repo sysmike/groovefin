@@ -142,6 +142,7 @@
                             Spacing="8">
                             <Button
                                 x:Uid="ArtistPlayButton"
+                                AutomationProperties.AutomationId="ArtistPlayButton"
                                 Command="{x:Bind ViewModel.PlayCommand}"
                                 Style="{StaticResource AccentButtonStyle}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
