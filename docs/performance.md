@@ -60,7 +60,9 @@ or use `dotnet-counters monitor -n Groovefin` for GC and allocation rates.
 
 | Date | Version | Machine | Library | Start-up | Working set after start | Songs scroll | Album grid scroll |
 |---|---|---|---|---|---|---|---|
-| | | | | | | | |
+| 2026-10-21 | 0.1.0-beta.11, unpackaged | Windows 11 (26200) | 26,000 tracks | 500 ms¹ | 220 MB; 303 MB after scrolling all songs | Smooth, all rows | Smooth |
+
+¹ From the app log of 0.1.0-beta.10 on the same machine that morning (`Start-up took 500 ms`).
 
 Add a row for each release candidate. Use a release build (MSIX or the unpackaged ZIP), not a
 debug build from Visual Studio.
