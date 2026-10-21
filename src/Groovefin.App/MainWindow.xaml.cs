@@ -28,6 +28,10 @@ namespace Groovefin.App;
 /// </summary>
 internal sealed partial class MainWindow : Window
 {
+    /// <summary>The mini player's size in effective pixels: a 32 px drag strip, then the 96 px cover with margins and the text beside it.</summary>
+    private const int MiniPlayerWidth = 360;
+    private const int MiniPlayerHeight = 140;
+
     private readonly FrameNavigationService _navigation;
     private readonly AddToPlaylist _addToPlaylist;
     private readonly TrackDrag _trackDrag;
@@ -195,8 +199,13 @@ internal sealed partial class MainWindow : Window
         if (wanted == AppWindowPresenterKind.CompactOverlay)
         {
             var compact = CompactOverlayPresenter.Create();
-            compact.InitialSize = CompactOverlaySize.Medium;
+            compact.InitialSize = CompactOverlaySize.Small;
             AppWindow.SetPresenter(compact);
+
+            // Just the size of the layout (#181); Resize takes physical pixels. Windows keeps a compact overlay
+            // within its own limits, and the content stays centred if the window ends up larger.
+            var scale = RootGrid.XamlRoot?.RasterizationScale ?? 1;
+            AppWindow.Resize(new SizeInt32((int)Math.Round(MiniPlayerWidth * scale), (int)Math.Round(MiniPlayerHeight * scale)));
         }
         else
         {
