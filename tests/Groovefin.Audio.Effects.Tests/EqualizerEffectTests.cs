@@ -86,7 +86,7 @@ public sealed class EqualizerEffectTests : IDisposable
     {
         EqualizerEffectLibrary.SetParameters(parameters);
         var tone = Tone();
-        var inputPath = Path.Combine(_folder, $"{Guid.NewGuid():N}.wav");
+        var inputPath = Path.Join(_folder, $"{Guid.NewGuid():N}.wav");
         File.WriteAllBytes(inputPath, Wav(tone));
         var input = await StorageFile.GetFileFromPathAsync(inputPath);
         var folder = await StorageFolder.GetFolderFromPathAsync(_folder);
