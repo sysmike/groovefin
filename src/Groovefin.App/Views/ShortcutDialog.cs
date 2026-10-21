@@ -14,7 +14,8 @@ namespace Groovefin.App.Views;
 /// <summary>
 /// Records new keys for a shortcut (#68). Each key press shows the keys and, if they cannot be saved, why;
 /// Narrator reads both. Tab, Enter and Esc keep their meaning in the dialog (move focus, save, cancel), so
-/// it works with the keyboard alone, and they are no shortcut keys anyway.
+/// it works with the keyboard alone, and they are no shortcut keys anyway. Enter saves the recorded keys
+/// whichever button has focus: the dialog opens with focus on Cancel.
 /// </summary>
 internal static class ShortcutDialog
 {
@@ -51,8 +52,17 @@ internal static class ShortcutDialog
         };
 
         KeyGesture? chosen = null;
+        var accepted = false;
         dialog.PreviewKeyDown += (_, e) =>
         {
+            if (e.Key == VirtualKey.Enter && chosen is not null)
+            {
+                accepted = true;
+                e.Handled = true;
+                dialog.Hide();
+                return;
+            }
+
             if (e.Key is VirtualKey.Tab or VirtualKey.Enter or VirtualKey.Escape)
             {
                 return;
@@ -74,7 +84,7 @@ internal static class ShortcutDialog
             }
         };
 
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary && chosen is { } saved)
+        if ((await dialog.ShowAsync() == ContentDialogResult.Primary || accepted) && chosen is { } saved)
         {
             shortcuts.Assign(item, saved);
         }

@@ -452,8 +452,9 @@ try {
         Stop-Test 'Smoke test' 'The equalizer switch was not found.'
     }
 
-    # Keyboard shortcuts (#68): the change dialog records Ctrl+Alt+N for "Next track", Enter saves it, and
-    # "Reset all" brings Ctrl+Right back. The rows are named "<what it does>, <keys>".
+    # Keyboard shortcuts (#68): the change dialog records Ctrl+Alt+N for "Next track", Enter saves it (the
+    # dialog opens with focus on Cancel), and "Reset all" brings Ctrl+Right back. The rows are named
+    # "<what it does>, <keys>".
     $expanded = $false
     $named = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Keyboard shortcuts'))
     foreach ($element in @($named)) {
@@ -466,25 +467,12 @@ try {
     if (-not $expanded) { Stop-Test 'Smoke test' 'The keyboard shortcuts could not be expanded.' }
     $change = Find-Button 'Change the keys for Next track'
     if ($change.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
-    $row = $window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Next track, Ctrl+Right'))
-    Write-Output "Row 'Next track, Ctrl+Right' found: $([bool] $row)"
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Next track, Ctrl+Right')) 'the shortcut row before the change'
     $change.GetCurrentPattern($invoke).Invoke()
     $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Change keys')) 'shortcut dialog'
     Start-Sleep -Milliseconds 500
-    $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
-    Write-Output "Focus in the dialog: $($focused.Current.ControlType.ProgrammaticName) '$($focused.Current.Name)'"
     [System.Windows.Forms.SendKeys]::SendWait('^%n')
-    Start-Sleep -Milliseconds 500
-    # What the dialog shows now: the keys, a problem, and whether Save is enabled.
-    $texts = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))
-    foreach ($text in @($texts)) {
-        $name = $text.Current.Name
-        if ($name -match '\+|…|Waiting|used|Windows|Ctrl|Alt|key') { Write-Output "Dialog text: '$name'" }
-    }
-    $save = $window.FindFirst($scope::Descendants, [System.Windows.Automation.AndCondition]::new(
-            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Save'),
-            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
-    Write-Output "Save enabled: $(if ($save) { $save.Current.IsEnabled } else { 'not found' })"
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Ctrl+Alt+N')) 'the recorded keys in the dialog'
     [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
     $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Next track, Ctrl+Alt+N')) 'the changed shortcut'
     (Find-Button 'Reset all').GetCurrentPattern($invoke).Invoke()
