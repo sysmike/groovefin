@@ -28,9 +28,15 @@ namespace Groovefin.App;
 /// </summary>
 internal sealed partial class MainWindow : Window
 {
-    /// <summary>The mini player's size in effective pixels: a 32 px drag strip, then the 96 px cover with margins and the text beside it.</summary>
-    private const int MiniPlayerWidth = 360;
+    /// <summary>The mini player's start size in effective pixels: a 32 px drag strip, then the 96 px cover with margins and the text beside it.</summary>
+    private const int MiniPlayerWidth = 420;
     private const int MiniPlayerHeight = 140;
+
+    /// <summary>How far the mini player can be resized (#183): from just the layout to where it still makes sense.</summary>
+    private const int MiniPlayerMinWidth = 320;
+    private const int MiniPlayerMinHeight = 140;
+    private const int MiniPlayerMaxWidth = 720;
+    private const int MiniPlayerMaxHeight = 200;
 
     private readonly FrameNavigationService _navigation;
     private readonly AddToPlaylist _addToPlaylist;
@@ -39,6 +45,8 @@ internal sealed partial class MainWindow : Window
     private readonly ISettingsService _settings;
     private readonly ShortcutService _shortcuts;
     private readonly NotificationAreaIcon _tray;
+    /// <summary>The normal window's presenter, set again when the mini or full-screen player closes.</summary>
+    private readonly OverlappedPresenter? _windowPresenter;
     private RectInt32? _restoreBounds;
     private bool _restoreMaximized;
 
@@ -76,6 +84,7 @@ internal sealed partial class MainWindow : Window
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         SystemBackdrop = CreateBackdrop();
+        _windowPresenter = AppWindow.Presenter as OverlappedPresenter;
 
         navigation.Initialize(ContentFrame);
         themeService.Attach(this);
@@ -109,8 +118,8 @@ internal sealed partial class MainWindow : Window
         {
             if (args.DidPresenterChange)
             {
-                Player.IsFullScreen = AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
-                Player.IsMiniPlayer = AppWindow.Presenter.Kind == AppWindowPresenterKind.CompactOverlay;
+                Player.IsFullScreen = CurrentMode == WindowMode.FullScreen;
+                Player.IsMiniPlayer = CurrentMode == WindowMode.MiniPlayer;
             }
 
             // Minimized with "minimize to tray": only the notification area icon stays.
@@ -175,45 +184,67 @@ internal sealed partial class MainWindow : Window
         Activate();
     }
 
+    /// <summary>What the window shows: the app, the mini player or the full-screen player.</summary>
+    private enum WindowMode
+    {
+        Normal,
+        MiniPlayer,
+        FullScreen,
+    }
+
+    /// <summary>Gets the mode of the presenter in place; only the mini player's window stays on top.</summary>
+    private WindowMode CurrentMode => AppWindow.Presenter switch
+    {
+        { Kind: AppWindowPresenterKind.FullScreen } => WindowMode.FullScreen,
+        OverlappedPresenter { IsAlwaysOnTop: true } => WindowMode.MiniPlayer,
+        _ => WindowMode.Normal,
+    };
+
     /// <summary>
-    /// Shows the presenter the players ask for: compact overlay (mini player), full screen or the normal
+    /// Shows the presenter the players ask for: the mini player's small window, full screen or the normal
     /// window. The normal window's place and size are kept while the mini player is open and come back after.
     /// </summary>
     private void ApplyPresenter()
     {
-        var wanted = Player.IsMiniPlayer ? AppWindowPresenterKind.CompactOverlay
-            : Player.IsFullScreen ? AppWindowPresenterKind.FullScreen
-            : AppWindowPresenterKind.Overlapped;
-        var current = AppWindow.Presenter.Kind;
+        var wanted = Player.IsMiniPlayer ? WindowMode.MiniPlayer
+            : Player.IsFullScreen ? WindowMode.FullScreen
+            : WindowMode.Normal;
+        var current = CurrentMode;
         if (wanted == current)
         {
             return;
         }
 
-        if (wanted == AppWindowPresenterKind.CompactOverlay && AppWindow.Presenter is OverlappedPresenter overlapped)
+        if (wanted == WindowMode.MiniPlayer && current == WindowMode.Normal && AppWindow.Presenter is OverlappedPresenter overlapped)
         {
             _restoreBounds = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
             _restoreMaximized = overlapped.State == OverlappedPresenterState.Maximized;
         }
 
-        if (wanted == AppWindowPresenterKind.CompactOverlay)
+        switch (wanted)
         {
-            var compact = CompactOverlayPresenter.Create();
-            compact.InitialSize = CompactOverlaySize.Small;
-            AppWindow.SetPresenter(compact);
+            case WindowMode.MiniPlayer:
+                AppWindow.SetPresenter(CreateMiniPlayerPresenter());
+                AppWindow.Resize(Scaled(MiniPlayerWidth, MiniPlayerHeight));
+                break;
+            case WindowMode.FullScreen:
+                AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
+                break;
+            default:
+                if (_windowPresenter is not null)
+                {
+                    AppWindow.SetPresenter(_windowPresenter);
+                }
+                else
+                {
+                    AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+                }
 
-            // Just the size of the layout (#181); Resize takes physical pixels. Windows keeps a compact overlay
-            // within its own limits, and the content stays centred if the window ends up larger.
-            var scale = RootGrid.XamlRoot?.RasterizationScale ?? 1;
-            AppWindow.Resize(new SizeInt32((int)Math.Round(MiniPlayerWidth * scale), (int)Math.Round(MiniPlayerHeight * scale)));
-        }
-        else
-        {
-            AppWindow.SetPresenter(wanted);
+                break;
         }
 
         // Also after mini player → full screen → window.
-        if (wanted == AppWindowPresenterKind.Overlapped && _restoreBounds is { } bounds)
+        if (wanted == WindowMode.Normal && _restoreBounds is { } bounds)
         {
             AppWindow.MoveAndResize(bounds);
             if (_restoreMaximized && AppWindow.Presenter is OverlappedPresenter restored)
@@ -224,8 +255,36 @@ internal sealed partial class MainWindow : Window
             _restoreBounds = null;
         }
 
-        // Only the mini player's top strip can move the small window.
+        // Only the mini player's top strip can move the small window; its caption buttons fit that strip.
         SetTitleBar(Player.IsMiniPlayer ? MiniTitleBar : AppTitleBar);
+        AppWindow.TitleBar.PreferredHeightOption = Player.IsMiniPlayer ? TitleBarHeightOption.Standard : TitleBarHeightOption.Tall;
+    }
+
+    /// <summary>
+    /// The mini player's window (#183): always on top, resizable between its limits, with only a close button.
+    /// A normal window rather than Windows' compact overlay, which sets its own size limits.
+    /// </summary>
+    private OverlappedPresenter CreateMiniPlayerPresenter()
+    {
+        var presenter = OverlappedPresenter.Create();
+        presenter.IsAlwaysOnTop = true;
+        presenter.IsMaximizable = false;
+        presenter.IsMinimizable = false;
+        presenter.IsResizable = true;
+        var minimum = Scaled(MiniPlayerMinWidth, MiniPlayerMinHeight);
+        var maximum = Scaled(MiniPlayerMaxWidth, MiniPlayerMaxHeight);
+        presenter.PreferredMinimumWidth = minimum.Width;
+        presenter.PreferredMinimumHeight = minimum.Height;
+        presenter.PreferredMaximumWidth = maximum.Width;
+        presenter.PreferredMaximumHeight = maximum.Height;
+        return presenter;
+    }
+
+    /// <summary>Effective pixels in the physical pixels the window APIs take.</summary>
+    private SizeInt32 Scaled(int width, int height)
+    {
+        var scale = RootGrid.XamlRoot?.RasterizationScale ?? 1;
+        return new SizeInt32((int)Math.Round(width * scale), (int)Math.Round(height * scale));
     }
 
     /// <summary>Mica when supported, Desktop Acrylic as fallback, otherwise the default solid background.</summary>

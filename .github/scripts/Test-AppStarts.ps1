@@ -480,20 +480,34 @@ try {
     Test-Running 'after changing a shortcut'
     Write-Output 'A shortcut got new keys in the change dialog and Reset all restored it.'
 
-    # Mini player (#181): Ctrl+M makes the window a small overlay, wider than tall (cover left, text right),
-    # and Esc brings the full window back.
+    # Mini player (#181, #183): Ctrl+M makes the window a small one on top, 420x140 (cover left, text right).
+    # It can be resized, but no larger than 720x200; Esc brings the full window back.
     [System.Windows.Forms.SendKeys]::SendWait('^m')
     $exitMini = Find-Button 'Back to the full window'
     Start-Sleep -Seconds 1
     $mini = $window.Current.BoundingRectangle
     Write-Output ("Mini player window: {0:0}x{1:0}" -f $mini.Width, $mini.Height)
-    if ($mini.Width -gt 480 -or $mini.Height -gt 240 -or $mini.Width -le $mini.Height) {
-        Stop-Test 'Smoke test' ("The mini player is {0:0}x{1:0}; it should be about 360x140." -f $mini.Width, $mini.Height)
+    if ([Math]::Abs($mini.Width - 420) -gt 8 -or [Math]::Abs($mini.Height - 140) -gt 8) {
+        Stop-Test 'Smoke test' ("The mini player is {0:0}x{1:0}; it should be 420x140." -f $mini.Width, $mini.Height)
+    }
+    $transform = $null
+    if (-not $window.TryGetCurrentPattern([System.Windows.Automation.TransformPattern]::Pattern, [ref] $transform) -or -not $transform.Current.CanResize) {
+        Stop-Test 'Smoke test' 'The mini player window cannot be resized.'
+    }
+    $transform.Resize(520, 170)
+    Start-Sleep -Milliseconds 500
+    $resized = $window.Current.BoundingRectangle
+    $transform.Resize(2000, 2000)
+    Start-Sleep -Milliseconds 500
+    $largest = $window.Current.BoundingRectangle
+    Write-Output ("Mini player resized: {0:0}x{1:0}, at most {2:0}x{3:0}" -f $resized.Width, $resized.Height, $largest.Width, $largest.Height)
+    if ([Math]::Abs($resized.Width - 520) -gt 8 -or $largest.Width -gt 728 -or $largest.Height -gt 208) {
+        Stop-Test 'Smoke test' ("The mini player should resize to 520x170 and stop at 720x200, not {0:0}x{1:0} and {2:0}x{3:0}." -f $resized.Width, $resized.Height, $largest.Width, $largest.Height)
     }
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
     $null = Select-Navigation 'Settings'
     Test-Running 'after the mini player'
-    Write-Output 'The mini player opened at its small size and Esc left it.'
+    Write-Output 'The mini player opened at 420x140, resized within its limits, and Esc left it.'
 
     # Close the window like a user: the app must shut down without errors and exit with code 0 (#145).
     $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
