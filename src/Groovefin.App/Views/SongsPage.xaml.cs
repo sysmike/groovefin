@@ -164,7 +164,8 @@ internal sealed partial class SongsPage : Page
     {
         var button = new Button
         {
-            Style = (Style)Resources["ColumnHeaderButtonStyle"],
+            // Shared with the album page in App.xaml: the page's own Resources would not find it (#171).
+            Style = (Style)Application.Current.Resources["ColumnHeaderButtonStyle"],
             HorizontalContentAlignment = column.IsNumeric ? HorizontalAlignment.Right : HorizontalAlignment.Left,
             Command = ViewModel.SortCommand,
             CommandParameter = column,
