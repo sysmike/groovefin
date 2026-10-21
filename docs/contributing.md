@@ -17,6 +17,10 @@ and what a pull request needs before it can be merged.
   dotnet test tests/Groovefin.Jellyfin.Tests
   ```
 
+- `Groovefin.Audio.Effects.Tests` needs Windows and runs as its own executable, whose manifest registers
+  the effect (`dotnet build` it with `-p:Platform=x64`, then start `Groovefin.Audio.Effects.Tests.exe`
+  from its `bin` folder).
+
 See [architecture.md](architecture.md) for the solution layout and [ci.md](ci.md) for the build
 pipeline.
 

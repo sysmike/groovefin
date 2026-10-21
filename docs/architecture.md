@@ -24,6 +24,7 @@ depend on which, and the conventions every feature follows.
 | `Groovefin.Playback.Windows` | `net10.0-windows10.0.22000.0` | `IPlaybackEngine` implementation using `Windows.Media.Playback.MediaPlayer` + `MediaPlaybackList`. System Media Transport Controls. |
 | `Groovefin.Core.Tests` | `net10.0` | Unit tests for Core (ViewModels, queue, parsers). |
 | `Groovefin.Jellyfin.Tests` | `net10.0` | Unit tests for the Jellyfin layer against WireMock.Net fakes. |
+| `Groovefin.Audio.Effects.Tests` | `net10.0-windows10.0.26100.0` | Windows only: sends a tone through the published NativeAOT effect with Media Foundation's transcoder and measures the level. |
 
 ## Component diagram
 
@@ -86,6 +87,8 @@ flowchart TD
     Effects --> Audio
     CoreTests[Groovefin.Core.Tests] --> Core
     JellyfinTests[Groovefin.Jellyfin.Tests] --> Jellyfin
+    EffectsTests[Groovefin.Audio.Effects.Tests] --> Playback
+    EffectsTests -. native build .-> Effects
 ```
 
 1. `Groovefin.Core` references no other Groovefin project but `Groovefin.Audio` (plain signal processing,
@@ -132,7 +135,8 @@ Media Foundation creates them with `RoActivateInstance`. So the equalizer runs a
 
 - `Groovefin.Audio.Effects` implements `IBasicAudioEffect` with C#/WinRT authoring. `Groovefin.App`
   publishes it with NativeAOT for its runtime identifier (`PublishAudioEffects` target), and ships the
-  native `Groovefin.Audio.Effects.dll`, which exports `DllGetActivationFactory`. NativeAOT is used instead
+  native `Groovefin.Audio.Effects.dll`, which exports `DllGetActivationFactory`. The target lives in
+  `PublishAudioEffects.targets`, which the effect's tests import too. NativeAOT is used instead
   of C#/WinRT's `WinRT.Host.dll` because that host needs an installed .NET runtime, while the unpackaged
   app is self-contained.
 - `Package.appxmanifest` (MSIX) and `app.manifest` (unpackaged, registration-free WinRT) register the
@@ -140,11 +144,18 @@ Media Foundation creates them with `RoActivateInstance`. So the equalizer runs a
 - `MediaPlayerEngine` asks Windows for the class's activation factory first, logs the result
   ("Equalizer effect is available"), and only then adds it, as optional. Without it, Settings hides the
   equalizer and playback works as before. The CI smoke test fails if the log says otherwise.
-- The app passes the parameters as one string in the effect's property set
-  (`EqualizerEffectContract`, `EqualizerParameters.Format`). The effect and the app run different .NET
-  runtimes in one process, so nothing else is shared.
+- The effect and the app run different .NET runtimes in one process. The app passes the parameters as
+  one string (`EqualizerParameters.Format`) to a function the DLL exports
+  (`EqualizerEffectContract.SetParametersExport`, called by `EqualizerEffectLibrary`); every effect in the
+  process uses what was set last, from its next buffer on. The effect's property set is not used: Media
+  Foundation did not pass later changes to it on to the effect (#169).
+- The effect cannot log and never lets an error stop playback. It counts the buffers it received,
+  equalized and left alone after an error (`GetStatusExport`, `EqualizerEffectStatus`); the engine logs new
+  errors at the start of each track.
 - The filter maths lives in `Groovefin.Audio` and is unit-tested on every platform. The effect project
-  itself builds only on Windows (`cswinrt.exe`).
+  itself builds only on Windows (`cswinrt.exe`). `Groovefin.Audio.Effects.Tests` runs the built DLL in CI:
+  Media Foundation's transcoder creates the effect like MediaPlayer does, but needs no sound card. A boost
+  of the 1 kHz band must make a 1 kHz tone about 12 dB louder.
 
 ## Jellyfin layer
 

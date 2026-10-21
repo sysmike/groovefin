@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Plays audio through the real equalizer effect: the NativeAOT DLL, created by Media Foundation the way
+    MediaPlayer creates it (#169). Windows only, and only on the architecture it runs on: CI runs it in the
+    x64 Windows build, not with the cross-platform tests.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>$(GroovefinWindowsMinVersion)</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>$(GroovefinWindowsMinVersion)</SupportedOSPlatformVersion>
+    <RootNamespace>Groovefin.Audio.Effects.Tests</RootNamespace>
+    <!-- Registers the effect's WinRT class for this process (registration-free), like the unpackaged app. -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <!-- One runtime identifier per solution platform, like the app. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == ''">
+    <RuntimeIdentifier Condition="'$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant())</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Groovefin.Playback.Windows\Groovefin.Playback.Windows.csproj" />
+  </ItemGroup>
+
+  <Import Project="..\..\src\Groovefin.Audio.Effects\PublishAudioEffects.targets" />
+
+</Project>
