@@ -12,28 +12,20 @@ using WinRT;
 namespace Groovefin.Audio.Effects;
 
 /// <summary>
-/// The graphic equalizer in MediaPlayer's audio path (<c>MediaPlayer.AddAudioEffect</c>). The app passes
-/// <see cref="EqualizerParameters"/> through the property set, which the effect reads every
-/// <see cref="ReadInterval"/> buffers (polling, not its MapChanged event: a generic WinRT delegate is one more
-/// type to marshal under NativeAOT).
+/// The graphic equalizer in MediaPlayer's audio path (<c>MediaPlayer.AddAudioEffect</c>). It plays with the
+/// parameters the app set last through the DLL's exports (<see cref="EqualizerEffectState"/>), which it checks
+/// at every buffer; its property set stays unused (#169).
 /// Buffers are processed in place as 32-bit float. While the equalizer is off or flat the samples pass
-/// through untouched, and an error never stops playback: the buffer is left as it is.
+/// through untouched, and an error never stops playback: the buffer is left as it is, and the error counted.
 /// </summary>
 public sealed partial class EqualizerEffect : IBasicAudioEffect
 {
     /// <summary>IID of the COM interface <c>IMemoryBufferByteAccess</c>, which gives the buffer's address.</summary>
     private static readonly Guid MemoryBufferByteAccess = new("5B0D3235-4DBA-4D44-865E-8F1D0E4FD04D");
 
-    /// <summary>How many buffers apart the property set is read: about a tenth of a second at 10 ms per buffer.</summary>
-    private const int ReadInterval = 10;
-
     private readonly Lock _gate = new();
-    private IPropertySet? _configuration;
-    private EqualizerParameters _parameters = EqualizerParameters.Off;
     private EqualizerProcessor? _processor;
-    private string? _parametersText;
-    private int _sinceRead;
-    private bool _changed;
+    private EqualizerParameters? _applied;
     private bool _discard;
 
     /// <summary>Gets the formats it processes: float, the usual rates, stereo then mono. Media Foundation converts to one of them.</summary>
@@ -49,44 +41,43 @@ public sealed partial class EqualizerEffect : IBasicAudioEffect
         lock (_gate)
         {
             _processor = new EqualizerProcessor((int)encodingProperties.SampleRate, (int)encodingProperties.ChannelCount);
-            _changed = true;
+            _applied = null;
         }
     }
 
+    /// <summary>Not used: the parameters come through the DLL's exports (#169).</summary>
     public void SetProperties(IPropertySet configuration)
     {
-        ArgumentNullException.ThrowIfNull(configuration);
-        _configuration = configuration;
-        Read(configuration);
     }
 
     public void ProcessFrame(ProcessAudioFrameContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        if (++_sinceRead >= ReadInterval && _configuration is { } configuration)
-        {
-            _sinceRead = 0;
-            Read(configuration);
-        }
-
+        EqualizerEffectState.CountBuffer();
+        var parameters = EqualizerEffectState.Parameters;
         EqualizerProcessor? processor;
         lock (_gate)
         {
             processor = _processor;
-            if (processor is not null && _discard)
+            if (processor is null)
+            {
+                return;
+            }
+
+            if (_discard)
             {
                 processor.Reset();
                 _discard = false;
             }
 
-            if (processor is not null && _changed)
+            if (!ReferenceEquals(parameters, _applied))
             {
-                processor.Configure(_parameters);
-                _changed = false;
+                processor.Configure(parameters);
+                _applied = parameters;
             }
         }
 
-        if (processor is null || !processor.IsActive)
+        if (!processor.IsActive)
         {
             return;
         }
@@ -96,10 +87,12 @@ public sealed partial class EqualizerEffect : IBasicAudioEffect
             using var buffer = context.InputFrame.LockBuffer(AudioBufferAccessMode.ReadWrite);
             using var reference = buffer.CreateReference();
             processor.Process(Samples(reference, buffer.Length));
+            EqualizerEffectState.CountProcessed();
         }
         catch (Exception ex) when (ex is COMException or InvalidOperationException or ObjectDisposedException or NotSupportedException or InvalidCastException)
         {
             // The buffer stays as it is: better unequalized than silent.
+            EqualizerEffectState.CountError(ex.HResult);
         }
     }
 
@@ -111,7 +104,9 @@ public sealed partial class EqualizerEffect : IBasicAudioEffect
         }
     }
 
-    public void Close(MediaEffectClosedReason reason) => _configuration = null;
+    public void Close(MediaEffectClosedReason reason)
+    {
+    }
 
     private static List<AudioEncodingProperties> CreateEncodings()
     {
@@ -154,35 +149,6 @@ public sealed partial class EqualizerEffect : IBasicAudioEffect
         finally
         {
             Marshal.Release(unknown);
-        }
-    }
-
-    /// <summary>Takes the parameters from the property set when its text changed. Never throws: a bad read keeps the last parameters.</summary>
-    private void Read(IPropertySet configuration)
-    {
-        string? text;
-        try
-        {
-            text = configuration.TryGetValue(EqualizerEffectContract.ParametersKey, out var value) ? value as string : null;
-        }
-        catch (Exception ex) when (ex is COMException or InvalidCastException or NotSupportedException)
-        {
-            return;
-        }
-
-        if (text is null || string.Equals(text, _parametersText, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        _parametersText = text;
-        if (EqualizerParameters.TryParse(text, out var parameters))
-        {
-            lock (_gate)
-            {
-                _parameters = parameters;
-                _changed = true;
-            }
         }
     }
 }

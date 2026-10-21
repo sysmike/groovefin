@@ -1,0 +1,35 @@
+<Project>
+
+  <!--
+    The equalizer's audio effect (#65), for projects that run it: Groovefin.App and the effect's Windows tests.
+    MediaPlayer creates it by its WinRT class name from Groovefin.Audio.Effects.dll, which the importing
+    project's manifest registers; it has to be a native DLL, so it is published with NativeAOT for the
+    importing project's runtime identifier and copied next to its executable.
+    NativeAOT needs the MSVC linker (Visual Studio's "Desktop development with C++"). Without it, build with
+    -p:GroovefinAudioEffects=false: the app then starts without the equalizer and says so in its log.
+    Every importer publishes to the same folder with the same properties, so a solution build publishes
+    the effect once per runtime identifier instead of twice into the same obj folder.
+  -->
+  <PropertyGroup Label="Audio effects">
+    <GroovefinAudioEffects Condition="'$(GroovefinAudioEffects)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">true</GroovefinAudioEffects>
+    <GroovefinAudioEffectsDir>$(MSBuildThisFileDirectory)bin\aot\$(Configuration)\$(RuntimeIdentifier)\</GroovefinAudioEffectsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Not referenced as an assembly: only its native build is shipped (see PublishAudioEffects below). -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Groovefin.Audio.Effects.csproj" ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+
+  <Target Name="PublishAudioEffects" BeforeTargets="AssignTargetPaths" Condition="'$(GroovefinAudioEffects)' == 'true'">
+    <!-- The importer's packaging and publish settings do not apply to the effect; NativeAOT is always self-contained. -->
+    <MSBuild
+      Projects="$(MSBuildThisFileDirectory)Groovefin.Audio.Effects.csproj"
+      Targets="Publish"
+      Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=true;PublishDir=$(GroovefinAudioEffectsDir)"
+      RemoveProperties="Platform;WindowsPackageType;WindowsAppSDKSelfContained;GenerateAppxPackageOnBuild;AppxPackageSigningEnabled;AppxPackageDir;PublishReadyToRun;_IsPublishing" />
+    <ItemGroup>
+      <Content Include="$(GroovefinAudioEffectsDir)Groovefin.Audio.Effects.dll" Link="Groovefin.Audio.Effects.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+</Project>

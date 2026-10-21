@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Groovefin.Audio", "src\Groo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Groovefin.Audio.Effects", "src\Groovefin.Audio.Effects\Groovefin.Audio.Effects.csproj", "{5DFA1819-A1CB-4A85-9282-2F5F7C7DCDD5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Groovefin.Audio.Effects.Tests", "tests\Groovefin.Audio.Effects.Tests\Groovefin.Audio.Effects.Tests.csproj", "{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -129,6 +131,18 @@ Global
 		{5DFA1819-A1CB-4A85-9282-2F5F7C7DCDD5}.Release|x64.Build.0 = Release|Any CPU
 		{5DFA1819-A1CB-4A85-9282-2F5F7C7DCDD5}.Release|ARM64.ActiveCfg = Release|Any CPU
 		{5DFA1819-A1CB-4A85-9282-2F5F7C7DCDD5}.Release|ARM64.Build.0 = Release|Any CPU
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Debug|Any CPU.Build.0 = Debug|x64
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Debug|x64.ActiveCfg = Debug|x64
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Debug|x64.Build.0 = Debug|x64
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Debug|ARM64.Build.0 = Debug|ARM64
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Release|Any CPU.ActiveCfg = Release|x64
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Release|Any CPU.Build.0 = Release|x64
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Release|x64.ActiveCfg = Release|x64
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Release|x64.Build.0 = Release|x64
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Release|ARM64.ActiveCfg = Release|ARM64
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Release|ARM64.Build.0 = Release|ARM64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -142,5 +156,6 @@ Global
 		{9A6DFEA2-854D-4E6E-99CB-40259B925B48} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{77CD5A12-127E-4800-9896-AE7021405949} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{5DFA1819-A1CB-4A85-9282-2F5F7C7DCDD5} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

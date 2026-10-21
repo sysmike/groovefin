@@ -28,7 +28,7 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
     /// <summary>How long before the end of the current item the next one starts buffering.</summary>
     public static readonly TimeSpan PrefetchTime = TimeSpan.FromSeconds(30);
 
-    /// <summary>The equalizer effect's configuration; the effects of both players follow its changes.</summary>
+    /// <summary>The equalizer effect's property set: empty, its parameters go through the DLL's exports (#169).</summary>
     private readonly PropertySet _equalizer = new();
     private readonly ILogger<MediaPlayerEngine> _logger;
 
@@ -52,6 +52,12 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
     /// <summary>When the track was started again without the effect, and on which deck.</summary>
     private long _retriedAt;
     private Deck? _retriedDeck;
+
+    /// <summary>The effect's counters at the last check, to log only what is new.</summary>
+    private EqualizerEffectStatus? _effectStatus;
+
+    /// <summary>Whether the parameters set last change the sound.</summary>
+    private bool _equalizerActive;
 
     public MediaPlayerEngine(IDispatcher dispatcher, TimeProvider time, ILogger<MediaPlayerEngine> logger)
         : base(dispatcher, time)
@@ -119,9 +125,24 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
     public void Apply(EqualizerParameters parameters)
     {
         ArgumentNullException.ThrowIfNull(parameters);
-        if (IsAvailable)
+        if (!IsAvailable)
         {
-            _equalizer[EqualizerEffectContract.ParametersKey] = parameters.Format();
+            return;
+        }
+
+        try
+        {
+            EqualizerEffectLibrary.SetParameters(parameters);
+            lock (_gate)
+            {
+                _equalizerActive = parameters.IsActive;
+            }
+
+            LogEqualizerApplied(parameters.Format());
+        }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or ArgumentException)
+        {
+            LogEqualizerNotApplied(ex);
         }
     }
 
@@ -240,15 +261,72 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
     private bool CheckEqualizer()
     {
         var result = AudioEffectRegistration.Check(EqualizerEffectContract.ClassId);
+        if (result >= 0)
+        {
+            try
+            {
+                EqualizerEffectLibrary.SetParameters(EqualizerParameters.Off);
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+            {
+                result = ex.HResult;
+            }
+        }
+
         if (result < 0)
         {
             LogEqualizerUnavailable(result);
             return false;
         }
 
-        _equalizer[EqualizerEffectContract.ParametersKey] = EqualizerParameters.Off.Format();
         LogEqualizerAvailable();
         return true;
+    }
+
+    /// <summary>
+    /// Logs what went wrong in the equalizer effect since the last check, at the start of each track (#169):
+    /// it leaves a buffer as it is when it fails and has no log of its own, and Media Foundation leaves an
+    /// optional effect out without a word.
+    /// </summary>
+    private void CheckEffectStatus()
+    {
+        if (!IsAvailable)
+        {
+            return;
+        }
+
+        EqualizerEffectStatus status;
+        try
+        {
+            status = EqualizerEffectLibrary.GetStatus();
+        }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+        {
+            return;
+        }
+
+        EqualizerEffectStatus? last;
+        bool active;
+        lock (_gate)
+        {
+            last = _effectStatus;
+            active = _equalizerActive;
+            _effectStatus = status;
+        }
+
+        if (last is not { } previous)
+        {
+            return;
+        }
+
+        if (status.Errors > previous.Errors)
+        {
+            LogEqualizerErrors(status.Errors - previous.Errors, status.LastError, status.ProcessedBuffers, status.Buffers);
+        }
+        else if (active && status.Buffers == previous.Buffers)
+        {
+            LogEqualizerUnused();
+        }
     }
 
     /// <summary>
@@ -513,6 +591,7 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
 
         private void OnCurrentItemChanged(MediaPlaybackList sender, CurrentMediaPlaybackItemChangedEventArgs args)
         {
+            _engine.CheckEffectStatus();
             PlaybackSource? advanced = null;
             lock (_engine._gate)
             {
@@ -608,4 +687,16 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Equalizer effect failed: a track did not play with it ({Error}). Playing without it from now on")]
     private partial void LogEqualizerFailed(string error);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Equalizer set to {Parameters}")]
+    private partial void LogEqualizerApplied(string parameters);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Equalizer settings did not reach the effect")]
+    private partial void LogEqualizerNotApplied(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Equalizer effect left {Errors} buffers unequalized after errors (last 0x{LastError:X8}); {Processed} of {Buffers} buffers equalized in all")]
+    private partial void LogEqualizerErrors(long errors, int lastError, long processed, long buffers);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "The equalizer is on, but no audio went through its effect during the last track")]
+    private partial void LogEqualizerUnused();
 }
