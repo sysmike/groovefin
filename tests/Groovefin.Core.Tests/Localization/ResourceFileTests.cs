@@ -92,7 +92,7 @@ public sealed partial class ResourceFileTests
         string[] built =
         [
             .. Enum.GetValues<ShortcutAction>().Select(a => $"Shortcut_{a}"),
-            .. KeyboardShortcuts.All.Where(s => s.Key.Length > 1).Select(s => $"Key_{s.Key}"),
+            .. KeyboardShortcuts.NamedKeys.Select(k => $"Key_{k}"),
             .. Enum.GetValues<SongColumn>().Select(c => $"SongColumn_{c}"),
             .. Enum.GetValues<HomeShelfKind>().Select(k => $"HomeShelf_{k}"),
             .. Enum.GetValues<RepeatMode>().Select(m => $"NowPlaying_Repeat{m}"),

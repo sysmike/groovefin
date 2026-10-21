@@ -71,6 +71,21 @@ public sealed class JsonSettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Changed_shortcuts_survive_a_reload_with_their_action_names()
+    {
+        var sut = CreateSut();
+        var keyboard = new KeyboardSettings { Shortcuts = new Dictionary<string, string> { ["Next"] = "Ctrl+Alt+N", ["FullScreen"] = "F10" } };
+        sut.Update(s => s with { Keyboard = keyboard });
+        await sut.FlushAsync();
+
+        var reloaded = CreateSut();
+        await reloaded.LoadAsync(TestContext.Current.CancellationToken);
+
+        reloaded.Current.Keyboard.Should().Be(keyboard);
+        (await File.ReadAllTextAsync(FilePath, TestContext.Current.CancellationToken)).Should().Contain("\"Next\":", "the keys are the action names, not camel-cased");
+    }
+
+    [Fact]
     public async Task Server_profiles_survive_a_reload()
     {
         var sut = CreateSut();

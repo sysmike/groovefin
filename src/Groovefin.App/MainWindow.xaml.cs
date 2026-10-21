@@ -10,7 +10,6 @@ using Groovefin.Core.Settings;
 using Groovefin.Core.Shortcuts;
 using Groovefin.Core.ViewModels;
 using Microsoft.UI.Composition.SystemBackdrops;
-using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -21,7 +20,6 @@ using Microsoft.Windows.ApplicationModel.Resources;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.System;
-using Windows.UI.Core;
 
 namespace Groovefin.App;
 
@@ -35,6 +33,7 @@ internal sealed partial class MainWindow : Window
     private readonly TrackDrag _trackDrag;
     private readonly IStringResources _strings;
     private readonly ISettingsService _settings;
+    private readonly ShortcutService _shortcuts;
     private readonly NotificationAreaIcon _tray;
     private RectInt32? _restoreBounds;
     private bool _restoreMaximized;
@@ -51,9 +50,11 @@ internal sealed partial class MainWindow : Window
         AddToPlaylist addToPlaylist,
         TrackDrag trackDrag,
         IStringResources strings,
-        ISettingsService settings)
+        ISettingsService settings,
+        ShortcutService shortcuts)
     {
         _navigation = navigation;
+        _shortcuts = shortcuts;
         _addToPlaylist = addToPlaylist;
         _trackDrag = trackDrag;
         _strings = strings;
@@ -361,7 +362,7 @@ internal sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// The app-wide shortcuts (<see cref="KeyboardShortcuts"/>), before the focused control sees the key.
+    /// The app-wide shortcuts (<see cref="ShortcutService.Map"/>), before the focused control sees the key.
     /// Nothing fires while the user types in a text box, Space is left to controls that use it (buttons,
     /// list items), and held keys repeat only the volume.
     /// </summary>
@@ -384,14 +385,15 @@ internal sealed partial class MainWindow : Window
             return;
         }
 
-        if (IsDown(VirtualKey.Shift) || IsDown(VirtualKey.LeftWindows) || IsDown(VirtualKey.RightWindows)
-            || KeyboardShortcuts.Find(e.Key.ToString(), IsDown(VirtualKey.Control), IsDown(VirtualKey.Menu)) is not { } action)
+        // The keys in effect, which the user may have changed in Settings (#68).
+        var gesture = KeyboardInput.Gesture(e.Key);
+        if (KeyboardInput.IsWindowsKeyDown || _shortcuts.Map.Find(gesture) is not { } action)
         {
             return;
         }
 
         var focused = FocusManager.GetFocusedElement(RootGrid.XamlRoot);
-        if (focused is TextBox or PasswordBox or RichEditBox || (action == ShortcutAction.PlayPause && UsesSpace(focused)))
+        if (focused is TextBox or PasswordBox or RichEditBox || (gesture == new KeyGesture("Space") && UsesSpace(focused)))
         {
             return;
         }
@@ -483,9 +485,6 @@ internal sealed partial class MainWindow : Window
             command.Execute(null);
         }
     }
-
-    private static bool IsDown(VirtualKey key) =>
-        InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
 
     /// <summary>Controls that act on Space themselves: buttons, toggles, list and menu items, combo boxes.</summary>
     private static bool UsesSpace(object? focused) =>

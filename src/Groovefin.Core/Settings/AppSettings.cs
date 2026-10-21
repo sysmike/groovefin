@@ -36,6 +36,25 @@ public sealed record AppSettings
     public PlaybackSettings Playback { get; set; } = new();
 
     public LyricsSettings Lyrics { get; set; } = new();
+
+    public KeyboardSettings Keyboard { get; set; } = new();
+}
+
+/// <summary>The keyboard shortcuts the user changed (#68); the others keep their defaults.</summary>
+public sealed record KeyboardSettings
+{
+    /// <summary>
+    /// Gets or sets the changed shortcuts: <see cref="Shortcuts.ShortcutAction"/> name to keys in the form of
+    /// <see cref="Shortcuts.KeyGesture.ToString"/>, e.g. <c>"Next": "Ctrl+Alt+Right"</c>.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Shortcuts { get; set; } = new Dictionary<string, string>();
+
+    public bool Equals(KeyboardSettings? other) =>
+        other is not null
+        && Shortcuts.Count == other.Shortcuts.Count
+        && Shortcuts.All(e => other.Shortcuts.TryGetValue(e.Key, out var value) && value == e.Value);
+
+    public override int GetHashCode() => Shortcuts.Count;
 }
 
 /// <summary>Look and feel.</summary>

@@ -1,3 +1,4 @@
+using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -15,6 +16,7 @@ internal sealed partial class SettingsPage : Page
     {
         ViewModel = App.Services.GetRequiredService<SettingsViewModel>();
         Equalizer = App.CreateViewModel<EqualizerViewModel>();
+        Shortcuts = App.CreateViewModel<ShortcutsViewModel>();
         InitializeComponent();
         Loaded += OnFirstLoaded;
         Loaded += OnLoaded;
@@ -24,10 +26,22 @@ internal sealed partial class SettingsPage : Page
 
     public EqualizerViewModel Equalizer { get; }
 
+    public ShortcutsViewModel Shortcuts { get; }
+
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
         Equalizer.Dispose();
+        Shortcuts.Dispose();
+    }
+
+    /// <summary>Change on a shortcut: its Tag is the shortcut (<c>Tag="{x:Bind}"</c>, #172).</summary>
+    private async void OnChangeShortcutClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is ShortcutItemViewModel item)
+        {
+            await ShortcutDialog.ShowAsync(XamlRoot, Shortcuts, item, App.Services.GetRequiredService<IStringResources>());
+        }
     }
 
     private async void OnFirstLoaded(object sender, RoutedEventArgs e)

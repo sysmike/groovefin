@@ -14,7 +14,6 @@ using Groovefin.Core.Playback;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
-using Groovefin.Core.Shortcuts;
 
 namespace Groovefin.Core.ViewModels;
 
@@ -22,12 +21,6 @@ namespace Groovefin.Core.ViewModels;
 public sealed record BitrateOption(int? Kbps, string Label)
 {
     public override string ToString() => Label;
-}
-
-/// <summary>A row of the keyboard shortcut reference: the keys and what they do.</summary>
-public sealed record ShortcutRow(string Gesture, string Description)
-{
-    public string AccessibleName => Gesture + ", " + Description;
 }
 
 /// <summary>An entry of the music library choice; <see cref="Id"/> is <see langword="null"/> for "all music libraries".</summary>
@@ -38,7 +31,7 @@ public sealed record LibraryOption(string? Id, string Name)
 
 /// <summary>
 /// Settings page: appearance (theme, accent colour, density, language, start page), account and servers, the music library to browse, stream quality,
-/// playback, storage (image cache and logs), the keyboard shortcut reference and About.
+/// playback, storage (image cache and logs) and About. The keyboard shortcuts have their own <see cref="ShortcutsViewModel"/>.
 /// </summary>
 public sealed partial class SettingsViewModel : ObservableObject
 {
@@ -109,11 +102,7 @@ public sealed partial class SettingsViewModel : ObservableObject
                 ? strings.GetString("Settings_CrossfadeOff")
                 : strings.GetString("Settings_Seconds").Replace("{0}", s.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)),
         ];
-        Shortcuts = [.. KeyboardShortcuts.All.Select(k => new ShortcutRow(KeyboardShortcuts.Gesture(k, strings), KeyboardShortcuts.Describe(k, strings)))];
     }
-
-    /// <summary>Gets the keyboard shortcuts for the reference list, e.g. "Ctrl+Right" – "Next track".</summary>
-    public IReadOnlyList<ShortcutRow> Shortcuts { get; }
 
     /// <summary>Gets the bitrate choices: original quality first, then from high to low.</summary>
     public IReadOnlyList<BitrateOption> BitrateOptions { get; }

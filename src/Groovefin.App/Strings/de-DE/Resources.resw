@@ -1322,9 +1322,6 @@
   <data name="SettingsShortcutsHeader.Text" xml:space="preserve">
     <value>Tastenkombinationen</value>
   </data>
-  <data name="SettingsShortcutsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Tastenkombinationen</value>
-  </data>
   <data name="Key_Ctrl" xml:space="preserve">
     <value>Strg</value>
   </data>
@@ -1436,9 +1433,6 @@
   </data>
   <data name="FullScreenExitButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Vollbild beenden (Esc)</value>
-  </data>
-  <data name="Key_F11" xml:space="preserve">
-    <value>F11</value>
   </data>
   <data name="Shortcut_FullScreen" xml:space="preserve">
     <value>Vollbild-Player ein oder aus</value>
@@ -1636,7 +1630,7 @@
     <value>Tastenkombinationen</value>
   </data>
   <data name="SettingsShortcutsCard.Description" xml:space="preserve">
-    <value>Sie funktionieren überall im Fenster, außer während du tippst.</value>
+    <value>Sie funktionieren überall im Fenster, außer während du tippst. Hier kannst du sie ändern.</value>
   </data>
   <data name="SettingsAboutCard.Header" xml:space="preserve">
     <value>Groovefin</value>
@@ -1821,5 +1815,83 @@
   </data>
   <data name="SettingsDensityCompact.Content" xml:space="preserve">
     <value>Kompakt</value>
+  </data>
+  <data name="Key_Shift" xml:space="preserve">
+    <value>Umschalt</value>
+  </data>
+  <data name="Key_NumberPad" xml:space="preserve">
+    <value>Num {0}</value>
+  </data>
+  <data name="Key_Home" xml:space="preserve">
+    <value>Pos1</value>
+  </data>
+  <data name="Key_End" xml:space="preserve">
+    <value>Ende</value>
+  </data>
+  <data name="Key_PageUp" xml:space="preserve">
+    <value>Bild auf</value>
+  </data>
+  <data name="Key_PageDown" xml:space="preserve">
+    <value>Bild ab</value>
+  </data>
+  <data name="Key_Insert" xml:space="preserve">
+    <value>Einfg</value>
+  </data>
+  <data name="Key_Delete" xml:space="preserve">
+    <value>Entf</value>
+  </data>
+  <data name="Key_Add" xml:space="preserve">
+    <value>Num +</value>
+  </data>
+  <data name="Key_Subtract" xml:space="preserve">
+    <value>Num -</value>
+  </data>
+  <data name="Key_Multiply" xml:space="preserve">
+    <value>Num *</value>
+  </data>
+  <data name="Key_Divide" xml:space="preserve">
+    <value>Num /</value>
+  </data>
+  <data name="Shortcuts_ChangeName" xml:space="preserve">
+    <value>Tasten für {0} ändern</value>
+  </data>
+  <data name="Shortcuts_ResetName" xml:space="preserve">
+    <value>{0} auf {1} zurücksetzen</value>
+  </data>
+  <data name="Shortcuts_DialogTitle" xml:space="preserve">
+    <value>Tasten ändern</value>
+  </data>
+  <data name="Shortcuts_Prompt" xml:space="preserve">
+    <value>Drück die neuen Tasten für „{0}“. Eingabe speichert, Esc bricht ab.</value>
+  </data>
+  <data name="Shortcuts_Waiting" xml:space="preserve">
+    <value>Warte auf Tasten …</value>
+  </data>
+  <data name="Shortcuts_Unsupported" xml:space="preserve">
+    <value>Diese Taste kann keine Tastenkombination sein.</value>
+  </data>
+  <data name="Shortcuts_NeedsModifier" xml:space="preserve">
+    <value>Nimm Strg oder Alt dazu: Listen, Menüs und Felder brauchen diese Taste allein.</value>
+  </data>
+  <data name="Shortcuts_Reserved" xml:space="preserve">
+    <value>Diese Tasten verwendet Windows.</value>
+  </data>
+  <data name="Shortcuts_InUse" xml:space="preserve">
+    <value>Schon für „{0}“ vergeben.</value>
+  </data>
+  <data name="ShortcutChangeButton.Content" xml:space="preserve">
+    <value>Ändern …</value>
+  </data>
+  <data name="ShortcutResetButton.Content" xml:space="preserve">
+    <value>Zurücksetzen</value>
+  </data>
+  <data name="SettingsShortcutsResetAllCard.Header" xml:space="preserve">
+    <value>Alle Tastenkombinationen zurücksetzen</value>
+  </data>
+  <data name="SettingsShortcutsResetAllCard.Description" xml:space="preserve">
+    <value>Zurück zu den Tasten, mit denen Groovefin kommt.</value>
+  </data>
+  <data name="SettingsShortcutsResetAllButton.Content" xml:space="preserve">
+    <value>Alle zurücksetzen</value>
   </data>
 </root>

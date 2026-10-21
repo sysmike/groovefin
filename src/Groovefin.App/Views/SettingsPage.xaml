@@ -288,37 +288,45 @@
                 <Button x:Uid="SettingsOpenLogsButton" Command="{x:Bind ViewModel.OpenLogFolderCommand}" />
             </controls:SettingsCard>
 
-            <!--  Reference only: the shortcuts work anywhere in the window, except while typing.  -->
+            <!--
+                The shortcuts work anywhere in the window, except while typing. Each can get other keys (#68):
+                Change opens a dialog that records them, Reset brings the default back.
+            -->
             <TextBlock
                 x:Uid="SettingsShortcutsHeader"
                 AutomationProperties.HeadingLevel="Level2"
                 Style="{StaticResource SettingsSectionHeaderStyle}" />
-            <controls:SettingsExpander x:Uid="SettingsShortcutsCard" HeaderIcon="{ui:FontIcon Glyph=&#xE765;}">
-                <controls:SettingsExpander.Items>
-                    <controls:SettingsCard ContentAlignment="Left">
-                        <ItemsControl x:Uid="SettingsShortcutsList" ItemsSource="{x:Bind ViewModel.Shortcuts}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ShortcutRow">
-                                    <Grid
-                                        Padding="0,2"
-                                        AutomationProperties.Name="{x:Bind AccessibleName}"
-                                        ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="200" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Gesture}" />
-                                        <TextBlock
-                                            Grid.Column="1"
-                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                            Style="{StaticResource BodyTextBlockStyle}"
-                                            Text="{x:Bind Description}" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+            <controls:SettingsExpander
+                x:Uid="SettingsShortcutsCard"
+                HeaderIcon="{ui:FontIcon Glyph=&#xE765;}"
+                ItemsSource="{x:Bind Shortcuts.Items}">
+                <controls:SettingsExpander.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ShortcutItemViewModel">
+                        <controls:SettingsCard AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}" Header="{x:Bind Description}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                                    Text="{x:Bind Keys, Mode=OneWay}" />
+                                <Button
+                                    x:Uid="ShortcutChangeButton"
+                                    AutomationProperties.Name="{x:Bind ChangeName}"
+                                    Click="OnChangeShortcutClick"
+                                    Tag="{x:Bind}" />
+                                <Button
+                                    x:Uid="ShortcutResetButton"
+                                    AutomationProperties.Name="{x:Bind ResetName}"
+                                    Command="{x:Bind ResetCommand}"
+                                    Visibility="{x:Bind IsChanged, Mode=OneWay}" />
+                            </StackPanel>
+                        </controls:SettingsCard>
+                    </DataTemplate>
+                </controls:SettingsExpander.ItemTemplate>
+                <controls:SettingsExpander.ItemsFooter>
+                    <controls:SettingsCard x:Uid="SettingsShortcutsResetAllCard">
+                        <Button x:Uid="SettingsShortcutsResetAllButton" Command="{x:Bind Shortcuts.ResetAllCommand}" />
                     </controls:SettingsCard>
-                </controls:SettingsExpander.Items>
+                </controls:SettingsExpander.ItemsFooter>
             </controls:SettingsExpander>
 
             <!--  About  -->
