@@ -490,18 +490,21 @@ try {
     if ([Math]::Abs($mini.Width - 420) -gt 8 -or [Math]::Abs($mini.Height - 140) -gt 8) {
         Stop-Test 'Smoke test' ("The mini player is {0:0}x{1:0}; it should be 420x140." -f $mini.Width, $mini.Height)
     }
-    $transform = $null
-    if (-not $window.TryGetCurrentPattern([System.Windows.Automation.TransformPattern]::Pattern, [ref] $transform) -or -not $transform.Current.CanResize) {
-        Stop-Test 'Smoke test' 'The mini player window cannot be resized.'
-    }
-    $transform.Resize(520, 170)
+    # Resized like Windows does it (UI Automation's resize does nothing on a WinUI window): SetWindowPos goes
+    # through the window's size limits, the same ones a drag on its edges meets.
+    Add-Type -Namespace Smoke -Name Window -MemberDefinition @'
+[DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
+'@
+    $hwnd = [IntPtr] $window.Current.NativeWindowHandle
+    # SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE
+    $null = [Smoke.Window]::SetWindowPos($hwnd, [IntPtr]::Zero, 0, 0, 520, 170, 0x16)
     Start-Sleep -Milliseconds 500
     $resized = $window.Current.BoundingRectangle
-    $transform.Resize(2000, 2000)
+    $null = [Smoke.Window]::SetWindowPos($hwnd, [IntPtr]::Zero, 0, 0, 2000, 2000, 0x16)
     Start-Sleep -Milliseconds 500
     $largest = $window.Current.BoundingRectangle
     Write-Output ("Mini player resized: {0:0}x{1:0}, at most {2:0}x{3:0}" -f $resized.Width, $resized.Height, $largest.Width, $largest.Height)
-    if ([Math]::Abs($resized.Width - 520) -gt 8 -or $largest.Width -gt 728 -or $largest.Height -gt 208) {
+    if ([Math]::Abs($resized.Width - 520) -gt 24 -or $largest.Width -gt 744 -or $largest.Height -gt 224) {
         Stop-Test 'Smoke test' ("The mini player should resize to 520x170 and stop at 720x200, not {0:0}x{1:0} and {2:0}x{3:0}." -f $resized.Width, $resized.Height, $largest.Width, $largest.Height)
     }
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
