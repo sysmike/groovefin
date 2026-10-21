@@ -1328,6 +1328,9 @@
   <data name="Key_Ctrl" xml:space="preserve">
     <value>Strg</value>
   </data>
+  <data name="Key_Alt" xml:space="preserve">
+    <value>Alt</value>
+  </data>
   <data name="Key_Space" xml:space="preserve">
     <value>Leertaste</value>
   </data>
@@ -1466,6 +1469,12 @@
   </data>
   <data name="Shortcut_MiniPlayer" xml:space="preserve">
     <value>Mini-Player ein oder aus</value>
+  </data>
+  <data name="Shortcut_GoBack" xml:space="preserve">
+    <value>Zurück (auch die Zurück-Taste der Maus)</value>
+  </data>
+  <data name="Shortcut_GoForward" xml:space="preserve">
+    <value>Vorwärts (auch die Vorwärts-Taste der Maus)</value>
   </data>
   <data name="Tray_PlayPause" xml:space="preserve">
     <value>Wiedergabe/Pause</value>

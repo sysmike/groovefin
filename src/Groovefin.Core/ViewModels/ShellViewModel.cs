@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>
-/// State of the main window: current section, back navigation, the title-bar search box and the
+/// State of the main window: current section, back and forward navigation, the title-bar search box and the
 /// notification area.
 /// </summary>
 public sealed partial class ShellViewModel : ObservableObject, IDisposable
@@ -49,6 +49,10 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     public partial bool CanGoBack { get; private set; }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(GoForwardCommand))]
+    public partial bool CanGoForward { get; private set; }
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitSearchCommand))]
     public partial string SearchText { get; set; } = string.Empty;
 
@@ -83,6 +87,10 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanGoBack))]
     private void GoBack() => _navigation.GoBack();
 
+    /// <summary>Forward again after going back: the mouse's forward button, Alt+Right (#176).</summary>
+    [RelayCommand(CanExecute = nameof(CanGoForward))]
+    private void GoForward() => _navigation.GoForward();
+
     [RelayCommand(CanExecute = nameof(CanSubmitSearch))]
     private void SubmitSearch()
     {
@@ -100,6 +108,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     private void OnNavigated(object? sender, NavigatedEventArgs e)
     {
         CanGoBack = _navigation.CanGoBack;
+        CanGoForward = _navigation.CanGoForward;
         SelectedSection = e.PageKey switch
         {
             // Server management is part of Settings.

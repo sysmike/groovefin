@@ -156,6 +156,35 @@ public sealed class ShellViewModelTests
         _navigation.Received(1).GoBack();
     }
 
+    [Fact]
+    public void GoForward_is_enabled_only_while_navigation_has_a_page_ahead()
+    {
+        using var sut = CreateSut();
+        sut.GoForwardCommand.CanExecute(null).Should().BeFalse();
+
+        _navigation.CanGoForward.Returns(true);
+        RaiseNavigated(PageKeys.Albums);
+        sut.GoForwardCommand.CanExecute(null).Should().BeTrue();
+
+        // A new navigation clears the forward stack.
+        _navigation.CanGoForward.Returns(false);
+        RaiseNavigated(PageKeys.Artists);
+        sut.CanGoForward.Should().BeFalse();
+        sut.GoForwardCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public void GoForward_delegates_to_navigation()
+    {
+        using var sut = CreateSut();
+        _navigation.CanGoForward.Returns(true);
+        RaiseNavigated(PageKeys.Albums);
+
+        sut.GoForwardCommand.Execute(null);
+
+        _navigation.Received(1).GoForward();
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

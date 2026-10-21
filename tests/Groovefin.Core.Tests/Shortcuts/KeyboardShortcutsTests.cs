@@ -11,6 +11,8 @@ public sealed class KeyboardShortcutsTests
     {
         _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
         _strings.GetString("Key_Ctrl").Returns("Strg");
+        _strings.GetString("Key_Alt").Returns("Alt");
+        _strings.GetString("Key_Left").Returns("Nach-links");
         _strings.GetString("Key_Right").Returns("Nach-rechts");
         _strings.GetString("Key_Space").Returns("Leertaste");
     }
@@ -32,6 +34,15 @@ public sealed class KeyboardShortcutsTests
         KeyboardShortcuts.Find(key, control).Should().Be(expected);
 
     [Theory]
+    [InlineData("Left", ShortcutAction.GoBack)]
+    [InlineData("Right", ShortcutAction.GoForward)]
+    public void Alt_and_an_arrow_go_back_and_forward(string key, ShortcutAction expected)
+    {
+        KeyboardShortcuts.Find(key, control: false, alt: true).Should().Be(expected);
+        KeyboardShortcuts.Find(key, control: true, alt: true).Should().BeNull();
+    }
+
+    [Theory]
     [InlineData("Right", false)]
     [InlineData("Space", true)]
     [InlineData("X", true)]
@@ -42,7 +53,7 @@ public sealed class KeyboardShortcutsTests
     [Fact]
     public void Each_key_has_one_action_and_each_action_one_key()
     {
-        KeyboardShortcuts.All.Select(s => (s.Control, s.Key.ToUpperInvariant())).Should().OnlyHaveUniqueItems();
+        KeyboardShortcuts.All.Select(s => (s.Control, s.Alt, s.Key.ToUpperInvariant())).Should().OnlyHaveUniqueItems();
         KeyboardShortcuts.All.Select(s => s.Action).Should().BeEquivalentTo(Enum.GetValues<ShortcutAction>());
     }
 
@@ -53,6 +64,7 @@ public sealed class KeyboardShortcutsTests
         KeyboardShortcuts.Gesture(KeyboardShortcuts.All.Single(s => s.Action == ShortcutAction.PlayPause), _strings).Should().Be("Leertaste");
         KeyboardShortcuts.Gesture(KeyboardShortcuts.All.Single(s => s.Action == ShortcutAction.Search), _strings).Should().Be("Strg+K");
         KeyboardShortcuts.Gesture(KeyboardShortcuts.All.Single(s => s.Action == ShortcutAction.FullScreen), _strings).Should().Be("Key_F11");
+        KeyboardShortcuts.Gesture(KeyboardShortcuts.All.Single(s => s.Action == ShortcutAction.GoBack), _strings).Should().Be("Alt+Nach-links");
         KeyboardShortcuts.Describe(KeyboardShortcuts.All[0], _strings).Should().Be("Shortcut_PlayPause");
     }
 }
