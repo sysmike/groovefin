@@ -30,16 +30,11 @@ public sealed class ShortcutMap
             return map;
         }
 
-        var pending = new List<(ShortcutAction Action, KeyGesture Gesture)>();
-        foreach (var action in KeyboardShortcuts.Defaults.Select(s => s.Action))
-        {
-            if (changes.TryGetValue(action.ToString(), out var text)
-                && KeyGesture.TryParse(text, out var gesture)
-                && KeyboardShortcuts.Check(gesture) == GestureCheck.Valid)
-            {
-                pending.Add((action, gesture));
-            }
-        }
+        var pending = KeyboardShortcuts.Defaults
+            .Select(s => (s.Action, Gesture: ValidChange(changes, s.Action)))
+            .Where(c => c.Gesture is not null)
+            .Select(c => (c.Action, Gesture: c.Gesture!.Value))
+            .ToList();
 
         // Each pass applies the changes whose keys are free; one that frees a default can unblock another.
         int applied;
@@ -62,6 +57,14 @@ public sealed class ShortcutMap
     }
 
     public KeyGesture GestureOf(ShortcutAction action) => _gestures[action];
+
+    /// <summary>The keys <paramref name="changes"/> gives <paramref name="action"/>, if they parse and are allowed.</summary>
+    private static KeyGesture? ValidChange(IReadOnlyDictionary<string, string> changes, ShortcutAction action) =>
+        changes.TryGetValue(action.ToString(), out var text)
+        && KeyGesture.TryParse(text, out var gesture)
+        && KeyboardShortcuts.Check(gesture) == GestureCheck.Valid
+            ? gesture
+            : null;
 
     /// <summary>Gets a value indicating whether <paramref name="action"/> has other keys than its default.</summary>
     public bool IsChanged(ShortcutAction action) => _gestures[action] != KeyboardShortcuts.DefaultOf(action);
