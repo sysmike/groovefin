@@ -17,7 +17,8 @@
         PointerCanceled="OnPointerCanceled"
         PointerCaptureLost="OnPointerLeft"
         PointerEntered="OnPointerEntered"
-        PointerExited="OnPointerLeft">
+        PointerExited="OnPointerLeft"
+        PointerMoved="OnPointerMoved">
         <Grid
             x:Name="Actions"
             Margin="8"
