@@ -2,13 +2,13 @@ using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 
 namespace Groovefin.App.Controls;
 
@@ -19,33 +19,24 @@ namespace Groovefin.App.Controls;
 /// <see cref="AlbumItem"/>, <see cref="ArtistItem"/>, <see cref="PlaylistItem"/> or <see cref="GenreItem"/>,
 /// not the DataContext (#172). The buttons show while the mouse is on the cover,
 /// one of them has keyboard focus, or the popup is open. Touch has no hover: a tap opens the tile.
-/// Whether the mouse is on the cover is worked out from its position, not from enter and exit events:
-/// a round artist image misses some of its exits (#187).
 /// </summary>
 internal sealed partial class CoverActions : UserControl
 {
     private readonly IStringResources _strings;
-    private readonly PointerEventHandler _onWindowPointer;
     private bool _pointerOver;
-
-    /// <summary>The window's content, watched while the mouse shows the buttons.</summary>
-    private UIElement? _window;
     private bool _focused;
     private Flyout? _songs;
 
     public CoverActions()
     {
         _strings = App.Services.GetRequiredService<IStringResources>();
-        _onWindowPointer = OnWindowPointer;
         InitializeComponent();
         RegisterPropertyChangedCallback(TagProperty, (_, _) => OnItemChanged());
-        Unloaded += (_, _) => StopWatching();
     }
 
     private void OnItemChanged()
     {
         // A recycled tile shows another item: start hidden, with that item's names.
-        Trace($"item changed from {AutomationProperties.GetName(PlayButton)} to {Tag}");
         _pointerOver = false;
         _focused = false;
         _songs?.Hide();
@@ -82,111 +73,33 @@ internal sealed partial class CoverActions : UserControl
         var show = _pointerOver || _focused || _songs?.IsOpen == true;
         Actions.Opacity = show ? 1 : 0;
         Actions.IsHitTestVisible = show;
-
-        // While the mouse shows them, every move in the window is checked: once it is off the cover they
-        // go, also when the cover missed the pointer's exit.
-        if (_pointerOver)
-        {
-            StartWatching();
-        }
-        else
-        {
-            StopWatching();
-        }
     }
 
-    // TODO(#187): temporary, to see in the CI log why the buttons show or hide; remove before merging.
-    private static ILogger? _log;
-
-    private static void Trace(string message)
+    private void OnPointerEntered(object sender, PointerRoutedEventArgs e)
     {
-        _log ??= App.Services.GetRequiredService<ILoggerFactory>().CreateLogger("CoverActions");
-        _log.LogInformation("CoverActions: {Message}", message);
-    }
-
-    private void SetPointerOver(bool value, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
-    {
-        if (_pointerOver != value)
+        if (e.Pointer.PointerDeviceType != PointerDeviceType.Touch)
         {
-            Trace($"{(value ? "show" : "hide")} for {caller} on {AutomationProperties.GetName(PlayButton)}");
-            _pointerOver = value;
+            _pointerOver = true;
             UpdateVisibility();
         }
     }
 
     /// <summary>
-    /// Whether the pointer is on the cover: within its bounds, and on a round artist image within the
-    /// circle. Its clipped corners are inside the bounds but not on the image.
+    /// The cover's own exit hides the buttons, also through a rounded corner, which is still inside its
+    /// bounds (#187). The buttons' exits and lost captures (after every click) bubble up here too, while
+    /// the pointer may still be on the cover: then a hit test decides.
     /// </summary>
-    private bool IsOnCover(PointerRoutedEventArgs e)
+    private void OnPointerLeft(object sender, PointerRoutedEventArgs e)
     {
-        var point = e.GetCurrentPoint(Root).Position;
-        double width = Root.ActualWidth, height = Root.ActualHeight;
-        if (point.X < 0 || point.Y < 0 || point.X >= width || point.Y >= height)
-        {
-            return false;
-        }
-
-        if (Tag is not ArtistItem)
-        {
-            return true;
-        }
-
-        var radius = Math.Min(width, height) / 2;
-        double dx = point.X - (width / 2), dy = point.Y - (height / 2);
-        return (dx * dx) + (dy * dy) < radius * radius;
+        _pointerOver &= !ReferenceEquals(e.OriginalSource, Root)
+            && VisualTreeHelper.FindElementsInHostCoordinates(e.GetCurrentPoint(null).Position, Root).Any();
+        UpdateVisibility();
     }
 
-    /// <summary>Entered or moved on the cover; a round image's corners count as off it.</summary>
-    private void OnPointerEntered(object sender, PointerRoutedEventArgs e)
+    private void OnPointerCanceled(object sender, PointerRoutedEventArgs e)
     {
-        Trace($"entered {AutomationProperties.GetName(PlayButton)} at {e.GetCurrentPoint(Root).Position} ({e.Pointer.PointerDeviceType})");
-        OnPointerMoved(sender, e);
-    }
-
-    private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
-    {
-        if (e.Pointer.PointerDeviceType != PointerDeviceType.Touch)
-        {
-            SetPointerOver(IsOnCover(e));
-        }
-    }
-
-    /// <summary>
-    /// Exited or lost capture. The buttons' own exits and lost captures (after every click) bubble up here
-    /// too, while the pointer is still on the cover: its position decides.
-    /// </summary>
-    private void OnPointerLeft(object sender, PointerRoutedEventArgs e) => SetPointerOver(_pointerOver && IsOnCover(e));
-
-    private void OnPointerCanceled(object sender, PointerRoutedEventArgs e) => SetPointerOver(false);
-
-    /// <summary>A move anywhere in the window, or the pointer leaving it, while the buttons show for the mouse.</summary>
-    private void OnWindowPointer(object sender, PointerRoutedEventArgs e)
-    {
-        if (!IsOnCover(e))
-        {
-            SetPointerOver(false);
-        }
-    }
-
-    private void StartWatching()
-    {
-        if (_window is null && XamlRoot?.Content is UIElement content)
-        {
-            _window = content;
-            content.AddHandler(PointerMovedEvent, _onWindowPointer, handledEventsToo: true);
-            content.AddHandler(PointerExitedEvent, _onWindowPointer, handledEventsToo: true);
-        }
-    }
-
-    private void StopWatching()
-    {
-        if (_window is { } content)
-        {
-            content.RemoveHandler(PointerMovedEvent, _onWindowPointer);
-            content.RemoveHandler(PointerExitedEvent, _onWindowPointer);
-            _window = null;
-        }
+        _pointerOver = false;
+        UpdateVisibility();
     }
 
     /// <summary>Keyboard focus on a button shows them; a mouse click focuses it too, but that is the pointer's.</summary>
