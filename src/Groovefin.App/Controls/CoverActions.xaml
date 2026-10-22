@@ -49,13 +49,43 @@
                 Padding="0"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
-                Background="{ThemeResource ControlSolidFillColorDefaultBrush}"
                 Click="OnSongsClick"
                 CornerRadius="16"
                 DoubleTapped="OnButtonDoubleTapped"
                 GotFocus="OnButtonGotFocus"
                 LostFocus="OnButtonLostFocus"
                 Tapped="OnButtonTapped">
+                <!--
+                    Solid in every state, so it stays visible on any cover; pointed at or pressed, the arrow
+                    turns the accent colour. A button's default hover fill is nearly transparent (#187).
+                -->
+                <Button.Resources>
+                    <ResourceDictionary>
+                        <ResourceDictionary.ThemeDictionaries>
+                            <ResourceDictionary x:Key="Default">
+                                <StaticResource x:Key="ButtonBackground" ResourceKey="ControlSolidFillColorDefaultBrush" />
+                                <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="ControlSolidFillColorDefaultBrush" />
+                                <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="ControlSolidFillColorDefaultBrush" />
+                                <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="AccentTextFillColorPrimaryBrush" />
+                                <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="AccentTextFillColorTertiaryBrush" />
+                            </ResourceDictionary>
+                            <ResourceDictionary x:Key="Light">
+                                <StaticResource x:Key="ButtonBackground" ResourceKey="ControlSolidFillColorDefaultBrush" />
+                                <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="ControlSolidFillColorDefaultBrush" />
+                                <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="ControlSolidFillColorDefaultBrush" />
+                                <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="AccentTextFillColorPrimaryBrush" />
+                                <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="AccentTextFillColorTertiaryBrush" />
+                            </ResourceDictionary>
+                            <ResourceDictionary x:Key="HighContrast">
+                                <StaticResource x:Key="ButtonBackground" ResourceKey="SystemColorButtonFaceColorBrush" />
+                                <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemColorHighlightColorBrush" />
+                                <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemColorHighlightColorBrush" />
+                                <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="SystemColorHighlightTextColorBrush" />
+                                <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="SystemColorHighlightTextColorBrush" />
+                            </ResourceDictionary>
+                        </ResourceDictionary.ThemeDictionaries>
+                    </ResourceDictionary>
+                </Button.Resources>
                 <FontIcon FontSize="12" Glyph="&#xE70D;" />
             </Button>
         </Grid>

@@ -177,6 +177,18 @@ try {
         Stop-Test 'Smoke test' "The $description was not found."
     }
 
+    # An element's place on screen. One just found may not be laid out yet (its bounds are empty or NaN):
+    # wait for that, at most 5 seconds.
+    function Get-Bounds([System.Windows.Automation.AutomationElement] $element) {
+        $until = (Get-Date).AddSeconds(5)
+        do {
+            $bounds = $element.Current.BoundingRectangle
+            if (-not $bounds.IsEmpty -and -not [double]::IsNaN($bounds.X) -and $bounds.Width -gt 0) { return $bounds }
+            Start-Sleep -Milliseconds 200
+        } while ((Get-Date) -lt $until)
+        Stop-Test 'Smoke test' "The element '$($element.Current.Name)' has no place on screen."
+    }
+
     function Find-ById([string] $id) {
         Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, $id)) "element '$id'"
     }
@@ -244,7 +256,7 @@ try {
     # Counts the colours on screen within an element: one flat colour means it draws nothing.
     function Get-ColourCount([System.Windows.Automation.AutomationElement] $element) {
         Add-Type -AssemblyName System.Drawing
-        $r = $element.Current.BoundingRectangle
+        $r = Get-Bounds $element
         $bitmap = [System.Drawing.Bitmap]::new([int] $r.Width, [int] $r.Height)
         $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
         $graphics.CopyFromScreen([int] $r.X, [int] $r.Y, 0, 0, $bitmap.Size)
@@ -381,7 +393,7 @@ try {
 [DllImport("user32.dll")] public static extern void mouse_event(uint flags, int dx, int dy, uint data, System.UIntPtr extra);
 '@
     function Send-MouseButton([System.Windows.Automation.AutomationElement] $over, [uint32] $button) {
-        $r = $over.Current.BoundingRectangle
+        $r = Get-Bounds $over
         $null = [Smoke.Mouse]::SetCursorPos([int] ($r.X + $r.Width / 2), [int] ($r.Y + $r.Height / 2))
         [Smoke.Mouse]::mouse_event(0x0080, 0, 0, $button, [UIntPtr]::Zero) # XDOWN
         [Smoke.Mouse]::mouse_event(0x0100, 0, 0, $button, [UIntPtr]::Zero) # XUP
@@ -402,7 +414,7 @@ try {
         @($server | Receive-Job -Keep -ErrorAction SilentlyContinue | ForEach-Object { "$_" -replace '-', '' } | Where-Object { $_ -match $pattern }).Count
     }
     function Send-Click([System.Windows.Automation.AutomationElement] $element) {
-        $r = $element.Current.BoundingRectangle
+        $r = Get-Bounds $element
         # SetCursorPos alone is no pointer input for WinUI, so the cover would not see the pointer come in:
         # start beside the target and move onto it with mouse input, as a hand on the mouse does.
         $null = [Smoke.Mouse]::SetCursorPos([int] ($r.X + $r.Width / 2) - 10, [int] ($r.Y + $r.Height / 2))
@@ -466,6 +478,35 @@ try {
     Test-StayedOnList $albumPage 'The songs popup of Album 2'
     Test-Running 'after playing a song from the songs popup'
 
+    # Moves the pointer to x, y in small steps, each followed by a pixel of mouse input there and back:
+    # SetCursorPos alone is no pointer input for WinUI (see Send-Click).
+    function Move-Pointer([int] $x, [int] $y) {
+        $from = [System.Windows.Forms.Cursor]::Position
+        for ($i = 1; $i -le 20; $i++) {
+            $null = [Smoke.Mouse]::SetCursorPos([int] ($from.X + ($x - $from.X) * $i / 20), [int] ($from.Y + ($y - $from.Y) * $i / 20))
+            [Smoke.Mouse]::mouse_event(0x0001, 1, 0, 0, [UIntPtr]::Zero) # MOVE
+            [Smoke.Mouse]::mouse_event(0x0001, -1, 0, 0, [UIntPtr]::Zero)
+            Start-Sleep -Milliseconds 20
+        }
+        $null = [Smoke.Mouse]::SetCursorPos($x, $y)
+        Start-Sleep -Milliseconds 500
+    }
+    # The colours on screen within an element, every other pixel, and the share of them two such lists differ in.
+    function Get-Pixels([System.Windows.Automation.AutomationElement] $element) {
+        Add-Type -AssemblyName System.Drawing
+        $r = Get-Bounds $element
+        $bitmap = [System.Drawing.Bitmap]::new([int] $r.Width, [int] $r.Height)
+        $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+        $graphics.CopyFromScreen([int] $r.X, [int] $r.Y, 0, 0, $bitmap.Size)
+        $pixels = for ($x = 0; $x -lt $bitmap.Width; $x += 2) { for ($y = 0; $y -lt $bitmap.Height; $y += 2) { $bitmap.GetPixel($x, $y).ToArgb() } }
+        $graphics.Dispose()
+        $bitmap.Dispose()
+        , $pixels
+    }
+    function Get-Share([int[]] $pixels, [int] $colour) {
+        @($pixels | Where-Object { $_ -eq $colour }).Count / [Math]::Max(1, $pixels.Count)
+    }
+
     # A genre from the play button on its card (#191).
     Select-Navigation 'Genres'
     Start-Sleep -Seconds 2
@@ -480,13 +521,39 @@ try {
 
     Select-Navigation 'Artists'
     Start-Sleep -Seconds 2
+    $playArtist = Find-Button 'Play Artist'
+    $artistTile = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Artist'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) "tile of Artist"
+    $tile = Get-Bounds $artistTile
+    Move-Pointer ([int] ($tile.X + $tile.Width / 2)) ([int] $tile.Y - 40)
+    $hidden = Get-Pixels $playArtist
     $artistTracks = 'artistIds=d{32}'
     $before = Get-RequestCount $artistTracks
-    Send-Click (Find-Button 'Play Artist')
+    Send-Click $playArtist
     Wait-Request $artistTracks $before 'The play button on the image of Artist was clicked'
     Test-StayedOnList $artistPage 'The play button on the image of Artist'
     Test-Running 'after playing an artist from its image'
-    Write-Output 'The cover buttons play an album, a genre and an artist, and the songs popup plays a song, without opening their pages.'
+
+    # The buttons go again once the pointer has left the cover, also through a corner of the round image,
+    # which is still inside the cover's square bounds (#187). The play button's own colour tells: the one
+    # most common on it while shown that was nowhere there before. The tile behind may change its shade
+    # after the click, so the pixels before and after are no match.
+    $shown = Get-Pixels $playArtist
+    $hiddenColours = [System.Collections.Generic.HashSet[int]]::new([int[]] $hidden)
+    $buttonColour = [int] ($shown | Where-Object { -not $hiddenColours.Contains($_) } | Group-Object | Sort-Object Count -Descending | Select-Object -First 1).Name
+    Move-Pointer ([int] $tile.X - 30) ([int] $tile.Y - 30)
+    Start-Sleep -Milliseconds 700 # the button's tooltip fades out
+    $left = Get-Pixels $playArtist
+    Save-Screenshot 'artist-after-hover'
+    $at = [System.Windows.Forms.Cursor]::Position
+    Write-Output "Pointer at $($at.X),$($at.Y); the artist tile is at $($tile.X),$($tile.Y), $($tile.Width)x$($tile.Height)."
+    $showing = Get-Share $shown $buttonColour
+    $remaining = Get-Share $left $buttonColour
+    Write-Output ('Play button on the artist image: its colour #{0:X8} covers {1:P0} of it on hover and {2:P0} once the pointer has left.' -f $buttonColour, $showing, $remaining)
+    if ($showing -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show while the pointer was on the image of Artist.' }
+    if ($remaining -gt 0.05) { Stop-Test 'Cover buttons' 'The play button stayed visible after the pointer left the image of Artist through a corner.' }
+    Write-Output 'The cover buttons play an album, a genre and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
 
     # Settings, with the equalizer's sliders.
     Select-Navigation 'Settings'
