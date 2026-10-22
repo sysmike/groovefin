@@ -2,7 +2,7 @@ using Groovefin.Core.Models;
 
 namespace Groovefin.Core.Links;
 
-/// <summary>Pages about an album on other sites.</summary>
+/// <summary>Pages about an album or an artist on other sites.</summary>
 public static class ExternalLinks
 {
     /// <summary>
@@ -30,6 +30,20 @@ public static class ExternalLinks
         }
 
         return new Uri($"https://www.last.fm/music/{Segment(album.AlbumArtist)}/{Segment(album.Name)}");
+    }
+
+    /// <summary>Gets the artist on MusicBrainz, or <see langword="null"/> when the server knows no MusicBrainz ID (#194).</summary>
+    public static Uri? MusicBrainz(Artist artist)
+    {
+        ArgumentNullException.ThrowIfNull(artist);
+        return artist.MusicBrainzArtistId is { } id ? new Uri($"https://musicbrainz.org/artist/{Uri.EscapeDataString(id)}") : null;
+    }
+
+    /// <summary>Gets the artist on Last.fm from the name, or <see langword="null"/> without one (#194).</summary>
+    public static Uri? LastFm(Artist artist)
+    {
+        ArgumentNullException.ThrowIfNull(artist);
+        return string.IsNullOrWhiteSpace(artist.Name) ? null : new Uri($"https://www.last.fm/music/{Segment(artist.Name)}");
     }
 
     /// <summary>Last.fm writes spaces as "+" in its paths; everything else is escaped.</summary>

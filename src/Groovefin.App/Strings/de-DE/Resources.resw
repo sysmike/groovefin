@@ -1908,4 +1908,22 @@
   <data name="AlbumPreviewTracks.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Titel</value>
   </data>
+  <data name="ArtistMusicBrainzLink.Content" xml:space="preserve">
+    <value>MusicBrainz</value>
+  </data>
+  <data name="ArtistMusicBrainzLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Auf MusicBrainz öffnen</value>
+  </data>
+  <data name="ArtistMusicBrainzLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Auf MusicBrainz öffnen</value>
+  </data>
+  <data name="ArtistLastFmLink.Content" xml:space="preserve">
+    <value>Last.fm</value>
+  </data>
+  <data name="ArtistLastFmLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Auf Last.fm öffnen</value>
+  </data>
+  <data name="ArtistLastFmLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Auf Last.fm öffnen</value>
+  </data>
 </root>

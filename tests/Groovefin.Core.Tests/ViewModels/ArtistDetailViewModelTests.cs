@@ -77,6 +77,31 @@ public sealed class ArtistDetailViewModelTests
     }
 
     [Fact]
+    public async Task The_artist_links_to_Last_fm_and_to_MusicBrainz_when_the_server_knows_its_id()
+    {
+        _library.GetArtistAsync(ArtistId, Arg.Any<CancellationToken>()).Returns(DaftPunk with { MusicBrainzArtistId = "056e4f3e" });
+        var sut = CreateSut();
+
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        sut.MusicBrainzUrl!.AbsoluteUri.Should().Be("https://musicbrainz.org/artist/056e4f3e");
+        sut.HasMusicBrainz.Should().BeTrue();
+        sut.LastFmUrl!.AbsoluteUri.Should().Be("https://www.last.fm/music/Daft+Punk");
+        sut.HasLastFm.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Without_a_MusicBrainz_id_the_artist_has_only_the_Last_fm_link()
+    {
+        var sut = CreateSut();
+
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        sut.HasMusicBrainz.Should().BeFalse();
+        sut.HasLastFm.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Albums_are_newest_first_and_appears_on_leaves_out_the_artists_own_albums()
     {
         var sut = CreateSut();

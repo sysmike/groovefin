@@ -67,6 +67,7 @@ internal static class ItemMapper
             IsFavorite = dto.UserData?.IsFavorite ?? false,
             Biography = PlainText.FromHtml(dto.Overview),
             Genres = dto.Genres?.Where(g => !string.IsNullOrWhiteSpace(g)).ToList() ?? [],
+            MusicBrainzArtistId = ProviderId(dto.ProviderIds, "MusicBrainzArtist"),
         };
     }
 
@@ -79,7 +80,11 @@ internal static class ItemMapper
             .Select(p => new Genre(FormatId(p.Id)!, p.Name!))
             .ToList() ?? [];
 
-    /// <summary>Gets a provider ID such as "MusicBrainzAlbum"; the SDK keeps them as untyped additional data.</summary>
+    /// <summary>
+    /// Gets a provider ID such as "MusicBrainzAlbum"; the SDK keeps them as untyped additional data. It reads
+    /// a value that looks like a GUID as a <see cref="Guid"/>, and MusicBrainz IDs always do: they come back
+    /// in MusicBrainz's form, lower case with dashes (#194).
+    /// </summary>
     private static string? ProviderId(BaseItemDto_ProviderIds? ids, string key)
     {
         if (ids?.AdditionalData is not { } data || !data.TryGetValue(key, out var value))
@@ -92,6 +97,7 @@ internal static class ItemMapper
             string s => s,
             UntypedString u => u.GetValue(),
             JsonElement { ValueKind: JsonValueKind.String } e => e.GetString(),
+            Guid guid => guid.ToString("D"),
             _ => null,
         };
         return string.IsNullOrWhiteSpace(text) ? null : text;
