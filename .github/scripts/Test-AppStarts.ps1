@@ -462,16 +462,17 @@ try {
     Test-StayedOnList $albumPage 'The songs popup of Album 2'
     Test-Running 'after playing a song from the songs popup'
 
-    # Moves the pointer to x, y in small steps of mouse input, as a hand on the mouse does.
+    # Moves the pointer to x, y in small steps, each followed by a pixel of mouse input there and back:
+    # SetCursorPos alone is no pointer input for WinUI (see Send-Click).
     function Move-Pointer([int] $x, [int] $y) {
-        $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
         $from = [System.Windows.Forms.Cursor]::Position
         for ($i = 1; $i -le 20; $i++) {
-            $px = $from.X + ($x - $from.X) * $i / 20
-            $py = $from.Y + ($y - $from.Y) * $i / 20
-            [Smoke.Mouse]::mouse_event(0x8001, [int] ($px * 65535 / ($screen.Width - 1)), [int] ($py * 65535 / ($screen.Height - 1)), 0, [UIntPtr]::Zero) # MOVE | ABSOLUTE
-            Start-Sleep -Milliseconds 15
+            $null = [Smoke.Mouse]::SetCursorPos([int] ($from.X + ($x - $from.X) * $i / 20), [int] ($from.Y + ($y - $from.Y) * $i / 20))
+            [Smoke.Mouse]::mouse_event(0x0001, 1, 0, 0, [UIntPtr]::Zero) # MOVE
+            [Smoke.Mouse]::mouse_event(0x0001, -1, 0, 0, [UIntPtr]::Zero)
+            Start-Sleep -Milliseconds 20
         }
+        $null = [Smoke.Mouse]::SetCursorPos($x, $y)
         Start-Sleep -Milliseconds 500
     }
     # The colours on screen within an element, every other pixel, and the share of them two such lists differ in.
@@ -514,6 +515,9 @@ try {
     Move-Pointer ([int] $tile.X - 30) ([int] $tile.Y - 30)
     Start-Sleep -Milliseconds 700 # the button's tooltip fades out
     $left = Get-Pixels $playArtist
+    Save-Screenshot 'artist-after-hover'
+    $at = [System.Windows.Forms.Cursor]::Position
+    Write-Output "Pointer at $($at.X),$($at.Y); the artist tile is at $($tile.X),$($tile.Y), $($tile.Width)x$($tile.Height)."
     $showing = Get-Difference $hidden $shown
     $remaining = Get-Difference $hidden $left
     Write-Output ('Play button on the artist image: {0:P0} of its pixels change on hover, {1:P0} differ once the pointer has left.' -f $showing, $remaining)
