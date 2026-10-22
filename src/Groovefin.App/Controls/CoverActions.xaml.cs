@@ -76,7 +76,18 @@ internal sealed partial class CoverActions : UserControl
         }
     }
 
+    /// <summary>
+    /// The buttons' own exits and lost captures (after every click) bubble up here too, while the pointer
+    /// is still on the cover: only a pointer outside it hides the buttons.
+    /// </summary>
     private void OnPointerLeft(object sender, PointerRoutedEventArgs e)
+    {
+        var point = e.GetCurrentPoint(Root).Position;
+        _pointerOver &= point.X >= 0 && point.Y >= 0 && point.X < Root.ActualWidth && point.Y < Root.ActualHeight;
+        UpdateVisibility();
+    }
+
+    private void OnPointerCanceled(object sender, PointerRoutedEventArgs e)
     {
         _pointerOver = false;
         UpdateVisibility();

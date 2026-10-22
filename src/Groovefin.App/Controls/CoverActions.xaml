@@ -14,7 +14,7 @@
     <Grid
         x:Name="Root"
         Background="Transparent"
-        PointerCanceled="OnPointerLeft"
+        PointerCanceled="OnPointerCanceled"
         PointerCaptureLost="OnPointerLeft"
         PointerEntered="OnPointerEntered"
         PointerExited="OnPointerLeft">
