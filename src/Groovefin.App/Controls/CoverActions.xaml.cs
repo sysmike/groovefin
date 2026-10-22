@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 
 namespace Groovefin.App.Controls;
 
@@ -77,13 +78,14 @@ internal sealed partial class CoverActions : UserControl
     }
 
     /// <summary>
-    /// The buttons' own exits and lost captures (after every click) bubble up here too, while the pointer
-    /// is still on the cover: only a pointer outside it hides the buttons.
+    /// The cover's own exit hides the buttons, also through a rounded corner, which is still inside its
+    /// bounds (#187). The buttons' exits and lost captures (after every click) bubble up here too, while
+    /// the pointer may still be on the cover: then a hit test decides.
     /// </summary>
     private void OnPointerLeft(object sender, PointerRoutedEventArgs e)
     {
-        var point = e.GetCurrentPoint(Root).Position;
-        _pointerOver &= point.X >= 0 && point.Y >= 0 && point.X < Root.ActualWidth && point.Y < Root.ActualHeight;
+        _pointerOver &= !ReferenceEquals(e.OriginalSource, Root)
+            && VisualTreeHelper.FindElementsInHostCoordinates(e.GetCurrentPoint(null).Position, Root).Any();
         UpdateVisibility();
     }
 

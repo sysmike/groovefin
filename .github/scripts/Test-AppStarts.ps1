@@ -462,15 +462,64 @@ try {
     Test-StayedOnList $albumPage 'The songs popup of Album 2'
     Test-Running 'after playing a song from the songs popup'
 
+    # Moves the pointer to x, y in small steps of mouse input, as a hand on the mouse does.
+    function Move-Pointer([int] $x, [int] $y) {
+        $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+        $from = [System.Windows.Forms.Cursor]::Position
+        for ($i = 1; $i -le 20; $i++) {
+            $px = $from.X + ($x - $from.X) * $i / 20
+            $py = $from.Y + ($y - $from.Y) * $i / 20
+            [Smoke.Mouse]::mouse_event(0x8001, [int] ($px * 65535 / ($screen.Width - 1)), [int] ($py * 65535 / ($screen.Height - 1)), 0, [UIntPtr]::Zero) # MOVE | ABSOLUTE
+            Start-Sleep -Milliseconds 15
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    # The colours on screen within an element, every other pixel, and the share of them two such lists differ in.
+    function Get-Pixels([System.Windows.Automation.AutomationElement] $element) {
+        Add-Type -AssemblyName System.Drawing
+        $r = $element.Current.BoundingRectangle
+        $bitmap = [System.Drawing.Bitmap]::new([int] $r.Width, [int] $r.Height)
+        $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+        $graphics.CopyFromScreen([int] $r.X, [int] $r.Y, 0, 0, $bitmap.Size)
+        $pixels = for ($x = 0; $x -lt $bitmap.Width; $x += 2) { for ($y = 0; $y -lt $bitmap.Height; $y += 2) { $bitmap.GetPixel($x, $y).ToArgb() } }
+        $graphics.Dispose()
+        $bitmap.Dispose()
+        , $pixels
+    }
+    function Get-Difference([int[]] $a, [int[]] $b) {
+        $different = 0
+        for ($i = 0; $i -lt $a.Count; $i++) { if ($a[$i] -ne $b[$i]) { $different++ } }
+        $different / [Math]::Max(1, $a.Count)
+    }
+
     Select-Navigation 'Artists'
     Start-Sleep -Seconds 2
+    $playArtist = Find-Button 'Play Artist'
+    $artistTile = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Artist'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) "tile of Artist"
+    $tile = $artistTile.Current.BoundingRectangle
+    Move-Pointer ([int] ($tile.X + $tile.Width / 2)) ([int] $tile.Y - 40)
+    $hidden = Get-Pixels $playArtist
     $artistTracks = 'artistIds=d{32}'
     $before = Get-RequestCount $artistTracks
-    Send-Click (Find-Button 'Play Artist')
+    Send-Click $playArtist
     Wait-Request $artistTracks $before 'The play button on the image of Artist was clicked'
     Test-StayedOnList $artistPage 'The play button on the image of Artist'
     Test-Running 'after playing an artist from its image'
-    Write-Output 'The cover buttons play an album and an artist, and the songs popup plays a song, without opening their pages.'
+
+    # The buttons go again once the pointer has left the cover, also through a corner of the round image,
+    # which is still inside the cover's square bounds (#187).
+    $shown = Get-Pixels $playArtist
+    Move-Pointer ([int] $tile.X - 30) ([int] $tile.Y - 30)
+    Start-Sleep -Milliseconds 700 # the button's tooltip fades out
+    $left = Get-Pixels $playArtist
+    $showing = Get-Difference $hidden $shown
+    $remaining = Get-Difference $hidden $left
+    Write-Output ('Play button on the artist image: {0:P0} of its pixels change on hover, {1:P0} differ once the pointer has left.' -f $showing, $remaining)
+    if ($showing -lt 0.1) { Stop-Test 'Cover buttons' 'The play button did not show while the pointer was on the image of Artist.' }
+    if ($remaining -gt 0.02) { Stop-Test 'Cover buttons' 'The play button stayed visible after the pointer left the image of Artist through a corner.' }
+    Write-Output 'The cover buttons play an album and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
 
     # Settings, with the equalizer's sliders.
     Select-Navigation 'Settings'
