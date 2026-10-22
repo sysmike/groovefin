@@ -2,7 +2,6 @@ using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -45,7 +44,6 @@ internal sealed partial class CoverActions : UserControl
     private void OnItemChanged()
     {
         // A recycled tile shows another item: start hidden, with that item's names.
-        Trace($"item changed from {AutomationProperties.GetName(PlayButton)} to {Tag}");
         _pointerOver = false;
         _focused = false;
         _songs?.Hide();
@@ -95,20 +93,10 @@ internal sealed partial class CoverActions : UserControl
         }
     }
 
-    // TODO(#187): temporary, to see in the CI log why the buttons show or hide; remove before merging.
-    private static ILogger? _log;
-
-    private static void Trace(string message)
-    {
-        _log ??= App.Services.GetRequiredService<ILoggerFactory>().CreateLogger("CoverActions");
-        _log.LogInformation("CoverActions: {Message}", message);
-    }
-
-    private void SetPointerOver(bool value, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
+    private void SetPointerOver(bool value)
     {
         if (_pointerOver != value)
         {
-            Trace($"{(value ? "show" : "hide")} for {caller} on {AutomationProperties.GetName(PlayButton)}");
             _pointerOver = value;
             UpdateVisibility();
         }
@@ -138,12 +126,6 @@ internal sealed partial class CoverActions : UserControl
     }
 
     /// <summary>Entered or moved on the cover; a round image's corners count as off it.</summary>
-    private void OnPointerEntered(object sender, PointerRoutedEventArgs e)
-    {
-        Trace($"entered {AutomationProperties.GetName(PlayButton)} at {e.GetCurrentPoint(Root).Position} ({e.Pointer.PointerDeviceType})");
-        OnPointerMoved(sender, e);
-    }
-
     private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
     {
         if (e.Pointer.PointerDeviceType != PointerDeviceType.Touch)
