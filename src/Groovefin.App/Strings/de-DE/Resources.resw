@@ -1894,4 +1894,18 @@
   <data name="SettingsShortcutsResetAllButton.Content" xml:space="preserve">
     <value>Alle zurücksetzen</value>
   </data>
+  <data name="Cover_Play" xml:space="preserve">
+    <value>{0} abspielen</value>
+    <comment>{0} = album or artist name</comment>
+  </data>
+  <data name="Cover_ShowSongs" xml:space="preserve">
+    <value>Titel von {0} anzeigen</value>
+    <comment>{0} = album name</comment>
+  </data>
+  <data name="AlbumPreviewFailed.Text" xml:space="preserve">
+    <value>Die Titel konnten nicht geladen werden.</value>
+  </data>
+  <data name="AlbumPreviewTracks.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Titel</value>
+  </data>
 </root>

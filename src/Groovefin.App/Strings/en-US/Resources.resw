@@ -1912,4 +1912,18 @@
   <data name="SettingsShortcutsResetAllButton.Content" xml:space="preserve">
     <value>Reset all</value>
   </data>
+  <data name="Cover_Play" xml:space="preserve">
+    <value>Play {0}</value>
+    <comment>Play button on an album or artist cover (#185); {0} = album or artist name</comment>
+  </data>
+  <data name="Cover_ShowSongs" xml:space="preserve">
+    <value>Show the songs of {0}</value>
+    <comment>Down arrow on an album cover that opens its songs popup; {0} = album name</comment>
+  </data>
+  <data name="AlbumPreviewFailed.Text" xml:space="preserve">
+    <value>The songs could not be loaded.</value>
+  </data>
+  <data name="AlbumPreviewTracks.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Songs</value>
+  </data>
 </root>

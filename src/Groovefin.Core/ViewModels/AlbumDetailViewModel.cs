@@ -190,7 +190,7 @@ public sealed partial class AlbumDetailViewModel(
             IsFavourite = favourites.IsFavourite(album.Id, album.IsFavorite);
             Cover = ImageRequest.Primary(album.Id, album.PrimaryImageTag, CoverWidth, DisplayScale);
             Background = ImageRequest.Primary(album.Id, album.PrimaryImageTag, BackgroundWidth, 1);
-            Details = BuildDetails(album, tracks);
+            Details = BuildDetails(album, tracks, strings);
             _tracks = tracks;
             BuildDiscs(album, tracks);
             OnPropertyChanged(nameof(Tracks));
@@ -292,7 +292,8 @@ public sealed partial class AlbumDetailViewModel(
         }
     }
 
-    private string BuildDetails(Album album, IReadOnlyList<Track> tracks)
+    /// <summary>Year, track count and length, e.g. "2001 · 14 tracks · 61 min"; also the album popup's (#185).</summary>
+    internal static string BuildDetails(Album album, IReadOnlyList<Track> tracks, IStringResources strings)
     {
         var parts = new List<string>();
         if (album.Year is { } year)
@@ -405,7 +406,7 @@ public sealed partial class AlbumDetailViewModel(
     }
 
     /// <summary>Shows a track's artists only when they differ from the album artist (compilations, features).</summary>
-    private static string? TrackArtist(Album album, Track track)
+    internal static string? TrackArtist(Album album, Track track)
     {
         var names = string.Join(", ", track.Artists.Select(a => a.Name));
         return names.Length == 0 || string.Equals(names, album.AlbumArtist, StringComparison.OrdinalIgnoreCase) ? null : names;

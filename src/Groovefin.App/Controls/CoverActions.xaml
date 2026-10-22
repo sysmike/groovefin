@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Groovefin.App.Controls.CoverActions"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!--
+        Laid over a tile's cover (#185). Transparent, so a click beside the buttons still opens the
+        album or artist; the buttons fade in while the pointer is on the cover.
+    -->
+    <Grid
+        x:Name="Root"
+        Background="Transparent"
+        PointerCanceled="OnPointerLeft"
+        PointerCaptureLost="OnPointerLeft"
+        PointerEntered="OnPointerEntered"
+        PointerExited="OnPointerLeft">
+        <Grid
+            x:Name="Actions"
+            Margin="8"
+            IsHitTestVisible="False"
+            Opacity="0">
+            <Grid.OpacityTransition>
+                <ScalarTransition Duration="0:0:0.083" />
+            </Grid.OpacityTransition>
+            <Button
+                x:Name="PlayButton"
+                Width="40"
+                Height="40"
+                Padding="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Click="OnPlayClick"
+                CornerRadius="20"
+                DoubleTapped="OnButtonDoubleTapped"
+                GotFocus="OnButtonGotFocus"
+                LostFocus="OnButtonLostFocus"
+                Style="{StaticResource AccentButtonStyle}"
+                Tapped="OnButtonTapped">
+                <FontIcon FontSize="16" Glyph="&#xE768;" />
+            </Button>
+            <Button
+                x:Name="SongsButton"
+                Width="32"
+                Height="32"
+                Padding="0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Background="{ThemeResource ControlSolidFillColorDefaultBrush}"
+                Click="OnSongsClick"
+                CornerRadius="16"
+                DoubleTapped="OnButtonDoubleTapped"
+                GotFocus="OnButtonGotFocus"
+                LostFocus="OnButtonLostFocus"
+                Tapped="OnButtonTapped">
+                <FontIcon FontSize="12" Glyph="&#xE70D;" />
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>
