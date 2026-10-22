@@ -480,10 +480,10 @@ try {
 
     # Moves the pointer to x, y in small steps, each followed by a pixel of mouse input there and back:
     # SetCursorPos alone is no pointer input for WinUI (see Send-Click).
-    function Move-Pointer([int] $x, [int] $y) {
+    function Move-Pointer([int] $x, [int] $y, [int] $steps = 20) {
         $from = [System.Windows.Forms.Cursor]::Position
-        for ($i = 1; $i -le 20; $i++) {
-            $null = [Smoke.Mouse]::SetCursorPos([int] ($from.X + ($x - $from.X) * $i / 20), [int] ($from.Y + ($y - $from.Y) * $i / 20))
+        for ($i = 1; $i -le $steps; $i++) {
+            $null = [Smoke.Mouse]::SetCursorPos([int] ($from.X + ($x - $from.X) * $i / $steps), [int] ($from.Y + ($y - $from.Y) * $i / $steps))
             [Smoke.Mouse]::mouse_event(0x0001, 1, 0, 0, [UIntPtr]::Zero) # MOVE
             [Smoke.Mouse]::mouse_event(0x0001, -1, 0, 0, [UIntPtr]::Zero)
             Start-Sleep -Milliseconds 20
@@ -553,6 +553,18 @@ try {
     Write-Output ('Play button on the artist image: its colour #{0:X8} covers {1:P0} of it on hover and {2:P0} once the pointer has left.' -f $buttonColour, $showing, $remaining)
     if ($showing -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show while the pointer was on the image of Artist.' }
     if ($remaining -gt 0.05) { Stop-Test 'Cover buttons' 'The play button stayed visible after the pointer left the image of Artist through a corner.' }
+
+    # A quick sweep, as across a row of artists: back onto the image, then in a few big steps into the gap
+    # between the circle and its square bounds, beside the top right. The button must be gone there already.
+    Move-Pointer ([int] ($tile.X + 80)) ([int] ($tile.Y + 80))
+    $back = Get-Share (Get-Pixels $playArtist) $buttonColour
+    Move-Pointer ([int] ($tile.X + 150)) ([int] ($tile.Y + 18)) 3
+    Start-Sleep -Milliseconds 700
+    $inGap = Get-Share (Get-Pixels $playArtist) $buttonColour
+    Write-Output ('Play button after a quick sweep: {0:P0} back on the image, {1:P0} with the pointer beside the circle.' -f $back, $inGap)
+    if ($back -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show again when the pointer came back onto the image of Artist.' }
+    if ($inGap -gt 0.05) { Stop-Test 'Cover buttons' 'The play button stayed visible with the pointer beside the round image of Artist, after a quick sweep.' }
+    Move-Pointer ([int] ($tile.X + 150)) ([int] $tile.Y - 40)
     Write-Output 'The cover buttons play an album, a genre and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
 
     # Settings, with the equalizer's sliders.
