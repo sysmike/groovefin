@@ -7,6 +7,7 @@ using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
+using Groovefin.Core.Links;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -71,10 +72,21 @@ public sealed partial class ArtistDetailViewModel(
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasArtist), nameof(Name), nameof(GenresText), nameof(Biography), nameof(HasBiography))]
+    [NotifyPropertyChangedFor(nameof(MusicBrainzUrl), nameof(HasMusicBrainz), nameof(LastFmUrl), nameof(HasLastFm))]
     [NotifyCanExecuteChangedFor(nameof(ToggleFavouriteCommand), nameof(PlayCommand), nameof(ShuffleCommand), nameof(InstantMixCommand))]
     public partial Artist? Artist { get; private set; }
 
     public bool HasArtist => Artist is not null;
+
+    /// <summary>Gets the artist on MusicBrainz, when the server knows its ID.</summary>
+    public Uri? MusicBrainzUrl => Artist is null ? null : ExternalLinks.MusicBrainz(Artist);
+
+    public bool HasMusicBrainz => MusicBrainzUrl is not null;
+
+    /// <summary>Gets the artist on Last.fm.</summary>
+    public Uri? LastFmUrl => Artist is null ? null : ExternalLinks.LastFm(Artist);
+
+    public bool HasLastFm => LastFmUrl is not null;
 
     public string Name => Artist?.Name ?? string.Empty;
 

@@ -263,15 +263,21 @@ public sealed class LibraryServiceTests : IDisposable
                 Name = "Discovery",
                 Type = "MusicAlbum",
                 GenreItems = new[] { new { Name = "Electronic", Id = Guid.Parse("11111111-2222-3333-4444-555555555555") } },
-                ProviderIds = new { MusicBrainzAlbum = "release-1", MusicBrainzReleaseGroup = "group-1" },
+                // Real MusicBrainz IDs are UUIDs, which the SDK reads as GUIDs (#194); "AllMusic" is plain text.
+                ProviderIds = new
+                {
+                    MusicBrainzAlbum = "8f6bd1e4-fbe1-4f50-aa9b-94c450ec0f11",
+                    MusicBrainzReleaseGroup = "48117b82-8a1e-3aaf-9f8c-1a1f4a2e8b6e",
+                    AllMusic = "mw0000041153",
+                },
             }));
         _host.ConnectAsTestUser();
 
         var album = await _host.Library.GetAlbumAsync(AlbumId, TestContext.Current.CancellationToken);
 
         album.Genres.Should().Equal(new Genre("11111111222233334444555555555555", "Electronic"));
-        album.MusicBrainzReleaseId.Should().Be("release-1");
-        album.MusicBrainzReleaseGroupId.Should().Be("group-1");
+        album.MusicBrainzReleaseId.Should().Be("8f6bd1e4-fbe1-4f50-aa9b-94c450ec0f11");
+        album.MusicBrainzReleaseGroupId.Should().Be("48117b82-8a1e-3aaf-9f8c-1a1f4a2e8b6e");
     }
 
     [Fact]

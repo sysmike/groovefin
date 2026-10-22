@@ -105,10 +105,12 @@ public sealed class ArtistLibraryTests : IDisposable
             Overview = "French duo.<br/>Formed in 1993 &amp; split in 2021.",
             Genres = new[] { "Electronic", "House" },
             UserData = new { IsFavorite = false },
+            ProviderIds = new { MusicBrainzArtist = "056e4f3e-d505-4dad-8ec1-d04f521cbb56" },
         });
 
         var artist = await _host.Library.GetArtistAsync(ArtistId, Ct);
 
+        artist.MusicBrainzArtistId.Should().Be("056e4f3e-d505-4dad-8ec1-d04f521cbb56");
         artist.Name.Should().Be("Daft Punk");
         artist.Biography.Should().Be("French duo.\nFormed in 1993 & split in 2021.");
         artist.Genres.Should().Equal("Electronic", "House");

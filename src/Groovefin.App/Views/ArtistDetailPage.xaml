@@ -166,6 +166,17 @@
                                 IsChecked="{x:Bind ViewModel.IsFavourite, Mode=OneWay}">
                                 <FontIcon FontSize="14" Glyph="{x:Bind conv:Glyphs.Heart(ViewModel.IsFavourite), Mode=OneWay}" />
                             </ToggleButton>
+
+                            <!--  The artist on other sites (#194); they open in the browser.  -->
+                            <HyperlinkButton
+                                x:Uid="ArtistMusicBrainzLink"
+                                Margin="12,0,0,0"
+                                NavigateUri="{x:Bind ViewModel.MusicBrainzUrl, Mode=OneWay}"
+                                Visibility="{x:Bind ViewModel.HasMusicBrainz, Mode=OneWay}" />
+                            <HyperlinkButton
+                                x:Uid="ArtistLastFmLink"
+                                NavigateUri="{x:Bind ViewModel.LastFmUrl, Mode=OneWay}"
+                                Visibility="{x:Bind ViewModel.HasLastFm, Mode=OneWay}" />
                         </StackPanel>
                     </StackPanel>
                 </Grid>

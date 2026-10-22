@@ -38,4 +38,20 @@ public sealed class ExternalLinksTests
     [Fact]
     public void Without_an_artist_there_is_no_Last_fm_link() =>
         ExternalLinks.LastFm(Album(artist: null)).Should().BeNull();
+
+    [Fact]
+    public void An_artist_links_to_MusicBrainz_by_its_id_and_to_Last_fm_by_its_name()
+    {
+        var artist = new Artist { Id = "ar1", Name = "Sigur Rós", MusicBrainzArtistId = "f6f2a1d4" };
+
+        ExternalLinks.MusicBrainz(artist)!.AbsoluteUri.Should().Be("https://musicbrainz.org/artist/f6f2a1d4");
+        ExternalLinks.LastFm(artist)!.AbsoluteUri.Should().Be("https://www.last.fm/music/Sigur+R%C3%B3s");
+    }
+
+    [Fact]
+    public void An_artist_without_a_MusicBrainz_id_or_name_has_no_such_link()
+    {
+        ExternalLinks.MusicBrainz(new Artist { Id = "ar1", Name = "Daft Punk" }).Should().BeNull();
+        ExternalLinks.LastFm(new Artist { Id = "ar1", Name = " " }).Should().BeNull();
+    }
 }
