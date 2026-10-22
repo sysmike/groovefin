@@ -16,7 +16,7 @@
         Background="Transparent"
         PointerCanceled="OnPointerCanceled"
         PointerCaptureLost="OnPointerLeft"
-        PointerEntered="OnPointerMoved"
+        PointerEntered="OnPointerEntered"
         PointerExited="OnPointerLeft"
         PointerMoved="OnPointerMoved">
         <Grid
