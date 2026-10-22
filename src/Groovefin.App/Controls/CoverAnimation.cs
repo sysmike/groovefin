@@ -34,7 +34,10 @@ internal static class CoverAnimation
     /// <summary>Flies the captured cover into <paramref name="cover"/> on album detail.</summary>
     public static void StartOnDetail(UIElement cover) => Start(ToDetailKey, cover);
 
-    /// <summary>Captures the detail cover before going back to the list.</summary>
+    /// <summary>
+    /// Captures the detail cover before going back to the list. Only for a page that calls
+    /// <see cref="StartOnList"/>: a prepared animation nobody starts stays on screen until it times out.
+    /// </summary>
     public static void PrepareToList(UIElement cover)
     {
         if (AnimationsEnabled)

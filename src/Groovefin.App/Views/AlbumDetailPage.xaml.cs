@@ -60,7 +60,9 @@ internal sealed partial class AlbumDetailPage : Page
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         base.OnNavigatingFrom(e);
-        if (e.NavigationMode == NavigationMode.Back && ViewModel.HasAlbum)
+        // Only the Albums page flies the cover back into its tile. Prepared for any other page, nothing
+        // takes it, and it stays painted over that page until it times out (#196).
+        if (e.NavigationMode == NavigationMode.Back && e.SourcePageType == typeof(AlbumsPage) && ViewModel.HasAlbum)
         {
             CoverAnimation.PrepareToList(CoverImage);
         }
