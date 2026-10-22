@@ -103,6 +103,7 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             '^/audio/[0-9a-f-]{32,36}/universal$' { $raw = $wav; $null }
             '^/items$' { @{ Items = $albums; TotalRecordCount = $albums.Count; StartIndex = 0 } }
             '^/artists(/albumartists)?$' { @{ Items = @($artist); TotalRecordCount = 1; StartIndex = 0 } }
+            '^/genres$' { @{ Items = @(@{ Id = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'; Name = 'Genre'; Type = 'MusicGenre' }); TotalRecordCount = 1; StartIndex = 0 } }
             default { @{ Items = @(); TotalRecordCount = 0; StartIndex = 0 } }
         }
         "$($request.HttpMethod) $($request.Url.PathAndQuery) -> $status"
@@ -491,6 +492,18 @@ try {
         @($pixels | Where-Object { $_ -eq $colour }).Count / [Math]::Max(1, $pixels.Count)
     }
 
+    # A genre from the play button on its card (#191).
+    Select-Navigation 'Genres'
+    Start-Sleep -Seconds 2
+    $genreTracks = 'genreIds=e{32}'
+    $before = Get-RequestCount $genreTracks
+    Send-Click (Find-Button 'Play Genre')
+    Wait-Request $genreTracks $before 'The play button on the card of Genre was clicked'
+    Test-StayedOnList ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Play the genre'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))) 'The play button on the card of Genre'
+    Test-Running 'after playing a genre from its card'
+
     Select-Navigation 'Artists'
     Start-Sleep -Seconds 2
     $playArtist = Find-Button 'Play Artist'
@@ -525,7 +538,7 @@ try {
     Write-Output ('Play button on the artist image: its colour #{0:X8} covers {1:P0} of it on hover and {2:P0} once the pointer has left.' -f $buttonColour, $showing, $remaining)
     if ($showing -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show while the pointer was on the image of Artist.' }
     if ($remaining -gt 0.05) { Stop-Test 'Cover buttons' 'The play button stayed visible after the pointer left the image of Artist through a corner.' }
-    Write-Output 'The cover buttons play an album and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
+    Write-Output 'The cover buttons play an album, a genre and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
 
     # Settings, with the equalizer's sliders.
     Select-Navigation 'Settings'

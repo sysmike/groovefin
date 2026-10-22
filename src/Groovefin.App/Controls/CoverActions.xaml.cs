@@ -13,10 +13,11 @@ using Microsoft.UI.Xaml.Media;
 namespace Groovefin.App.Controls;
 
 /// <summary>
-/// The buttons on an album or artist cover (#185): play, and for albums a down arrow that opens the songs
-/// popup (<see cref="AlbumPreviewPanel"/>). Laid over the cover in a tile template with
-/// <c>&lt;controls:CoverActions Tag="{x:Bind}" /&gt;</c>; the Tag is the <see cref="AlbumItem"/> or
-/// <see cref="ArtistItem"/>, not the DataContext (#172). The buttons show while the mouse is on the cover,
+/// The buttons on an album, artist or playlist cover or a genre card (#185, #191): play, and for albums a
+/// down arrow that opens the songs popup (<see cref="AlbumPreviewPanel"/>). Laid over the cover in a tile
+/// template with <c>&lt;controls:CoverActions Tag="{x:Bind}" /&gt;</c>; the Tag is the
+/// <see cref="AlbumItem"/>, <see cref="ArtistItem"/>, <see cref="PlaylistItem"/> or <see cref="GenreItem"/>,
+/// not the DataContext (#172). The buttons show while the mouse is on the cover,
 /// one of them has keyboard focus, or the popup is open. Touch has no hover: a tap opens the tile.
 /// </summary>
 internal sealed partial class CoverActions : UserControl
@@ -43,6 +44,8 @@ internal sealed partial class CoverActions : UserControl
         {
             AlbumItem album => album.Name,
             ArtistItem artist => artist.Name,
+            PlaylistItem playlist => playlist.Name,
+            GenreItem genre => genre.Name,
             _ => string.Empty,
         };
 
@@ -53,11 +56,15 @@ internal sealed partial class CoverActions : UserControl
         AutomationProperties.SetName(SongsButton, songs);
         ToolTipService.SetToolTip(SongsButton, songs);
 
-        // Artists: one button in the middle of the round image.
-        var isArtist = Tag is ArtistItem;
-        SongsButton.Visibility = isArtist ? Visibility.Collapsed : Visibility.Visible;
-        PlayButton.HorizontalAlignment = isArtist ? HorizontalAlignment.Center : HorizontalAlignment.Left;
-        PlayButton.VerticalAlignment = isArtist ? VerticalAlignment.Center : VerticalAlignment.Bottom;
+        // Only albums have the songs popup. Play sits in the middle of an artist's round image, at the
+        // right of a genre's card (beside its name) and at the bottom left of other covers.
+        SongsButton.Visibility = Tag is AlbumItem ? Visibility.Visible : Visibility.Collapsed;
+        (PlayButton.HorizontalAlignment, PlayButton.VerticalAlignment) = Tag switch
+        {
+            ArtistItem => (HorizontalAlignment.Center, VerticalAlignment.Center),
+            GenreItem => (HorizontalAlignment.Right, VerticalAlignment.Center),
+            _ => (HorizontalAlignment.Left, VerticalAlignment.Bottom),
+        };
         UpdateVisibility();
     }
 
@@ -123,6 +130,12 @@ internal sealed partial class CoverActions : UserControl
                 break;
             case ArtistItem artist:
                 await play.PlayArtistAsync(artist.Artist);
+                break;
+            case PlaylistItem playlist:
+                await play.PlayPlaylistAsync(playlist.Playlist);
+                break;
+            case GenreItem genre:
+                await play.PlayGenreAsync(genre.Genre);
                 break;
         }
     }

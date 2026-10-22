@@ -39,6 +39,11 @@
                         Text="{x:Bind Name}"
                         TextTrimming="CharacterEllipsis"
                         TextWrapping="Wrap" />
+                    <!--  Play, on hover (#191): over the whole card, padding included.  -->
+                    <controls:CoverActions
+                        Grid.ColumnSpan="2"
+                        Margin="-16,-12"
+                        Tag="{x:Bind}" />
                 </Grid>
             </ItemContainer>
         </DataTemplate>
