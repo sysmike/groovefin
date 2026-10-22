@@ -27,6 +27,8 @@
                             controls:Artwork.Request="{x:Bind Cover}"
                             AutomationProperties.AccessibilityView="Raw"
                             Stretch="UniformToFill" />
+                        <!--  Play and the songs popup, on hover (#185, #189).  -->
+                        <controls:CoverActions Tag="{x:Bind}" />
                     </Grid>
                     <TextBlock
                         MaxLines="1"
@@ -59,6 +61,8 @@
                             controls:Artwork.Request="{x:Bind Image}"
                             AutomationProperties.AccessibilityView="Raw"
                             Stretch="UniformToFill" />
+                        <!--  Play, on hover (#185, #189).  -->
+                        <controls:CoverActions Tag="{x:Bind}" />
                     </Grid>
                     <TextBlock
                         HorizontalAlignment="Center"
