@@ -182,10 +182,12 @@
                 </Grid>
             </Grid>
 
+            <!--  Collapsed when idle: an inactive ring still takes its space (#155, #200).  -->
             <ProgressRing
                 Margin="36,48"
                 HorizontalAlignment="Left"
-                IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+                IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
             <TextBlock
                 x:Uid="ArtistLoadFailed"
                 Margin="36,24"
