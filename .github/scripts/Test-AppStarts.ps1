@@ -478,17 +478,16 @@ try {
     Test-StayedOnList $albumPage 'The songs popup of Album 2'
     Test-Running 'after playing a song from the songs popup'
 
-    # Moves the pointer to x, y in small steps, each followed by a pixel of mouse input there and back:
-    # SetCursorPos alone is no pointer input for WinUI (see Send-Click).
-    function Move-Pointer([int] $x, [int] $y) {
+    # Moves the pointer to x, y in small steps. Each step puts the cursor a pixel short and makes a real
+    # one-pixel move onto the spot: SetCursorPos alone, or a pixel there and back, is no pointer input
+    # for WinUI (see Send-Click).
+    function Move-Pointer([int] $x, [int] $y, [int] $steps = 20) {
         $from = [System.Windows.Forms.Cursor]::Position
-        for ($i = 1; $i -le 20; $i++) {
-            $null = [Smoke.Mouse]::SetCursorPos([int] ($from.X + ($x - $from.X) * $i / 20), [int] ($from.Y + ($y - $from.Y) * $i / 20))
+        for ($i = 1; $i -le $steps; $i++) {
+            $null = [Smoke.Mouse]::SetCursorPos([int] ($from.X + ($x - $from.X) * $i / $steps) - 1, [int] ($from.Y + ($y - $from.Y) * $i / $steps))
             [Smoke.Mouse]::mouse_event(0x0001, 1, 0, 0, [UIntPtr]::Zero) # MOVE
-            [Smoke.Mouse]::mouse_event(0x0001, -1, 0, 0, [UIntPtr]::Zero)
             Start-Sleep -Milliseconds 20
         }
-        $null = [Smoke.Mouse]::SetCursorPos($x, $y)
         Start-Sleep -Milliseconds 500
     }
     # The colours on screen within an element, every other pixel, and the share of them two such lists differ in.
@@ -503,8 +502,10 @@ try {
         $bitmap.Dispose()
         , $pixels
     }
-    function Get-Share([int[]] $pixels, [int] $colour) {
-        @($pixels | Where-Object { $_ -eq $colour }).Count / [Math]::Max(1, $pixels.Count)
+    # The share of strongly blue pixels: the accent-coloured play button has them in every state (normal,
+    # pointed at, pressed), the grey cover behind it and the tile's hover tint have none.
+    function Get-BlueShare([int[]] $pixels) {
+        @($pixels | Where-Object { ($_ -band 0xFF) -gt 120 -and (($_ -band 0xFF) - (($_ -shr 16) -band 0xFF)) -gt 60 }).Count / [Math]::Max(1, $pixels.Count)
     }
 
     # A genre from the play button on its card (#191).
@@ -527,7 +528,8 @@ try {
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) "tile of Artist"
     $tile = Get-Bounds $artistTile
     Move-Pointer ([int] ($tile.X + $tile.Width / 2)) ([int] $tile.Y - 40)
-    $hidden = Get-Pixels $playArtist
+    $untouched = Get-BlueShare (Get-Pixels $playArtist)
+    if ($untouched -gt 0.05) { Stop-Test 'Cover buttons' "The play button showed on the image of Artist before the pointer was on it (blue on $('{0:P0}' -f $untouched))." }
     $artistTracks = 'artistIds=d{32}'
     $before = Get-RequestCount $artistTracks
     Send-Click $playArtist
@@ -536,23 +538,41 @@ try {
     Test-Running 'after playing an artist from its image'
 
     # The buttons go again once the pointer has left the cover, also through a corner of the round image,
-    # which is still inside the cover's square bounds (#187). The play button's own colour tells: the one
-    # most common on it while shown that was nowhere there before. The tile behind may change its shade
-    # after the click, so the pixels before and after are no match.
-    $shown = Get-Pixels $playArtist
-    $hiddenColours = [System.Collections.Generic.HashSet[int]]::new([int[]] $hidden)
-    $buttonColour = [int] ($shown | Where-Object { -not $hiddenColours.Contains($_) } | Group-Object | Sort-Object Count -Descending | Select-Object -First 1).Name
+    # which is still inside the cover's square bounds (#187).
+    $showing = Get-BlueShare (Get-Pixels $playArtist)
     Move-Pointer ([int] $tile.X - 30) ([int] $tile.Y - 30)
     Start-Sleep -Milliseconds 700 # the button's tooltip fades out
-    $left = Get-Pixels $playArtist
+    $remaining = Get-BlueShare (Get-Pixels $playArtist)
     Save-Screenshot 'artist-after-hover'
     $at = [System.Windows.Forms.Cursor]::Position
     Write-Output "Pointer at $($at.X),$($at.Y); the artist tile is at $($tile.X),$($tile.Y), $($tile.Width)x$($tile.Height)."
-    $showing = Get-Share $shown $buttonColour
-    $remaining = Get-Share $left $buttonColour
-    Write-Output ('Play button on the artist image: its colour #{0:X8} covers {1:P0} of it on hover and {2:P0} once the pointer has left.' -f $buttonColour, $showing, $remaining)
+    Write-Output ('Play button on the artist image: blue on {0:P0} of it on hover and {1:P0} once the pointer has left.' -f $showing, $remaining)
     if ($showing -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show while the pointer was on the image of Artist.' }
     if ($remaining -gt 0.05) { Stop-Test 'Cover buttons' 'The play button stayed visible after the pointer left the image of Artist through a corner.' }
+
+    # A quick sweep, as across a row of artists: back onto the image, then in a few big steps into the gap
+    # between the circle and its square bounds, beside the top right. The button must be gone there already.
+    # The page may have moved since (the playback error's InfoBar): take the tile's place again.
+    $tile = Get-Bounds $artistTile
+    Move-Pointer ([int] ($tile.X + 80)) ([int] ($tile.Y + 80))
+    $back = Get-BlueShare (Get-Pixels $playArtist)
+    $at = [System.Windows.Forms.Cursor]::Position
+    $button = Get-Bounds $playArtist
+    try {
+        Add-Type -AssemblyName WindowsBase
+        $under = $automation::FromPoint([System.Windows.Point]::new($at.X, $at.Y))
+        $what = "$($under.Current.ControlType.ProgrammaticName) '$($under.Current.Name)' ($($under.Current.ClassName))"
+    }
+    catch { $what = "nothing known ($($_.Exception.Message))" }
+    Write-Output "Back on the image: pointer at $($at.X),$($at.Y) over $what; tile at $($tile.X),$($tile.Y); play button at $($button.X),$($button.Y), $($button.Width)x$($button.Height)."
+    Save-Screenshot 'artist-back-on-image'
+    Move-Pointer ([int] ($tile.X + 150)) ([int] ($tile.Y + 18)) 3
+    Start-Sleep -Milliseconds 700
+    $inGap = Get-BlueShare (Get-Pixels $playArtist)
+    Write-Output ('Play button after a quick sweep: {0:P0} back on the image, {1:P0} with the pointer beside the circle.' -f $back, $inGap)
+    if ($back -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show again when the pointer came back onto the image of Artist.' }
+    if ($inGap -gt 0.05) { Stop-Test 'Cover buttons' 'The play button stayed visible with the pointer beside the round image of Artist, after a quick sweep.' }
+    Move-Pointer ([int] ($tile.X + 150)) ([int] $tile.Y - 40)
     Write-Output 'The cover buttons play an album, a genre and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
 
     # Settings, with the equalizer's sliders.
