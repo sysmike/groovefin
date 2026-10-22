@@ -142,11 +142,21 @@
                                 x:Uid="AlbumMusicBrainzLink"
                                 Margin="12,0,0,0"
                                 NavigateUri="{x:Bind ViewModel.MusicBrainzUrl, Mode=OneWay}"
-                                Visibility="{x:Bind ViewModel.HasMusicBrainz, Mode=OneWay}" />
+                                Visibility="{x:Bind ViewModel.HasMusicBrainz, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <controls:SiteIcon VerticalAlignment="Center" Site="MusicBrainz" />
+                                    <TextBlock x:Uid="AlbumMusicBrainzLinkText" />
+                                </StackPanel>
+                            </HyperlinkButton>
                             <HyperlinkButton
                                 x:Uid="AlbumLastFmLink"
                                 NavigateUri="{x:Bind ViewModel.LastFmUrl, Mode=OneWay}"
-                                Visibility="{x:Bind ViewModel.HasLastFm, Mode=OneWay}" />
+                                Visibility="{x:Bind ViewModel.HasLastFm, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <controls:SiteIcon VerticalAlignment="Center" Site="LastFm" />
+                                    <TextBlock x:Uid="AlbumLastFmLinkText" />
+                                </StackPanel>
+                            </HyperlinkButton>
                         </StackPanel>
                     </StackPanel>
                 </Grid>
