@@ -125,6 +125,7 @@ internal static class AppHost
         builder.Services.AddSingleton<InstantMix>();
         builder.Services.AddSingleton<TrackDrag>();
         builder.Services.AddSingleton<ContextMenus>();
+        builder.Services.AddSingleton<QuickPlay>();
 
         // Servers
         builder.Services.AddSingleton<IServerManager, ServerManager>();
@@ -134,6 +135,7 @@ internal static class AppHost
         builder.Services.AddSingleton<ShellViewModel>();
         builder.Services.AddTransient<SettingsViewModel>();
         builder.Services.AddTransient<AlbumDetailViewModel>();
+        builder.Services.AddTransient<AlbumPreviewViewModel>();
         builder.Services.AddTransient<ArtistDetailViewModel>();
         builder.Services.AddTransient<SearchViewModel>();
         builder.Services.AddTransient<PlaylistsViewModel>();

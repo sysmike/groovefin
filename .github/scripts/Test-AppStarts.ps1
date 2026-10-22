@@ -102,6 +102,7 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             '^/items/[0-9a-f-]{32,36}$' { if ($path -eq "/items/$($artist.Id)") { $artist } else { $albums[0] } }
             '^/audio/[0-9a-f-]{32,36}/universal$' { $raw = $wav; $null }
             '^/items$' { @{ Items = $albums; TotalRecordCount = $albums.Count; StartIndex = 0 } }
+            '^/artists(/albumartists)?$' { @{ Items = @($artist); TotalRecordCount = 1; StartIndex = 0 } }
             default { @{ Items = @(); TotalRecordCount = 0; StartIndex = 0 } }
         }
         "$($request.HttpMethod) $($request.Url.PathAndQuery) -> $status"
@@ -390,6 +391,86 @@ try {
     $null = Find-Button 'Play album'
     Test-Running 'after going back and forward'
     Write-Output 'The mouse back and forward buttons and Alt+Left move through the pages.'
+
+    # The buttons on the covers (#185), clicked with the mouse: pointing at a cover shows them, and a click on
+    # one must not open the album or artist as well. Requests to the fake server show what was played.
+    function Get-RequestCount([string] $pattern) {
+        @($server | Receive-Job -Keep -ErrorAction SilentlyContinue | ForEach-Object { "$_" -replace '-', '' } | Where-Object { $_ -match $pattern }).Count
+    }
+    function Send-Click([System.Windows.Automation.AutomationElement] $element) {
+        $r = $element.Current.BoundingRectangle
+        # SetCursorPos alone is no pointer input for WinUI, so the cover would not see the pointer come in:
+        # start beside the target and move onto it with mouse input, as a hand on the mouse does.
+        $null = [Smoke.Mouse]::SetCursorPos([int] ($r.X + $r.Width / 2) - 10, [int] ($r.Y + $r.Height / 2))
+        for ($i = 0; $i -lt 10; $i++) {
+            [Smoke.Mouse]::mouse_event(0x0001, 1, 0, 0, [UIntPtr]::Zero) # MOVE one pixel to the right
+            Start-Sleep -Milliseconds 20
+        }
+        $null = [Smoke.Mouse]::SetCursorPos([int] ($r.X + $r.Width / 2), [int] ($r.Y + $r.Height / 2))
+        Start-Sleep -Milliseconds 500
+        [Smoke.Mouse]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero) # LEFTDOWN
+        [Smoke.Mouse]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero) # LEFTUP
+    }
+    function Wait-Request([string] $pattern, [int] $before, [string] $what) {
+        $until = (Get-Date).AddSeconds(10)
+        while ((Get-RequestCount $pattern) -le $before -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
+        if ((Get-RequestCount $pattern) -le $before) { Stop-Test 'Cover buttons' "$what, but Groovefin did not ask the server for it." }
+    }
+    function Test-StayedOnList([System.Windows.Automation.Condition] $detailPage, [string] $what) {
+        Start-Sleep -Seconds 2
+        if ($window.FindFirst($scope::Descendants, $detailPage)) { Stop-Test 'Cover buttons' "$what also opened its page." }
+    }
+    $albumPage = [System.Windows.Automation.AndCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Play album'),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))
+    $artistPage = [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'ArtistPlayButton')
+
+    Select-Navigation 'Albums'
+    Start-Sleep -Seconds 2
+    $album2 = 'parentId=a{31}2'
+    $before = Get-RequestCount $album2
+    Send-Click (Find-Button 'Play Album 2')
+    Wait-Request $album2 $before 'The play button on the cover of Album 2 was clicked'
+    Test-StayedOnList $albumPage 'The play button on the cover of Album 2'
+    Test-Running 'after playing an album from its cover'
+
+    # The song's title in a list row: the now playing bar may show the same title (as a link to the album).
+    Send-Click (Find-Button 'Show the songs of Album 2')
+    $titleCondition = [System.Windows.Automation.AndCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Track 2'),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))
+    # A popup may have a window of its own, beside the main window: search all of Groovefin's windows.
+    $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+    $ownWindows = [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $process.Id)
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        $titles = @($automation::RootElement.FindAll($scope::Children, $ownWindows) | ForEach-Object { $_.FindAll($scope::Descendants, $titleCondition) })
+        # In a list row: the title's parent is the row's named group, and that one's the list item.
+        $song = $titles | Where-Object { $walker.GetParent($walker.GetParent($_)).Current.ControlType -eq [System.Windows.Automation.ControlType]::ListItem } | Select-Object -First 1
+        if (-not $song) { Start-Sleep -Milliseconds 500 }
+    } while (-not $song -and (Get-Date) -lt $until)
+    Save-Screenshot 'album-songs-popup'
+    if (-not $song) {
+        $found = ($titles | ForEach-Object { "in $($walker.GetParent($_).Current.ControlType.ProgrammaticName) '$($walker.GetParent($_).Current.Name)'" }) -join '; '
+        Stop-Test 'Cover buttons' "The songs popup of Album 2 did not open or does not list 'Track 2' (found 'Track 2' $(if ($found) { $found } else { 'nowhere' }))."
+    }
+    $track2 = '/audio/c{31}2/universal'
+    $before = Get-RequestCount $track2
+    Send-Click $song
+    Wait-Request $track2 $before "'Track 2' was clicked in the songs popup"
+    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+    Test-StayedOnList $albumPage 'The songs popup of Album 2'
+    Test-Running 'after playing a song from the songs popup'
+
+    Select-Navigation 'Artists'
+    Start-Sleep -Seconds 2
+    $artistTracks = 'artistIds=d{32}'
+    $before = Get-RequestCount $artistTracks
+    Send-Click (Find-Button 'Play Artist')
+    Wait-Request $artistTracks $before 'The play button on the image of Artist was clicked'
+    Test-StayedOnList $artistPage 'The play button on the image of Artist'
+    Test-Running 'after playing an artist from its image'
+    Write-Output 'The cover buttons play an album and an artist, and the songs popup plays a song, without opening their pages.'
 
     # Settings, with the equalizer's sliders.
     Select-Navigation 'Settings'

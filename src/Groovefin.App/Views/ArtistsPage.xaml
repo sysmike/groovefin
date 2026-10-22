@@ -10,7 +10,7 @@
     mc:Ignorable="d">
 
     <Page.Resources>
-        <!--  Grid: round image, name.  -->
+        <!--  Grid: round image with a play button, name.  -->
         <DataTemplate x:Key="ArtistGridTemplate" x:DataType="vm:ArtistItem">
             <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
                 <StackPanel Width="160" Padding="0,0,0,8" Spacing="8">
@@ -27,6 +27,8 @@
                             controls:Artwork.Request="{x:Bind Image}"
                             AutomationProperties.AccessibilityView="Raw"
                             Stretch="UniformToFill" />
+                        <!--  Play, on hover (#185).  -->
+                        <controls:CoverActions Tag="{x:Bind}" />
                     </Grid>
                     <TextBlock
                         HorizontalAlignment="Center"

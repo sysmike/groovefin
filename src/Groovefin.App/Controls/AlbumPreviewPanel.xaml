@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Groovefin.App.Controls.AlbumPreviewPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Groovefin.App.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Groovefin.Core.ViewModels"
+    mc:Ignorable="d">
+
+    <!--  The songs popup of an album tile (#185): name, artist, play, and the songs by disc.  -->
+    <Grid Width="360" RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Padding="4,0,0,0" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock
+                    AutomationProperties.HeadingLevel="Level2"
+                    MaxLines="1"
+                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                    Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                    TextTrimming="CharacterEllipsis" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    MaxLines="1"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.ArtistText, Mode=OneWay}"
+                    TextTrimming="CharacterEllipsis" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.Details, Mode=OneWay}" />
+            </StackPanel>
+            <Button
+                Grid.Column="1"
+                Width="40"
+                Height="40"
+                Padding="0"
+                VerticalAlignment="Center"
+                AutomationProperties.Name="{x:Bind ViewModel.PlayName, Mode=OneWay}"
+                Command="{x:Bind ViewModel.PlayCommand}"
+                CornerRadius="20"
+                Style="{StaticResource AccentButtonStyle}"
+                ToolTipService.ToolTip="{x:Bind ViewModel.PlayName, Mode=OneWay}">
+                <FontIcon FontSize="16" Glyph="&#xE768;" />
+            </Button>
+        </Grid>
+
+        <ProgressRing
+            Grid.Row="1"
+            Width="24"
+            Height="24"
+            Margin="0,12"
+            IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+        <TextBlock
+            x:Uid="AlbumPreviewFailed"
+            Grid.Row="1"
+            Margin="4,8"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Style="{StaticResource BodyTextBlockStyle}"
+            Visibility="{x:Bind ViewModel.LoadFailed, Mode=OneWay}" />
+
+        <ScrollViewer
+            Grid.Row="1"
+            MaxHeight="400"
+            Margin="-4,0,-12,0"
+            Padding="0,0,8,0">
+            <ItemsControl IsTabStop="False" ItemsSource="{x:Bind ViewModel.Discs, Mode=OneWay}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DiscGroup">
+                        <StackPanel Spacing="2">
+                            <TextBlock
+                                Margin="12,8,0,2"
+                                AutomationProperties.HeadingLevel="Level3"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind Header}"
+                                Visibility="{x:Bind HasHeader}" />
+                            <ListView
+                                controls:ItemMenu.IsEnabled="True"
+                                x:Uid="AlbumPreviewTracks"
+                                IsItemClickEnabled="True"
+                                ItemClick="OnTrackClick"
+                                ItemsSource="{x:Bind Tracks}"
+                                ScrollViewer.VerticalScrollMode="Disabled"
+                                SelectionMode="None">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:TrackItem">
+                                        <Grid
+                                            Padding="0,6"
+                                            AutomationProperties.Name="{x:Bind AccessibleName}"
+                                            ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="24" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock
+                                                VerticalAlignment="Center"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                HorizontalTextAlignment="Right"
+                                                Text="{x:Bind Number}" />
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock
+                                                    MaxLines="1"
+                                                    Text="{x:Bind Name}"
+                                                    TextTrimming="CharacterEllipsis" />
+                                                <TextBlock
+                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                    MaxLines="1"
+                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                    Text="{x:Bind Artist}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    Visibility="{x:Bind HasArtist}" />
+                                            </StackPanel>
+                                            <TextBlock
+                                                Grid.Column="2"
+                                                VerticalAlignment="Center"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="{x:Bind Duration}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
