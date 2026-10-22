@@ -177,6 +177,18 @@ try {
         Stop-Test 'Smoke test' "The $description was not found."
     }
 
+    # An element's place on screen. One just found may not be laid out yet (its bounds are empty or NaN):
+    # wait for that, at most 5 seconds.
+    function Get-Bounds([System.Windows.Automation.AutomationElement] $element) {
+        $until = (Get-Date).AddSeconds(5)
+        do {
+            $bounds = $element.Current.BoundingRectangle
+            if (-not $bounds.IsEmpty -and -not [double]::IsNaN($bounds.X) -and $bounds.Width -gt 0) { return $bounds }
+            Start-Sleep -Milliseconds 200
+        } while ((Get-Date) -lt $until)
+        Stop-Test 'Smoke test' "The element '$($element.Current.Name)' has no place on screen."
+    }
+
     function Find-ById([string] $id) {
         Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, $id)) "element '$id'"
     }
@@ -244,7 +256,7 @@ try {
     # Counts the colours on screen within an element: one flat colour means it draws nothing.
     function Get-ColourCount([System.Windows.Automation.AutomationElement] $element) {
         Add-Type -AssemblyName System.Drawing
-        $r = $element.Current.BoundingRectangle
+        $r = Get-Bounds $element
         $bitmap = [System.Drawing.Bitmap]::new([int] $r.Width, [int] $r.Height)
         $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
         $graphics.CopyFromScreen([int] $r.X, [int] $r.Y, 0, 0, $bitmap.Size)
@@ -378,7 +390,7 @@ try {
 [DllImport("user32.dll")] public static extern void mouse_event(uint flags, int dx, int dy, uint data, System.UIntPtr extra);
 '@
     function Send-MouseButton([System.Windows.Automation.AutomationElement] $over, [uint32] $button) {
-        $r = $over.Current.BoundingRectangle
+        $r = Get-Bounds $over
         $null = [Smoke.Mouse]::SetCursorPos([int] ($r.X + $r.Width / 2), [int] ($r.Y + $r.Height / 2))
         [Smoke.Mouse]::mouse_event(0x0080, 0, 0, $button, [UIntPtr]::Zero) # XDOWN
         [Smoke.Mouse]::mouse_event(0x0100, 0, 0, $button, [UIntPtr]::Zero) # XUP
@@ -399,7 +411,7 @@ try {
         @($server | Receive-Job -Keep -ErrorAction SilentlyContinue | ForEach-Object { "$_" -replace '-', '' } | Where-Object { $_ -match $pattern }).Count
     }
     function Send-Click([System.Windows.Automation.AutomationElement] $element) {
-        $r = $element.Current.BoundingRectangle
+        $r = Get-Bounds $element
         # SetCursorPos alone is no pointer input for WinUI, so the cover would not see the pointer come in:
         # start beside the target and move onto it with mouse input, as a hand on the mouse does.
         $null = [Smoke.Mouse]::SetCursorPos([int] ($r.X + $r.Width / 2) - 10, [int] ($r.Y + $r.Height / 2))
@@ -479,7 +491,7 @@ try {
     # The colours on screen within an element, every other pixel, and the share of them two such lists differ in.
     function Get-Pixels([System.Windows.Automation.AutomationElement] $element) {
         Add-Type -AssemblyName System.Drawing
-        $r = $element.Current.BoundingRectangle
+        $r = Get-Bounds $element
         $bitmap = [System.Drawing.Bitmap]::new([int] $r.Width, [int] $r.Height)
         $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
         $graphics.CopyFromScreen([int] $r.X, [int] $r.Y, 0, 0, $bitmap.Size)
@@ -510,7 +522,7 @@ try {
     $artistTile = Find-Element ([System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Artist'),
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) "tile of Artist"
-    $tile = $artistTile.Current.BoundingRectangle
+    $tile = Get-Bounds $artistTile
     Move-Pointer ([int] ($tile.X + $tile.Width / 2)) ([int] $tile.Y - 40)
     $hidden = Get-Pixels $playArtist
     $artistTracks = 'artistIds=d{32}'
