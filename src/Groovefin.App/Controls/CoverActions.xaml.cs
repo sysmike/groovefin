@@ -122,7 +122,8 @@ internal sealed partial class CoverActions : UserControl
         }
 
         var panel = new AlbumPreviewPanel();
-        CancellationTokenSource? loading = new();
+        using var loading = new CancellationTokenSource();
+        var loaded = false;
         _songs = new Flyout
         {
             Content = panel,
@@ -131,8 +132,13 @@ internal sealed partial class CoverActions : UserControl
         var flyout = _songs;
         flyout.Closed += (_, _) =>
         {
-            // Closed while the songs load: stop loading them. Both run on the UI thread.
-            loading?.Cancel();
+            // Closed while the songs load: stop loading them. Both run on the UI thread, and once they are
+            // loaded the token source is disposed.
+            if (!loaded)
+            {
+                loading.Cancel();
+            }
+
             if (ReferenceEquals(_songs, flyout))
             {
                 _songs = null;
@@ -148,8 +154,7 @@ internal sealed partial class CoverActions : UserControl
         }
         finally
         {
-            loading.Dispose();
-            loading = null;
+            loaded = true;
         }
     }
 }

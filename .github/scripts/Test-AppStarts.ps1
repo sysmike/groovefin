@@ -399,8 +399,14 @@ try {
     }
     function Send-Click([System.Windows.Automation.AutomationElement] $element) {
         $r = $element.Current.BoundingRectangle
+        # SetCursorPos alone is no pointer input for WinUI, so the cover would not see the pointer come in:
+        # start beside the target and move onto it with mouse input, as a hand on the mouse does.
+        $null = [Smoke.Mouse]::SetCursorPos([int] ($r.X + $r.Width / 2) - 10, [int] ($r.Y + $r.Height / 2))
+        for ($i = 0; $i -lt 10; $i++) {
+            [Smoke.Mouse]::mouse_event(0x0001, 1, 0, 0, [UIntPtr]::Zero) # MOVE one pixel to the right
+            Start-Sleep -Milliseconds 20
+        }
         $null = [Smoke.Mouse]::SetCursorPos([int] ($r.X + $r.Width / 2), [int] ($r.Y + $r.Height / 2))
-        [Smoke.Mouse]::mouse_event(0x0001, 0, 0, 0, [UIntPtr]::Zero) # MOVE: the pointer enters the cover
         Start-Sleep -Milliseconds 500
         [Smoke.Mouse]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero) # LEFTDOWN
         [Smoke.Mouse]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero) # LEFTUP
