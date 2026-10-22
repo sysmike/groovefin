@@ -103,6 +103,7 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             '^/audio/[0-9a-f-]{32,36}/universal$' { $raw = $wav; $null }
             '^/items$' { @{ Items = $albums; TotalRecordCount = $albums.Count; StartIndex = 0 } }
             '^/artists(/albumartists)?$' { @{ Items = @($artist); TotalRecordCount = 1; StartIndex = 0 } }
+            '^/genres$' { @{ Items = @(@{ Id = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'; Name = 'Genre'; Type = 'MusicGenre' }); TotalRecordCount = 1; StartIndex = 0 } }
             default { @{ Items = @(); TotalRecordCount = 0; StartIndex = 0 } }
         }
         "$($request.HttpMethod) $($request.Url.PathAndQuery) -> $status"
@@ -465,6 +466,18 @@ try {
     Test-StayedOnList $albumPage 'The songs popup of Album 2'
     Test-Running 'after playing a song from the songs popup'
 
+    # A genre from the play button on its card (#191).
+    Select-Navigation 'Genres'
+    Start-Sleep -Seconds 2
+    $genreTracks = 'genreIds=e{32}'
+    $before = Get-RequestCount $genreTracks
+    Send-Click (Find-Button 'Play Genre')
+    Wait-Request $genreTracks $before 'The play button on the card of Genre was clicked'
+    Test-StayedOnList ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Play the genre'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))) 'The play button on the card of Genre'
+    Test-Running 'after playing a genre from its card'
+
     Select-Navigation 'Artists'
     Start-Sleep -Seconds 2
     $artistTracks = 'artistIds=d{32}'
@@ -473,7 +486,7 @@ try {
     Wait-Request $artistTracks $before 'The play button on the image of Artist was clicked'
     Test-StayedOnList $artistPage 'The play button on the image of Artist'
     Test-Running 'after playing an artist from its image'
-    Write-Output 'The cover buttons play an album and an artist, and the songs popup plays a song, without opening their pages.'
+    Write-Output 'The cover buttons play an album, a genre and an artist, and the songs popup plays a song, without opening their pages.'
 
     # Settings, with the equalizer's sliders.
     Select-Navigation 'Settings'

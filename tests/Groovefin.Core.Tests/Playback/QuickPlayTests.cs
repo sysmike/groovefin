@@ -1,4 +1,5 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Menus;
 using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
@@ -11,11 +12,12 @@ public sealed class QuickPlayTests
     private static readonly Track Second = new() { Id = "t2", Name = "Aerodynamic" };
 
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
+    private readonly IPlaylistService _playlists = Substitute.For<IPlaylistService>();
     private readonly IPlayer _player = Substitute.For<IPlayer>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
     private readonly QuickPlay _sut;
 
-    public QuickPlayTests() => _sut = new QuickPlay(_library, _player, _errors);
+    public QuickPlayTests() => _sut = new QuickPlay(_library, _playlists, _player, _errors);
 
     [Fact]
     public async Task Playing_an_album_plays_its_tracks_from_the_start()
@@ -35,6 +37,27 @@ public sealed class QuickPlayTests
         await _sut.PlayArtistAsync(new Artist { Id = "artist-1", Name = "Daft Punk" });
 
         _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(new[] { Second })));
+    }
+
+    [Fact]
+    public async Task Playing_a_playlist_plays_its_entries_in_order()
+    {
+        _playlists.GetEntriesAsync("playlist-1", Arg.Any<CancellationToken>()).Returns(
+            [new PlaylistEntry("e1", Second), new PlaylistEntry("e2", First)]);
+
+        await _sut.PlayPlaylistAsync(new Playlist { Id = "playlist-1", Name = "Road trip" });
+
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(new[] { Second, First })));
+    }
+
+    [Fact]
+    public async Task Playing_a_genre_plays_its_first_tracks_like_the_context_menu()
+    {
+        _library.GetGenreTracksAsync("genre-1", ContextMenus.GenreTrackLimit, Arg.Any<CancellationToken>()).Returns([First]);
+
+        await _sut.PlayGenreAsync(new Genre("genre-1", "House"));
+
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(new[] { First })));
     }
 
     [Fact]
