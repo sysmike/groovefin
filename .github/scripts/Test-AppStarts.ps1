@@ -487,10 +487,8 @@ try {
         $bitmap.Dispose()
         , $pixels
     }
-    function Get-Difference([int[]] $a, [int[]] $b) {
-        $different = 0
-        for ($i = 0; $i -lt $a.Count; $i++) { if ($a[$i] -ne $b[$i]) { $different++ } }
-        $different / [Math]::Max(1, $a.Count)
+    function Get-Share([int[]] $pixels, [int] $colour) {
+        @($pixels | Where-Object { $_ -eq $colour }).Count / [Math]::Max(1, $pixels.Count)
     }
 
     Select-Navigation 'Artists'
@@ -510,19 +508,23 @@ try {
     Test-Running 'after playing an artist from its image'
 
     # The buttons go again once the pointer has left the cover, also through a corner of the round image,
-    # which is still inside the cover's square bounds (#187).
+    # which is still inside the cover's square bounds (#187). The play button's own colour tells: the one
+    # most common on it while shown that was nowhere there before. The tile behind may change its shade
+    # after the click, so the pixels before and after are no match.
     $shown = Get-Pixels $playArtist
+    $hiddenColours = [System.Collections.Generic.HashSet[int]]::new([int[]] $hidden)
+    $buttonColour = [int] ($shown | Where-Object { -not $hiddenColours.Contains($_) } | Group-Object | Sort-Object Count -Descending | Select-Object -First 1).Name
     Move-Pointer ([int] $tile.X - 30) ([int] $tile.Y - 30)
     Start-Sleep -Milliseconds 700 # the button's tooltip fades out
     $left = Get-Pixels $playArtist
     Save-Screenshot 'artist-after-hover'
     $at = [System.Windows.Forms.Cursor]::Position
     Write-Output "Pointer at $($at.X),$($at.Y); the artist tile is at $($tile.X),$($tile.Y), $($tile.Width)x$($tile.Height)."
-    $showing = Get-Difference $hidden $shown
-    $remaining = Get-Difference $hidden $left
-    Write-Output ('Play button on the artist image: {0:P0} of its pixels change on hover, {1:P0} differ once the pointer has left.' -f $showing, $remaining)
-    if ($showing -lt 0.1) { Stop-Test 'Cover buttons' 'The play button did not show while the pointer was on the image of Artist.' }
-    if ($remaining -gt 0.02) { Stop-Test 'Cover buttons' 'The play button stayed visible after the pointer left the image of Artist through a corner.' }
+    $showing = Get-Share $shown $buttonColour
+    $remaining = Get-Share $left $buttonColour
+    Write-Output ('Play button on the artist image: its colour #{0:X8} covers {1:P0} of it on hover and {2:P0} once the pointer has left.' -f $buttonColour, $showing, $remaining)
+    if ($showing -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show while the pointer was on the image of Artist.' }
+    if ($remaining -gt 0.05) { Stop-Test 'Cover buttons' 'The play button stayed visible after the pointer left the image of Artist through a corner.' }
     Write-Output 'The cover buttons play an album and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
 
     # Settings, with the equalizer's sliders.
