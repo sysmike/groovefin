@@ -16,8 +16,9 @@
         Background="Transparent"
         PointerCanceled="OnPointerCanceled"
         PointerCaptureLost="OnPointerLeft"
-        PointerEntered="OnPointerEntered"
-        PointerExited="OnPointerLeft">
+        PointerEntered="OnPointerMoved"
+        PointerExited="OnPointerLeft"
+        PointerMoved="OnPointerMoved">
         <Grid
             x:Name="Actions"
             Margin="8"
