@@ -439,15 +439,20 @@ try {
     $titleCondition = [System.Windows.Automation.AndCondition]::new(
         [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Track 2'),
         [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))
+    # A popup may have a window of its own, beside the main window: search all of Groovefin's windows.
     $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+    $ownWindows = [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $process.Id)
     $until = (Get-Date).AddSeconds(10)
     do {
-        $song = @($window.FindAll($scope::Descendants, $titleCondition)) |
-            Where-Object { $walker.GetParent($_).Current.ControlType -eq [System.Windows.Automation.ControlType]::ListItem } | Select-Object -First 1
+        $titles = @($automation::RootElement.FindAll($scope::Children, $ownWindows) | ForEach-Object { $_.FindAll($scope::Descendants, $titleCondition) })
+        $song = $titles | Where-Object { $walker.GetParent($_).Current.ControlType -eq [System.Windows.Automation.ControlType]::ListItem } | Select-Object -First 1
         if (-not $song) { Start-Sleep -Milliseconds 500 }
     } while (-not $song -and (Get-Date) -lt $until)
-    if (-not $song) { Stop-Test 'Cover buttons' "The songs popup of Album 2 did not open or does not list 'Track 2'." }
     Save-Screenshot 'album-songs-popup'
+    if (-not $song) {
+        $found = ($titles | ForEach-Object { "in $($walker.GetParent($_).Current.ControlType.ProgrammaticName) '$($walker.GetParent($_).Current.Name)'" }) -join '; '
+        Stop-Test 'Cover buttons' "The songs popup of Album 2 did not open or does not list 'Track 2' (found 'Track 2' $(if ($found) { $found } else { 'nowhere' }))."
+    }
     $track2 = '/audio/c{31}2/universal'
     $before = Get-RequestCount $track2
     Send-Click $song
