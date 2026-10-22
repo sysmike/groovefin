@@ -235,7 +235,7 @@
   <data name="AlbumGenres.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Genres</value>
   </data>
-  <data name="AlbumMusicBrainzLink.Content" xml:space="preserve">
+  <data name="AlbumMusicBrainzLinkText.Text" xml:space="preserve">
     <value>MusicBrainz</value>
   </data>
   <data name="AlbumMusicBrainzLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
@@ -244,7 +244,7 @@
   <data name="AlbumMusicBrainzLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Auf MusicBrainz öffnen</value>
   </data>
-  <data name="AlbumLastFmLink.Content" xml:space="preserve">
+  <data name="AlbumLastFmLinkText.Text" xml:space="preserve">
     <value>Last.fm</value>
   </data>
   <data name="AlbumLastFmLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
@@ -1908,7 +1908,7 @@
   <data name="AlbumPreviewTracks.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Titel</value>
   </data>
-  <data name="ArtistMusicBrainzLink.Content" xml:space="preserve">
+  <data name="ArtistMusicBrainzLinkText.Text" xml:space="preserve">
     <value>MusicBrainz</value>
   </data>
   <data name="ArtistMusicBrainzLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
@@ -1917,7 +1917,7 @@
   <data name="ArtistMusicBrainzLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Auf MusicBrainz öffnen</value>
   </data>
-  <data name="ArtistLastFmLink.Content" xml:space="preserve">
+  <data name="ArtistLastFmLinkText.Text" xml:space="preserve">
     <value>Last.fm</value>
   </data>
   <data name="ArtistLastFmLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
