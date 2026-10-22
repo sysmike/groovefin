@@ -346,6 +346,9 @@ try {
         if (-not $album) { Start-Sleep -Milliseconds 500 }
     } while (-not $album -and (Get-Date) -lt $until)
     if (-not $album) { Stop-Test 'Smoke test' "The album 'Album 1' was not found on the home page." }
+    # The home page's tiles have the cover buttons too (#189); the Albums page step below clicks them.
+    $null = Find-Button 'Play Album 1'
+    $null = Find-Button 'Show the songs of Album 1'
     $pattern = $null
     if ($album.TryGetCurrentPattern($invoke, [ref] $pattern)) { $pattern.Invoke() }
     else {
