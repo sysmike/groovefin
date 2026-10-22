@@ -377,17 +377,20 @@ try {
     if ($hasAudio) { Write-Output 'Playback runs through the equalizer effect.' }
     else { Write-Output 'No sound card: the stream passed the equalizer effect and stopped only at the audio output.' }
 
-    # The Last.fm link shows the site's icon before its name (#198): the link is wider than its name
-    # and padding by the icon and its spacing (24 px). Without the icon the gap is the padding alone.
+    # The Last.fm link shows the site's icon before its name (#198): the icon and its spacing (24 px)
+    # put the name that much further from the link's left edge than from its right edge. Without the
+    # icon both are the button's padding.
     $lastFm = Find-Element ([System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Open on Last.fm'),
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Hyperlink))) "Last.fm link on the album page"
     $lastFmName = $lastFm.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
         [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Last.fm'))
     if (-not $lastFmName) { Stop-Test 'Smoke test' "The Last.fm link on the album page doesn't show its name." }
-    $gap = (Get-Bounds $lastFm).Width - (Get-Bounds $lastFmName).Width
-    if ($gap -lt 40) { Stop-Test 'Smoke test' "The Last.fm link on the album page has no icon: it is only $gap px wider than its name." }
-    Write-Output "The Last.fm link shows its icon ($gap px beside its name)."
+    $linkBounds = Get-Bounds $lastFm
+    $nameBounds = Get-Bounds $lastFmName
+    $icon = ($nameBounds.Left - $linkBounds.Left) - ($linkBounds.Right - $nameBounds.Right)
+    if ($icon -lt 16) { Stop-Test 'Smoke test' "The Last.fm link on the album page has no icon: its name is only $icon px further from the left edge than from the right." }
+    Write-Output "The Last.fm link shows its icon ($icon px before its name)."
 
     # The album's artist link opens the artist page (#172).
     $artistLink = Find-Element ([System.Windows.Automation.AndCondition]::new(
