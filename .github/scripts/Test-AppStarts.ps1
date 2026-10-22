@@ -434,7 +434,7 @@ try {
     Test-StayedOnList $albumPage 'The play button on the cover of Album 2'
     Test-Running 'after playing an album from its cover'
 
-    # The song's title in a list row: the now playing bar may show the same title.
+    # The song's title in a list row: the now playing bar may show the same title (as a link to the album).
     Send-Click (Find-Button 'Show the songs of Album 2')
     $titleCondition = [System.Windows.Automation.AndCondition]::new(
         [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Track 2'),
@@ -445,7 +445,8 @@ try {
     $until = (Get-Date).AddSeconds(10)
     do {
         $titles = @($automation::RootElement.FindAll($scope::Children, $ownWindows) | ForEach-Object { $_.FindAll($scope::Descendants, $titleCondition) })
-        $song = $titles | Where-Object { $walker.GetParent($_).Current.ControlType -eq [System.Windows.Automation.ControlType]::ListItem } | Select-Object -First 1
+        # In a list row: the title's parent is the row's named group, and that one's the list item.
+        $song = $titles | Where-Object { $walker.GetParent($walker.GetParent($_)).Current.ControlType -eq [System.Windows.Automation.ControlType]::ListItem } | Select-Object -First 1
         if (-not $song) { Start-Sleep -Milliseconds 500 }
     } while (-not $song -and (Get-Date) -lt $until)
     Save-Screenshot 'album-songs-popup'
