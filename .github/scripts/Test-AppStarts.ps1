@@ -556,8 +556,20 @@ try {
 
     # A quick sweep, as across a row of artists: back onto the image, then in a few big steps into the gap
     # between the circle and its square bounds, beside the top right. The button must be gone there already.
+    # The page may have moved since (the playback error's InfoBar): take the tile's place again.
+    $tile = Get-Bounds $artistTile
     Move-Pointer ([int] ($tile.X + 80)) ([int] ($tile.Y + 80))
     $back = Get-Share (Get-Pixels $playArtist) $buttonColour
+    $at = [System.Windows.Forms.Cursor]::Position
+    $button = Get-Bounds $playArtist
+    try {
+        Add-Type -AssemblyName WindowsBase
+        $under = $automation::FromPoint([System.Windows.Point]::new($at.X, $at.Y))
+        $what = "$($under.Current.ControlType.ProgrammaticName) '$($under.Current.Name)' ($($under.Current.ClassName))"
+    }
+    catch { $what = "nothing known ($($_.Exception.Message))" }
+    Write-Output "Back on the image: pointer at $($at.X),$($at.Y) over $what; tile at $($tile.X),$($tile.Y); play button at $($button.X),$($button.Y), $($button.Width)x$($button.Height)."
+    Save-Screenshot 'artist-back-on-image'
     Move-Pointer ([int] ($tile.X + 150)) ([int] ($tile.Y + 18)) 3
     Start-Sleep -Milliseconds 700
     $inGap = Get-Share (Get-Pixels $playArtist) $buttonColour
