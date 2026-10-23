@@ -25,6 +25,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Groovefin.Audio.Effects", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Groovefin.Audio.Effects.Tests", "tests\Groovefin.Audio.Effects.Tests\Groovefin.Audio.Effects.Tests.csproj", "{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Groovefin.AccessibilityScan", "tools\Groovefin.AccessibilityScan\Groovefin.AccessibilityScan.csproj", "{914D275C-1C9C-40C5-AA8D-BACD1B757445}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -143,6 +147,18 @@ Global
 		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Release|x64.Build.0 = Release|x64
 		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Release|ARM64.ActiveCfg = Release|ARM64
 		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E}.Release|ARM64.Build.0 = Release|ARM64
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Debug|x64.Build.0 = Debug|Any CPU
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Release|Any CPU.Build.0 = Release|Any CPU
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Release|x64.ActiveCfg = Release|Any CPU
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Release|x64.Build.0 = Release|Any CPU
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445}.Release|ARM64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -157,5 +173,6 @@ Global
 		{77CD5A12-127E-4800-9896-AE7021405949} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{5DFA1819-A1CB-4A85-9282-2F5F7C7DCDD5} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{732D3A2D-D38A-4DF0-8A79-4765EAAC296E} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{914D275C-1C9C-40C5-AA8D-BACD1B757445} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

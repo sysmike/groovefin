@@ -170,13 +170,28 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "The equalizer effect tests failed ($LASTEXITCODE)" }
 
       - name: Smoke test (unpackaged)
-        # ARM64 builds cannot run on the x64 runner.
+        # ARM64 builds cannot run on the x64 runner. It also scans each page with the Axe.Windows rules, the
+        # automated checks of Accessibility Insights FastPass (#51).
         if: matrix.platform == 'x64'
-        timeout-minutes: 5
+        timeout-minutes: 10
         shell: pwsh
         env:
           GROOVEFIN_SCREENSHOT_TO_LOG: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
-        run: ./.github/scripts/Test-AppStarts.ps1 -Path "${{ runner.temp }}\out\unpackaged\Groovefin.exe" -ScreenshotDir "${{ runner.temp }}\screenshots"
+        run: |
+          $scanner = Get-ChildItem tools/Groovefin.AccessibilityScan/bin/Release -Recurse -Filter Groovefin.AccessibilityScan.exe | Select-Object -First 1
+          if (-not $scanner) { throw 'Groovefin.AccessibilityScan.exe was not built' }
+          ./.github/scripts/Test-AppStarts.ps1 -Path "${{ runner.temp }}\out\unpackaged\Groovefin.exe" -ScreenshotDir "${{ runner.temp }}\screenshots" `
+            -AccessibilityScanner $scanner.FullName -AccessibilityDir "${{ runner.temp }}\a11y"
+
+      - name: Upload accessibility scans
+        # .a11ytest files of the pages with errors; they open in Accessibility Insights for Windows.
+        if: ${{ !cancelled() && matrix.platform == 'x64' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: accessibility-scans
+          path: ${{ runner.temp }}/a11y/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload smoke test screenshots
         if: ${{ !cancelled() && matrix.platform == 'x64' }}
