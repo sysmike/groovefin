@@ -115,12 +115,23 @@
         </Grid>
 
         <SelectorBar
+            x:Name="Sections"
             Grid.Row="1"
             Margin="24,0"
             SelectionChanged="OnSectionChanged">
-            <SelectorBarItem x:Name="SongsSection" x:Uid="FavouritesSongsTab" IsSelected="True" />
-            <SelectorBarItem x:Name="AlbumsSection" x:Uid="FavouritesAlbumsTab" />
-            <SelectorBarItem x:Name="ArtistsSection" x:Uid="FavouritesArtistsTab" />
+            <SelectorBarItem
+                x:Name="SongsSection"
+                x:Uid="FavouritesSongsTab"
+                AutomationProperties.AutomationId="FavouritesSongsTab"
+                IsSelected="True" />
+            <SelectorBarItem
+                x:Name="AlbumsSection"
+                x:Uid="FavouritesAlbumsTab"
+                AutomationProperties.AutomationId="FavouritesAlbumsTab" />
+            <SelectorBarItem
+                x:Name="ArtistsSection"
+                x:Uid="FavouritesArtistsTab"
+                AutomationProperties.AutomationId="FavouritesArtistsTab" />
         </SelectorBar>
 
         <Grid Grid.Row="2" Padding="0,8,0,0">

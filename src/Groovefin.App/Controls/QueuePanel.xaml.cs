@@ -44,7 +44,7 @@ internal sealed partial class QueuePanel : UserControl
     /// <summary>Moves keyboard focus into the panel, e.g. after Ctrl+Q opened it.</summary>
     public void FocusPanel()
     {
-        var list = HistorySection.IsSelected ? HistoryList : UpNextList;
+        var list = IsHistorySelected ? HistoryList : UpNextList;
         if (!list.Focus(FocusState.Keyboard))
         {
             CloseButton.Focus(FocusState.Keyboard);
@@ -68,10 +68,16 @@ internal sealed partial class QueuePanel : UserControl
 
     private void OnSectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args) => UpdateSections();
 
+    /// <summary>
+    /// Whether the History tab is selected, from the bar's selected item: in
+    /// <see cref="SelectorBar.SelectionChanged"/> the items' <c>IsSelected</c> still has the old values (#202).
+    /// </summary>
+    private bool IsHistorySelected => ReferenceEquals(Sections.SelectedItem, HistorySection);
+
     /// <summary>Shows the list of the selected section, or its empty text.</summary>
     private void UpdateSections()
     {
-        var history = HistorySection.IsSelected;
+        var history = IsHistorySelected;
         UpNextList.Visibility = Show(!history && ViewModel.HasUpcoming);
         UpNextEmpty.Visibility = Show(!history && !ViewModel.HasUpcoming);
         HistoryList.Visibility = Show(history && ViewModel.HasHistory);
