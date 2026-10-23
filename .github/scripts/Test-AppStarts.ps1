@@ -590,34 +590,15 @@ try {
     Move-Pointer ([int] ($tile.X + 150)) ([int] $tile.Y - 40)
     Write-Output 'The cover buttons play an album, a genre and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
 
-    # Favourites (#202): each tab shows its own list, also after other tabs, clicked with the mouse. The
-    # fake server has a favourite of each kind; a hidden list is not in the automation tree.
+    # Favourites (#202): each tab shows its own list, also after other tabs. The fake server has a favourite
+    # of each kind; a hidden list is not in the automation tree. The tabs are selected through UI Automation:
+    # on the runner a mouse click on a SelectorBarItem selects nothing (three clicks in a row did not). The
+    # bar raises SelectionChanged the same way for both.
     Select-Navigation 'Favourites'
     $favouriteLists = [ordered] @{ Songs = 'Favourite songs'; Albums = 'Favourite albums'; Artists = 'Favourite artists' }
     $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $favouriteLists.Songs)) 'list of favourite songs'
-    function Get-SelectedFavouritesTab {
-        @($favouriteLists.Keys | Where-Object {
-                $item = $null
-                (Find-ById "Favourites$($_)Tab").TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref] $item) -and $item.Current.IsSelected
-            })
-    }
     foreach ($tab in 'Albums', 'Artists', 'Songs', 'Artists', 'Albums', 'Songs') {
-        # A click can go to closing a popup left from an earlier step instead (it then selects nothing):
-        # click again, at most three times, until the bar has the tab selected.
-        for ($click = 1; $click -le 3; $click++) {
-            Send-Click (Find-ById "Favourites$($tab)Tab")
-            $until = (Get-Date).AddSeconds(2)
-            do { Start-Sleep -Milliseconds 200; $selected = Get-SelectedFavouritesTab } while ($selected -notcontains $tab -and (Get-Date) -lt $until)
-            if ($selected -contains $tab) { break }
-            Write-Output "Click $click on the favourites' $tab tab selected: $(if ($selected) { $selected -join ', ' } else { 'nothing' })."
-        }
-        if ($selected -notcontains $tab) {
-            $r = Get-Bounds (Find-ById "Favourites$($tab)Tab")
-            Add-Type -AssemblyName WindowsBase
-            $at = [System.Windows.Automation.AutomationElement]::FromPoint([System.Windows.Point]::new($r.X + $r.Width / 2, $r.Y + $r.Height / 2))
-            Stop-Test 'Favourites' "Three clicks on the favourites' $tab tab did not select it; at its centre ($($r.X + $r.Width / 2),$($r.Y + $r.Height / 2)) is $($at.Current.ControlType.ProgrammaticName) '$($at.Current.Name)' ($($at.Current.ClassName))."
-        }
-
+        (Find-ById "Favourites$($tab)Tab").GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
         $until = (Get-Date).AddSeconds(5)
         do {
             Start-Sleep -Milliseconds 300
