@@ -71,6 +71,7 @@ public sealed class DiscordFrameTests
         a.GetProperty("type").GetInt32().Should().Be(DiscordMessages.ListeningType);
         a.GetProperty("details").GetString().Should().Be("One More Time");
         a.GetProperty("state").GetString().Should().Be("Daft Punk");
+        a.GetProperty("status_display_type").GetInt32().Should().Be(DiscordMessages.StatusDisplayState);
         a.GetProperty("timestamps").GetProperty("start").GetInt64().Should().Be(1_700_000_000_000);
         a.GetProperty("timestamps").GetProperty("end").GetInt64().Should().Be(1_700_000_300_000);
         a.GetProperty("assets").GetProperty("large_image").GetString().Should().Be(DiscordMessages.IconAsset);
@@ -86,6 +87,7 @@ public sealed class DiscordFrameTests
         var activity = paused.RootElement.GetProperty("args").GetProperty("activity");
         activity.TryGetProperty("timestamps", out _).Should().BeFalse();
         activity.TryGetProperty("state", out _).Should().BeFalse();
+        activity.TryGetProperty("status_display_type", out _).Should().BeFalse();
         cleared.RootElement.GetProperty("args").TryGetProperty("activity", out _).Should().BeFalse();
     }
 

@@ -12,6 +12,12 @@ public static class DiscordMessages
     /// <summary>The key of the Groovefin icon among the application's Rich Presence art assets.</summary>
     public const string IconAsset = "groovefin";
 
+    /// <summary>
+    /// Discord's <c>status_display_type</c> that shows <c>state</c> (the artists) in the member list's
+    /// "Listening to …" instead of the application name.
+    /// </summary>
+    public const int StatusDisplayState = 1;
+
     /// <summary>Discord's limit for the text fields.</summary>
     public const int MaxTextLength = 128;
 
@@ -36,6 +42,7 @@ public static class DiscordMessages
         if (!string.IsNullOrWhiteSpace(activity.State))
         {
             json["state"] = Fit(activity.State);
+            json["status_display_type"] = StatusDisplayState;
         }
 
         if (activity.Start is { } start)
