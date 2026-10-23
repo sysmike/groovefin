@@ -13,8 +13,7 @@ public sealed record DiscordActivity(string Details, string? State, string? Larg
 /// </summary>
 public sealed record DiscordApplication(string Id)
 {
-    // TODO(#160): set the ID of the Groovefin application once it exists in the Discord Developer Portal.
-    public static DiscordApplication Groovefin { get; } = new(string.Empty);
+    public static DiscordApplication Groovefin { get; } = new("1563195751360757931");
 
     /// <summary>Gets a value indicating whether this build has an application, and so can show a presence.</summary>
     public bool IsSet => Id.Length > 0;

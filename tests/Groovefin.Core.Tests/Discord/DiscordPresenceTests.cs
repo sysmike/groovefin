@@ -166,6 +166,13 @@ public sealed class DiscordPresenceTests : IDisposable
     }
 
     [Fact]
+    public void The_build_has_the_Groovefin_application()
+    {
+        DiscordApplication.Groovefin.IsSet.Should().BeTrue();
+        DiscordApplication.Groovefin.Id.Should().MatchRegex("^[0-9]{17,20}$", "Discord IDs are snowflakes");
+    }
+
+    [Fact]
     public void A_build_without_an_application_shows_nothing()
     {
         TurnOn();
