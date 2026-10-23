@@ -505,16 +505,27 @@ try {
     Test-TabOrder 'album'
 
     # After the mini player the album header is as high as before (#218). The mini player lays the page
-    # out 420 px wide, where the header grows; a header that could only grow kept that height.
-    $playAlbum = Find-Button 'Play album'
-    $headerBefore = (Get-Bounds $playAlbum).Bottom - $window.Current.BoundingRectangle.Top
+    # out 420 px wide, where the header grows; a header that could only grow kept that height. Measured
+    # with the page scrolled to the top: the tab walk above and the narrow layout can each scroll it a bit.
+    function Get-AlbumHeaderEnd {
+        $page = (Find-ById 'MainContent').FindFirst($scope::Descendants,
+            [System.Windows.Automation.PropertyCondition]::new($automation::IsScrollPatternAvailableProperty, $true))
+        if ($page) {
+            $scroll = $page.GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
+            if ($scroll.Current.VerticallyScrollable) {
+                $scroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 0)
+                Start-Sleep -Milliseconds 500
+            }
+        }
+        (Get-Bounds (Find-Button 'Play album')).Bottom - $window.Current.BoundingRectangle.Top
+    }
+    $headerBefore = Get-AlbumHeaderEnd
     [System.Windows.Forms.SendKeys]::SendWait('^m')
     $null = Find-Button 'Back to the full window'
     Start-Sleep -Seconds 1
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
     Start-Sleep -Seconds 1
-    $playAlbum = Find-Button 'Play album'
-    $headerAfter = (Get-Bounds $playAlbum).Bottom - $window.Current.BoundingRectangle.Top
+    $headerAfter = Get-AlbumHeaderEnd
     if ([Math]::Abs($headerAfter - $headerBefore) -gt 4) {
         Stop-Test 'Smoke test' ("After the mini player the album header ends {0:0} px down instead of {1:0}." -f $headerAfter, $headerBefore)
     }
