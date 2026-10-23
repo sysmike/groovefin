@@ -1938,4 +1938,10 @@
   <data name="QuickConnectWaitingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Warte auf Bestätigung</value>
   </data>
+  <data name="MainContent.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Seite</value>
+  </data>
+  <data name="NowPlayingBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.LocalizedLandmarkType" xml:space="preserve">
+    <value>Player</value>
+  </data>
 </root>

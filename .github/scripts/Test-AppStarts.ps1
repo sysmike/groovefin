@@ -318,9 +318,10 @@ try {
     }
 
     # Tab order (#51): Tab from the focused element until focus comes back to it. Every stop must have a name
-    # and a place on screen, Tab must not get stuck, and each part of the window (search box, navigation,
-    # page, now playing bar, panels) must be one run of stops, not visited in pieces. The order is printed.
-    $regions = 'SearchBox', 'ContentFrame', 'NowPlaying', 'QueuePane', 'LyricsPane', 'NavView'
+    # and a place on screen, Tab must not get stuck, and each part of the window (title bar, search box,
+    # navigation, page, now playing bar) must be one run of stops, not visited in pieces. The order is printed.
+    # The landmarks MainContent (the page) and NowPlaying come before NavView, which holds the page too.
+    $regions = 'SearchBox', 'MainContent', 'NowPlaying', 'NavView'
     function Get-Region([System.Windows.Automation.AutomationElement] $element) {
         $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
         for ($e = $element; $e; $e = $walker.GetParent($e)) {
