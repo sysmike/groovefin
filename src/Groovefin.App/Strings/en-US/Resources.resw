@@ -214,7 +214,7 @@
     <value>#</value>
   </data>
   <data name="AlbumColumnTitle.Text" xml:space="preserve">
-    <value>TITLE</value>
+    <value>Title</value>
   </data>
   <data name="AlbumSort_Number" xml:space="preserve">
     <value>Track number</value>
