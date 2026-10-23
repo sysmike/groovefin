@@ -501,6 +501,33 @@ try {
         Stop-Test 'Smoke test' "The album's column header doesn't look like the Songs header: $headerHeight px high, label '$($titleLabel.Current.Name)'."
     }
     Write-Output "The album's column header is $headerHeight px high and says '$($titleLabel.Current.Name)'."
+
+    # A vertical divider between the header's columns, as on the Songs page (#220). Lines have no automation
+    # element, so one row of pixels across the gap between the title and favourite columns is read from the
+    # screen, 4 px clear of either button (a focus rectangle reaches 3 px out): a divider is a pixel unlike
+    # the background next to it.
+    Add-Type -AssemblyName System.Drawing
+    $titleBounds = Get-Bounds $titleHeader
+    $favouriteBounds = Get-Bounds (Find-Button 'Sort by Favourite')
+    $gapWidth = [int] ($favouriteBounds.Left - $titleBounds.Right) - 8
+    $contrast = 0
+    if ($gapWidth -gt 1) {
+        $gap = [System.Drawing.Bitmap]::new($gapWidth, 1)
+        $graphics = [System.Drawing.Graphics]::FromImage($gap)
+        $graphics.CopyFromScreen([int] $titleBounds.Right + 4, [int] ($titleBounds.Top + $titleBounds.Height / 2), 0, 0, $gap.Size)
+        $graphics.Dispose()
+        $background = $gap.GetPixel(0, 0)
+        for ($x = 1; $x -lt $gap.Width; $x++) {
+            $pixel = $gap.GetPixel($x, 0)
+            $contrast = [Math]::Max($contrast, [Math]::Max([Math]::Abs($pixel.R - $background.R),
+                    [Math]::Max([Math]::Abs($pixel.G - $background.G), [Math]::Abs($pixel.B - $background.B))))
+        }
+        $gap.Dispose()
+    }
+    if ($contrast -lt 6) {
+        Stop-Test 'Smoke test' "The album's column header has no divider between the title and favourite columns (contrast $contrast in a $gapWidth px strip)."
+    }
+    Write-Output "The album's column header has a divider between its columns ($contrast levels against the background)."
     Test-Accessibility 'album'
     Test-TabOrder 'album'
 
