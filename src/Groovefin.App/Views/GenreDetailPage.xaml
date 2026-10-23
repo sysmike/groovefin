@@ -96,6 +96,7 @@
 
             <!--  Collapsed when idle: an inactive ring still takes its space (#155, #200).  -->
             <ProgressRing
+                x:Uid="LoadingRing"
                 Margin="36,48"
                 HorizontalAlignment="Left"
                 IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"

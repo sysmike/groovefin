@@ -7,11 +7,13 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Width="16"
     Height="16"
+    AutomationProperties.AccessibilityView="Raw"
     IsTabStop="False"
     mc:Ignorable="d">
 
     <!--
-        A site's logo in one colour, the text colour around it (#198). The paths are from Simple Icons
+        A site's logo in one colour, the text colour around it (#198). Decorative: the link it sits in has
+        the name, so screen readers skip it (#51). The paths are from Simple Icons
         (simpleicons.org, CC0) and drawn on a 24 × 24 grid, which the Viewbox scales to the icon's size.
     -->
     <Viewbox>

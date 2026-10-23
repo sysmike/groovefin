@@ -317,6 +317,76 @@ try {
         else { Write-Output "No accessibility errors on '$scanId'." }
     }
 
+    # Tab order (#51): Tab from the focused element until focus comes back to it. Every stop must have a name
+    # and a place on screen, Tab must not get stuck, and each part of the window (title bar, search box,
+    # navigation, page, now playing bar) must be one run of stops, not visited in pieces. The order is printed.
+    # The landmarks MainContent (the page) and NowPlaying come before NavView, which holds the page too.
+    $regions = 'SearchBox', 'MainContent', 'NowPlaying', 'NavView'
+    function Get-Region([System.Windows.Automation.AutomationElement] $element) {
+        $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
+        for ($e = $element; $e; $e = $walker.GetParent($e)) {
+            if ($regions -contains $e.Current.AutomationId) { return $e.Current.AutomationId }
+        }
+        'Window'
+    }
+    function Test-TabOrder([string] $page) {
+        Add-Type -AssemblyName System.Windows.Forms
+        $windowBounds = $window.Current.BoundingRectangle
+        $stops = [System.Collections.Generic.List[object]]::new()
+        $problems = [System.Collections.Generic.List[string]]::new()
+        function Add-Stop([System.Windows.Automation.AutomationElement] $focused) {
+            $current = $focused.Current
+            $stop = [pscustomobject]@{ Name = $current.Name; Type = $current.ControlType.ProgrammaticName -replace '^ControlType\.', ''; Region = Get-Region $focused; Element = $focused }
+            $stops.Add($stop)
+            $r = $current.BoundingRectangle
+            if (-not $stop.Name) { $problems.Add("stop $($stops.Count) ($($stop.Type) in $($stop.Region)) has no name") }
+            if ($r.IsEmpty -or $r.Width -le 0 -or $current.IsOffscreen -or -not $windowBounds.IntersectsWith($r)) {
+                $problems.Add("stop $($stops.Count) ('$($stop.Name)') is not on screen")
+            }
+        }
+        $start = [System.Windows.Automation.AutomationElement]::FocusedElement
+        if (-not $start -or $start.Current.ControlType -eq [System.Windows.Automation.ControlType]::Window) {
+            [System.Windows.Forms.SendKeys]::SendWait('{TAB}')
+            Start-Sleep -Milliseconds 200
+            $start = [System.Windows.Automation.AutomationElement]::FocusedElement
+        }
+        Add-Stop $start
+        for ($i = 0; $i -lt 150; $i++) {
+            [System.Windows.Forms.SendKeys]::SendWait('{TAB}')
+            Start-Sleep -Milliseconds 120
+            $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+            if (-not $focused) { $problems.Add("after stop $($stops.Count) nothing has focus"); continue }
+            if ([System.Windows.Automation.Automation]::Compare($focused, $start)) { break }
+            Add-Stop $focused
+        }
+        if ($i -ge 150) { $problems.Add('Tab did not come back to where it started within 150 stops') }
+        Write-Output "Tab order on '$page' ($($stops.Count) stops):"
+        $stops | ForEach-Object { Write-Output "  $($_.Region): $($_.Type) '$($_.Name)'" }
+
+        # Runs of the same region, counted round the cycle: one per region when each part is visited at once.
+        $runs = @($stops | ForEach-Object Region)
+        if ($runs.Count -gt 1) {
+            $changes = @(for ($k = 0; $k -lt $runs.Count; $k++) { if ($runs[$k] -ne $runs[($k + 1) % $runs.Count]) { $runs[$k] } })
+            $split = @($changes | Group-Object | Where-Object Count -gt 1 | ForEach-Object Name)
+            if ($split) { $problems.Add("Tab visits these parts in pieces: $($split -join ', ')") }
+        }
+        if ($problems.Count -gt 0) { Stop-Test 'Tab order' "On '$page': $($problems -join '; ')." }
+
+        # Tabbing scrolls the page. Focus is back on the first stop: tab on to the page's first stop after the
+        # navigation, which brings the top of the page back into view for the steps that follow (focus set
+        # through UI Automation does not scroll).
+        $afterNavigation = $false
+        for ($k = 0; $k -lt 2 * $stops.Count; $k++) {
+            $stop = $stops[$k % $stops.Count]
+            if ($stop.Region -eq 'NavView') { $afterNavigation = $true }
+            elseif ($afterNavigation -and $stop.Region -eq 'MainContent') {
+                for ($n = 0; $n -lt $k % $stops.Count; $n++) { [System.Windows.Forms.SendKeys]::SendWait('{TAB}'); Start-Sleep -Milliseconds 60 }
+                Start-Sleep -Milliseconds 500
+                break
+            }
+        }
+    }
+
     # Sets the text of a text box. A page that is still being shown may not offer the value pattern yet;
     # if it never does, the text is typed into the focused box.
     function Set-Text([System.Windows.Automation.AutomationElement] $element, [string] $text) {
@@ -353,6 +423,7 @@ try {
     Test-Running 'on the home page after signing in'
     Write-Output 'Signed in; the home page shows its lists.'
     Test-Accessibility 'home'
+    Test-TabOrder 'home'
 
     # Folders: its breadcrumb once crashed the app (#144).
     $folders = Find-Element ([System.Windows.Automation.AndCondition]::new(
@@ -418,6 +489,7 @@ try {
     if ($icon -lt 16) { Stop-Test 'Smoke test' "The Last.fm link on the album page has no icon: its name is only $icon px further from the left edge than from the right." }
     Write-Output "The Last.fm link shows its icon ($icon px before its name)."
     Test-Accessibility 'album'
+    Test-TabOrder 'album'
 
     # The album's artist link opens the artist page (#172).
     $artistLink = Find-Element ([System.Windows.Automation.AndCondition]::new(
@@ -428,6 +500,7 @@ try {
     Test-Running 'on the artist page'
     Write-Output "The album's artist link opened the artist page."
     Test-Accessibility 'artist'
+    Test-TabOrder 'artist'
 
     # Back and forward (#176): the mouse's back button over the artist page's Play button (a control that
     # handles presses itself), its forward button, then Alt+Left.
@@ -487,6 +560,7 @@ try {
     Select-Navigation 'Albums'
     Start-Sleep -Seconds 2
     Test-Accessibility 'albums'
+    Test-TabOrder 'albums'
     $album2 = 'parentId=a{31}2'
     $before = Get-RequestCount $album2
     Send-Click (Find-Button 'Play Album 2')
@@ -643,6 +717,7 @@ try {
     }
     Write-Output 'Each favourites tab shows its own list.'
     Test-Accessibility 'favourites'
+    Test-TabOrder 'favourites'
 
     # The queue, the lyrics and the full-screen player, opened and closed with their shortcuts, scanned
     # while they show (#51).
@@ -674,6 +749,7 @@ try {
     Test-Running 'on the settings page'
     Write-Output 'The settings page opened with the equalizer.'
     Test-Accessibility 'settings'
+    Test-TabOrder 'settings'
 
     # The band sliders: expanded and scrolled into view, each must have a visible size (#165).
     # The header text is named "Equalizer" too: expand the element that can be expanded.

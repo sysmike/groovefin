@@ -140,7 +140,11 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
 
-            <Grid>
+            <!--  The page: the main landmark (#51), so Narrator can jump to it.  -->
+            <controls:LandmarkGrid
+                x:Uid="MainContent"
+                AutomationProperties.AutomationId="MainContent"
+                AutomationProperties.LandmarkType="Main">
                 <Frame x:Name="ContentFrame" />
 
                 <!--  Errors and other notifications, newest at the bottom.  -->
@@ -164,7 +168,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-            </Grid>
+            </controls:LandmarkGrid>
         </NavigationView>
 
         <!--

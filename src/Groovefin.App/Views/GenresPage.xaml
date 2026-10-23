@@ -64,6 +64,7 @@
                 AutomationProperties.HeadingLevel="Level1"
                 Style="{StaticResource TitleTextBlockStyle}" />
             <ProgressRing
+                x:Uid="LoadingRing"
                 Width="16"
                 Height="16"
                 VerticalAlignment="Center"
