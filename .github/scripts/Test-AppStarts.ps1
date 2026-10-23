@@ -748,6 +748,9 @@ try {
     Start-Sleep -Seconds 2
     Test-Running 'on the settings page'
     Write-Output 'The settings page opened with the equalizer.'
+    # Shown only in a build with the Discord application ID (#160).
+    Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, "Show what I'm playing in Discord")) 'Discord setting' | Out-Null
+    Write-Output 'The Discord setting is shown.'
     Test-Accessibility 'settings'
     Test-TabOrder 'settings'
 
