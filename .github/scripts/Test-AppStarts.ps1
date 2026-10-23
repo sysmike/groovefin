@@ -491,6 +491,22 @@ try {
     Test-Accessibility 'album'
     Test-TabOrder 'album'
 
+    # After the mini player the album header is as high as before (#218). The mini player lays the page
+    # out 420 px wide, where the header grows; a header that could only grow kept that height.
+    $playAlbum = Find-Button 'Play album'
+    $headerBefore = (Get-Bounds $playAlbum).Bottom - $window.Current.BoundingRectangle.Top
+    [System.Windows.Forms.SendKeys]::SendWait('^m')
+    $null = Find-Button 'Back to the full window'
+    Start-Sleep -Seconds 1
+    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+    Start-Sleep -Seconds 1
+    $playAlbum = Find-Button 'Play album'
+    $headerAfter = (Get-Bounds $playAlbum).Bottom - $window.Current.BoundingRectangle.Top
+    if ([Math]::Abs($headerAfter - $headerBefore) -gt 4) {
+        Stop-Test 'Smoke test' ("After the mini player the album header ends {0:0} px down instead of {1:0}." -f $headerAfter, $headerBefore)
+    }
+    Write-Output ("After the mini player the album header ends where it did ({0:0} px down)." -f $headerAfter)
+
     # The album's artist link opens the artist page (#172).
     $artistLink = Find-Element ([System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Artist'),
