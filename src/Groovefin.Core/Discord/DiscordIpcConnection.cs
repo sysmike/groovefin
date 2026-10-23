@@ -98,12 +98,17 @@ public sealed partial class DiscordIpcConnection(ILogger<DiscordIpcConnection> l
         _writeLock.Dispose();
     }
 
-    private static bool IsReady(string json)
+    private static bool IsReady(string json) => HasEvent(json, "READY");
+
+    /// <summary>Discord answers a message it does not accept with the event <c>ERROR</c>.</summary>
+    private static bool IsError(string json) => HasEvent(json, "ERROR");
+
+    private static bool HasEvent(string json, string name)
     {
         try
         {
             using var document = JsonDocument.Parse(json);
-            return document.RootElement.TryGetProperty("evt", out var evt) && evt.ValueKind == JsonValueKind.String && evt.GetString() == "READY";
+            return document.RootElement.TryGetProperty("evt", out var evt) && evt.ValueKind == JsonValueKind.String && evt.GetString() == name;
         }
         catch (JsonException)
         {
@@ -160,6 +165,10 @@ public sealed partial class DiscordIpcConnection(ILogger<DiscordIpcConnection> l
                 {
                     await WriteAsync(pipe, DiscordFrame.Encode(DiscordOpcode.Pong, json), cancellationToken).ConfigureAwait(false);
                 }
+                else if (opcode == DiscordOpcode.Frame && IsError(json))
+                {
+                    LogRejected(json);
+                }
                 else if (opcode == DiscordOpcode.Close)
                 {
                     LogClosed(json);
@@ -186,6 +195,9 @@ public sealed partial class DiscordIpcConnection(ILogger<DiscordIpcConnection> l
     [LoggerMessage(Level = LogLevel.Information, Message = "Connected to Discord")]
     private partial void LogConnected();
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Discord closed the connection: {Reason}")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Discord closed the connection: {Reason}")]
     private partial void LogClosed(string reason);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Discord rejected a message: {Reply}")]
+    private partial void LogRejected(string reply);
 }

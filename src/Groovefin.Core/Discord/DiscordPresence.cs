@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace Groovefin.Core.Discord;
 
 /// <summary>
-/// Shows the playing track in Discord ("Listening to Groovefin") while the setting is on. Lives as long as
+/// Shows the playing track in Discord ("Listening to" and the artists) while the setting is on. Lives as long as
 /// the app. Only the latest state is sent; while Discord is not running it retries now and then, and
 /// problems only go to the log. Closing the app closes the pipe, which clears the status.
 /// </summary>
@@ -13,6 +13,9 @@ public sealed partial class DiscordPresence : IDisposable
 {
     /// <summary>How long to wait before trying again after Discord could not be reached.</summary>
     public static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(30);
+
+    /// <summary>How long to wait before showing the status again after Discord closed the connection mid-song.</summary>
+    public static readonly TimeSpan ReconnectDelay = TimeSpan.FromSeconds(5);
 
     /// <summary>How far the progress may drift before Discord gets new timestamps (a seek).</summary>
     public static readonly TimeSpan SeekThreshold = TimeSpan.FromSeconds(2);
@@ -87,6 +90,15 @@ public sealed partial class DiscordPresence : IDisposable
         lock (_gate)
         {
             _wanted = Desired();
+            if (_sent is not null && !_connection.IsConnected)
+            {
+                // Discord closed the pipe and took the status with it (#226): show it again in a moment, not
+                // at once, in case it closes every connection.
+                _sent = null;
+                _retryAt = _time.GetUtcNow() + ReconnectDelay;
+                LogLost(ReconnectDelay.TotalSeconds);
+            }
+
             _dirty = true;
             if (_sending)
             {
@@ -224,12 +236,15 @@ public sealed partial class DiscordPresence : IDisposable
         }
     }
 
-    /// <summary>Several times a second while playing: only a seek (or a failed earlier send) needs a new message.</summary>
+    /// <summary>
+    /// Several times a second while playing: only a seek, a failed earlier send or a closed connection needs a
+    /// new message.
+    /// </summary>
     private void OnPositionChanged(object? sender, EventArgs e)
     {
         var sent = Sent;
         var wanted = Desired();
-        if (wanted is not null && sent is not null && OnlyDrifted(wanted, sent))
+        if (wanted is not null && sent is not null && _connection.IsConnected && OnlyDrifted(wanted, sent))
         {
             return;
         }
@@ -242,6 +257,9 @@ public sealed partial class DiscordPresence : IDisposable
         wanted with { Start = sent.Start, End = sent.End } == sent
         && wanted.Start is { } start && sent.Start is { } sentStart
         && (start - sentStart).Duration() < SeekThreshold;
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Discord closed the connection while showing the status; trying again in {Seconds} s")]
+    private partial void LogLost(double seconds);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Discord is not reachable: {Reason}")]
     private partial void LogUnreachable(string reason);

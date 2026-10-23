@@ -1,7 +1,9 @@
 using System.IO.Pipes;
 using System.Text.Json;
 using Groovefin.Core.Discord;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Testing;
 
 namespace Groovefin.Core.Tests.Discord;
 
@@ -10,6 +12,7 @@ public sealed class DiscordIpcConnectionTests : IAsyncDisposable
 {
     private const string Ready = """{"cmd":"DISPATCH","evt":"READY","data":{"v":1}}""";
 
+    private readonly FakeLogger<DiscordIpcConnection> _logger = new();
     private readonly string _pipeName = $"groovefin-test-{Guid.NewGuid():N}";
     private readonly NamedPipeServerStream _server;
     private readonly DiscordIpcConnection _sut;
@@ -17,7 +20,7 @@ public sealed class DiscordIpcConnectionTests : IAsyncDisposable
     public DiscordIpcConnectionTests()
     {
         _server = new NamedPipeServerStream($"{_pipeName}-0", PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-        _sut = new DiscordIpcConnection(NullLogger<DiscordIpcConnection>.Instance) { PipeName = _pipeName, PipeTimeout = TimeSpan.FromMilliseconds(50) };
+        _sut = new DiscordIpcConnection(_logger) { PipeName = _pipeName, PipeTimeout = TimeSpan.FromMilliseconds(50) };
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -75,6 +78,24 @@ public sealed class DiscordIpcConnectionTests : IAsyncDisposable
 
         opcode.Should().Be(DiscordOpcode.Pong);
         json.Should().Be("{\"n\":7}");
+    }
+
+    [Fact]
+    public async Task A_rejected_activity_is_logged_and_the_connection_stays()
+    {
+        var server = AcceptAsync();
+        await _sut.ConnectAsync("1234", Ct);
+        await server;
+
+        await _server.WriteAsync(DiscordFrame.Encode(DiscordOpcode.Frame, """{"cmd":"SET_ACTIVITY","evt":"ERROR","data":{"code":4000,"message":"child \"activity\" fails"}}"""), Ct);
+        for (var i = 0; i < 100 && _logger.Collector.Count == 1; i++)
+        {
+            await Task.Delay(20, Ct);
+        }
+
+        _logger.LatestRecord.Level.Should().Be(LogLevel.Warning);
+        _logger.LatestRecord.Message.Should().Contain("child");
+        _sut.IsConnected.Should().BeTrue();
     }
 
     [Fact]
