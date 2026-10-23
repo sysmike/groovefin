@@ -177,9 +177,11 @@
 
             <!--
                 Column headers (#159): a click sorts by the column, another reverses it. The insets match the
-                rows inside their list items (16 left, 12 right). A divider below, as on the Songs page (#204).
+                rows inside their list items (16 left, 12 right). They look like the Songs page's header: a 36 px
+                row of semibold labels with a divider below (#204, #216).
             -->
             <Grid
+                Height="36"
                 Margin="52,16,48,0"
                 BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                 BorderThickness="0,0,0,1"
@@ -197,11 +199,11 @@
                     HorizontalContentAlignment="Right"
                     AutomationProperties.Name="{x:Bind ViewModel.NumberSortName, Mode=OneWay}"
                     Click="OnSortClick"
-                    Padding="0,4"
+                    Padding="0"
                     Style="{StaticResource ColumnHeaderButtonStyle}"
                     Tag="Number">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <TextBlock x:Uid="AlbumColumnNumber" Style="{StaticResource CaptionTextBlockStyle}" />
+                        <TextBlock x:Uid="AlbumColumnNumber" Style="{StaticResource BodyStrongTextBlockStyle}" />
                         <FontIcon FontSize="10" Glyph="{x:Bind ViewModel.NumberSortGlyph, Mode=OneWay}" />
                     </StackPanel>
                 </Button>
@@ -211,11 +213,11 @@
                     HorizontalContentAlignment="Left"
                     AutomationProperties.Name="{x:Bind ViewModel.TitleSortName, Mode=OneWay}"
                     Click="OnSortClick"
-                    Padding="0,4"
+                    Padding="0"
                     Style="{StaticResource ColumnHeaderButtonStyle}"
                     Tag="Title">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <TextBlock x:Uid="AlbumColumnTitle" Style="{StaticResource CaptionTextBlockStyle}" />
+                        <TextBlock x:Uid="AlbumColumnTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
                         <FontIcon FontSize="10" Glyph="{x:Bind ViewModel.TitleSortGlyph, Mode=OneWay}" />
                     </StackPanel>
                 </Button>
@@ -225,7 +227,7 @@
                     HorizontalContentAlignment="Center"
                     AutomationProperties.Name="{x:Bind ViewModel.FavouriteSortName, Mode=OneWay}"
                     Click="OnSortClick"
-                    Padding="0,4"
+                    Padding="0"
                     Style="{StaticResource ColumnHeaderButtonStyle}"
                     Tag="Favourite">
                     <StackPanel Orientation="Horizontal" Spacing="4">
@@ -239,7 +241,7 @@
                     HorizontalContentAlignment="Right"
                     AutomationProperties.Name="{x:Bind ViewModel.DurationSortName, Mode=OneWay}"
                     Click="OnSortClick"
-                    Padding="0,4"
+                    Padding="0"
                     Style="{StaticResource ColumnHeaderButtonStyle}"
                     Tag="Duration">
                     <StackPanel Orientation="Horizontal" Spacing="4">
