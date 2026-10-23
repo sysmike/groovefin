@@ -336,7 +336,7 @@ try {
         $problems = [System.Collections.Generic.List[string]]::new()
         function Add-Stop([System.Windows.Automation.AutomationElement] $focused) {
             $current = $focused.Current
-            $stop = [pscustomobject]@{ Name = $current.Name; Type = $current.ControlType.ProgrammaticName -replace '^ControlType\.', ''; Region = Get-Region $focused }
+            $stop = [pscustomobject]@{ Name = $current.Name; Type = $current.ControlType.ProgrammaticName -replace '^ControlType\.', ''; Region = Get-Region $focused; Element = $focused }
             $stops.Add($stop)
             $r = $current.BoundingRectangle
             if (-not $stop.Name) { $problems.Add("stop $($stops.Count) ($($stop.Type) in $($stop.Region)) has no name") }
@@ -371,6 +371,18 @@ try {
             if ($split) { $problems.Add("Tab visits these parts in pieces: $($split -join ', ')") }
         }
         if ($problems.Count -gt 0) { Stop-Test 'Tab order' "On '$page': $($problems -join '; ')." }
+
+        # Tabbing scrolls the page: focus its first stop after the navigation again, which brings the top of
+        # the page back into view for the steps that follow.
+        $afterNavigation = $false
+        foreach ($stop in @($stops) + @($stops)) {
+            if ($stop.Region -eq 'NavView') { $afterNavigation = $true }
+            elseif ($afterNavigation -and $stop.Region -eq 'MainContent') {
+                try { $stop.Element.SetFocus() } catch { Write-Output "Could not focus '$($stop.Name)' again: $($_.Exception.Message)" }
+                Start-Sleep -Milliseconds 500
+                break
+            }
+        }
     }
 
     # Sets the text of a text box. A page that is still being shown may not offer the value pattern yet;
