@@ -25,8 +25,13 @@
                     Stretch="UniformToFill" />
                 <Rectangle Fill="{ThemeResource AcrylicInAppFillColorDefaultBrush}" />
 
+                <!--
+                    Top, not stretched: stretched to the header, which the background makes as tall as the
+                    content was, it could grow (in a narrow window, the mini player) but never shrink (#218).
+                -->
                 <Grid
                     Padding="36,32,36,24"
+                    VerticalAlignment="Top"
                     ColumnSpacing="28"
                     SizeChanged="OnHeaderContentSizeChanged">
                     <Grid.ColumnDefinitions>
