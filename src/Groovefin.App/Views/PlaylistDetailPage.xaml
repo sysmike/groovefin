@@ -89,6 +89,7 @@
         </Grid>
 
         <ProgressRing
+            x:Uid="LoadingRing"
             Grid.RowSpan="2"
             Margin="36,48"
             HorizontalAlignment="Left"

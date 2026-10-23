@@ -1926,4 +1926,16 @@
   <data name="ArtistLastFmLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Auf Last.fm öffnen</value>
   </data>
+  <data name="LoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Wird geladen</value>
+  </data>
+  <data name="ServerConnectingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Verbindung zum Server wird hergestellt</value>
+  </data>
+  <data name="SignInProgressRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Anmeldung läuft</value>
+  </data>
+  <data name="QuickConnectWaitingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Warte auf Bestätigung</value>
+  </data>
 </root>

@@ -55,6 +55,7 @@
         </Grid>
 
         <ProgressRing
+            x:Uid="LoadingRing"
             Grid.Row="1"
             Width="24"
             Height="24"

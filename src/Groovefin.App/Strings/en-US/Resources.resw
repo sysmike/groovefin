@@ -1944,4 +1944,16 @@
   <data name="ArtistLastFmLink.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Open on Last.fm</value>
   </data>
+  <data name="LoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Loading</value>
+  </data>
+  <data name="ServerConnectingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Connecting to the server</value>
+  </data>
+  <data name="SignInProgressRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Signing in</value>
+  </data>
+  <data name="QuickConnectWaitingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Waiting for approval</value>
+  </data>
 </root>

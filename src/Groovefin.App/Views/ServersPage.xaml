@@ -49,6 +49,7 @@
                     Command="{x:Bind ViewModel.AddCommand}"
                     Style="{StaticResource AccentButtonStyle}" />
                 <ProgressRing
+                    x:Uid="ServerConnectingRing"
                     Grid.Column="2"
                     Width="20"
                     Height="20"

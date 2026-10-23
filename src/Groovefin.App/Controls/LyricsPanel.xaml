@@ -50,6 +50,7 @@
                     AutomationProperties.HeadingLevel="Level1"
                     Style="{StaticResource SubtitleTextBlockStyle}" />
                 <ProgressRing
+                    x:Uid="LoadingRing"
                     Width="16"
                     Height="16"
                     IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
