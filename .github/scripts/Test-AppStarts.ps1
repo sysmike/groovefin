@@ -488,6 +488,19 @@ try {
     $icon = ($nameBounds.Left - $linkBounds.Left) - ($linkBounds.Right - $nameBounds.Right)
     if ($icon -lt 16) { Stop-Test 'Smoke test' "The Last.fm link on the album page has no icon: its name is only $icon px further from the left edge than from the right." }
     Write-Output "The Last.fm link shows its icon ($icon px before its name)."
+
+    # The track list's header looks like the Songs page's (#216): a 36 px row (35 inside its divider)
+    # of labels in normal case, not small capitals.
+    $titleHeader = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Sort by Title'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))) "album title column header"
+    $titleLabel = $titleHeader.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))
+    $headerHeight = (Get-Bounds $titleHeader).Height
+    if ($headerHeight -lt 32 -or -not $titleLabel -or $titleLabel.Current.Name -cne 'Title') {
+        Stop-Test 'Smoke test' "The album's column header doesn't look like the Songs header: $headerHeight px high, label '$($titleLabel.Current.Name)'."
+    }
+    Write-Output "The album's column header is $headerHeight px high and says '$($titleLabel.Current.Name)'."
     Test-Accessibility 'album'
     Test-TabOrder 'album'
 
