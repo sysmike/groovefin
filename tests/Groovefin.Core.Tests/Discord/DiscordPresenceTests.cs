@@ -11,11 +11,17 @@ public sealed class DiscordPresenceTests : IDisposable
 {
     private static readonly DiscordApplication App = new("1234");
 
-    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 20, 12, 0, 0, TimeSpan.Zero));
-    private readonly FakePlaybackEngine _engine = new();
+    private readonly FakeTimeProvider _time;
+    private readonly FakePlaybackEngine _engine;
     private readonly InMemorySettingsService _settings = new();
     private readonly FakeDiscordConnection _discord = new();
     private DiscordPresence? _sut;
+
+    public DiscordPresenceTests()
+    {
+        _time = new(new DateTimeOffset(2026, 10, 20, 12, 0, 0, TimeSpan.Zero));
+        _engine = new(time: _time);
+    }
 
     public void Dispose() => _sut?.Dispose();
 
@@ -195,6 +201,26 @@ public sealed class DiscordPresenceTests : IDisposable
     }
 
     [Fact]
+    public void When_Discord_closes_the_pipe_mid_song_the_status_comes_back()
+    {
+        TurnOn();
+        Start();
+        Play();
+
+        _discord.Close();
+        _time.Advance(TimeSpan.FromSeconds(1));
+        _engine.SimulatePosition(TimeSpan.FromSeconds(1), TimeSpan.Zero);
+        var beforeDelay = _discord.Connects;
+        _time.Advance(DiscordPresence.ReconnectDelay);
+        _engine.SimulatePosition(TimeSpan.FromSeconds(1) + DiscordPresence.ReconnectDelay, TimeSpan.Zero);
+
+        beforeDelay.Should().Be(1);
+        _discord.Connects.Should().Be(2);
+        _discord.IsConnected.Should().BeTrue();
+        _discord.Sent[^1]!.Details.Should().Be("One More Time");
+    }
+
+    [Fact]
     public void When_Discord_quits_it_reconnects_later()
     {
         TurnOn();
@@ -271,6 +297,9 @@ public sealed class DiscordPresenceTests : IDisposable
         }
 
         public void Disconnect() => IsConnected = false;
+
+        /// <summary>Discord closed the pipe (the read loop noticed).</summary>
+        public void Close() => IsConnected = false;
 
         public void Dispose() => IsConnected = false;
     }
