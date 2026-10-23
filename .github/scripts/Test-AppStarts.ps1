@@ -909,18 +909,25 @@ try {
     [System.Windows.Forms.SendKeys]::SendWait('^m')
     $exitMini = Find-Button 'Back to the full window'
     Start-Sleep -Seconds 1
-    $mini = $window.Current.BoundingRectangle
-    Write-Output ("Mini player window: {0:0}x{1:0}" -f $mini.Width, $mini.Height)
-    if ([Math]::Abs($mini.Width - 420) -gt 8 -or [Math]::Abs($mini.Height - 140) -gt 8) {
-        Stop-Test 'Smoke test' ("The mini player is {0:0}x{1:0}; it should be 420x140." -f $mini.Width, $mini.Height)
+    Add-Type -Namespace Smoke -Name Window -MemberDefinition @'
+[StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
+[DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr hWnd, out Rect rect);
+[DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
+'@
+    $hwnd = [IntPtr] $window.Current.NativeWindowHandle
+    # The client area, where the layout goes (#222): the window's bounds also count Windows 11's invisible
+    # resize borders, which once took the cover's bottom margin.
+    $client = [Smoke.Window+Rect]::new()
+    $null = [Smoke.Window]::GetClientRect($hwnd, [ref] $client)
+    $miniWidth = $client.Right - $client.Left
+    $miniHeight = $client.Bottom - $client.Top
+    Write-Output ("Mini player client area: {0}x{1}" -f $miniWidth, $miniHeight)
+    if ([Math]::Abs($miniWidth - 420) -gt 2 -or [Math]::Abs($miniHeight - 140) -gt 2) {
+        Stop-Test 'Smoke test' ("The mini player's client area is {0}x{1}; it should be 420x140." -f $miniWidth, $miniHeight)
     }
     Test-Accessibility 'mini-player'
     # Resized like Windows does it (UI Automation's resize does nothing on a WinUI window): SetWindowPos goes
     # through the window's size limits, the same ones a drag on its edges meets.
-    Add-Type -Namespace Smoke -Name Window -MemberDefinition @'
-[DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
-'@
-    $hwnd = [IntPtr] $window.Current.NativeWindowHandle
     # SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE
     $null = [Smoke.Window]::SetWindowPos($hwnd, [IntPtr]::Zero, 0, 0, 520, 170, 0x16)
     Start-Sleep -Milliseconds 500

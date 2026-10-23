@@ -28,11 +28,14 @@ namespace Groovefin.App;
 /// </summary>
 internal sealed partial class MainWindow : Window
 {
-    /// <summary>The mini player's start size in effective pixels: a 32 px drag strip, then the 96 px cover with margins and the text beside it.</summary>
+    /// <summary>
+    /// The mini player's start size in effective pixels, of the client area: a 32 px drag strip, then the 96 px
+    /// cover with 12 px margins and the text beside it.
+    /// </summary>
     private const int MiniPlayerWidth = 420;
     private const int MiniPlayerHeight = 140;
 
-    /// <summary>How far the mini player can be resized (#183): from just the layout to where it still makes sense.</summary>
+    /// <summary>How far the mini player's client area can be resized (#183): from just the layout to where it still makes sense.</summary>
     private const int MiniPlayerMinWidth = 320;
     private const int MiniPlayerMinHeight = 140;
     private const int MiniPlayerMaxWidth = 720;
@@ -224,8 +227,9 @@ internal sealed partial class MainWindow : Window
         switch (wanted)
         {
             case WindowMode.MiniPlayer:
-                AppWindow.SetPresenter(CreateMiniPlayerPresenter());
-                AppWindow.Resize(Scaled(MiniPlayerWidth, MiniPlayerHeight));
+                var mini = CreateMiniPlayerPresenter();
+                AppWindow.SetPresenter(mini);
+                SizeMiniPlayer(mini);
                 break;
             case WindowMode.FullScreen:
                 AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
@@ -264,20 +268,37 @@ internal sealed partial class MainWindow : Window
     /// The mini player's window (#183): always on top, resizable between its limits, with only a close button.
     /// A normal window rather than Windows' compact overlay, which sets its own size limits.
     /// </summary>
-    private OverlappedPresenter CreateMiniPlayerPresenter()
+    private static OverlappedPresenter CreateMiniPlayerPresenter()
     {
         var presenter = OverlappedPresenter.Create();
         presenter.IsAlwaysOnTop = true;
         presenter.IsMaximizable = false;
         presenter.IsMinimizable = false;
         presenter.IsResizable = true;
+        return presenter;
+    }
+
+    /// <summary>
+    /// Gives the mini player's client area, where the layout goes, its start size and limits (#222). The window's
+    /// size also counts Windows 11's invisible resize borders, which took the cover's bottom margin, so the frame
+    /// is measured and added. Not <c>ResizeClient</c>: it adds a caption the window, with its content in the
+    /// title bar, doesn't have (23 px too high in CI).
+    /// </summary>
+    private void SizeMiniPlayer(OverlappedPresenter presenter)
+    {
+        var client = Scaled(MiniPlayerWidth, MiniPlayerHeight);
+        AppWindow.Resize(client);
+        var frameWidth = AppWindow.Size.Width - AppWindow.ClientSize.Width;
+        var frameHeight = AppWindow.Size.Height - AppWindow.ClientSize.Height;
+        AppWindow.Resize(new SizeInt32(client.Width + frameWidth, client.Height + frameHeight));
+
+        // The limits apply to the whole window too.
         var minimum = Scaled(MiniPlayerMinWidth, MiniPlayerMinHeight);
         var maximum = Scaled(MiniPlayerMaxWidth, MiniPlayerMaxHeight);
-        presenter.PreferredMinimumWidth = minimum.Width;
-        presenter.PreferredMinimumHeight = minimum.Height;
-        presenter.PreferredMaximumWidth = maximum.Width;
-        presenter.PreferredMaximumHeight = maximum.Height;
-        return presenter;
+        presenter.PreferredMinimumWidth = minimum.Width + frameWidth;
+        presenter.PreferredMinimumHeight = minimum.Height + frameHeight;
+        presenter.PreferredMaximumWidth = maximum.Width + frameWidth;
+        presenter.PreferredMaximumHeight = maximum.Height + frameHeight;
     }
 
     /// <summary>Effective pixels in the physical pixels the window APIs take.</summary>
