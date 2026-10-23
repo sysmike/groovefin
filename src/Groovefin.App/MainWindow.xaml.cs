@@ -229,10 +229,7 @@ internal sealed partial class MainWindow : Window
             case WindowMode.MiniPlayer:
                 var mini = CreateMiniPlayerPresenter();
                 AppWindow.SetPresenter(mini);
-                // The client area: the window's own size also counts Windows 11's invisible resize borders, which
-                // took the cover's bottom margin (#222).
-                AppWindow.ResizeClient(Scaled(MiniPlayerWidth, MiniPlayerHeight));
-                LimitMiniPlayer(mini);
+                SizeMiniPlayer(mini);
                 break;
             case WindowMode.FullScreen:
                 AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
@@ -281,11 +278,21 @@ internal sealed partial class MainWindow : Window
         return presenter;
     }
 
-    /// <summary>The mini player's size limits, which apply to the whole window: the client area's plus its frame (#222).</summary>
-    private void LimitMiniPlayer(OverlappedPresenter presenter)
+    /// <summary>
+    /// Gives the mini player's client area, where the layout goes, its start size and limits (#222). The window's
+    /// size also counts Windows 11's invisible resize borders, which took the cover's bottom margin, so the frame
+    /// is measured and added. Not <c>ResizeClient</c>: it adds a caption the window, with its content in the
+    /// title bar, doesn't have (23 px too high in CI).
+    /// </summary>
+    private void SizeMiniPlayer(OverlappedPresenter presenter)
     {
+        var client = Scaled(MiniPlayerWidth, MiniPlayerHeight);
+        AppWindow.Resize(client);
         var frameWidth = AppWindow.Size.Width - AppWindow.ClientSize.Width;
         var frameHeight = AppWindow.Size.Height - AppWindow.ClientSize.Height;
+        AppWindow.Resize(new SizeInt32(client.Width + frameWidth, client.Height + frameHeight));
+
+        // The limits apply to the whole window too.
         var minimum = Scaled(MiniPlayerMinWidth, MiniPlayerMinHeight);
         var maximum = Scaled(MiniPlayerMaxWidth, MiniPlayerMaxHeight);
         presenter.PreferredMinimumWidth = minimum.Width + frameWidth;
