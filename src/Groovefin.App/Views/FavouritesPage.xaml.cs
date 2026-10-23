@@ -51,12 +51,17 @@ internal sealed partial class FavouritesPage : Page
 
     private void OnSectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args) => UpdateSection();
 
-    /// <summary>Shows the selected tab's list, or its empty text once loaded.</summary>
+    /// <summary>
+    /// Shows the selected tab's list, or its empty text once loaded. The tab is the bar's selected item:
+    /// in <see cref="SelectorBar.SelectionChanged"/> the items' <c>IsSelected</c> still has the old
+    /// values (#202).
+    /// </summary>
     private void UpdateSection()
     {
-        var songs = SongsSection.IsSelected;
-        var albums = AlbumsSection.IsSelected;
-        var artists = ArtistsSection.IsSelected;
+        var selected = Sections.SelectedItem ?? SongsSection;
+        var songs = ReferenceEquals(selected, SongsSection);
+        var albums = ReferenceEquals(selected, AlbumsSection);
+        var artists = ReferenceEquals(selected, ArtistsSection);
 
         SongsList.Visibility = Show(songs && ViewModel.HasTracks);
         AlbumsView.Visibility = Show(albums && ViewModel.HasAlbums);
