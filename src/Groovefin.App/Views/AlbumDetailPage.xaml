@@ -176,10 +176,12 @@
 
             <!--
                 Column headers (#159): a click sorts by the column, another reverses it. The insets match the
-                rows inside their list items (16 left, 12 right).
+                rows inside their list items (16 left, 12 right). A divider below, as on the Songs page (#204).
             -->
             <Grid
                 Margin="52,16,48,0"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="0,0,0,1"
                 ColumnSpacing="16"
                 Visibility="{x:Bind ViewModel.HasTracks, Mode=OneWay}">
                 <Grid.ColumnDefinitions>
