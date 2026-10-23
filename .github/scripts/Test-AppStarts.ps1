@@ -595,8 +595,29 @@ try {
     Select-Navigation 'Favourites'
     $favouriteLists = [ordered] @{ Songs = 'Favourite songs'; Albums = 'Favourite albums'; Artists = 'Favourite artists' }
     $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $favouriteLists.Songs)) 'list of favourite songs'
+    function Get-SelectedFavouritesTab {
+        @($favouriteLists.Keys | Where-Object {
+                $item = $null
+                (Find-ById "Favourites$($_)Tab").TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref] $item) -and $item.Current.IsSelected
+            })
+    }
     foreach ($tab in 'Albums', 'Artists', 'Songs', 'Artists', 'Albums', 'Songs') {
-        Send-Click (Find-ById "Favourites$($tab)Tab")
+        # A click can go to closing a popup left from an earlier step instead (it then selects nothing):
+        # click again, at most three times, until the bar has the tab selected.
+        for ($click = 1; $click -le 3; $click++) {
+            Send-Click (Find-ById "Favourites$($tab)Tab")
+            $until = (Get-Date).AddSeconds(2)
+            do { Start-Sleep -Milliseconds 200; $selected = Get-SelectedFavouritesTab } while ($selected -notcontains $tab -and (Get-Date) -lt $until)
+            if ($selected -contains $tab) { break }
+            Write-Output "Click $click on the favourites' $tab tab selected: $(if ($selected) { $selected -join ', ' } else { 'nothing' })."
+        }
+        if ($selected -notcontains $tab) {
+            $r = Get-Bounds (Find-ById "Favourites$($tab)Tab")
+            Add-Type -AssemblyName WindowsBase
+            $at = [System.Windows.Automation.AutomationElement]::FromPoint([System.Windows.Point]::new($r.X + $r.Width / 2, $r.Y + $r.Height / 2))
+            Stop-Test 'Favourites' "Three clicks on the favourites' $tab tab did not select it; at its centre ($($r.X + $r.Width / 2),$($r.Y + $r.Height / 2)) is $($at.Current.ControlType.ProgrammaticName) '$($at.Current.Name)' ($($at.Current.ClassName))."
+        }
+
         $until = (Get-Date).AddSeconds(5)
         do {
             Start-Sleep -Milliseconds 300
@@ -605,12 +626,7 @@ try {
                 })
         } while (($shown.Count -ne 1 -or $shown[0] -ne $tab) -and (Get-Date) -lt $until)
         if ($shown.Count -ne 1 -or $shown[0] -ne $tab) {
-            # Which tab the bar itself has selected tells a missed click from a wrong list.
-            $selected = @($favouriteLists.Keys | Where-Object {
-                    $item = $null
-                    (Find-ById "Favourites$($_)Tab").TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref] $item) -and $item.Current.IsSelected
-                })
-            Stop-Test 'Favourites' "The $tab tab of the favourites shows: $(if ($shown) { $shown -join ', ' } else { 'no list' }); selected: $(if ($selected) { $selected -join ', ' } else { 'none' })."
+            Stop-Test 'Favourites' "The $tab tab of the favourites shows: $(if ($shown) { $shown -join ', ' } else { 'no list' })."
         }
     }
     Write-Output 'Each favourites tab shows its own list.'
