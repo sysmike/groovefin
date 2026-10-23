@@ -183,7 +183,7 @@
             <!--
                 Column headers (#159): a click sorts by the column, another reverses it. The insets match the
                 rows inside their list items (16 left, 12 right). They look like the Songs page's header: a 36 px
-                row of semibold labels with a divider below (#204, #216).
+                row of semibold labels with a divider below (#204, #216), and a thin line after each column (#220).
             -->
             <Grid
                 Height="36"
@@ -192,12 +192,25 @@
                 BorderThickness="0,0,0,1"
                 ColumnSpacing="16"
                 Visibility="{x:Bind ViewModel.HasTracks, Mode=OneWay}">
+                <Grid.Resources>
+                    <!--  The Songs page's column grips, without the dragging: the album's columns are fixed. In the middle of the gap after the column.  -->
+                    <Style x:Key="ColumnDividerStyle" TargetType="Rectangle">
+                        <Setter Property="Width" Value="1" />
+                        <Setter Property="Margin" Value="0,8,-8,8" />
+                        <Setter Property="HorizontalAlignment" Value="Right" />
+                        <Setter Property="Fill" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                    </Style>
+                </Grid.Resources>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="32" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="32" />
                     <ColumnDefinition Width="56" />
                 </Grid.ColumnDefinitions>
+                <Rectangle Grid.Column="0" Style="{StaticResource ColumnDividerStyle}" />
+                <Rectangle Grid.Column="1" Style="{StaticResource ColumnDividerStyle}" />
+                <Rectangle Grid.Column="2" Style="{StaticResource ColumnDividerStyle}" />
+                <Rectangle Grid.Column="3" Style="{StaticResource ColumnDividerStyle}" />
                 <Button
                     Grid.Column="0"
                     HorizontalAlignment="Stretch"
