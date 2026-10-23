@@ -24,6 +24,9 @@ public partial class App : Application
     /// <summary>How long closing the window waits for the last playback reports.</summary>
     private static readonly TimeSpan ReportFlushTimeout = TimeSpan.FromSeconds(2);
 
+    /// <summary>How long a shutdown step may take before closing goes on without it (#206).</summary>
+    private static readonly TimeSpan ShutdownStepTimeout = TimeSpan.FromSeconds(3);
+
     private IHost? _host;
     private ILogger<App>? _logger;
     private bool _windowShown;
@@ -146,22 +149,79 @@ public partial class App : Application
             LogStopping(_logger);
         }
 
-        // Report the playing track as stopped, then give the reports a moment to reach the server.
-        // Saves and reports complete on the thread pool, so blocking the UI thread here cannot deadlock.
-        if (_host is not null)
+        // Save the session (with the position of the playing track), stop playback, report it as stopped and
+        // give the reports a moment to reach the server. Each step runs on the thread pool, where nothing waits
+        // for this blocked UI thread, and gets a time limit: one that hangs (in Media Foundation, or awaiting
+        // the UI thread) is logged and closing goes on, so the app always exits (#206).
+        if (_host is { } services)
         {
-            // Before stopping: the position of the playing track is saved too.
-            _host.Services.GetRequiredService<SessionPersistence>().SaveAsync().Wait(ReportFlushTimeout);
-            _host.Services.GetRequiredService<IPlaybackEngine>().Stop();
-            _host.Services.GetRequiredService<PlaybackReporting>().FlushAsync().Wait(ReportFlushTimeout);
+            RunShutdownStep("save the session", () => services.Services.GetRequiredService<SessionPersistence>().SaveAsync(), ReportFlushTimeout);
+            RunShutdownStep("stop playback", () => services.Services.GetRequiredService<IPlaybackEngine>().Stop());
+            RunShutdownStep("report playback", () => services.Services.GetRequiredService<PlaybackReporting>().FlushAsync(), ReportFlushTimeout);
         }
 
         // From here on, errors are only logged: the handlers must not ask a host that is being disposed (#145).
         var host = _host;
         _host = null;
-        host?.Services.GetRequiredService<ISettingsService>().FlushAsync().GetAwaiter().GetResult();
-        host?.StopAsync().GetAwaiter().GetResult();
-        host?.Dispose();
+        if (host is not null)
+        {
+            RunShutdownStep("save the settings", () => host.Services.GetRequiredService<ISettingsService>().FlushAsync());
+            RunShutdownStep("stop the services", () => host.StopAsync());
+
+            // The media players first, in a step of their own (disposing them twice is safe). The rest stays on
+            // this thread: the tray icon, the taskbar buttons and the theme belong to it.
+            if (host.Services.GetRequiredService<IPlaybackEngine>() is IDisposable engine)
+            {
+                RunShutdownStep("dispose playback", engine.Dispose);
+            }
+
+            // Last: it disposes the logger too. A hang after this line is in here.
+            if (_logger is not null)
+            {
+                LogShutdownDisposing(_logger);
+            }
+
+            host.Dispose();
+        }
+    }
+
+    private void RunShutdownStep(string name, Action step, TimeSpan? timeout = null) =>
+        RunShutdownStep(name, () =>
+        {
+            step();
+            return Task.CompletedTask;
+        }, timeout);
+
+    /// <summary>
+    /// Runs a shutdown step on the thread pool and waits for it, at most <paramref name="timeout"/>
+    /// (<see cref="ShutdownStepTimeout"/>). Logs how long it took, or that it failed or ran over; either way
+    /// closing goes on.
+    /// </summary>
+    private void RunShutdownStep(string name, Func<Task> step, TimeSpan? timeout = null)
+    {
+        var limit = timeout ?? ShutdownStepTimeout;
+        var watch = Stopwatch.StartNew();
+        try
+        {
+            if (Task.Run(step).Wait(limit))
+            {
+                if (_logger is not null)
+                {
+                    LogShutdownStep(_logger, name, watch.ElapsedMilliseconds);
+                }
+            }
+            else if (_logger is not null)
+            {
+                LogShutdownStepTimedOut(_logger, name, (long)limit.TotalMilliseconds);
+            }
+        }
+        catch (AggregateException ex)
+        {
+            if (_logger is not null)
+            {
+                LogShutdownStepFailed(_logger, ex.InnerException ?? ex, name);
+            }
+        }
     }
 
     /// <summary>Every exception before the logger exists, handled or not: the last ones explain a start-up crash.</summary>
@@ -262,6 +322,18 @@ public partial class App : Application
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Groovefin is shutting down")]
     private static partial void LogStopping(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Shutdown: {Step} took {ElapsedMs} ms")]
+    private static partial void LogShutdownStep(ILogger logger, string step, long elapsedMs);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Shutdown: disposing the services")]
+    private static partial void LogShutdownDisposing(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Shutdown: {Step} did not finish within {TimeoutMs} ms; closing goes on without it")]
+    private static partial void LogShutdownStepTimedOut(ILogger logger, string step, long timeoutMs);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Shutdown: {Step} failed")]
+    private static partial void LogShutdownStepFailed(ILogger logger, Exception exception, string step);
 
     [LoggerMessage(Level = LogLevel.Critical, Message = "Unhandled {Source} exception: {Message}")]
     private static partial void LogUnhandled(ILogger logger, Exception exception, string source, string message);
