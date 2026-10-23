@@ -644,6 +644,29 @@ try {
     Write-Output 'Each favourites tab shows its own list.'
     Test-Accessibility 'favourites'
 
+    # The queue, the lyrics and the full-screen player, opened and closed with their shortcuts, scanned
+    # while they show (#51).
+    function Test-Shortcut([string] $keys, [System.Windows.Automation.Condition] $shown, [string] $what, [string] $close) {
+        Add-Type -AssemblyName System.Windows.Forms
+        [System.Windows.Forms.SendKeys]::SendWait($keys)
+        $null = Find-Element $shown $what
+        Start-Sleep -Seconds 1
+        Test-Accessibility ($what -replace ' ', '-')
+        [System.Windows.Forms.SendKeys]::SendWait($close)
+        $until = (Get-Date).AddSeconds(5)
+        while ($window.FindFirst($scope::Descendants, $shown) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 300 }
+        if ($window.FindFirst($scope::Descendants, $shown)) { Stop-Test 'Smoke test' "The $what did not close again." }
+    }
+    Test-Shortcut '^q' ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Up next')) 'queue' '^q'
+    Test-Shortcut '^l' ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Lyrics'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))) 'lyrics' '^l'
+    Test-Shortcut '{F11}' ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Exit full screen'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))) 'full screen player' '{F11}'
+    Test-Running 'after the queue, the lyrics and the full-screen player'
+    Write-Output 'The queue, the lyrics and the full-screen player open and close with their shortcuts.'
+
     # Settings, with the equalizer's sliders.
     Select-Navigation 'Settings'
     $equalizerCard = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) "equalizer settings"
@@ -727,6 +750,7 @@ try {
     Start-Sleep -Milliseconds 500
     [System.Windows.Forms.SendKeys]::SendWait('^%n')
     $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Ctrl+Alt+N')) 'the recorded keys in the dialog'
+    Test-Accessibility 'shortcut-dialog'
     [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
     $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Next track, Ctrl+Alt+N')) 'the changed shortcut'
     (Find-Button 'Reset all').GetCurrentPattern($invoke).Invoke()
@@ -744,6 +768,7 @@ try {
     if ([Math]::Abs($mini.Width - 420) -gt 8 -or [Math]::Abs($mini.Height - 140) -gt 8) {
         Stop-Test 'Smoke test' ("The mini player is {0:0}x{1:0}; it should be 420x140." -f $mini.Width, $mini.Height)
     }
+    Test-Accessibility 'mini-player'
     # Resized like Windows does it (UI Automation's resize does nothing on a WinUI window): SetWindowPos goes
     # through the window's size limits, the same ones a drag on its edges meets.
     Add-Type -Namespace Smoke -Name Window -MemberDefinition @'
