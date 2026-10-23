@@ -53,25 +53,31 @@ public sealed partial class DiscordPresence : IDisposable
         _ = UpdateAsync();
     }
 
-    /// <summary>Gets what Discord should show now, or <see langword="null"/> for nothing. Call on the UI thread.</summary>
+    /// <summary>
+    /// Gets what Discord should show now, or <see langword="null"/> for nothing. Only while a song plays: paused
+    /// is also where the queue ends and where a restored session waits (#213). Opening and buffering keep the
+    /// status while one is shown (the next track, a seek) but do not start one: a restored session opens too,
+    /// then stays paused. Call on the UI thread.
+    /// </summary>
     public DiscordActivity? Desired()
     {
-        if (!_application.IsSet || !_settings.Current.Playback.DiscordPresence || _engine.Current is not { } source || _engine.State == PlaybackState.Idle)
+        var playing = _engine.State switch
+        {
+            PlaybackState.Playing => true,
+            PlaybackState.Opening or PlaybackState.Buffering => Sent is not null,
+            _ => false,
+        };
+        if (!playing || !_application.IsSet || !_settings.Current.Playback.DiscordPresence || _engine.Current is not { } source)
         {
             return null;
         }
 
         var track = source.Track;
         var artists = track.Artists.Count > 0 ? string.Join(", ", track.Artists.Select(a => a.Name)) : track.AlbumArtist;
-        DateTimeOffset? start = null;
-        DateTimeOffset? end = null;
-        if (_engine.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Opening)
-        {
-            // Discord counts the progress itself from these; while paused it shows none.
-            start = _time.GetUtcNow() - _engine.Position;
-            end = _engine.Duration > TimeSpan.Zero ? start + _engine.Duration : null;
-        }
 
+        // Discord counts the progress itself from these.
+        var start = _time.GetUtcNow() - _engine.Position;
+        DateTimeOffset? end = _engine.Duration > TimeSpan.Zero ? start + _engine.Duration : null;
         return new DiscordActivity(track.Name, artists, track.AlbumName, start, end);
     }
 
@@ -154,7 +160,7 @@ public sealed partial class DiscordPresence : IDisposable
             SetSent(activity);
             if (activity is null)
             {
-                // Turned off or stopped: let go of Discord until there is something to show again.
+                // Turned off, paused or stopped: let go of Discord until there is something to show again.
                 _connection.Disconnect();
             }
         }
@@ -187,6 +193,18 @@ public sealed partial class DiscordPresence : IDisposable
         }
     }
 
+    /// <summary>Gets what Discord shows now, as far as is known; set from sends on the thread pool.</summary>
+    private DiscordActivity? Sent
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _sent;
+            }
+        }
+    }
+
     private void SetSent(DiscordActivity? activity)
     {
         lock (_gate)
@@ -209,12 +227,7 @@ public sealed partial class DiscordPresence : IDisposable
     /// <summary>Several times a second while playing: only a seek (or a failed earlier send) needs a new message.</summary>
     private void OnPositionChanged(object? sender, EventArgs e)
     {
-        DiscordActivity? sent;
-        lock (_gate)
-        {
-            sent = _sent;
-        }
-
+        var sent = Sent;
         var wanted = Desired();
         if (wanted is not null && sent is not null && OnlyDrifted(wanted, sent))
         {
