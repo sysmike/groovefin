@@ -32,18 +32,25 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid
+    <!--  A landmark (#51): Narrator can jump to the player. The x:Uid names it.  -->
+    <controls:LandmarkGrid
         x:Uid="NowPlayingBar"
         Padding="16,8"
         Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay}"
         Background="{ThemeResource LayerFillColorDefaultBrush}"
         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+        AutomationProperties.AutomationId="NowPlaying"
+        AutomationProperties.LandmarkType="Custom"
         BorderThickness="0,1,0,0"
         ColumnSpacing="16">
+        <!--
+            The right column is as wide as its buttons and the volume slider (6 × 36 + 100 + spacing): narrower,
+            the first buttons slid under the middle column and could be tabbed to but not seen (#51).
+        -->
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MinWidth="200" />
             <ColumnDefinition Width="2*" MaxWidth="720" />
-            <ColumnDefinition Width="*" MinWidth="200" />
+            <ColumnDefinition Width="*" MinWidth="340" />
         </Grid.ColumnDefinitions>
 
         <!--  Cover, title (opens the album) and artists (links).  -->
@@ -247,5 +254,5 @@
                 StepFrequency="1"
                 Value="{x:Bind ViewModel.Volume, Mode=TwoWay}" />
         </StackPanel>
-    </Grid>
+    </controls:LandmarkGrid>
 </UserControl>

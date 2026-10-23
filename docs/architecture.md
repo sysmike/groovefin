@@ -224,6 +224,11 @@ Media Foundation creates them with `RoActivateInstance`. So the equalizer runs a
   Keys are `Area_Name` (code) or `XUid.Property` (XAML). Numbers and dates are formatted with
   `CultureInfo.CurrentCulture`.
 - Every custom control sets `AutomationProperties`.
+- Loading rings are named for what they wait for (`LoadingRing`, `SignInProgressRing`, …); decorative
+  elements such as images next to their name and `SiteIcon` use `AccessibilityView="Raw"`. The smoke test
+  checks every page with the Axe.Windows rules and walks the tab order (see docs/ci.md).
+- The page and the now playing bar are landmarks (`LandmarkGrid`: `Main`, and `Custom` "Player"), so Narrator
+  can jump between them; a plain `Grid` has no automation element and would drop their names.
 - Access keys (Alt) for the navigation, the search box and the now playing bar come from `.resw`
   (`XUid.AccessKey`), because the letters follow the localized labels. They share the window's
   scope, so a letter is used once per language; `ResourceFileTests` checks it.

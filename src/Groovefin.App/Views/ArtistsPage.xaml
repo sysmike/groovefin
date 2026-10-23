@@ -92,6 +92,7 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Style="{StaticResource BodyTextBlockStyle}" />
                 <ProgressRing
+                    x:Uid="LoadingRing"
                     Width="16"
                     Height="16"
                     VerticalAlignment="Center"

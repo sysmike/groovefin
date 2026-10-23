@@ -50,6 +50,7 @@
                     Command="{x:Bind ViewModel.SignInCommand}"
                     Style="{StaticResource AccentButtonStyle}" />
                 <ProgressRing
+                    x:Uid="SignInProgressRing"
                     Width="20"
                     Height="20"
                     IsActive="{x:Bind ViewModel.SignInCommand.IsRunning, Mode=OneWay}" />
@@ -79,6 +80,7 @@
                         Text="{x:Bind ViewModel.QuickConnectCode, Mode=OneWay}" />
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <ProgressRing
+                            x:Uid="QuickConnectWaitingRing"
                             Width="20"
                             Height="20"
                             IsActive="{x:Bind ViewModel.IsWaitingForQuickConnect, Mode=OneWay}" />
