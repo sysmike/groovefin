@@ -1510,7 +1510,7 @@
     <value>Light or dark, or the same as Windows.</value>
   </data>
   <data name="SettingsTaskbarProgressCard.Header" xml:space="preserve">
-    <value>Playback progress on the taskbar button</value>
+    <value>Playback progress in the taskbar</value>
   </data>
   <data name="SettingsTaskbarProgressCard.Description" xml:space="preserve">
     <value>The taskbar button fills up as the track plays.</value>

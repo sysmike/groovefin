@@ -23,7 +23,14 @@ param(
     [int] $Port = 8096,
 
     # Where screenshots of checked pages go (uploaded by CI); none when empty.
-    [string] $ScreenshotDir = ''
+    [string] $ScreenshotDir = '',
+
+    # Groovefin.AccessibilityScan.exe (tools/): scans each page with the Axe.Windows rules, the automated
+    # checks of Accessibility Insights FastPass (#51). No scans when empty.
+    [string] $AccessibilityScanner = '',
+
+    # Where the scans write .a11ytest files for pages with errors (uploaded by CI).
+    [string] $AccessibilityDir = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -297,6 +304,19 @@ try {
         }
     }
 
+    # Scans the window with the Axe.Windows rules (#51) and prints what fails. The test goes on; it fails
+    # at the end if any page had errors, so one run lists them all.
+    $accessibilityFailures = [System.Collections.Generic.List[string]]::new()
+    function Test-Accessibility([string] $scanId) {
+        if (-not $AccessibilityScanner) { return }
+        $output = & $AccessibilityScanner $process.Id $scanId $AccessibilityDir 2>&1
+        $code = $LASTEXITCODE
+        $output | ForEach-Object { Write-Output "  $_" }
+        if ($code -eq 1) { $accessibilityFailures.Add($scanId) }
+        elseif ($code -ne 0) { Stop-Test 'Accessibility' "The accessibility scan of '$scanId' did not run (exit code $code)." }
+        else { Write-Output "No accessibility errors on '$scanId'." }
+    }
+
     # Sets the text of a text box. A page that is still being shown may not offer the value pattern yet;
     # if it never does, the text is typed into the focused box.
     function Set-Text([System.Windows.Automation.AutomationElement] $element, [string] $text) {
@@ -316,11 +336,14 @@ try {
     }
 
     # First run: add the server, which opens the sign-in page.
+    $null = Find-ById 'AddressBox'
+    Test-Accessibility 'servers'
     Set-Text (Find-ById 'AddressBox') "http://127.0.0.1:$Port"
     (Find-Button 'Add server').GetCurrentPattern($invoke).Invoke()
     $userName = Find-ById 'UserNameBox'
     Test-Running 'while adding a server'
     Write-Output 'Added the fake server.'
+    Test-Accessibility 'sign-in'
 
     # The fake server accepts any user; the password may be empty.
     Set-Text $userName 'smoke'
@@ -329,6 +352,7 @@ try {
     Start-Sleep -Seconds 5
     Test-Running 'on the home page after signing in'
     Write-Output 'Signed in; the home page shows its lists.'
+    Test-Accessibility 'home'
 
     # Folders: its breadcrumb once crashed the app (#144).
     $folders = Find-Element ([System.Windows.Automation.AndCondition]::new(
@@ -341,6 +365,7 @@ try {
     Start-Sleep -Seconds 2
     Test-Running 'on the folders page'
     Write-Output 'The folders page opened.'
+    Test-Accessibility 'folders'
 
     # Songs: its header buttons once could not find their style and the page did not open (#171).
     Select-Navigation 'Songs'
@@ -348,6 +373,7 @@ try {
     Start-Sleep -Seconds 2
     Test-Running 'on the songs page'
     Write-Output 'The songs page opened.'
+    Test-Accessibility 'songs'
 
     # Playback (#167): an album from Home, played through the equalizer effect. The position must move,
     # and no track may fail, nor may the engine have to take the effect out to play it.
@@ -391,6 +417,7 @@ try {
     $icon = ($nameBounds.Left - $linkBounds.Left) - ($linkBounds.Right - $nameBounds.Right)
     if ($icon -lt 16) { Stop-Test 'Smoke test' "The Last.fm link on the album page has no icon: its name is only $icon px further from the left edge than from the right." }
     Write-Output "The Last.fm link shows its icon ($icon px before its name)."
+    Test-Accessibility 'album'
 
     # The album's artist link opens the artist page (#172).
     $artistLink = Find-Element ([System.Windows.Automation.AndCondition]::new(
@@ -400,6 +427,7 @@ try {
     $null = Find-ById 'ArtistPlayButton'
     Test-Running 'on the artist page'
     Write-Output "The album's artist link opened the artist page."
+    Test-Accessibility 'artist'
 
     # Back and forward (#176): the mouse's back button over the artist page's Play button (a control that
     # handles presses itself), its forward button, then Alt+Left.
@@ -458,6 +486,7 @@ try {
 
     Select-Navigation 'Albums'
     Start-Sleep -Seconds 2
+    Test-Accessibility 'albums'
     $album2 = 'parentId=a{31}2'
     $before = Get-RequestCount $album2
     Send-Click (Find-Button 'Play Album 2')
@@ -526,6 +555,7 @@ try {
     # A genre from the play button on its card (#191).
     Select-Navigation 'Genres'
     Start-Sleep -Seconds 2
+    Test-Accessibility 'genres'
     $genreTracks = 'genreIds=e{32}'
     $before = Get-RequestCount $genreTracks
     Send-Click (Find-Button 'Play Genre')
@@ -537,6 +567,7 @@ try {
 
     Select-Navigation 'Artists'
     Start-Sleep -Seconds 2
+    Test-Accessibility 'artists'
     $playArtist = Find-Button 'Play Artist'
     $artistTile = Find-Element ([System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Artist'),
@@ -611,6 +642,30 @@ try {
         }
     }
     Write-Output 'Each favourites tab shows its own list.'
+    Test-Accessibility 'favourites'
+
+    # The queue, the lyrics and the full-screen player, opened and closed with their shortcuts, scanned
+    # while they show (#51).
+    function Test-Shortcut([string] $keys, [System.Windows.Automation.Condition] $shown, [string] $what, [string] $close) {
+        Add-Type -AssemblyName System.Windows.Forms
+        [System.Windows.Forms.SendKeys]::SendWait($keys)
+        $null = Find-Element $shown $what
+        Start-Sleep -Seconds 1
+        Test-Accessibility ($what -replace ' ', '-')
+        [System.Windows.Forms.SendKeys]::SendWait($close)
+        $until = (Get-Date).AddSeconds(5)
+        while ($window.FindFirst($scope::Descendants, $shown) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 300 }
+        if ($window.FindFirst($scope::Descendants, $shown)) { Stop-Test 'Smoke test' "The $what did not close again." }
+    }
+    Test-Shortcut '^q' ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Up next')) 'queue' '^q'
+    Test-Shortcut '^l' ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Lyrics'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))) 'lyrics' '^l'
+    Test-Shortcut '{F11}' ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Exit full screen'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))) 'full screen player' '{F11}'
+    Test-Running 'after the queue, the lyrics and the full-screen player'
+    Write-Output 'The queue, the lyrics and the full-screen player open and close with their shortcuts.'
 
     # Settings, with the equalizer's sliders.
     Select-Navigation 'Settings'
@@ -618,6 +673,7 @@ try {
     Start-Sleep -Seconds 2
     Test-Running 'on the settings page'
     Write-Output 'The settings page opened with the equalizer.'
+    Test-Accessibility 'settings'
 
     # The band sliders: expanded and scrolled into view, each must have a visible size (#165).
     # The header text is named "Equalizer" too: expand the element that can be expanded.
@@ -694,6 +750,7 @@ try {
     Start-Sleep -Milliseconds 500
     [System.Windows.Forms.SendKeys]::SendWait('^%n')
     $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Ctrl+Alt+N')) 'the recorded keys in the dialog'
+    Test-Accessibility 'shortcut-dialog'
     [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
     $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Next track, Ctrl+Alt+N')) 'the changed shortcut'
     (Find-Button 'Reset all').GetCurrentPattern($invoke).Invoke()
@@ -711,6 +768,7 @@ try {
     if ([Math]::Abs($mini.Width - 420) -gt 8 -or [Math]::Abs($mini.Height - 140) -gt 8) {
         Stop-Test 'Smoke test' ("The mini player is {0:0}x{1:0}; it should be 420x140." -f $mini.Width, $mini.Height)
     }
+    Test-Accessibility 'mini-player'
     # Resized like Windows does it (UI Automation's resize does nothing on a WinUI window): SetWindowPos goes
     # through the window's size limits, the same ones a drag on its edges meets.
     Add-Type -Namespace Smoke -Name Window -MemberDefinition @'
@@ -743,6 +801,10 @@ try {
         Stop-Test 'Smoke test' "Groovefin exited with code $($process.ExitCode) or logged an unhandled exception while closing."
     }
     Write-Output 'Closing the window shut Groovefin down cleanly.'
+
+    if ($accessibilityFailures.Count -gt 0) {
+        Stop-Test 'Accessibility' "The accessibility scan found errors on: $($accessibilityFailures -join ', '). The errors are listed after each scan above."
+    }
 }
 catch {
     Stop-Test 'Smoke test' "The test failed: $($_.Exception.Message)"

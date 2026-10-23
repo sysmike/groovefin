@@ -1492,7 +1492,7 @@
     <value>Hell oder dunkel, oder wie in Windows.</value>
   </data>
   <data name="SettingsTaskbarProgressCard.Header" xml:space="preserve">
-    <value>Wiedergabefortschritt auf der Taskleistenschaltfläche</value>
+    <value>Wiedergabefortschritt in der Taskleiste</value>
   </data>
   <data name="SettingsTaskbarProgressCard.Description" xml:space="preserve">
     <value>Die Taskleistenschaltfläche füllt sich, während der Titel läuft.</value>
