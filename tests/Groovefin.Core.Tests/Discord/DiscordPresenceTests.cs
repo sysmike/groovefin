@@ -70,16 +70,63 @@ public sealed class DiscordPresenceTests : IDisposable
     }
 
     [Fact]
-    public void Paused_it_shows_the_track_without_progress()
+    public void Pausing_clears_the_status_and_playing_again_shows_it()
     {
         TurnOn();
         Start();
         Play();
 
         _engine.SimulateState(PlaybackState.Paused);
+        var paused = _discord.Sent[^1];
+        var connectedWhilePaused = _discord.IsConnected;
+        _engine.SimulateState(PlaybackState.Playing);
 
-        _discord.Sent[^1]!.Start.Should().BeNull();
+        paused.Should().BeNull();
+        connectedWhilePaused.Should().BeFalse();
         _discord.Sent[^1]!.Details.Should().Be("One More Time");
+        _discord.Sent[^1]!.Start.Should().Be(_time.GetUtcNow());
+    }
+
+    [Fact]
+    public void A_session_restored_paused_shows_nothing_until_it_plays()
+    {
+        TurnOn();
+        Start();
+
+        // "Resume where I left off" opens the track without playing it.
+        _engine.Load(Source(), autoPlay: false);
+        _engine.SimulateState(PlaybackState.Opening);
+        _engine.SimulateState(PlaybackState.Paused);
+
+        _discord.Connects.Should().Be(0);
+        _discord.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Opening_the_next_track_keeps_the_status()
+    {
+        TurnOn();
+        Start();
+        Play();
+
+        _engine.Load(Source("Aerodynamic"));
+        _engine.SimulateState(PlaybackState.Opening);
+
+        _discord.Sent[^1]!.Details.Should().Be("Aerodynamic");
+    }
+
+    [Fact]
+    public void The_queue_ending_clears_the_status()
+    {
+        TurnOn();
+        Start();
+        Play();
+
+        // The player stays on the last track, paused.
+        _engine.SimulatePosition(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
+        _engine.SimulateState(PlaybackState.Paused);
+
+        _discord.Sent[^1].Should().BeNull();
     }
 
     [Fact]
