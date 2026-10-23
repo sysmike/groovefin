@@ -232,6 +232,11 @@ Media Foundation creates them with `RoActivateInstance`. So the equalizer runs a
 - Access keys (Alt) for the navigation, the search box and the now playing bar come from `.resw`
   (`XUid.AccessKey`), because the letters follow the localized labels. They share the window's
   scope, so a letter is used once per language; `ResourceFileTests` checks it.
+- Pages have no access keys of their own (decided in #51). With one window-wide scope, every page's
+  buttons would compete for the same 26 letters with the navigation and the bar, and need two-letter
+  keys or nested scopes that are harder to learn. Page controls are reached with Tab instead, in
+  reading order (the smoke test walks it), and the common actions have keyboard shortcuts (Settings →
+  Keyboard shortcuts).
 - Animations are subtle and native (connected animation for album covers) and are skipped when the
   Windows "Animation effects" setting is off.
 
