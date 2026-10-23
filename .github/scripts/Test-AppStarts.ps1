@@ -870,7 +870,20 @@ try {
     # Close the window like a user: the app must shut down without errors and exit with code 0 (#145).
     $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
     if (-not $process.WaitForExit(20000)) {
+        # Where it hangs (#206): the managed stacks of every thread, then the app log (with each shutdown step).
+        Write-Output '--- Managed stacks of the running app ---'
+        try {
+            dotnet tool install --global dotnet-stack --version 10.0.745401 2>&1 | Out-Null
+            & (Join-Path $env:USERPROFILE '.dotnet\tools\dotnet-stack.exe') report --process-id $process.Id 2>&1 | ForEach-Object { Write-Output "  $_" }
+        }
+        catch { Write-Output "No stacks: $($_.Exception.Message)" }
         Stop-Test 'Smoke test' 'Groovefin was still running 20 seconds after its window was closed.'
+    }
+    # How long each shutdown step took. One that ran over its time limit is skipped by the app (#206): say so
+    # without failing.
+    Select-String -Path (Get-AppLog).FullName -Pattern 'Shutdown: ' | ForEach-Object {
+        if ($_.Line -match 'did not finish within|failed') { Write-Output "::warning title=Slow shutdown::$($_.Line)" }
+        else { Write-Output "  $($_.Line)" }
     }
     $unhandled = Select-String -Path (Get-AppLog).FullName -Pattern 'Unhandled' -SimpleMatch
     if ($unhandled -or $process.ExitCode -ne 0) {
