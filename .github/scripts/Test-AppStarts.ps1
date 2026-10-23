@@ -372,13 +372,15 @@ try {
         }
         if ($problems.Count -gt 0) { Stop-Test 'Tab order' "On '$page': $($problems -join '; ')." }
 
-        # Tabbing scrolls the page: focus its first stop after the navigation again, which brings the top of
-        # the page back into view for the steps that follow.
+        # Tabbing scrolls the page. Focus is back on the first stop: tab on to the page's first stop after the
+        # navigation, which brings the top of the page back into view for the steps that follow (focus set
+        # through UI Automation does not scroll).
         $afterNavigation = $false
-        foreach ($stop in @($stops) + @($stops)) {
+        for ($k = 0; $k -lt 2 * $stops.Count; $k++) {
+            $stop = $stops[$k % $stops.Count]
             if ($stop.Region -eq 'NavView') { $afterNavigation = $true }
             elseif ($afterNavigation -and $stop.Region -eq 'MainContent') {
-                try { $stop.Element.SetFocus() } catch { Write-Output "Could not focus '$($stop.Name)' again: $($_.Exception.Message)" }
+                for ($n = 0; $n -lt $k % $stops.Count; $n++) { [System.Windows.Forms.SendKeys]::SendWait('{TAB}'); Start-Sleep -Milliseconds 60 }
                 Start-Sleep -Milliseconds 500
                 break
             }
