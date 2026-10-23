@@ -605,7 +605,12 @@ try {
                 })
         } while (($shown.Count -ne 1 -or $shown[0] -ne $tab) -and (Get-Date) -lt $until)
         if ($shown.Count -ne 1 -or $shown[0] -ne $tab) {
-            Stop-Test 'Favourites' "The $tab tab of the favourites shows: $(if ($shown) { $shown -join ', ' } else { 'no list' })."
+            # Which tab the bar itself has selected tells a missed click from a wrong list.
+            $selected = @($favouriteLists.Keys | Where-Object {
+                    $item = $null
+                    (Find-ById "Favourites$($_)Tab").TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref] $item) -and $item.Current.IsSelected
+                })
+            Stop-Test 'Favourites' "The $tab tab of the favourites shows: $(if ($shown) { $shown -join ', ' } else { 'no list' }); selected: $(if ($selected) { $selected -join ', ' } else { 'none' })."
         }
     }
     Write-Output 'Each favourites tab shows its own list.'
