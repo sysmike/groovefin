@@ -590,6 +590,28 @@ try {
     Move-Pointer ([int] ($tile.X + 150)) ([int] $tile.Y - 40)
     Write-Output 'The cover buttons play an album, a genre and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
 
+    # Favourites (#202): each tab shows its own list, also after other tabs. The fake server has a favourite
+    # of each kind; a hidden list is not in the automation tree. The tabs are selected through UI Automation:
+    # on the runner a mouse click on a SelectorBarItem selects nothing (three clicks in a row did not). The
+    # bar raises SelectionChanged the same way for both.
+    Select-Navigation 'Favourites'
+    $favouriteLists = [ordered] @{ Songs = 'Favourite songs'; Albums = 'Favourite albums'; Artists = 'Favourite artists' }
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $favouriteLists.Songs)) 'list of favourite songs'
+    foreach ($tab in 'Albums', 'Artists', 'Songs', 'Artists', 'Albums', 'Songs') {
+        (Find-ById "Favourites$($tab)Tab").GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
+        $until = (Get-Date).AddSeconds(5)
+        do {
+            Start-Sleep -Milliseconds 300
+            $shown = @($favouriteLists.Keys | Where-Object {
+                    $window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $favouriteLists[$_]))
+                })
+        } while (($shown.Count -ne 1 -or $shown[0] -ne $tab) -and (Get-Date) -lt $until)
+        if ($shown.Count -ne 1 -or $shown[0] -ne $tab) {
+            Stop-Test 'Favourites' "The $tab tab of the favourites shows: $(if ($shown) { $shown -join ', ' } else { 'no list' })."
+        }
+    }
+    Write-Output 'Each favourites tab shows its own list.'
+
     # Settings, with the equalizer's sliders.
     Select-Navigation 'Settings'
     $equalizerCard = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) "equalizer settings"
