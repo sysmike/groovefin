@@ -5,6 +5,7 @@ using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
+using Groovefin.Core.Privacy;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
 using Groovefin.Core.Shortcuts;
@@ -62,6 +63,7 @@ internal sealed partial class MainWindow : Window
         SearchSuggestionsViewModel suggestions,
         LyricsViewModel lyrics,
         NowPlayingViewModel nowPlaying,
+        PrivacyMode privacy,
         AddToPlaylist addToPlaylist,
         TrackDrag trackDrag,
         IStringResources strings,
@@ -77,6 +79,7 @@ internal sealed partial class MainWindow : Window
         Queue = queue;
         Lyrics = lyrics;
         Player = nowPlaying;
+        Privacy = privacy;
         Suggestions = suggestions;
         InitializeComponent();
 
@@ -133,7 +136,7 @@ internal sealed partial class MainWindow : Window
         };
 
         // The optional notification area icon follows its setting.
-        _tray = new NotificationAreaIcon(Player, strings, Title, ShowFromTray, Close);
+        _tray = new NotificationAreaIcon(Player, Privacy, strings, Title, ShowFromTray, Close);
         _tray.SetVisible(settings.Current.Appearance.ShowTrayIcon);
         settings.Changed += OnSettingsChanged;
         Closed += (_, _) =>
@@ -171,6 +174,9 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>Gets the now playing state, also shown by the full-screen player. (The bar itself is named NowPlaying.)</summary>
     public NowPlayingViewModel Player { get; }
+
+    /// <summary>Gets privacy mode, which the title bar button next to the search box turns on and off (#234).</summary>
+    public PrivacyMode Privacy { get; }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e) =>
         DispatcherQueue.TryEnqueue(() => _tray.SetVisible(_settings.Current.Appearance.ShowTrayIcon));
@@ -529,6 +535,9 @@ internal sealed partial class MainWindow : Window
                 break;
             case ShortcutAction.Search:
                 SearchBox.Focus(FocusState.Keyboard);
+                break;
+            case ShortcutAction.PrivacyMode:
+                Privacy.ToggleCommand.Execute(null);
                 break;
             case ShortcutAction.GoBack:
                 Execute(ViewModel.GoBackCommand);

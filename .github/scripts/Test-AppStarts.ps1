@@ -321,7 +321,7 @@ try {
     # and a place on screen, Tab must not get stuck, and each part of the window (title bar, search box,
     # navigation, page, now playing bar) must be one run of stops, not visited in pieces. The order is printed.
     # The landmarks MainContent (the page) and NowPlaying come before NavView, which holds the page too.
-    $regions = 'SearchBox', 'MainContent', 'NowPlaying', 'NavView'
+    $regions = 'SearchBox', 'PrivacyButton', 'MainContent', 'NowPlaying', 'NavView'
     function Get-Region([System.Windows.Automation.AutomationElement] $element) {
         $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
         for ($e = $element; $e; $e = $walker.GetParent($e)) {
@@ -649,11 +649,30 @@ try {
     Test-TabOrder 'albums'
     Test-TilesFillRows 'Albums' 16
     $album2 = 'parentId=a{31}2'
+    $reports = 'POST /Sessions/Playing'
+    $reportsBefore = Get-RequestCount $reports
     $before = Get-RequestCount $album2
     Send-Click (Find-Button 'Play Album 2')
     Wait-Request $album2 $before 'The play button on the cover of Album 2 was clicked'
     Test-StayedOnList $albumPage 'The play button on the cover of Album 2'
     Test-Running 'after playing an album from its cover'
+    if ((Get-RequestCount $reports) -le $reportsBefore) { Stop-Test 'Privacy mode' 'Playing Album 2 sent no report to the server, so the check in privacy mode below would prove nothing.' }
+
+    # Privacy mode (#234): with the title bar button on, playing sends no report to the server. Turning it on
+    # ends the current track's report; counted from after that.
+    $privacyToggle = (Find-ById 'PrivacyButton').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+    $privacyToggle.Toggle()
+    if ($privacyToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Privacy mode' 'The privacy mode button did not turn on.' }
+    Start-Sleep -Seconds 1
+    $reportsBefore = Get-RequestCount $reports
+    $before = Get-RequestCount $album2
+    Send-Click (Find-Button 'Play Album 2')
+    Wait-Request $album2 $before 'The play button on the cover of Album 2 was clicked in privacy mode'
+    Start-Sleep -Seconds 3
+    $reported = (Get-RequestCount $reports) - $reportsBefore
+    $privacyToggle.Toggle()
+    if ($reported -gt 0) { Stop-Test 'Privacy mode' "In privacy mode, playing Album 2 still sent $reported report(s) to the server." }
+    Write-Output 'Playing an album is reported to the server, and in privacy mode it is not.'
 
     # The song's title in a list row: the now playing bar may show the same title (as a link to the album).
     Send-Click (Find-Button 'Show the songs of Album 2')

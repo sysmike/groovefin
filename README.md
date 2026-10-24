@@ -34,6 +34,8 @@ WinUI 3.
 - The mouse's back and forward buttons (or Alt+Left and Alt+Right) move through the pages you visited.
 - An optional Discord status ("Listening to <artist>") with title, artist and progress, through
   the Discord app on the PC: no keys, and nothing goes to the internet from Groovefin.
+- A privacy mode (the button beside the search box, Ctrl+Shift+P or the tray menu): no plays are
+  reported to your server and Discord shows nothing, until you turn it off or restart Groovefin.
 
 **Look and feel**
 - Native WinUI 3 with Mica: light, dark and high contrast, the Windows accent colour (or neutral

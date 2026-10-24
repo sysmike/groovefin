@@ -49,6 +49,13 @@
   <data name="SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Search your music library</value>
   </data>
+  <data name="PrivacyButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Privacy mode</value>
+    <comment>Title bar toggle next to search (#234)</comment>
+  </data>
+  <data name="PrivacyButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Privacy mode: plays are not reported to the server and Discord shows nothing, until you turn it off or restart Groovefin</value>
+  </data>
   <data name="NavHome.Content" xml:space="preserve">
     <value>Home</value>
   </data>
@@ -1482,6 +1489,9 @@
   <data name="Shortcut_MiniPlayer" xml:space="preserve">
     <value>Mini player on or off</value>
   </data>
+  <data name="Shortcut_PrivacyMode" xml:space="preserve">
+    <value>Privacy mode on or off</value>
+  </data>
   <data name="Shortcut_GoBack" xml:space="preserve">
     <value>Back (also the mouse's back button)</value>
   </data>
@@ -1502,6 +1512,9 @@
   </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Exit</value>
+  </data>
+  <data name="Tray_PrivacyMode" xml:space="preserve">
+    <value>Privacy mode</value>
   </data>
   <data name="SettingsThemeCard.Header" xml:space="preserve">
     <value>App theme</value>

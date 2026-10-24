@@ -1,5 +1,7 @@
+using System.ComponentModel;
 using System.Globalization;
 using Groovefin.Core.Api;
+using Groovefin.Core.Privacy;
 using Groovefin.Core.Services;
 using Microsoft.Extensions.Logging;
 
@@ -9,8 +11,9 @@ namespace Groovefin.Core.Playback;
 /// Follows the engine and reports to the server: start when a track is loaded, progress every
 /// <see cref="ProgressInterval"/> while playing and at once on pause, resume and seek, stopped when the
 /// track ends, is replaced or playback stops. Reports go out one after another in order; failures are
-/// logged and never touch playback. Engine events and the progress timer are handled on the UI thread.
-/// Create it once at startup and keep it alive.
+/// logged and never touch playback. In privacy mode nothing is reported: turning it on reports the current
+/// track stopped, and turning it off reports again from the next track (#234). Engine events and the
+/// progress timer are handled on the UI thread. Create it once at startup and keep it alive.
 /// </summary>
 public sealed partial class PlaybackReporting : IDisposable
 {
@@ -22,6 +25,7 @@ public sealed partial class PlaybackReporting : IDisposable
 
     private readonly IPlaybackEngine _engine;
     private readonly IPlaybackReporter _reporter;
+    private readonly PrivacyMode _privacy;
     private readonly IDispatcher _dispatcher;
     private readonly TimeProvider _time;
     private readonly ILogger<PlaybackReporting> _logger;
@@ -34,12 +38,14 @@ public sealed partial class PlaybackReporting : IDisposable
     public PlaybackReporting(
         IPlaybackEngine engine,
         IPlaybackReporter reporter,
+        PrivacyMode privacy,
         IDispatcher dispatcher,
         TimeProvider time,
         ILogger<PlaybackReporting> logger)
     {
         _engine = engine;
         _reporter = reporter;
+        _privacy = privacy;
         _dispatcher = dispatcher;
         _time = time;
         _logger = logger;
@@ -49,6 +55,7 @@ public sealed partial class PlaybackReporting : IDisposable
         _engine.StateChanged += OnStateChanged;
         _engine.PositionChanged += OnPositionChanged;
         _engine.Ended += OnEnded;
+        _privacy.PropertyChanged += OnPrivacyChanged;
     }
 
     /// <summary>Waits until all reports queued so far were sent (tests, shutdown).</summary>
@@ -66,6 +73,7 @@ public sealed partial class PlaybackReporting : IDisposable
         _engine.StateChanged -= OnStateChanged;
         _engine.PositionChanged -= OnPositionChanged;
         _engine.Ended -= OnEnded;
+        _privacy.PropertyChanged -= OnPrivacyChanged;
         _timer.Dispose();
     }
 
@@ -73,7 +81,7 @@ public sealed partial class PlaybackReporting : IDisposable
     {
         Stop();
 
-        if (_engine.Current is { } source)
+        if (_engine.Current is { } source && !_privacy.IsOn)
         {
             _session = new Session(source.Track.Id, Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture))
             {
@@ -83,6 +91,20 @@ public sealed partial class PlaybackReporting : IDisposable
             };
             Send(_reporter.ReportStartAsync, Report(_session));
             UpdateTimer();
+        }
+    }
+
+    /// <summary>Turned on: the current track's report ends here. Turned off: the next track is reported.</summary>
+    private void OnPrivacyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PrivacyMode.IsOn) && _privacy.IsOn)
+        {
+            if (_session is { } session)
+            {
+                session.Position = _engine.Position;
+            }
+
+            Stop();
         }
     }
 

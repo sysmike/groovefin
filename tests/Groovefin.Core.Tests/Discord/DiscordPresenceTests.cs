@@ -1,6 +1,7 @@
 using Groovefin.Core.Discord;
 using Groovefin.Core.Models;
 using Groovefin.Core.Playback;
+using Groovefin.Core.Privacy;
 using Groovefin.Core.Tests.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
@@ -15,6 +16,7 @@ public sealed class DiscordPresenceTests : IDisposable
     private readonly FakePlaybackEngine _engine;
     private readonly InMemorySettingsService _settings = new();
     private readonly FakeDiscordConnection _discord = new();
+    private readonly PrivacyMode _privacy = new();
     private DiscordPresence? _sut;
 
     public DiscordPresenceTests()
@@ -26,7 +28,7 @@ public sealed class DiscordPresenceTests : IDisposable
     public void Dispose() => _sut?.Dispose();
 
     private DiscordPresence Start(DiscordApplication? application = null) =>
-        _sut = new DiscordPresence(_engine, _settings, _discord, application ?? App, _time, NullLogger<DiscordPresence>.Instance);
+        _sut = new DiscordPresence(_engine, _settings, _privacy, _discord, application ?? App, _time, NullLogger<DiscordPresence>.Instance);
 
     private void TurnOn(bool on = true) => _settings.Update(s => s with { Playback = s.Playback with { DiscordPresence = on } });
 
@@ -209,6 +211,41 @@ public sealed class DiscordPresenceTests : IDisposable
         TurnOn(false);
 
         _discord.IsConnected.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Privacy_mode_clears_the_status_and_lets_go_of_Discord_until_it_is_off()
+    {
+        TurnOn();
+        Start();
+        Play();
+
+        _privacy.IsOn = true;
+        var cleared = _discord.Sent[^1];
+        var connected = _discord.IsConnected;
+        _engine.Load(Source("Aerodynamic"));
+        _engine.SimulateState(PlaybackState.Playing);
+        var sentInPrivacyMode = _discord.Sent.Count;
+        _privacy.IsOn = false;
+
+        cleared.Should().BeNull();
+        connected.Should().BeFalse();
+        sentInPrivacyMode.Should().Be(2);
+        _discord.Sent[^1]!.Details.Should().Be("Aerodynamic");
+        _discord.IsConnected.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Started_in_privacy_mode_nothing_reaches_Discord()
+    {
+        TurnOn();
+        _privacy.IsOn = true;
+        Start();
+
+        Play();
+
+        _discord.Connects.Should().Be(0);
+        _discord.Sent.Should().BeEmpty();
     }
 
     [Fact]

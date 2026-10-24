@@ -1,14 +1,16 @@
+using System.ComponentModel;
 using Groovefin.Core.Playback;
+using Groovefin.Core.Privacy;
 using Groovefin.Core.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace Groovefin.Core.Discord;
 
 /// <summary>
-/// Shows the playing track in Discord ("Listening to" and the artists) while the setting is on. Lives as long as
-/// the app. Only the latest state is sent; while Discord is not running it retries now and then, and
-/// problems only go to the log. The connection stays open while the setting is on; closing the app closes the
-/// pipe, which clears the status.
+/// Shows the playing track in Discord ("Listening to" and the artists) while the setting is on and privacy
+/// mode is off (#234). Lives as long as the app. Only the latest state is sent; while Discord is not running
+/// it retries now and then, and problems only go to the log. The connection stays open while the status may
+/// show; closing the app closes the pipe, which clears the status.
 /// </summary>
 public sealed partial class DiscordPresence : IDisposable
 {
@@ -23,6 +25,7 @@ public sealed partial class DiscordPresence : IDisposable
 
     private readonly IPlaybackEngine _engine;
     private readonly ISettingsService _settings;
+    private readonly PrivacyMode _privacy;
     private readonly IDiscordConnection _connection;
     private readonly DiscordApplication _application;
     private readonly TimeProvider _time;
@@ -38,6 +41,7 @@ public sealed partial class DiscordPresence : IDisposable
     public DiscordPresence(
         IPlaybackEngine engine,
         ISettingsService settings,
+        PrivacyMode privacy,
         IDiscordConnection connection,
         DiscordApplication application,
         TimeProvider time,
@@ -45,6 +49,7 @@ public sealed partial class DiscordPresence : IDisposable
     {
         _engine = engine;
         _settings = settings;
+        _privacy = privacy;
         _connection = connection;
         _application = application;
         _time = time;
@@ -54,6 +59,7 @@ public sealed partial class DiscordPresence : IDisposable
         _engine.StateChanged += OnChanged;
         _engine.PositionChanged += OnPositionChanged;
         _settings.Changed += OnSettingsChanged;
+        _privacy.PropertyChanged += OnPrivacyChanged;
         _ = UpdateAsync();
     }
 
@@ -71,7 +77,7 @@ public sealed partial class DiscordPresence : IDisposable
             PlaybackState.Opening or PlaybackState.Buffering => Sent is not null,
             _ => false,
         };
-        if (!playing || !_application.IsSet || !_settings.Current.Playback.DiscordPresence || _engine.Current is not { } source)
+        if (!playing || !IsEnabled || _engine.Current is not { } source)
         {
             return null;
         }
@@ -119,11 +125,11 @@ public sealed partial class DiscordPresence : IDisposable
                 {
                     _dirty = false;
                     _sending = false;
-                    if (_sent is null && !_settings.Current.Playback.DiscordPresence)
+                    if (_sent is null && !IsEnabled)
                     {
-                        // Turned off and nothing shown: let go of Discord. Paused and stopped keep the
-                        // connection: a skip passes through paused, and connecting again for every track made
-                        // Discord drop the status (#228).
+                        // Turned off (or privacy mode) and nothing shown: let go of Discord. Paused and stopped
+                        // keep the connection: a skip passes through paused, and connecting again for every
+                        // track made Discord drop the status (#228).
                         _connection.Disconnect();
                     }
 
@@ -144,6 +150,7 @@ public sealed partial class DiscordPresence : IDisposable
         _engine.StateChanged -= OnChanged;
         _engine.PositionChanged -= OnPositionChanged;
         _settings.Changed -= OnSettingsChanged;
+        _privacy.PropertyChanged -= OnPrivacyChanged;
         _connection.Dispose();
     }
 
@@ -189,6 +196,9 @@ public sealed partial class DiscordPresence : IDisposable
         }
     }
 
+    /// <summary>Gets a value indicating whether the status may show: an application, the setting on, privacy mode off.</summary>
+    private bool IsEnabled => _application.IsSet && _settings.Current.Playback.DiscordPresence && !_privacy.IsOn;
+
     /// <summary>Gets or sets when to try Discord again; set from the UI thread and from sends on the thread pool.</summary>
     private DateTimeOffset RetryAt
     {
@@ -230,6 +240,15 @@ public sealed partial class DiscordPresence : IDisposable
     }
 
     private void OnChanged(object? sender, EventArgs e) => _ = UpdateAsync();
+
+    private void OnPrivacyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PrivacyMode.IsOn))
+        {
+            RetryAt = DateTimeOffset.MinValue;
+            _ = UpdateAsync();
+        }
+    }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {

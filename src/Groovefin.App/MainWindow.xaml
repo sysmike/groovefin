@@ -37,45 +37,63 @@
                 <ImageIconSource ImageSource="ms-appx:///Assets/AppIcon.ico" />
             </TitleBar.IconSource>
             <TitleBar.Content>
-                <AutoSuggestBox
-                    x:Name="SearchBox"
-                    x:Uid="SearchBox"
-                    MinWidth="240"
-                    MaxWidth="{StaticResource SearchBoxMaxWidth}"
+                <!--  The search box, and privacy mode beside it (#234): accent-coloured while on.  -->
+                <Grid
+                    MaxWidth="{StaticResource TitleBarContentMaxWidth}"
                     HorizontalAlignment="Stretch"
-                    VerticalAlignment="Center"
-                    ItemsSource="{x:Bind Suggestions.Suggestions}"
-                    QueryIcon="Find"
-                    QuerySubmitted="OnSearchQuerySubmitted"
-                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}"
-                    TextChanged="OnSearchTextChanged"
-                    TextMemberPath="Title">
-                    <AutoSuggestBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:SearchSuggestion">
-                            <Grid
-                                Padding="0,4"
-                                AutomationProperties.Name="{x:Bind AccessibleName}"
-                                ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <FontIcon
-                                    FontSize="16"
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    Glyph="{x:Bind conv:Glyphs.Suggestion(Kind)}" />
-                                <StackPanel Grid.Column="1">
-                                    <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock
+                    ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <AutoSuggestBox
+                        x:Name="SearchBox"
+                        x:Uid="SearchBox"
+                        MinWidth="240"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        ItemsSource="{x:Bind Suggestions.Suggestions}"
+                        QueryIcon="Find"
+                        QuerySubmitted="OnSearchQuerySubmitted"
+                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}"
+                        TextChanged="OnSearchTextChanged"
+                        TextMemberPath="Title">
+                        <AutoSuggestBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SearchSuggestion">
+                                <Grid
+                                    Padding="0,4"
+                                    AutomationProperties.Name="{x:Bind AccessibleName}"
+                                    ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon
+                                        FontSize="16"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                        Style="{StaticResource CaptionTextBlockStyle}"
-                                        Text="{x:Bind Subtitle}"
-                                        TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
-                            </Grid>
-                        </DataTemplate>
-                    </AutoSuggestBox.ItemTemplate>
-                </AutoSuggestBox>
+                                        Glyph="{x:Bind conv:Glyphs.Suggestion(Kind)}" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                            Text="{x:Bind Subtitle}"
+                                            TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </AutoSuggestBox.ItemTemplate>
+                    </AutoSuggestBox>
+                    <ToggleButton
+                        x:Name="PrivacyButton"
+                        x:Uid="PrivacyButton"
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="PrivacyButton"
+                        IsChecked="{x:Bind Privacy.IsOn, Mode=TwoWay}">
+                        <FontIcon FontSize="16" Glyph="&#xED1A;" />
+                    </ToggleButton>
+                </Grid>
             </TitleBar.Content>
         </TitleBar>
 

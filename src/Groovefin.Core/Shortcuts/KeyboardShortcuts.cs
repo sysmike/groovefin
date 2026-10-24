@@ -20,6 +20,7 @@ public enum ShortcutAction
     MiniPlayer,
     GoBack,
     GoForward,
+    PrivacyMode,
 }
 
 /// <summary>An action and the keys that run it.</summary>
@@ -67,6 +68,7 @@ public static class KeyboardShortcuts
         new(ShortcutAction.MiniPlayer, new("M", Control: true)),
         new(ShortcutAction.GoBack, new("Left", Alt: true)),
         new(ShortcutAction.GoForward, new("Right", Alt: true)),
+        new(ShortcutAction.PrivacyMode, new("P", Control: true, Shift: true)),
     ];
 
     /// <summary>Keys shown by a name of their own (<c>Key_{name}</c> in the strings); they need Ctrl or Alt, except Space.</summary>
