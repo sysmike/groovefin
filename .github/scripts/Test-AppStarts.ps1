@@ -868,12 +868,16 @@ try {
         [System.Windows.Forms.SendKeys]::SendWait($keys)
         $null = Find-Element $shown $what
         Start-Sleep -Seconds 1
+        $pageWidths[$what] = (Get-Bounds (Find-ById 'MainContent')).Width
         Test-Accessibility ($what -replace ' ', '-')
         [System.Windows.Forms.SendKeys]::SendWait($close)
         $until = (Get-Date).AddSeconds(5)
         while ($window.FindFirst($scope::Descendants, $shown) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 300 }
         if ($window.FindFirst($scope::Descendants, $shown)) { Stop-Test 'Smoke test' "The $what did not close again." }
     }
+    # The page's width with each one open: the queue and the lyrics share the place beside it, at one width
+    # (#239), so switching between them does not move the page's edge.
+    $pageWidths = @{}
     Test-Shortcut '^q' ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Up next')) 'queue' '^q'
     Test-Shortcut '^l' ([System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Lyrics'),
@@ -881,6 +885,10 @@ try {
     Test-Shortcut '{F11}' ([System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Exit full screen'),
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))) 'full screen player' '{F11}'
+    if ([Math]::Abs($pageWidths['queue'] - $pageWidths['lyrics']) -gt 1) {
+        Stop-Test 'Side panes' ("The queue and the lyrics are not as wide: the page is {0:0} px wide beside the queue and {1:0} px beside the lyrics." -f $pageWidths['queue'], $pageWidths['lyrics'])
+    }
+    Write-Output ("The page is {0:0} px wide beside the queue and beside the lyrics." -f $pageWidths['queue'])
     Test-Running 'after the queue, the lyrics and the full-screen player'
     Write-Output 'The queue, the lyrics and the full-screen player open and close with their shortcuts.'
 
