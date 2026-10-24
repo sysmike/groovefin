@@ -101,11 +101,12 @@ internal sealed partial class CoverActions : UserControl
     /// <summary>
     /// Hidden while a button still has focus from a click: the tile takes it. A hidden button that kept
     /// focus showed them all again once that focus turned into keyboard focus, wherever the pointer was,
-    /// and Space would press it (#236).
+    /// and Space would press it (#236). Keyboard focus stays: Tab from play to the songs button hides them
+    /// for a moment, and taking that focus away sent Tab round in a circle.
     /// </summary>
     private void HandFocusToTile()
     {
-        if (PlayButton.FocusState == FocusState.Unfocused && SongsButton.FocusState == FocusState.Unfocused)
+        if (!HasClickFocus(PlayButton) && !HasClickFocus(SongsButton))
         {
             return;
         }
@@ -119,6 +120,8 @@ internal sealed partial class CoverActions : UserControl
             }
         }
     }
+
+    private static bool HasClickFocus(Control button) => button.FocusState is FocusState.Pointer or FocusState.Programmatic;
 
     private void SetPointerOver(bool value)
     {
