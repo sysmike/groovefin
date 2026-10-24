@@ -1027,6 +1027,56 @@ try {
     Test-Running 'after the mini player'
     Write-Output 'The mini player opened at 420x140, resized within its limits, and Esc left it.'
 
+    # Minimum size (#241): shrunk far below it, the window's client area stops at 860x600, and with the queue
+    # open every button of the title bar, the now playing bar and the queue is whole inside the window; the
+    # bar's buttons do not overlap (its columns slid over each other in a narrow window, #51).
+    $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Normal)
+    Start-Sleep -Milliseconds 500
+    $null = [Smoke.Window]::SetWindowPos($hwnd, [IntPtr]::Zero, 0, 0, 300, 200, 0x16)
+    Start-Sleep -Seconds 1
+    $client = [Smoke.Window+Rect]::new()
+    $null = [Smoke.Window]::GetClientRect($hwnd, [ref] $client)
+    $smallestWidth = $client.Right - $client.Left
+    $smallestHeight = $client.Bottom - $client.Top
+    Write-Output ("Smallest window: client area {0}x{1}" -f $smallestWidth, $smallestHeight)
+    if ([Math]::Abs($smallestWidth - 860) -gt 2 -or [Math]::Abs($smallestHeight - 600) -gt 2) {
+        Stop-Test 'Minimum size' ("Shrunk to 300x200, the window's client area is {0}x{1}; it should stop at 860x600." -f $smallestWidth, $smallestHeight)
+    }
+    [System.Windows.Forms.SendKeys]::SendWait('^q')
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Up next')) 'queue'
+    Start-Sleep -Seconds 1
+    $windowBounds = $window.Current.BoundingRectangle
+    $controls = [System.Windows.Automation.OrCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit))
+    $cut = @()
+    $bar = @()
+    $checked = 0
+    foreach ($control in $window.FindAll($scope::Descendants, $controls)) {
+        $region = Get-Region $control
+        # The page and the navigation scroll: what is beyond their edges is scrolled, not cut off.
+        if ($region -in 'MainContent', 'NavView') { continue }
+        $r = $control.Current.BoundingRectangle
+        if ($r.IsEmpty -or $r.Width -le 0 -or $control.Current.IsOffscreen) { continue }
+        $checked++
+        if ($r.Left -lt $windowBounds.Left - 1 -or $r.Top -lt $windowBounds.Top - 1 -or $r.Right -gt $windowBounds.Right + 1 -or $r.Bottom -gt $windowBounds.Bottom + 1) {
+            $cut += "'$($control.Current.Name)' ($region)"
+        }
+        if ($region -eq 'NowPlaying') { $bar += [pscustomobject]@{ Name = $control.Current.Name; Bounds = $r } }
+    }
+    for ($i = 0; $i -lt $bar.Count; $i++) {
+        for ($j = $i + 1; $j -lt $bar.Count; $j++) {
+            $a = $bar[$i].Bounds; $b = $bar[$j].Bounds
+            if ($a.Left -lt $b.Right - 1 -and $b.Left -lt $a.Right - 1 -and $a.Top -lt $b.Bottom - 1 -and $b.Top -lt $a.Bottom - 1) {
+                $cut += "'$($bar[$i].Name)' and '$($bar[$j].Name)' overlap"
+            }
+        }
+    }
+    [System.Windows.Forms.SendKeys]::SendWait('^q')
+    if ($cut.Count -gt 0) { Stop-Test 'Minimum size' "In the smallest window with the queue open: $($cut -join '; ')." }
+    Write-Output "In the smallest window with the queue open, all $checked buttons and fields outside the page are whole, $($bar.Count) of them in the now playing bar."
+
     # Close the window like a user: the app must shut down without errors and exit with code 0 (#145).
     $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
     if (-not $process.WaitForExit(20000)) {
