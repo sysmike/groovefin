@@ -761,9 +761,10 @@ try {
 
     # A quick sweep, as across a row of artists: back onto the image, then in a few big steps into the gap
     # between the circle and its square bounds, beside the top right. The button must be gone there already.
-    # The page may have moved since (the playback error's InfoBar): take the tile's place again.
+    # The page may have moved since (the playback error's InfoBar): take the tile's place again. The image is
+    # as wide as the tile, which grows to fill the row (#232): the points are fractions of its width.
     $tile = Get-Bounds $artistTile
-    Move-Pointer ([int] ($tile.X + 80)) ([int] ($tile.Y + 80))
+    Move-Pointer ([int] ($tile.X + $tile.Width / 2)) ([int] ($tile.Y + $tile.Width / 2))
     $back = Get-BlueShare (Get-Pixels $playArtist)
     $at = [System.Windows.Forms.Cursor]::Position
     $button = Get-Bounds $playArtist
@@ -775,7 +776,7 @@ try {
     catch { $what = "nothing known ($($_.Exception.Message))" }
     Write-Output "Back on the image: pointer at $($at.X),$($at.Y) over $what; tile at $($tile.X),$($tile.Y); play button at $($button.X),$($button.Y), $($button.Width)x$($button.Height)."
     Save-Screenshot 'artist-back-on-image'
-    Move-Pointer ([int] ($tile.X + 150)) ([int] ($tile.Y + 18)) 3
+    Move-Pointer ([int] ($tile.X + $tile.Width * 0.94)) ([int] ($tile.Y + $tile.Width * 0.11)) 3
     Start-Sleep -Milliseconds 700
     $inGap = Get-BlueShare (Get-Pixels $playArtist)
     Write-Output ('Play button after a quick sweep: {0:P0} back on the image, {1:P0} with the pointer beside the circle.' -f $back, $inGap)
