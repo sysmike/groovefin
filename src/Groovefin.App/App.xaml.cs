@@ -152,11 +152,13 @@ public partial class App : Application
         // Save the session (with the position of the playing track), stop playback, report it as stopped and
         // give the reports a moment to reach the server. Each step runs on the thread pool, where nothing waits
         // for this blocked UI thread, and gets a time limit: one that hangs (in Media Foundation, or awaiting
-        // the UI thread) is logged and closing goes on, so the app always exits (#206).
+        // the UI thread) is logged and closing goes on, so the app always exits (#206). Stopping is the
+        // exception: its events update the window, which only works on this thread (#230). It only pauses
+        // the player and takes its source away; disposing the players below stays on the thread pool.
         if (_host is { } services)
         {
             RunShutdownStep("save the session", () => services.Services.GetRequiredService<SessionPersistence>().SaveAsync(), ReportFlushTimeout);
-            RunShutdownStep("stop playback", () => services.Services.GetRequiredService<IPlaybackEngine>().Stop());
+            RunShutdownStepOnThisThread("stop playback", () => services.Services.GetRequiredService<IPlaybackEngine>().Stop());
             RunShutdownStep("report playback", () => services.Services.GetRequiredService<PlaybackReporting>().FlushAsync(), ReportFlushTimeout);
         }
 
@@ -182,6 +184,27 @@ public partial class App : Application
             }
 
             host.Dispose();
+        }
+    }
+
+    /// <summary>Runs a shutdown step on the UI thread, without a time limit; logs how long it took or that it failed.</summary>
+    private void RunShutdownStepOnThisThread(string name, Action step)
+    {
+        var watch = Stopwatch.StartNew();
+        try
+        {
+            step();
+            if (_logger is not null)
+            {
+                LogShutdownStep(_logger, name, watch.ElapsedMilliseconds);
+            }
+        }
+        catch (Exception ex) when (ex is COMException or InvalidOperationException)
+        {
+            if (_logger is not null)
+            {
+                LogShutdownStepFailed(_logger, ex, name);
+            }
         }
     }
 

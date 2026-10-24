@@ -957,10 +957,16 @@ try {
         Stop-Test 'Smoke test' 'Groovefin was still running 20 seconds after its window was closed.'
     }
     # How long each shutdown step took. One that ran over its time limit is skipped by the app (#206): say so
-    # without failing.
+    # without failing. One that failed is a bug: "stop playback" once ran off the UI thread, and the stop
+    # never reached the server (#230).
+    $failedSteps = @()
     Select-String -Path (Get-AppLog).FullName -Pattern 'Shutdown: ' | ForEach-Object {
-        if ($_.Line -match 'did not finish within|failed') { Write-Output "::warning title=Slow shutdown::$($_.Line)" }
+        if ($_.Line -match 'did not finish within') { Write-Output "::warning title=Slow shutdown::$($_.Line)" }
+        elseif ($_.Line -match 'failed') { $failedSteps += $_.Line; Write-Output "  $($_.Line)" }
         else { Write-Output "  $($_.Line)" }
+    }
+    if ($failedSteps.Count -gt 0) {
+        Stop-Test 'Smoke test' "A shutdown step failed: $($failedSteps -join '; '). The exception is in the app log below."
     }
     $unhandled = Select-String -Path (Get-AppLog).FullName -Pattern 'Unhandled' -SimpleMatch
     if ($unhandled -or $process.ExitCode -ne 0) {
