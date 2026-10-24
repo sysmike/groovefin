@@ -778,6 +778,19 @@ try {
     if ($showing -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show while the pointer was on the image of Artist.' }
     if ($remaining -gt 0.05) { Stop-Test 'Cover buttons' 'The play button stayed visible after the pointer left the image of Artist through a corner.' }
 
+    # First let the artist's tracks finish: on the runner each fails at the audio output a few seconds after
+    # the last, and one failing during the sweep kept the button showing (#238). Done once no new failure
+    # was logged for 5 seconds (at once with a sound card), at most 20.
+    $settle = (Get-Date).AddSeconds(20)
+    $failures = -1
+    do {
+        $count = @(Select-String -Path (Get-AppLog).FullName -Pattern 'Playback of .* failed' -ErrorAction SilentlyContinue).Count
+        if ($count -eq $failures) { break }
+        $failures = $count
+        Start-Sleep -Seconds 5
+    } while ((Get-Date) -lt $settle)
+    Write-Output "Playback settled before the sweep ($failures failed tracks in the log)."
+
     # A quick sweep, as across a row of artists: back onto the image, then in a few big steps into the gap
     # between the circle and its square bounds, beside the top right. The button must be gone there already.
     # The page may have moved since (the playback error's InfoBar): take the tile's place again. The image is
