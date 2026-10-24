@@ -797,6 +797,18 @@ try {
     Save-Screenshot 'artist-back-on-image'
     Move-Pointer ([int] ($tile.X + $tile.Width * 0.94)) ([int] ($tile.Y + $tile.Width * 0.11)) 3
     Start-Sleep -Milliseconds 700
+    # The artist's second track fails a few seconds after the first, and its error's InfoBar can move the
+    # page during the sweep: the circle then slides under the resting pointer, where the button rightly
+    # shows. Sweep once more at the tile's new place (#234).
+    $moved = Get-Bounds $artistTile
+    if ($moved.X -ne $tile.X -or $moved.Y -ne $tile.Y) {
+        Write-Output "The page moved during the sweep (the tile from $($tile.X),$($tile.Y) to $($moved.X),$($moved.Y)); sweeping again."
+        $tile = $moved
+        Move-Pointer ([int] ($tile.X + $tile.Width / 2)) ([int] ($tile.Y + $tile.Width / 2))
+        Start-Sleep -Milliseconds 300
+        Move-Pointer ([int] ($tile.X + $tile.Width * 0.94)) ([int] ($tile.Y + $tile.Width * 0.11)) 3
+        Start-Sleep -Milliseconds 700
+    }
     $inGap = Get-BlueShare (Get-Pixels $playArtist)
     Write-Output ('Play button after a quick sweep: {0:P0} back on the image, {1:P0} with the pointer beside the circle.' -f $back, $inGap)
     if ($back -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show again when the pointer came back onto the image of Artist.' }
