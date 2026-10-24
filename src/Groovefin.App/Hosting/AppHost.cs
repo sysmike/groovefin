@@ -8,6 +8,7 @@ using Groovefin.Core.Images;
 using Groovefin.Core.Menus;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
+using Groovefin.Core.Privacy;
 using Groovefin.Core.Queue;
 using Groovefin.Core.Security;
 using Groovefin.Core.Servers;
@@ -98,6 +99,8 @@ internal static class AppHost
         builder.Services.AddSingleton(_ => new QueueManager());
         builder.Services.AddSingleton<Player>();
         builder.Services.AddSingleton<IPlayer>(sp => sp.GetRequiredService<Player>());
+        // Privacy mode (#234): not saved, so it is off at every start.
+        builder.Services.AddSingleton<PrivacyMode>();
         builder.Services.AddSingleton<PlaybackReporting>();
         builder.Services.AddSingleton<ISystemMediaControls, SystemMediaControls>();
         builder.Services.AddSingleton<SystemMediaControlsSync>();

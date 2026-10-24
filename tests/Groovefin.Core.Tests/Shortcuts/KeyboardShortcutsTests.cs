@@ -34,6 +34,7 @@ public sealed class KeyboardShortcutsTests
     [InlineData(ShortcutAction.MiniPlayer, "Ctrl+M")]
     [InlineData(ShortcutAction.GoBack, "Alt+Left")]
     [InlineData(ShortcutAction.GoForward, "Alt+Right")]
+    [InlineData(ShortcutAction.PrivacyMode, "Ctrl+Shift+P")]
     public void Every_documented_default_is_in_place(ShortcutAction action, string keys) =>
         KeyboardShortcuts.DefaultOf(action).ToString().Should().Be(keys);
 

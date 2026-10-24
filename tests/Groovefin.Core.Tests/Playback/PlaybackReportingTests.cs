@@ -1,6 +1,7 @@
 using Groovefin.Core.Api;
 using Groovefin.Core.Models;
 using Groovefin.Core.Playback;
+using Groovefin.Core.Privacy;
 using Groovefin.Core.Tests.TestDoubles;
 using Microsoft.Extensions.Logging.Testing;
 using Microsoft.Extensions.Time.Testing;
@@ -13,6 +14,7 @@ public sealed class PlaybackReportingTests : IDisposable
     private readonly FakePlaybackEngine _engine;
     private readonly IPlaybackReporter _reporter = Substitute.For<IPlaybackReporter>();
     private readonly FakeLogger<PlaybackReporting> _logger = new();
+    private readonly PrivacyMode _privacy = new();
     private readonly PlaybackReporting _sut;
     private readonly List<string> _reports = [];
 
@@ -22,7 +24,7 @@ public sealed class PlaybackReportingTests : IDisposable
         _reporter.ReportStartAsync(Arg.Do<PlaybackReport>(r => _reports.Add($"start {Describe(r)}")), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         _reporter.ReportProgressAsync(Arg.Do<PlaybackReport>(r => _reports.Add($"progress {Describe(r)}")), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         _reporter.ReportStoppedAsync(Arg.Do<PlaybackReport>(r => _reports.Add($"stopped {Describe(r)}")), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        _sut = new PlaybackReporting(_engine, _reporter, new ImmediateDispatcher(), _time, _logger);
+        _sut = new PlaybackReporting(_engine, _reporter, _privacy, new ImmediateDispatcher(), _time, _logger);
     }
 
     public void Dispose() => _sut.Dispose();
@@ -123,6 +125,52 @@ public sealed class PlaybackReportingTests : IDisposable
         _time.Advance(TimeSpan.FromSeconds(30));
 
         (await ReportsAsync()).Should().Equal("start a 0s", "stopped a 7s");
+    }
+
+    [Fact]
+    public async Task In_privacy_mode_nothing_is_reported()
+    {
+        _privacy.IsOn = true;
+
+        _engine.Load(Source("a"));
+        _engine.SimulateState(PlaybackState.Playing);
+        PlayFor(25);
+        _engine.SimulateState(PlaybackState.Paused);
+        _engine.SimulateEnded();
+        _engine.Load(Source("b"));
+        _engine.Stop();
+
+        (await ReportsAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Turning_privacy_mode_on_ends_the_current_report_there()
+    {
+        _engine.Load(Source("a"));
+        _engine.SimulateState(PlaybackState.Playing);
+        PlayFor(7);
+
+        _privacy.IsOn = true;
+        PlayFor(25);
+        _engine.Seek(TimeSpan.FromSeconds(120));
+        _engine.Load(Source("b"));
+
+        (await ReportsAsync()).Should().Equal("start a 0s", "stopped a 7s");
+    }
+
+    [Fact]
+    public async Task Turning_privacy_mode_off_reports_again_from_the_next_track()
+    {
+        _privacy.IsOn = true;
+        _engine.Load(Source("a"));
+        _engine.SimulateState(PlaybackState.Playing);
+        PlayFor(5);
+
+        _privacy.IsOn = false;
+        PlayFor(15);
+        _engine.Load(Source("b"));
+
+        (await ReportsAsync()).Should().Equal("start b 0s");
     }
 
     [Fact]

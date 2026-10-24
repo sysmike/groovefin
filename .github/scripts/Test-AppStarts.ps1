@@ -321,7 +321,7 @@ try {
     # and a place on screen, Tab must not get stuck, and each part of the window (title bar, search box,
     # navigation, page, now playing bar) must be one run of stops, not visited in pieces. The order is printed.
     # The landmarks MainContent (the page) and NowPlaying come before NavView, which holds the page too.
-    $regions = 'SearchBox', 'MainContent', 'NowPlaying', 'NavView'
+    $regions = 'SearchBox', 'PrivacyButton', 'MainContent', 'NowPlaying', 'NavView'
     function Get-Region([System.Windows.Automation.AutomationElement] $element) {
         $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
         for ($e = $element; $e; $e = $walker.GetParent($e)) {
@@ -649,11 +649,15 @@ try {
     Test-TabOrder 'albums'
     Test-TilesFillRows 'Albums' 16
     $album2 = 'parentId=a{31}2'
+    $reports = 'POST /Sessions/Playing'
+    $reportsBefore = Get-RequestCount $reports
     $before = Get-RequestCount $album2
     Send-Click (Find-Button 'Play Album 2')
     Wait-Request $album2 $before 'The play button on the cover of Album 2 was clicked'
     Test-StayedOnList $albumPage 'The play button on the cover of Album 2'
     Test-Running 'after playing an album from its cover'
+    if ((Get-RequestCount $reports) -le $reportsBefore) { Stop-Test 'Privacy mode' 'Playing Album 2 sent no report to the server, so the check in privacy mode below would prove nothing.' }
+
 
     # The song's title in a list row: the now playing bar may show the same title (as a link to the album).
     Send-Click (Find-Button 'Show the songs of Album 2')
@@ -762,6 +766,19 @@ try {
     # focus shows them all again once that focus turns into keyboard focus, wherever the pointer is (#236).
     if ($playArtist.Current.HasKeyboardFocus) { Stop-Test 'Cover buttons' 'The hidden play button of Artist kept the focus after the pointer left the image.' }
 
+    # First let the artist's tracks finish: on the runner each fails at the audio output a few seconds after
+    # the last, and one failing during the sweep kept the button showing (#238). Done once no new failure
+    # was logged for 5 seconds (at once with a sound card), at most 20.
+    $settle = (Get-Date).AddSeconds(20)
+    $failures = -1
+    do {
+        $count = @(Select-String -Path (Get-AppLog).FullName -Pattern 'Playback of .* failed' -ErrorAction SilentlyContinue).Count
+        if ($count -eq $failures) { break }
+        $failures = $count
+        Start-Sleep -Seconds 5
+    } while ((Get-Date) -lt $settle)
+    Write-Output "Playback settled before the sweep ($failures failed tracks in the log)."
+
     # A quick sweep, as across a row of artists: back onto the image, then in a few big steps into the gap
     # between the circle and its square bounds, beside the top right. The button must be gone there already.
     # The page may have moved since (the playback error's InfoBar): take the tile's place again. The image is
@@ -780,13 +797,45 @@ try {
     Write-Output "Back on the image: pointer at $($at.X),$($at.Y) over $what; tile at $($tile.X),$($tile.Y); play button at $($button.X),$($button.Y), $($button.Width)x$($button.Height)."
     Save-Screenshot 'artist-back-on-image'
     Move-Pointer ([int] ($tile.X + $tile.Width * 0.94)) ([int] ($tile.Y + $tile.Width * 0.11)) 3
-    Start-Sleep -Milliseconds 700
-    $inGap = Get-BlueShare (Get-Pixels $playArtist)
+    # The button must go by itself; the bug (#187) kept it for good. Allow 2 seconds: on the runner the
+    # artist's second track fails about now, and handling that can hold the UI thread past a fixed wait,
+    # before the pointer's last moves arrive (#234).
+    $swept = Get-Date
+    do {
+        Start-Sleep -Milliseconds 250
+        $inGap = Get-BlueShare (Get-Pixels $playArtist)
+    } while ($inGap -gt 0.05 -and ((Get-Date) - $swept).TotalSeconds -lt 2)
+    Write-Output ('Watched the play button for {0:0.0} s after the sweep.' -f ((Get-Date) - $swept).TotalSeconds)
     Write-Output ('Play button after a quick sweep: {0:P0} back on the image, {1:P0} with the pointer beside the circle.' -f $back, $inGap)
     if ($back -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show again when the pointer came back onto the image of Artist.' }
-    if ($inGap -gt 0.05) { Stop-Test 'Cover buttons' 'The play button stayed visible with the pointer beside the round image of Artist, after a quick sweep.' }
+    if ($inGap -gt 0.05) {
+        # Why it stays: the buttons also show while one has keyboard focus.
+        $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+        Write-Output ("Keyboard focus: on the play button {0}; focused element {1} '{2}' ({3})." -f $playArtist.Current.HasKeyboardFocus, $focused.Current.ControlType.ProgrammaticName, $focused.Current.Name, $focused.Current.AutomationId)
+        Save-Screenshot 'artist-after-sweep'
+        Stop-Test 'Cover buttons' 'The play button stayed visible with the pointer beside the round image of Artist, after a quick sweep.'
+    }
     Move-Pointer ([int] ($tile.X + 150)) ([int] $tile.Y - 40)
     Write-Output 'The cover buttons play an album, a genre and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
+
+    # Privacy mode (#234): with the title bar button on, playing sends no report to the server. Turning it on
+    # ends the current track's report; counted from after that. After the cover buttons' checks: done before
+    # them, the artist's play button stayed after the sweep (#238).
+    Select-Navigation 'Albums'
+    Start-Sleep -Seconds 2
+    $privacyToggle = (Find-ById 'PrivacyButton').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+    $privacyToggle.Toggle()
+    if ($privacyToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Privacy mode' 'The privacy mode button did not turn on.' }
+    Start-Sleep -Seconds 1
+    $reportsBefore = Get-RequestCount $reports
+    $before = Get-RequestCount $album2
+    Send-Click (Find-Button 'Play Album 2')
+    Wait-Request $album2 $before 'The play button on the cover of Album 2 was clicked in privacy mode'
+    Start-Sleep -Seconds 3
+    $reported = (Get-RequestCount $reports) - $reportsBefore
+    $privacyToggle.Toggle()
+    if ($reported -gt 0) { Stop-Test 'Privacy mode' "In privacy mode, playing Album 2 still sent $reported report(s) to the server." }
+    Write-Output 'Playing an album is reported to the server, and in privacy mode it is not.'
 
     # Favourites (#202): each tab shows its own list, also after other tabs. The fake server has a favourite
     # of each kind; a hidden list is not in the automation tree. The tabs are selected through UI Automation:
