@@ -807,7 +807,13 @@ try {
     Write-Output ('Watched the play button for {0:0.0} s after the sweep.' -f ((Get-Date) - $swept).TotalSeconds)
     Write-Output ('Play button after a quick sweep: {0:P0} back on the image, {1:P0} with the pointer beside the circle.' -f $back, $inGap)
     if ($back -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show again when the pointer came back onto the image of Artist.' }
-    if ($inGap -gt 0.05) { Stop-Test 'Cover buttons' 'The play button stayed visible with the pointer beside the round image of Artist, after a quick sweep.' }
+    if ($inGap -gt 0.05) {
+        # Why it stays: the buttons also show while one has keyboard focus.
+        $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+        Write-Output ("Keyboard focus: on the play button {0}; focused element {1} '{2}' ({3})." -f $playArtist.Current.HasKeyboardFocus, $focused.Current.ControlType.ProgrammaticName, $focused.Current.Name, $focused.Current.AutomationId)
+        Save-Screenshot 'artist-after-sweep'
+        Stop-Test 'Cover buttons' 'The play button stayed visible with the pointer beside the round image of Artist, after a quick sweep.'
+    }
     Move-Pointer ([int] ($tile.X + 150)) ([int] $tile.Y - 40)
     Write-Output 'The cover buttons play an album, a genre and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
 
