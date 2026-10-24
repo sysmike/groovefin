@@ -777,6 +777,9 @@ try {
     Write-Output ('Play button on the artist image: blue on {0:P0} of it on hover and {1:P0} once the pointer has left.' -f $showing, $remaining)
     if ($showing -lt 0.3) { Stop-Test 'Cover buttons' 'The play button did not show while the pointer was on the image of Artist.' }
     if ($remaining -gt 0.05) { Stop-Test 'Cover buttons' 'The play button stayed visible after the pointer left the image of Artist through a corner.' }
+    # The clicked play button hides with the others and gives focus to its tile. A hidden button that keeps
+    # focus shows them all again once that focus turns into keyboard focus, wherever the pointer is (#236).
+    if ($playArtist.Current.HasKeyboardFocus) { Stop-Test 'Cover buttons' 'The hidden play button of Artist kept the focus after the pointer left the image.' }
 
     # First let the artist's tracks finish: on the runner each fails at the audio output a few seconds after
     # the last, and one failing during the sweep kept the button showing (#238). Done once no new failure
