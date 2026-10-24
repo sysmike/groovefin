@@ -10,11 +10,14 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+        <!--  The cards grow until whole columns fill each row (#232).  -->
+        <controls:TileSize x:Key="GenreTile" MinWidth="200" />
+
         <!--  A card with the genre's name.  -->
         <DataTemplate x:Key="GenreTileTemplate" x:DataType="vm:GenreItem">
             <ItemContainer AutomationProperties.Name="{x:Bind Name}">
                 <Grid
-                    Width="200"
+                    Width="{Binding Width, Source={StaticResource GenreTile}}"
                     Height="88"
                     Padding="16,12"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -74,6 +77,7 @@
         <ItemsView
             x:Uid="GenresView"
             Grid.Row="1"
+            controls:TileSize.Source="{StaticResource GenreTile}"
             Padding="36,0,36,24"
             controls:ItemMenu.IsEnabled="True"
             IsItemInvokedEnabled="True"

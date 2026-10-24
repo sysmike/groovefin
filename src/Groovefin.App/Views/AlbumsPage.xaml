@@ -12,12 +12,15 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+        <!--  The grid's tiles grow until whole columns fill each row (#232).  -->
+        <controls:TileSize x:Key="AlbumTile" MinWidth="168" />
+
         <!--  Grid: square cover with play and songs buttons, name, artist.  -->
         <DataTemplate x:Key="AlbumGridTemplate" x:DataType="vm:AlbumItem">
             <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
-                <StackPanel Width="168" Padding="0,0,0,8" Spacing="6">
+                <StackPanel Width="{Binding Width, Source={StaticResource AlbumTile}}" Padding="0,0,0,8" Spacing="6">
                     <Grid
-                        Height="168"
+                        Height="{Binding Width, Source={StaticResource AlbumTile}}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                         CornerRadius="{StaticResource OverlayCornerRadius}">
                         <FontIcon
@@ -187,6 +190,7 @@
             controls:ItemMenu.IsEnabled="True"
             x:Name="AlbumsView"
             x:Uid="AlbumsView"
+            controls:TileSize.Source="{StaticResource AlbumTile}"
             Grid.Row="1"
             Padding="36,0,36,24"
             IsItemInvokedEnabled="True"

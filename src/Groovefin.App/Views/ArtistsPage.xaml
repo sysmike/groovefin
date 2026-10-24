@@ -10,15 +10,18 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+        <!--  The grid's tiles grow until whole columns fill each row (#232).  -->
+        <controls:TileSize x:Key="ArtistTile" MinWidth="160" />
+
         <!--  Grid: round image with a play button, name.  -->
         <DataTemplate x:Key="ArtistGridTemplate" x:DataType="vm:ArtistItem">
             <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
-                <StackPanel Width="160" Padding="0,0,0,8" Spacing="8">
+                <StackPanel Width="{Binding Width, Source={StaticResource ArtistTile}}" Padding="0,0,0,8" Spacing="8">
                     <Grid
-                        Width="160"
-                        Height="160"
+                        Width="{Binding Width, Source={StaticResource ArtistTile}}"
+                        Height="{Binding Width, Source={StaticResource ArtistTile}}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
-                        CornerRadius="80">
+                        CornerRadius="{Binding Round, Source={StaticResource ArtistTile}}">
                         <FontIcon
                             FontSize="48"
                             Foreground="{ThemeResource TextFillColorTertiaryBrush}"
@@ -142,6 +145,7 @@
             controls:ItemMenu.IsEnabled="True"
             x:Name="ArtistsView"
             x:Uid="ArtistsView"
+            controls:TileSize.Source="{StaticResource ArtistTile}"
             Grid.Row="2"
             Padding="36,0,36,24"
             IsItemInvokedEnabled="True"
