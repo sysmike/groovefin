@@ -42,6 +42,14 @@ internal sealed partial class MainWindow : Window
     private const int MiniPlayerMaxWidth = 720;
     private const int MiniPlayerMaxHeight = 200;
 
+    /// <summary>
+    /// The smallest normal window's client area in effective pixels (#241). The now playing bar needs about 815
+    /// for its columns (200, the transport and seek bar, 340), and beside the 400 px queue or lyrics the page
+    /// keeps about 412 with the navigation folded to 48.
+    /// </summary>
+    private const int MinWindowWidth = 860;
+    private const int MinWindowHeight = 600;
+
     private readonly FrameNavigationService _navigation;
     private readonly AddToPlaylist _addToPlaylist;
     private readonly TrackDrag _trackDrag;
@@ -94,7 +102,12 @@ internal sealed partial class MainWindow : Window
 
         navigation.Initialize(ContentFrame);
         themeService.Attach(this);
-        RootGrid.Loaded += (_, _) => dialogs.Attach(RootGrid.XamlRoot);
+        RootGrid.Loaded += (_, _) =>
+        {
+            dialogs.Attach(RootGrid.XamlRoot);
+            ApplyMinimumSize();
+            RootGrid.XamlRoot.Changed += (_, _) => ApplyMinimumSize();
+        };
 
         // Also when a control under the pointer (a list, a button) has handled the press itself.
         RootGrid.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(OnRootPointerPressed), handledEventsToo: true);
@@ -305,6 +318,34 @@ internal sealed partial class MainWindow : Window
         presenter.PreferredMinimumHeight = minimum.Height + frameHeight;
         presenter.PreferredMaximumWidth = maximum.Width + frameWidth;
         presenter.PreferredMaximumHeight = maximum.Height + frameHeight;
+    }
+
+    /// <summary>
+    /// Gives the normal window its smallest size (#241), again whenever its XamlRoot changes (size, display
+    /// scale). Like the mini player's limits (#222), they apply to the whole window, so its frame (Windows 11's
+    /// invisible resize borders) is measured and added; that works only while the normal window shows, not
+    /// maximized, so a window that starts maximized gets them once it is restored.
+    /// </summary>
+    private void ApplyMinimumSize()
+    {
+        if (_windowPresenter is null || CurrentMode != WindowMode.Normal || _windowPresenter.State != OverlappedPresenterState.Restored)
+        {
+            return;
+        }
+
+        var minimum = Scaled(MinWindowWidth, MinWindowHeight);
+        var frameWidth = AppWindow.Size.Width - AppWindow.ClientSize.Width;
+        var frameHeight = AppWindow.Size.Height - AppWindow.ClientSize.Height;
+        _windowPresenter.PreferredMinimumWidth = minimum.Width + frameWidth;
+        _windowPresenter.PreferredMinimumHeight = minimum.Height + frameHeight;
+
+        // A window from a smaller screen or an earlier size grows to the minimum at once.
+        if (AppWindow.ClientSize.Width < minimum.Width || AppWindow.ClientSize.Height < minimum.Height)
+        {
+            AppWindow.Resize(new SizeInt32(
+                Math.Max(AppWindow.Size.Width, minimum.Width + frameWidth),
+                Math.Max(AppWindow.Size.Height, minimum.Height + frameHeight)));
+        }
     }
 
     /// <summary>Effective pixels in the physical pixels the window APIs take.</summary>
