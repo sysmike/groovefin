@@ -71,7 +71,7 @@
     <!--  Tracks and albums dragged here go into up next, where they are dropped (at the end elsewhere).  -->
     <Grid
         x:Name="PanelRoot"
-        Width="360"
+        Width="{StaticResource SidePaneWidth}"
         Padding="16,12,8,0"
         AllowDrop="True"
         Background="{ThemeResource LayerFillColorDefaultBrush}"

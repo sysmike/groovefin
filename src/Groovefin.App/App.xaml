@@ -14,6 +14,8 @@
             <x:Double x:Key="PageContentMaxWidth">1000</x:Double>
             <!--  The title bar's search box (at most 480) and the privacy mode button beside it (#234).  -->
             <x:Double x:Key="TitleBarContentMaxWidth">528</x:Double>
+            <!--  The queue and the lyrics, which open in the same place beside the page (#239).  -->
+            <x:Double x:Key="SidePaneWidth">400</x:Double>
 
             <!--
                 List density (standard values). ThemeService replaces them for the compact density;
