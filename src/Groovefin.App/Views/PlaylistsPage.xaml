@@ -10,12 +10,15 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+        <!--  The grid's tiles grow until whole columns fill each row (#232).  -->
+        <controls:TileSize x:Key="PlaylistTile" MinWidth="168" />
+
         <!--  Square image, name, track count and length.  -->
         <DataTemplate x:Key="PlaylistTileTemplate" x:DataType="vm:PlaylistItem">
             <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
-                <StackPanel Width="168" Padding="0,0,0,8" Spacing="6">
+                <StackPanel Width="{Binding Width, Source={StaticResource PlaylistTile}}" Padding="0,0,0,8" Spacing="6">
                     <Grid
-                        Height="168"
+                        Height="{Binding Width, Source={StaticResource PlaylistTile}}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                         CornerRadius="{StaticResource OverlayCornerRadius}">
                         <FontIcon
@@ -83,6 +86,7 @@
             controls:ItemMenu.IsEnabled="True"
             x:Uid="PlaylistsView"
             Grid.Row="1"
+            controls:TileSize.Source="{StaticResource PlaylistTile}"
             Padding="36,0,36,24"
             IsItemInvokedEnabled="True"
             ItemInvoked="OnPlaylistInvoked"

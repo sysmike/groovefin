@@ -10,12 +10,16 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+        <!--  The grids' tiles grow until whole columns fill each row (#232); one size per grid.  -->
+        <controls:TileSize x:Key="FavouriteAlbumTile" MinWidth="168" />
+        <controls:TileSize x:Key="FavouriteArtistTile" MinWidth="168" />
+
         <!--  Grid: square cover, name, artist.  -->
         <DataTemplate x:Key="AlbumGridTemplate" x:DataType="vm:AlbumItem">
             <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
-                <StackPanel Width="168" Padding="0,0,0,8" Spacing="6">
+                <StackPanel Width="{Binding Width, Source={StaticResource FavouriteAlbumTile}}" Padding="0,0,0,8" Spacing="6">
                     <Grid
-                        Height="168"
+                        Height="{Binding Width, Source={StaticResource FavouriteAlbumTile}}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                         CornerRadius="{StaticResource OverlayCornerRadius}">
                         <FontIcon
@@ -47,12 +51,12 @@
         <!--  Round image, name.  -->
         <DataTemplate x:Key="ArtistTileTemplate" x:DataType="vm:ArtistItem">
             <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
-                <StackPanel Width="168" Padding="0,0,0,8" Spacing="8">
+                <StackPanel Width="{Binding Width, Source={StaticResource FavouriteArtistTile}}" Padding="0,0,0,8" Spacing="8">
                     <Grid
-                        Width="168"
-                        Height="168"
+                        Width="{Binding Width, Source={StaticResource FavouriteArtistTile}}"
+                        Height="{Binding Width, Source={StaticResource FavouriteArtistTile}}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
-                        CornerRadius="84">
+                        CornerRadius="{Binding Round, Source={StaticResource FavouriteArtistTile}}">
                         <FontIcon
                             FontSize="44"
                             Foreground="{ThemeResource TextFillColorTertiaryBrush}"
@@ -203,6 +207,7 @@
                 controls:ItemMenu.IsEnabled="True"
                 x:Name="AlbumsView"
                 x:Uid="FavouritesAlbums"
+                controls:TileSize.Source="{StaticResource FavouriteAlbumTile}"
                 Padding="36,0,36,24"
                 IsItemInvokedEnabled="True"
                 ItemInvoked="OnAlbumInvoked"
@@ -222,6 +227,7 @@
                 controls:ItemMenu.IsEnabled="True"
                 x:Name="ArtistsView"
                 x:Uid="FavouritesArtists"
+                controls:TileSize.Source="{StaticResource FavouriteArtistTile}"
                 Padding="36,0,36,24"
                 IsItemInvokedEnabled="True"
                 ItemInvoked="OnArtistInvoked"
