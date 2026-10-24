@@ -635,7 +635,7 @@ try {
         if (-not $tile) { Stop-Test 'Tile grid' "The list '$list' has no tiles." }
         $inner = (Get-Bounds $view).Width - 72
         $width = (Get-Bounds $tile).Width
-        $columns = [Math]::Max(1, [Math]::Round(($inner + $spacing) / ($width + $spacing)))
+        $columns = [Math]::Max(1, [Math]::Floor(($inner + $spacing) / ($width + $spacing)))
         $row = $columns * ($width + $spacing) - $spacing
         if ([Math]::Abs($inner - $row) -gt $columns + 2) {
             Stop-Test 'Tile grid' ("The tiles of '{0}' do not fill the row: {1} columns of {2:0} px make {3:0} px of {4:0} px." -f $list, $columns, $width, $row, $inner)
