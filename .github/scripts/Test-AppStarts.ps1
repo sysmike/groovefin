@@ -658,21 +658,6 @@ try {
     Test-Running 'after playing an album from its cover'
     if ((Get-RequestCount $reports) -le $reportsBefore) { Stop-Test 'Privacy mode' 'Playing Album 2 sent no report to the server, so the check in privacy mode below would prove nothing.' }
 
-    # Privacy mode (#234): with the title bar button on, playing sends no report to the server. Turning it on
-    # ends the current track's report; counted from after that.
-    $privacyToggle = (Find-ById 'PrivacyButton').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
-    $privacyToggle.Toggle()
-    if ($privacyToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Privacy mode' 'The privacy mode button did not turn on.' }
-    Start-Sleep -Seconds 1
-    $reportsBefore = Get-RequestCount $reports
-    $before = Get-RequestCount $album2
-    Send-Click (Find-Button 'Play Album 2')
-    Wait-Request $album2 $before 'The play button on the cover of Album 2 was clicked in privacy mode'
-    Start-Sleep -Seconds 3
-    $reported = (Get-RequestCount $reports) - $reportsBefore
-    $privacyToggle.Toggle()
-    if ($reported -gt 0) { Stop-Test 'Privacy mode' "In privacy mode, playing Album 2 still sent $reported report(s) to the server." }
-    Write-Output 'Playing an album is reported to the server, and in privacy mode it is not.'
 
     # The song's title in a list row: the now playing bar may show the same title (as a link to the album).
     Send-Click (Find-Button 'Show the songs of Album 2')
@@ -832,6 +817,25 @@ try {
     }
     Move-Pointer ([int] ($tile.X + 150)) ([int] $tile.Y - 40)
     Write-Output 'The cover buttons play an album, a genre and an artist, and the songs popup plays a song, without opening their pages; they go once the pointer has left.'
+
+    # Privacy mode (#234): with the title bar button on, playing sends no report to the server. Turning it on
+    # ends the current track's report; counted from after that. After the cover buttons' checks: done before
+    # them, the artist's play button stayed after the sweep (#238).
+    Select-Navigation 'Albums'
+    Start-Sleep -Seconds 2
+    $privacyToggle = (Find-ById 'PrivacyButton').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+    $privacyToggle.Toggle()
+    if ($privacyToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Privacy mode' 'The privacy mode button did not turn on.' }
+    Start-Sleep -Seconds 1
+    $reportsBefore = Get-RequestCount $reports
+    $before = Get-RequestCount $album2
+    Send-Click (Find-Button 'Play Album 2')
+    Wait-Request $album2 $before 'The play button on the cover of Album 2 was clicked in privacy mode'
+    Start-Sleep -Seconds 3
+    $reported = (Get-RequestCount $reports) - $reportsBefore
+    $privacyToggle.Toggle()
+    if ($reported -gt 0) { Stop-Test 'Privacy mode' "In privacy mode, playing Album 2 still sent $reported report(s) to the server." }
+    Write-Output 'Playing an album is reported to the server, and in privacy mode it is not.'
 
     # Favourites (#202): each tab shows its own list, also after other tabs. The fake server has a favourite
     # of each kind; a hidden list is not in the automation tree. The tabs are selected through UI Automation:
