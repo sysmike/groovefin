@@ -624,10 +624,30 @@ try {
         [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))
     $artistPage = [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'ArtistPlayButton')
 
+    # The tiles of a grid fill its rows (#232): they grow until whole columns reach the right margin, so the
+    # gap on the right is as wide as on the left (36 px each, the list's padding). The row need not be full:
+    # the width of one tile and the spacing give the columns.
+    function Test-TilesFillRows([string] $list, [double] $spacing) {
+        $view = Find-Element ([System.Windows.Automation.AndCondition]::new(
+                [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $list),
+                [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::List))) "list '$list'"
+        $tile = $view.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))
+        if (-not $tile) { Stop-Test 'Tile grid' "The list '$list' has no tiles." }
+        $inner = (Get-Bounds $view).Width - 72
+        $width = (Get-Bounds $tile).Width
+        $columns = [Math]::Max(1, [Math]::Round(($inner + $spacing) / ($width + $spacing)))
+        $row = $columns * ($width + $spacing) - $spacing
+        if ([Math]::Abs($inner - $row) -gt $columns + 2) {
+            Stop-Test 'Tile grid' ("The tiles of '{0}' do not fill the row: {1} columns of {2:0} px make {3:0} px of {4:0} px." -f $list, $columns, $width, $row, $inner)
+        }
+        Write-Output ("The tiles of '{0}' fill the row: {1} columns of {2:0} px in {3:0} px." -f $list, $columns, $width, $inner)
+    }
+
     Select-Navigation 'Albums'
     Start-Sleep -Seconds 2
     Test-Accessibility 'albums'
     Test-TabOrder 'albums'
+    Test-TilesFillRows 'Albums' 16
     $album2 = 'parentId=a{31}2'
     $before = Get-RequestCount $album2
     Send-Click (Find-Button 'Play Album 2')
@@ -697,6 +717,7 @@ try {
     Select-Navigation 'Genres'
     Start-Sleep -Seconds 2
     Test-Accessibility 'genres'
+    Test-TilesFillRows 'Genres' 12
     $genreTracks = 'genreIds=e{32}'
     $before = Get-RequestCount $genreTracks
     Send-Click (Find-Button 'Play Genre')
@@ -709,6 +730,7 @@ try {
     Select-Navigation 'Artists'
     Start-Sleep -Seconds 2
     Test-Accessibility 'artists'
+    Test-TilesFillRows 'Artists' 16
     $playArtist = Find-Button 'Play Artist'
     $artistTile = Find-Element ([System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Artist'),
