@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 
 namespace Groovefin.App.Controls;
 
@@ -80,6 +81,10 @@ internal sealed partial class CoverActions : UserControl
         var show = _pointerOver || _focused || _songs?.IsOpen == true;
         Actions.Opacity = show ? 1 : 0;
         Actions.IsHitTestVisible = show;
+        if (!show)
+        {
+            HandFocusToTile();
+        }
 
         // While the mouse shows them, every move in the window is checked: once it is off the cover they
         // go, also when the cover missed the pointer's exit.
@@ -90,6 +95,28 @@ internal sealed partial class CoverActions : UserControl
         else
         {
             StopWatching();
+        }
+    }
+
+    /// <summary>
+    /// Hidden while a button still has focus from a click: the tile takes it. A hidden button that kept
+    /// focus showed them all again once that focus turned into keyboard focus, wherever the pointer was,
+    /// and Space would press it (#236).
+    /// </summary>
+    private void HandFocusToTile()
+    {
+        if (PlayButton.FocusState == FocusState.Unfocused && SongsButton.FocusState == FocusState.Unfocused)
+        {
+            return;
+        }
+
+        for (var element = VisualTreeHelper.GetParent(this); element is not null; element = VisualTreeHelper.GetParent(element))
+        {
+            if (element is ItemContainer tile)
+            {
+                tile.Focus(FocusState.Programmatic);
+                return;
+            }
         }
     }
 
