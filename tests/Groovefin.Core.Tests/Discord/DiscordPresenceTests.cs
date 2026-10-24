@@ -88,7 +88,8 @@ public sealed class DiscordPresenceTests : IDisposable
         _engine.SimulateState(PlaybackState.Playing);
 
         paused.Should().BeNull();
-        connectedWhilePaused.Should().BeFalse();
+        connectedWhilePaused.Should().BeTrue();
+        _discord.Connects.Should().Be(1);
         _discord.Sent[^1]!.Details.Should().Be("One More Time");
         _discord.Sent[^1]!.Start.Should().Be(_time.GetUtcNow());
     }
@@ -118,6 +119,24 @@ public sealed class DiscordPresenceTests : IDisposable
         _engine.Load(Source("Aerodynamic"));
         _engine.SimulateState(PlaybackState.Opening);
 
+        _discord.Sent[^1]!.Details.Should().Be("Aerodynamic");
+    }
+
+    [Fact]
+    public void Skipping_to_the_next_track_keeps_the_connection()
+    {
+        TurnOn();
+        Start();
+        Play();
+
+        // A new source passes through paused before it plays (#228).
+        _engine.Load(Source("Aerodynamic"));
+        _engine.SimulateState(PlaybackState.Paused);
+        _engine.SimulateState(PlaybackState.Opening);
+        _engine.SimulateState(PlaybackState.Playing);
+
+        _discord.Connects.Should().Be(1);
+        _discord.IsConnected.Should().BeTrue();
         _discord.Sent[^1]!.Details.Should().Be("Aerodynamic");
     }
 
@@ -154,7 +173,7 @@ public sealed class DiscordPresenceTests : IDisposable
     }
 
     [Fact]
-    public void Stopping_clears_the_status_and_lets_go_of_Discord()
+    public void Stopping_clears_the_status()
     {
         TurnOn();
         Start();
@@ -163,7 +182,7 @@ public sealed class DiscordPresenceTests : IDisposable
         _engine.Stop();
 
         _discord.Sent[^1].Should().BeNull();
-        _discord.IsConnected.Should().BeFalse();
+        _discord.IsConnected.Should().BeTrue();
     }
 
     [Fact]
@@ -176,6 +195,19 @@ public sealed class DiscordPresenceTests : IDisposable
         TurnOn(false);
 
         _discord.Sent[^1].Should().BeNull();
+        _discord.IsConnected.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Turning_it_off_while_paused_lets_go_of_Discord()
+    {
+        TurnOn();
+        Start();
+        Play();
+        _engine.SimulateState(PlaybackState.Paused);
+
+        TurnOn(false);
+
         _discord.IsConnected.Should().BeFalse();
     }
 
