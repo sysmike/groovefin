@@ -7,7 +7,8 @@ namespace Groovefin.Core.Discord;
 /// <summary>
 /// Shows the playing track in Discord ("Listening to" and the artists) while the setting is on. Lives as long as
 /// the app. Only the latest state is sent; while Discord is not running it retries now and then, and
-/// problems only go to the log. Closing the app closes the pipe, which clears the status.
+/// problems only go to the log. The connection stays open while the setting is on; closing the app closes the
+/// pipe, which clears the status.
 /// </summary>
 public sealed partial class DiscordPresence : IDisposable
 {
@@ -118,6 +119,14 @@ public sealed partial class DiscordPresence : IDisposable
                 {
                     _dirty = false;
                     _sending = false;
+                    if (_sent is null && !_settings.Current.Playback.DiscordPresence)
+                    {
+                        // Turned off and nothing shown: let go of Discord. Paused and stopped keep the
+                        // connection: a skip passes through paused, and connecting again for every track made
+                        // Discord drop the status (#228).
+                        _connection.Disconnect();
+                    }
+
                     return;
                 }
 
@@ -170,18 +179,13 @@ public sealed partial class DiscordPresence : IDisposable
         {
             await _connection.SetActivityAsync(activity).ConfigureAwait(false);
             SetSent(activity);
-            if (activity is null)
-            {
-                // Turned off, paused or stopped: let go of Discord until there is something to show again.
-                _connection.Disconnect();
-            }
         }
         catch (IOException ex)
         {
             _connection.Disconnect();
             SetSent(null);
             RetryAt = _time.GetUtcNow() + RetryDelay;
-            LogUnreachable(ex.Message);
+            LogSendFailed(ex.Message, RetryDelay.TotalSeconds);
         }
     }
 
@@ -260,6 +264,9 @@ public sealed partial class DiscordPresence : IDisposable
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Discord closed the connection while showing the status; trying again in {Seconds} s")]
     private partial void LogLost(double seconds);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The status did not reach Discord: {Reason}; trying again in {Seconds} s")]
+    private partial void LogSendFailed(string reason, double seconds);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Discord is not reachable: {Reason}")]
     private partial void LogUnreachable(string reason);
