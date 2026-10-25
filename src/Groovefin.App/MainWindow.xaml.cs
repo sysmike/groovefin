@@ -387,23 +387,34 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>
     /// Shows the sections the user keeps in the navigation pane, in their order (#255). A hidden section's
-    /// page stays reachable by its links and shortcuts; then no item is selected.
+    /// page stays reachable by its links and shortcuts; then no item is selected. Only the items that
+    /// differ are moved, added or removed: the others stay in the pane (with their state, such as the
+    /// expanded playlists).
     /// </summary>
     private void ApplyNavigationLayout()
     {
         var sections = ViewModel.VisibleSections;
-        NavView.MenuItems.Clear();
-        foreach (var key in sections)
+        List<object> wanted = [.. sections.Where(_sectionItems.ContainsKey).Select(key => _sectionItems[key])];
+        if (wanted.Count > 1 && sections[0] == PageKeys.Home)
         {
-            if (_sectionItems.TryGetValue(key, out var item))
-            {
-                NavView.MenuItems.Add(item);
-            }
+            wanted.Insert(1, _homeSeparator);
         }
 
-        if (sections.Count > 1 && sections[0] == PageKeys.Home)
+        var items = NavView.MenuItems;
+        for (var i = 0; i < wanted.Count; i++)
         {
-            NavView.MenuItems.Insert(1, _homeSeparator);
+            if (i < items.Count && ReferenceEquals(items[i], wanted[i]))
+            {
+                continue;
+            }
+
+            items.Remove(wanted[i]);
+            items.Insert(i, wanted[i]);
+        }
+
+        while (items.Count > wanted.Count)
+        {
+            items.RemoveAt(items.Count - 1);
         }
 
         SyncSelection(ViewModel.SelectedSection);

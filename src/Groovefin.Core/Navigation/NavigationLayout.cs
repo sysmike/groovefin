@@ -11,14 +11,11 @@ public static class NavigationLayout
     /// </summary>
     public static IReadOnlyList<NavigationItemSettings> Resolve(IReadOnlyList<NavigationItemSettings>? saved)
     {
-        var items = new List<NavigationItemSettings>();
-        foreach (var item in saved ?? [])
-        {
-            if (PageKeys.MainSections.Contains(item.Key) && items.TrueForAll(i => i.Key != item.Key))
-            {
-                items.Add(new NavigationItemSettings { Key = item.Key, IsVisible = item.IsVisible });
-            }
-        }
+        List<NavigationItemSettings> items =
+        [
+            .. (saved ?? []).Where(i => PageKeys.MainSections.Contains(i.Key)).DistinctBy(i => i.Key)
+                .Select(i => new NavigationItemSettings { Key = i.Key, IsVisible = i.IsVisible }),
+        ];
 
         foreach (var key in PageKeys.MainSections.Where(key => items.TrueForAll(i => i.Key != key)))
         {
