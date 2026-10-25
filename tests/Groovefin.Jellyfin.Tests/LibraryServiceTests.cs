@@ -396,6 +396,7 @@ public sealed class LibraryServiceTests : IDisposable
     [InlineData(TrackSortField.Duration, "Runtime,SortName")]
     [InlineData(TrackSortField.DateAdded, "DateCreated,SortName")]
     [InlineData(TrackSortField.Random, "Random")]
+    [InlineData(TrackSortField.DatePlayed, "DatePlayed,SortName")]
     public async Task GetTracks_maps_each_sort_order(TrackSortField sortBy, string expected)
     {
         StubItems(new { Items = Array.Empty<object>(), TotalRecordCount = 0 });
@@ -406,6 +407,49 @@ public sealed class LibraryServiceTests : IDisposable
         var query = LastQuery();
         query["sortBy"].Should().Be(expected);
         query["sortOrder"].Should().Be("Ascending");
+    }
+
+    [Fact]
+    public async Task GetTracksById_asks_for_those_ids_with_the_last_played_date()
+    {
+        StubItems(new
+        {
+            Items = new object[]
+            {
+                new
+                {
+                    Id = "aaaaaaaa-0000-0000-0000-000000000001",
+                    Name = "One More Time",
+                    Type = "Audio",
+                    UserData = new { PlayCount = 7, LastPlayedDate = "2026-10-20T18:30:00.0000000Z" },
+                },
+            },
+        });
+        _host.ConnectAsTestUser();
+
+        var tracks = await _host.Library.GetTracksByIdAsync(
+            ["aaaaaaaa000000000000000000000001", "aaaaaaaa000000000000000000000002"], TestContext.Current.CancellationToken);
+
+        var track = tracks.Should().ContainSingle().Subject;
+        track.PlayCount.Should().Be(7);
+        track.LastPlayed.Should().Be(new DateTimeOffset(2026, 10, 20, 18, 30, 0, TimeSpan.Zero));
+        var query = LastQuery();
+        query["ids"].Split(',').Select(id => Guid.Parse(id).ToString("N")).Should().Equal(
+            "aaaaaaaa000000000000000000000001", "aaaaaaaa000000000000000000000002");
+        query["includeItemTypes"].Should().Be("Audio");
+        query["enableUserData"].Should().Be("true");
+    }
+
+    [Fact]
+    public async Task GetTracksById_without_ids_asks_nothing()
+    {
+        _host.ConnectAsTestUser();
+        var before = _host.Server.LogEntries.Count();
+
+        var tracks = await _host.Library.GetTracksByIdAsync([], TestContext.Current.CancellationToken);
+
+        tracks.Should().BeEmpty();
+        _host.Server.LogEntries.Count().Should().Be(before);
     }
 
     [Theory]

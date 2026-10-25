@@ -40,6 +40,10 @@ public interface ILibraryService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<PagedResult<Track>> GetTracksAsync(TrackQuery query, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets the tracks with these IDs, in no particular order; IDs the server no longer knows are left out.</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<Track>> GetTracksByIdAsync(IReadOnlyList<string> trackIds, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Gets the subfolders and tracks directly in a folder. <see langword="null"/> is the top: the
     /// folders of the selected music library, or every music library when none is selected.
@@ -178,4 +182,7 @@ public enum TrackSortField
     PlayCount,
     DateAdded,
     Random,
+
+    /// <summary>When the user last played the track, on any device (#251).</summary>
+    DatePlayed,
 }

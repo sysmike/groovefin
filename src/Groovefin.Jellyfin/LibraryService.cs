@@ -163,6 +163,38 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         return new PagedResult<Track>(items, result.TotalRecordCount ?? items.Count, result.StartIndex ?? query.StartIndex);
     }
 
+    public async Task<IReadOnlyList<Track>> GetTracksByIdAsync(IReadOnlyList<string> trackIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(trackIds);
+        if (trackIds.Count == 0)
+        {
+            return [];
+        }
+
+        Guid?[] ids = [.. trackIds.Select(id => (Guid?)ParseId(id))];
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items.GetAsync(
+                request =>
+                {
+                    var p = request.QueryParameters;
+                    p.UserId = userId;
+                    p.Ids = ids;
+                    p.IncludeItemTypes = [BaseItemKind.Audio];
+                    p.EnableUserData = true;
+                    // Primary only: the track DTO then carries AlbumPrimaryImageTag for covers.
+                    p.ImageTypeLimit = 1;
+                    p.EnableImageTypes = [ImageType.Primary];
+                    p.EnableTotalRecordCount = false;
+                },
+                cancellationToken),
+            "Loading tracks").ConfigureAwait(false);
+
+        return (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
+    }
+
     public async Task<FolderContent> GetFolderAsync(string? folderId, CancellationToken cancellationToken = default)
     {
         var (api, connection) = client.Active;
@@ -561,6 +593,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         TrackSortField.PlayCount => [ItemSortBy.PlayCount, ItemSortBy.SortName],
         TrackSortField.DateAdded => [ItemSortBy.DateCreated, ItemSortBy.SortName],
         TrackSortField.Random => [ItemSortBy.Random],
+        TrackSortField.DatePlayed => [ItemSortBy.DatePlayed, ItemSortBy.SortName],
         _ => throw new ArgumentOutOfRangeException(nameof(sortBy), sortBy, null),
     };
 

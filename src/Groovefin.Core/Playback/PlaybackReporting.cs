@@ -58,6 +58,12 @@ public sealed partial class PlaybackReporting : IDisposable
         _privacy.PropertyChanged += OnPrivacyChanged;
     }
 
+    /// <summary>
+    /// Raised with the track ID when the server accepted a start report, on a background thread: the server
+    /// counts a play for each one, which the play history must not count again (#251).
+    /// </summary>
+    public event EventHandler<string>? StartReported;
+
     /// <summary>Waits until all reports queued so far were sent (tests, shutdown).</summary>
     public Task FlushAsync()
     {
@@ -89,7 +95,7 @@ public sealed partial class PlaybackReporting : IDisposable
                 PositionAt = _time.GetTimestamp(),
                 WasPaused = _engine.State == PlaybackState.Paused,
             };
-            Send(_reporter.ReportStartAsync, Report(_session));
+            Send(ReportStartAsync, Report(_session));
             UpdateTimer();
         }
     }
@@ -173,6 +179,12 @@ public sealed partial class PlaybackReporting : IDisposable
             UpdateTimer();
             Send(_reporter.ReportStoppedAsync, Report(session));
         }
+    }
+
+    private async Task ReportStartAsync(PlaybackReport report, CancellationToken cancellationToken)
+    {
+        await _reporter.ReportStartAsync(report, cancellationToken).ConfigureAwait(false);
+        StartReported?.Invoke(this, report.ItemId);
     }
 
     private void UpdateTimer()

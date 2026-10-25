@@ -246,4 +246,19 @@ public sealed class PlaybackReportingTests : IDisposable
 
         (await ReportsAsync()).Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task An_accepted_start_is_announced_and_a_failed_one_is_not()
+    {
+        var announced = new List<string>();
+        _sut.StartReported += (_, id) => announced.Add(id);
+        _reporter.ReportStartAsync(Arg.Is<PlaybackReport>(r => r.ItemId == "b"), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new JellyfinException("offline")));
+
+        _engine.Load(Source("a"));
+        _engine.Load(Source("b"));
+        await _sut.FlushAsync();
+
+        announced.Should().Equal("a");
+    }
 }

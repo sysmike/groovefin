@@ -4,6 +4,7 @@ using Groovefin.Core;
 using Groovefin.Core.Discord;
 using Groovefin.Core.Equalizer;
 using Groovefin.Core.Favourites;
+using Groovefin.Core.History;
 using Groovefin.Core.Images;
 using Groovefin.Core.Menus;
 using Groovefin.Core.Notifications;
@@ -102,6 +103,10 @@ internal static class AppHost
         // Privacy mode (#234): not saved, so it is off at every start.
         builder.Services.AddSingleton<PrivacyMode>();
         builder.Services.AddSingleton<PlaybackReporting>();
+        // The plays behind "On repeat" (#251): a file per server and user.
+        builder.Services.AddSingleton(new PlayHistoryStoreOptions(Path.Join(AppPaths.LocalData, "history")));
+        builder.Services.AddSingleton<IPlayHistoryStore, JsonPlayHistoryStore>();
+        builder.Services.AddSingleton<PlayHistory>();
         builder.Services.AddSingleton<ISystemMediaControls, SystemMediaControls>();
         builder.Services.AddSingleton<SystemMediaControlsSync>();
         builder.Services.AddSingleton(new SessionStoreOptions(Path.Join(AppPaths.LocalData, "session.json")));
