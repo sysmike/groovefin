@@ -37,6 +37,7 @@ public static class ItemMenu
             SearchTrackItem row => menus.ForTrack(row.Track),
             FavouriteTrackItem row => menus.ForTrack(row.Track),
             PlaylistEntryItem row => menus.ForTrack(row.Entry.Track),
+            OnRepeatItem row => menus.ForTrack(row.Track),
             TrackRow row => menus.ForTrack(row.Track),
             AlbumItem tile => menus.ForAlbum(tile.Album),
             ArtistItem tile => menus.ForArtist(tile.Artist),

@@ -13,6 +13,7 @@ public static class PageKeys
     public const string Playlists = "playlists";
     public const string Folders = "folders";
     public const string Favourites = "favourites";
+    public const string OnRepeat = "onrepeat";
     public const string Search = "search";
     public const string Settings = "settings";
     public const string Album = "album";
@@ -24,5 +25,5 @@ public static class PageKeys
 
     /// <summary>The sections shown in the main navigation, in display order.</summary>
     public static IReadOnlyList<string> MainSections { get; } =
-        [Home, Albums, Artists, Songs, Genres, Playlists, Folders, Favourites];
+        [Home, Albums, Artists, Songs, Genres, Playlists, Folders, Favourites, OnRepeat];
 }

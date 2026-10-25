@@ -107,6 +107,7 @@ public static class TrackDragSource
         SearchTrackItem row => row.Track,
         FavouriteTrackItem row => row.Track,
         PlaylistEntryItem row => row.Entry.Track,
+        OnRepeatItem row => row.Track,
         TrackRow row => row.Track,
         SongRow row => row.Track,
         _ => null,

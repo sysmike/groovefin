@@ -872,6 +872,13 @@ try {
     Test-Accessibility 'favourites'
     Test-TabOrder 'favourites'
 
+    # On repeat (#251): the runner plays nothing to the end (no sound card) and the fake server's tracks have
+    # no play counts, so the page loads, reads the plays from the server and says it has none yet.
+    Select-Navigation 'On repeat'
+    $null = Find-ById 'OnRepeatEmpty'
+    Write-Output 'On repeat opens and says it has no songs yet.'
+    Test-Accessibility 'on-repeat'
+
     # A playlist's tracks are a table like the album's (#245): a header with the Title, Artist and Album
     # labels, each row's album under the Album label, and a divider between the Title and Artist columns,
     # read from the screen as for the album (#220).
