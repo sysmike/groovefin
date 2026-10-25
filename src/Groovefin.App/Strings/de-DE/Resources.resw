@@ -1962,4 +1962,64 @@
   <data name="NowPlayingBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.LocalizedLandmarkType" xml:space="preserve">
     <value>Player</value>
   </data>
+  <data name="NavOnRepeat.Content" xml:space="preserve">
+    <value>Auf Dauerschleife</value>
+  </data>
+  <data name="NavOnRepeat.AccessKey" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="StartPage_onrepeat" xml:space="preserve">
+    <value>Auf Dauerschleife</value>
+  </data>
+  <data name="OnRepeatHeader.Text" xml:space="preserve">
+    <value>Auf Dauerschleife</value>
+  </data>
+  <data name="OnRepeatSubtitle.Text" xml:space="preserve">
+    <value>Die Songs, die du in den letzten 30 Tagen am häufigsten gehört hast.</value>
+  </data>
+  <data name="OnRepeatPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Abspielen</value>
+  </data>
+  <data name="OnRepeatPlayText.Text" xml:space="preserve">
+    <value>Abspielen</value>
+  </data>
+  <data name="OnRepeatShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zufallswiedergabe</value>
+  </data>
+  <data name="OnRepeatShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zufallswiedergabe</value>
+  </data>
+  <data name="OnRepeatQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zur Warteschlange hinzufügen</value>
+  </data>
+  <data name="OnRepeatQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zur Warteschlange hinzufügen</value>
+  </data>
+  <data name="OnRepeatSaveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Als Playlist speichern</value>
+  </data>
+  <data name="OnRepeatSaveText.Text" xml:space="preserve">
+    <value>Als Playlist speichern</value>
+  </data>
+  <data name="OnRepeatColumnPlays.Text" xml:space="preserve">
+    <value>Wiedergaben</value>
+  </data>
+  <data name="OnRepeatEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="OnRepeatLoadFailed.Text" xml:space="preserve">
+    <value>„Auf Dauerschleife“ konnte nicht geladen werden.</value>
+  </data>
+  <data name="OnRepeatEmpty.Text" xml:space="preserve">
+    <value>Hier ist noch nichts. Songs, die du in 30 Tagen mindestens zweimal hörst, erscheinen hier, auch von deinen anderen Geräten.</value>
+  </data>
+  <data name="OnRepeat_Plays" xml:space="preserve">
+    <value>{0} Wiedergaben</value>
+  </data>
+  <data name="OnRepeat_PlaylistName" xml:space="preserve">
+    <value>Auf Dauerschleife {0}</value>
+  </data>
+  <data name="Operation_LoadOnRepeat" xml:space="preserve">
+    <value>„Auf Dauerschleife“ konnte nicht geladen werden</value>
+  </data>
 </root>

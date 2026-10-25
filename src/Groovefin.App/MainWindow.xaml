@@ -156,6 +156,12 @@
                         <FontIcon Glyph="&#xEB51;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <!--  The tracks played most in the last 30 days (#251).  -->
+                <NavigationViewItem x:Uid="NavOnRepeat" Tag="onrepeat">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8EE;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <!--  The page: the main landmark (#51), so Narrator can jump to it.  -->

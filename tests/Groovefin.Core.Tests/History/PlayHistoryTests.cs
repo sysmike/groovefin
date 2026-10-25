@@ -19,7 +19,7 @@ public sealed class PlayHistoryTests : IDisposable
     private readonly IPlaybackReporter _reporter = Substitute.For<IPlaybackReporter>();
     private readonly IJellyfinClient _client = Substitute.For<IJellyfinClient>();
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
-    private readonly MemoryStore _store = new();
+    private readonly MemoryPlayHistoryStore _store = new();
     private readonly PrivacyMode _privacy = new();
     private readonly PlaybackReporting _reporting;
     private readonly PlayHistory _sut;
@@ -292,37 +292,5 @@ public sealed class PlayHistoryTests : IDisposable
         _store.Preload(history);
 
         (await fresh.GetOnRepeatAsync()).Should().ContainSingle().Which.Should().Be(new OnRepeatEntry("a", 2, Now.AddDays(-1)));
-    }
-
-    /// <summary>The history files in memory: the key of the last save tells the tests where to look.</summary>
-    private sealed class MemoryStore : IPlayHistoryStore
-    {
-        private PlayHistoryData? _preloaded;
-
-        public Dictionary<string, PlayHistoryData> Saved { get; } = [];
-
-        public string? LastKey { get; private set; }
-
-        /// <summary>Makes the next load of an unknown key return <paramref name="data"/>.</summary>
-        public void Preload(PlayHistoryData data) => _preloaded = data;
-
-        public Task<PlayHistoryData?> LoadAsync(string key, CancellationToken cancellationToken = default)
-        {
-            if (Saved.TryGetValue(key, out var data))
-            {
-                return Task.FromResult<PlayHistoryData?>(data);
-            }
-
-            var preloaded = _preloaded;
-            _preloaded = null;
-            return Task.FromResult(preloaded);
-        }
-
-        public Task SaveAsync(string key, PlayHistoryData data, CancellationToken cancellationToken = default)
-        {
-            Saved[key] = data;
-            LastKey = key;
-            return Task.CompletedTask;
-        }
     }
 }

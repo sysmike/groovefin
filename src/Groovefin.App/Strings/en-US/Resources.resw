@@ -1981,4 +1981,64 @@
   <data name="NowPlayingBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.LocalizedLandmarkType" xml:space="preserve">
     <value>Player</value>
   </data>
+  <data name="NavOnRepeat.Content" xml:space="preserve">
+    <value>On repeat</value>
+  </data>
+  <data name="NavOnRepeat.AccessKey" xml:space="preserve">
+    <value>O</value>
+  </data>
+  <data name="StartPage_onrepeat" xml:space="preserve">
+    <value>On repeat</value>
+  </data>
+  <data name="OnRepeatHeader.Text" xml:space="preserve">
+    <value>On repeat</value>
+  </data>
+  <data name="OnRepeatSubtitle.Text" xml:space="preserve">
+    <value>The songs you played most in the last 30 days.</value>
+  </data>
+  <data name="OnRepeatPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="OnRepeatPlayText.Text" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="OnRepeatShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Shuffle</value>
+  </data>
+  <data name="OnRepeatShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Shuffle</value>
+  </data>
+  <data name="OnRepeatQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Add to queue</value>
+  </data>
+  <data name="OnRepeatQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Add to queue</value>
+  </data>
+  <data name="OnRepeatSaveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Save as playlist</value>
+  </data>
+  <data name="OnRepeatSaveText.Text" xml:space="preserve">
+    <value>Save as playlist</value>
+  </data>
+  <data name="OnRepeatColumnPlays.Text" xml:space="preserve">
+    <value>Plays</value>
+  </data>
+  <data name="OnRepeatEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Songs</value>
+  </data>
+  <data name="OnRepeatLoadFailed.Text" xml:space="preserve">
+    <value>On repeat couldn't be loaded.</value>
+  </data>
+  <data name="OnRepeatEmpty.Text" xml:space="preserve">
+    <value>Nothing here yet. Songs you play at least twice in 30 days show up here, also from your other devices.</value>
+  </data>
+  <data name="OnRepeat_Plays" xml:space="preserve">
+    <value>{0} plays</value>
+  </data>
+  <data name="OnRepeat_PlaylistName" xml:space="preserve">
+    <value>On repeat {0}</value>
+  </data>
+  <data name="Operation_LoadOnRepeat" xml:space="preserve">
+    <value>Couldn't load On repeat</value>
+  </data>
 </root>
