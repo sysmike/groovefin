@@ -1,7 +1,10 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
 using Groovefin.Core.Models;
@@ -12,22 +15,38 @@ using Groovefin.Core.Services;
 
 namespace Groovefin.Core.ViewModels;
 
-/// <summary>A row of a playlist: cover, title, artists · album, length.</summary>
-public sealed record PlaylistEntryItem(PlaylistEntry Entry, ImageRequest? Cover)
+/// <summary>A row of a playlist, in the album page's columns: position, title, artists, album, heart, length (#245).</summary>
+public sealed partial class PlaylistEntryItem(PlaylistEntry entry, bool isFavourite = false) : ObservableObject
 {
+    public PlaylistEntry Entry { get; } = entry;
+
+    /// <summary>Gets or sets the 1-based position in the playlist; the view model renumbers after each edit.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Number), nameof(AccessibleName))]
+    public partial int Position { get; set; }
+
+    /// <summary>Gets or sets the row's heart; kept in line with the server by the view model.</summary>
+    [ObservableProperty]
+    public partial bool IsFavourite { get; set; } = isFavourite;
+
+    public string Number => Position > 0 ? Position.ToString(CultureInfo.CurrentCulture) : string.Empty;
+
     public string Name => Entry.Track.Name;
 
-    public string Details => string.Join(" · ", new[] { string.Join(", ", Entry.Track.Artists.Select(a => a.Name)), Entry.Track.AlbumName ?? string.Empty }.Where(s => s.Length > 0));
+    public string Artist => string.Join(", ", Entry.Track.Artists.Select(a => a.Name));
+
+    public string Album => Entry.Track.AlbumName ?? string.Empty;
 
     public string Duration => Durations.Track(Entry.Track.Duration);
 
-    public string AccessibleName => string.Join(", ", new[] { Name, Details, Duration }.Where(s => s.Length > 0));
+    /// <summary>Gets the text Narrator reads, e.g. "3, Digital Love, Daft Punk, Discovery, 4:58".</summary>
+    public string AccessibleName => string.Join(", ", new[] { Number, Name, Artist, Album, Duration }.Where(s => s.Length > 0));
 }
 
 /// <summary>
 /// Playlist detail page: play, shuffle, queue, rename, delete (after a confirmation), and edit the
-/// entries (remove, move up/down, drag). Edits show at once and are sent to the server; when the server
-/// refuses, the entries are loaded again and the error is shown.
+/// entries (remove, move up/down, drag), and toggle a track's heart. Edits show at once and are sent to the
+/// server; when the server refuses, the entries are loaded again and the error is shown.
 /// </summary>
 public sealed partial class PlaylistDetailViewModel(
     IPlaylistService playlists,
@@ -35,11 +54,11 @@ public sealed partial class PlaylistDetailViewModel(
     INavigationService navigation,
     IDialogService dialogs,
     IErrorReporter errors,
-    IStringResources strings) : ObservableObject
+    IStringResources strings,
+    FavouritesService favourites,
+    IMessenger messenger) : ObservableObject
 {
     public const double ImageWidth = 200;
-
-    public const double CoverWidth = 40;
 
     public ObservableCollection<PlaylistEntryItem> Entries { get; } = [];
 
@@ -77,6 +96,12 @@ public sealed partial class PlaylistDetailViewModel(
 
     public async Task LoadAsync(string playlistId, CancellationToken cancellationToken = default)
     {
+        // Weak: the page's view model needs no unregistering.
+        if (!messenger.IsRegistered<FavouriteChangedMessage>(this))
+        {
+            messenger.Register<PlaylistDetailViewModel, FavouriteChangedMessage>(this, static (r, m) => r.OnFavouriteChanged(m));
+        }
+
         IsLoading = true;
         LoadFailed = false;
         try
@@ -109,8 +134,11 @@ public sealed partial class PlaylistDetailViewModel(
     /// Sends a move the list already made (a drag): <paramref name="item"/> is now at
     /// <paramref name="newIndex"/> in <see cref="Entries"/>.
     /// </summary>
-    public Task MoveEntryAsync(PlaylistEntryItem item, int newIndex) =>
-        EditAsync(() => playlists.MoveEntryAsync(Playlist!.Id, item.Entry.EntryId, newIndex));
+    public Task MoveEntryAsync(PlaylistEntryItem item, int newIndex)
+    {
+        Renumber();
+        return EditAsync(() => playlists.MoveEntryAsync(Playlist!.Id, item.Entry.EntryId, newIndex));
+    }
 
     private IReadOnlyList<Track> Tracks => [.. Entries.Select(e => e.Entry.Track)];
 
@@ -192,6 +220,27 @@ public sealed partial class PlaylistDetailViewModel(
         return EditAsync(() => playlists.RemoveEntriesAsync(Playlist!.Id, [item.Entry.EntryId]));
     }
 
+    /// <summary>Toggles a track's heart, optimistic like the album page's.</summary>
+    [RelayCommand]
+    private async Task ToggleEntryFavouriteAsync(PlaylistEntryItem item)
+    {
+        var target = !item.IsFavourite;
+        item.IsFavourite = target;
+        if (!await favourites.SetAsync(item.Entry.Track.Id, target))
+        {
+            item.IsFavourite = !target;
+        }
+    }
+
+    /// <summary>A heart was toggled elsewhere (now playing bar, favourites page, a context menu).</summary>
+    private void OnFavouriteChanged(FavouriteChangedMessage message)
+    {
+        foreach (var item in Entries.Where(e => e.Entry.Track.Id == message.ItemId))
+        {
+            item.IsFavourite = message.IsFavourite;
+        }
+    }
+
     [RelayCommand]
     private Task MoveUpAsync(PlaylistEntryItem item) => MoveByAsync(item, -1);
 
@@ -242,16 +291,24 @@ public sealed partial class PlaylistDetailViewModel(
         Entries.Clear();
         foreach (var entry in entries)
         {
-            var track = entry.Track;
-            var cover = track.AlbumId is { } albumId ? ImageRequest.Primary(albumId, track.AlbumImageTag, CoverWidth, DisplayScale) : null;
-            Entries.Add(new PlaylistEntryItem(entry, cover));
+            Entries.Add(new PlaylistEntryItem(entry, favourites.IsFavourite(entry.Track.Id, entry.Track.IsFavorite)));
         }
 
         UpdateDetails();
     }
 
+    /// <summary>The # column follows the rows' order.</summary>
+    private void Renumber()
+    {
+        for (var i = 0; i < Entries.Count; i++)
+        {
+            Entries[i].Position = i + 1;
+        }
+    }
+
     private void UpdateDetails()
     {
+        Renumber();
         HasEntries = Entries.Count > 0;
         var known = Entries.Select(e => e.Entry.Track.Duration).Where(d => d is not null).Select(d => d!.Value).ToList();
         TimeSpan? total = known.Count > 0 ? known.Aggregate(TimeSpan.Zero, (sum, d) => sum + d) : null;

@@ -67,6 +67,14 @@ internal sealed partial class PlaylistDetailPage : Page
         }
     }
 
+    private void OnEntryFavouriteClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is PlaylistEntryItem item)
+        {
+            ViewModel.ToggleEntryFavouriteCommand.Execute(item);
+        }
+    }
+
     /// <summary>The list already moved the row; the server follows.</summary>
     private async void OnEntriesDragCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
     {

@@ -79,6 +79,11 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
         @{ Id = "ccccccccccccccccccccccccccccccc$_"; Name = "Track $_"; Type = 'Audio'; MediaType = 'Audio'; IndexNumber = $_
            AlbumId = $albums[0].Id; Album = 'Album 1'; AlbumArtist = 'Artist'; RunTimeTicks = 300000000; ImageTags = @{} }
     }
+    # One playlist of both tracks (#245); its entries carry their artist and the playlist's own entry IDs.
+    $playlist = @{ Id = '99999999999999999999999999999999'; Name = 'Road trip'; Type = 'Playlist'; MediaType = 'Audio'; ChildCount = 2; ImageTags = @{} }
+    $playlistEntries = $tracks | ForEach-Object {
+        $_ + @{ PlaylistItemId = "e$($_.IndexNumber)"; ArtistItems = @(@{ Id = $artist.Id; Name = $artist.Name }) }
+    }
 
     # Thirty seconds of a quiet 440 Hz tone: 16-bit mono PCM at 22.05 kHz in a WAV file, for every stream.
     $rate = 22050
@@ -97,6 +102,7 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
         $request = $context.Request
         $path = $request.Url.AbsolutePath.ToLowerInvariant()
         if ($path -eq '/items' -and $request.Url.Query -match 'includeItemTypes=Audio') { $path = '/items/tracks' }
+        if ($path -eq '/items' -and $request.Url.Query -match 'includeItemTypes=Playlist') { $path = '/items/playlists' }
         $status = 200
         $raw = $null
         $body = switch -Regex ($path) {
@@ -106,7 +112,12 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             '^/userviews$' { @{ Items = @(@{ Id = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'; Name = 'Music'; Type = 'CollectionFolder'; CollectionType = 'music' }); TotalRecordCount = 1; StartIndex = 0 } }
             '/images/' { $status = 404; $null }
             '^/items/tracks$' { @{ Items = $tracks; TotalRecordCount = $tracks.Count; StartIndex = 0 } }
-            '^/items/[0-9a-f-]{32,36}$' { if ($path -eq "/items/$($artist.Id)") { $artist } else { $albums[0] } }
+            '^/items/playlists$' { @{ Items = @($playlist); TotalRecordCount = 1; StartIndex = 0 } }
+            '^/playlists/[0-9a-f-]{32,36}/items$' { @{ Items = @($playlistEntries); TotalRecordCount = $playlistEntries.Count; StartIndex = 0 } }
+            '^/items/[0-9a-f-]{32,36}$' {
+                $id = $path.Substring(7) -replace '-', ''
+                if ($id -eq $artist.Id) { $artist } elseif ($id -eq $playlist.Id) { $playlist } else { $albums[0] }
+            }
             '^/audio/[0-9a-f-]{32,36}/universal$' { $raw = $wav; $null }
             '^/items$' { @{ Items = $albums; TotalRecordCount = $albums.Count; StartIndex = 0 } }
             '^/artists(/albumartists)?$' { @{ Items = @($artist); TotalRecordCount = 1; StartIndex = 0 } }
@@ -860,6 +871,71 @@ try {
     Write-Output 'Each favourites tab shows its own list.'
     Test-Accessibility 'favourites'
     Test-TabOrder 'favourites'
+
+    # A playlist's tracks are a table like the album's (#245): a header with the Title, Artist and Album
+    # labels, each row's album under the Album label, and a divider between the Title and Artist columns,
+    # read from the screen as for the album (#220).
+    Select-Navigation 'Playlists'
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        $playlistTile = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) |
+            Where-Object { $_.Current.Name -like 'Road trip*' } | Select-Object -First 1
+        if (-not $playlistTile) { Start-Sleep -Milliseconds 500 }
+    } while (-not $playlistTile -and (Get-Date) -lt $until)
+    if (-not $playlistTile) { Stop-Test 'Playlist columns' "The playlist 'Road trip' was not found on the playlists page." }
+    $pattern = $null
+    if ($playlistTile.TryGetCurrentPattern($invoke, [ref] $pattern)) { $pattern.Invoke() }
+    else {
+        Add-Type -AssemblyName System.Windows.Forms
+        $playlistTile.SetFocus()
+        [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+    }
+    # The header shows once the tracks have loaded; the page with its old list never shows one.
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        $titleLabel = (Find-ById 'MainContent').FindFirst($scope::Descendants,
+            [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'PlaylistColumnTitle'))
+        if (-not $titleLabel -or $titleLabel.Current.IsOffscreen) { Start-Sleep -Milliseconds 500 }
+    } while ((-not $titleLabel -or $titleLabel.Current.IsOffscreen) -and (Get-Date) -lt $until)
+    Start-Sleep -Seconds 1
+    $columnLabels = [ordered] @{}
+    foreach ($column in 'Title', 'Artist', 'Album') {
+        $columnLabels[$column] = (Find-ById 'MainContent').FindFirst($scope::Descendants,
+            [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, "PlaylistColumn$column"))
+        if (-not $columnLabels[$column] -or $columnLabels[$column].Current.Name -cne $column) {
+            Stop-Test 'Playlist columns' "The playlist's track list has no '$column' column header."
+        }
+    }
+    $rowAlbum = (Find-ById 'MainContent').FindFirst($scope::Descendants, [System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Album 1'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text)))
+    $albumLabelLeft = (Get-Bounds $columnLabels.Album).Left
+    if (-not $rowAlbum -or [Math]::Abs((Get-Bounds $rowAlbum).Left - $albumLabelLeft) -gt 2) {
+        Stop-Test 'Playlist columns' "The playlist's rows don't show their album under the Album header (header at $albumLabelLeft px, album at $(if ($rowAlbum) { (Get-Bounds $rowAlbum).Left } else { 'none' }))."
+    }
+    Add-Type -AssemblyName System.Drawing
+    $titleLabelBounds = Get-Bounds $columnLabels.Title
+    $artistLabelBounds = Get-Bounds $columnLabels.Artist
+    $gapWidth = [int] ($artistLabelBounds.Left - $titleLabelBounds.Right) - 8
+    $contrast = 0
+    if ($gapWidth -gt 1) {
+        $gap = [System.Drawing.Bitmap]::new($gapWidth, 1)
+        $graphics = [System.Drawing.Graphics]::FromImage($gap)
+        $graphics.CopyFromScreen([int] $titleLabelBounds.Right + 4, [int] ($titleLabelBounds.Top + $titleLabelBounds.Height / 2), 0, 0, $gap.Size)
+        $graphics.Dispose()
+        $background = $gap.GetPixel(0, 0)
+        for ($x = 1; $x -lt $gap.Width; $x++) {
+            $pixel = $gap.GetPixel($x, 0)
+            $contrast = [Math]::Max($contrast, [Math]::Max([Math]::Abs($pixel.R - $background.R),
+                    [Math]::Max([Math]::Abs($pixel.G - $background.G), [Math]::Abs($pixel.B - $background.B))))
+        }
+        $gap.Dispose()
+    }
+    if ($contrast -lt 6) {
+        Stop-Test 'Playlist columns' "The playlist's column header has no divider between the Title and Artist columns (contrast $contrast in a $gapWidth px strip)."
+    }
+    Write-Output "The playlist's tracks have the album's columns, with a divider between them ($contrast levels against the background)."
+    Test-Accessibility 'playlist'
 
     # The queue, the lyrics and the full-screen player, opened and closed with their shortcuts, scanned
     # while they show (#51).

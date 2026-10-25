@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
@@ -17,6 +19,8 @@ public sealed class PlaylistDetailViewModelTests
     private readonly IDialogService _dialogs = Substitute.For<IDialogService>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
+    private readonly ILibraryService _library = Substitute.For<ILibraryService>();
+    private readonly WeakReferenceMessenger _messenger = new();
     private readonly PlaylistDetailViewModel _sut;
 
     public PlaylistDetailViewModelTests()
@@ -27,7 +31,7 @@ public sealed class PlaylistDetailViewModelTests
         _strings.GetString("Playlist_DeleteMessage").Returns("Delete {0}?");
         _playlists.GetPlaylistAsync(Id, Arg.Any<CancellationToken>()).Returns(new Playlist { Id = Id, Name = "Chill", PrimaryImageTag = "img" });
         _playlists.GetEntriesAsync(Id, Arg.Any<CancellationToken>()).Returns(Entries("a", "b", "c"));
-        _sut = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings);
+        _sut = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -60,8 +64,10 @@ public sealed class PlaylistDetailViewModelTests
         _sut.Image!.ItemId.Should().Be(Id);
         Order.Should().Equal("a", "b", "c");
         _sut.Details.Should().Be("3 tracks · 3:00");
-        _sut.Entries[0].AccessibleName.Should().Be("Song a, Artist · Album, 1:00");
-        _sut.Entries[0].Cover!.ItemId.Should().Be("al");
+        _sut.Entries.Select(e => e.Number).Should().Equal("1", "2", "3");
+        _sut.Entries[0].Artist.Should().Be("Artist");
+        _sut.Entries[0].Album.Should().Be("Album");
+        _sut.Entries[0].AccessibleName.Should().Be("1, Song a, Artist, Album, 1:00");
         _sut.PlayCommand.CanExecute(null).Should().BeTrue();
         _sut.RenameCommand.CanExecute(null).Should().BeTrue();
     }
@@ -284,10 +290,54 @@ public sealed class PlaylistDetailViewModelTests
     [Fact]
     public async Task Edits_before_the_playlist_loaded_are_ignored()
     {
-        var row = new PlaylistEntryItem(Entries("x")[0], null);
+        var row = new PlaylistEntryItem(Entries("x")[0]);
 
         await _sut.MoveEntryAsync(row, 0);
 
         await _playlists.DidNotReceiveWithAnyArgs().MoveEntryAsync(default!, default!, default, Ct);
+    }
+
+    [Fact]
+    public async Task The_positions_follow_moves_drags_and_removals()
+    {
+        await LoadAsync();
+
+        await _sut.MoveDownCommand.ExecuteAsync(Row("a"));
+        Row("b").Number.Should().Be("1");
+        Row("a").Number.Should().Be("2");
+
+        // A drag: the list moved the row itself, then the page tells the view model.
+        _sut.Entries.Move(2, 0);
+        await _sut.MoveEntryAsync(Row("c"), 0);
+        _sut.Entries.Select(e => e.Number).Should().Equal("1", "2", "3");
+        Row("c").Number.Should().Be("1");
+
+        await _sut.RemoveCommand.ExecuteAsync(Row("c"));
+        _sut.Entries.Select(e => e.Number).Should().Equal("1", "2");
+    }
+
+    [Fact]
+    public async Task A_heart_toggles_on_the_server_and_rolls_back_when_refused()
+    {
+        await LoadAsync();
+
+        await _sut.ToggleEntryFavouriteCommand.ExecuteAsync(Row("a"));
+        Row("a").IsFavourite.Should().BeTrue();
+        await _library.Received(1).SetFavouriteAsync("a", true, Arg.Any<CancellationToken>());
+
+        _library.SetFavouriteAsync("a", false, Arg.Any<CancellationToken>()).Returns(Task.FromException(new JellyfinException("no")));
+        await _sut.ToggleEntryFavouriteCommand.ExecuteAsync(Row("a"));
+        Row("a").IsFavourite.Should().BeTrue();
+        _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.SetFavourite);
+    }
+
+    [Fact]
+    public async Task Hearts_toggled_elsewhere_show_in_the_rows()
+    {
+        await LoadAsync();
+
+        _messenger.Send(new FavouriteChangedMessage("b", true));
+
+        _sut.Entries.Select(e => e.IsFavourite).Should().Equal(false, true, false);
     }
 }

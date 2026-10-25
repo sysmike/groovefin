@@ -217,6 +217,12 @@
   <data name="AlbumColumnTitle.Text" xml:space="preserve">
     <value>Titel</value>
   </data>
+  <data name="PlaylistColumnArtist.Text" xml:space="preserve">
+    <value>Interpret</value>
+  </data>
+  <data name="PlaylistColumnAlbum.Text" xml:space="preserve">
+    <value>Album</value>
+  </data>
   <data name="AlbumSort_Number" xml:space="preserve">
     <value>Titelnummer</value>
   </data>
