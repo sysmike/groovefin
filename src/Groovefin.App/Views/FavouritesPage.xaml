@@ -174,12 +174,12 @@
                                     Stretch="UniformToFill" />
                             </Grid>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <controls:TrackTitle IsPlaying="{x:Bind IsCurrent, Mode=OneWay}" ShowsIcon="True" Text="{x:Bind Name}" />
-                                <TextBlock
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    Style="{StaticResource CaptionTextBlockStyle}"
-                                    Text="{x:Bind Details}"
-                                    TextTrimming="CharacterEllipsis" />
+                                <controls:TrackText IsPlaying="{x:Bind IsCurrent, Mode=OneWay}" ShowsIcon="True" Text="{x:Bind Name}" />
+                                <controls:TrackText
+                                    FontSize="12"
+                                    IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                    IsSecondary="True"
+                                    Text="{x:Bind Details}" />
                             </StackPanel>
                             <Button
                                 x:Uid="FavouritesRemoveButton"

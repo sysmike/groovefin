@@ -309,7 +309,7 @@
                                                 IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
                                                 Text="{x:Bind Number}" />
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <controls:TrackTitle IsPlaying="{x:Bind IsCurrent, Mode=OneWay}" Text="{x:Bind Name}" />
+                                                <controls:TrackText IsPlaying="{x:Bind IsCurrent, Mode=OneWay}" Text="{x:Bind Name}" />
                                                 <!--  Track artists as links (compilations, features); also in the row's context menu.  -->
                                                 <ItemsRepeater ItemsSource="{x:Bind ArtistLinks}" Visibility="{x:Bind HasArtist}">
                                                     <ItemsRepeater.Layout>

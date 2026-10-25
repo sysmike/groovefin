@@ -212,23 +212,23 @@
                             VerticalAlignment="Center"
                             IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
                             Text="{x:Bind Number, Mode=OneWay}" />
-                        <controls:TrackTitle
+                        <controls:TrackText
                             Grid.Column="1"
                             VerticalAlignment="Center"
                             IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
                             Text="{x:Bind Name}" />
-                        <TextBlock
+                        <controls:TrackText
                             Grid.Column="2"
                             VerticalAlignment="Center"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="{x:Bind Artist}"
-                            TextTrimming="CharacterEllipsis" />
-                        <TextBlock
+                            IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                            IsSecondary="True"
+                            Text="{x:Bind Artist}" />
+                        <controls:TrackText
                             Grid.Column="3"
                             VerticalAlignment="Center"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="{x:Bind Album}"
-                            TextTrimming="CharacterEllipsis" />
+                            IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                            IsSecondary="True"
+                            Text="{x:Bind Album}" />
                         <ToggleButton
                             x:Uid="AlbumTrackFavouriteButton"
                             Grid.Column="4"
