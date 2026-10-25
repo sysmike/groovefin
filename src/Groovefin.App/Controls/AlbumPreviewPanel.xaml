@@ -108,13 +108,12 @@
                                                 IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
                                                 Text="{x:Bind Number}" />
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <controls:TrackTitle IsPlaying="{x:Bind IsCurrent, Mode=OneWay}" Text="{x:Bind Name}" />
-                                                <TextBlock
-                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                    MaxLines="1"
-                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                <controls:TrackText IsPlaying="{x:Bind IsCurrent, Mode=OneWay}" Text="{x:Bind Name}" />
+                                                <controls:TrackText
+                                                    FontSize="12"
+                                                    IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                                    IsSecondary="True"
                                                     Text="{x:Bind Artist}"
-                                                    TextTrimming="CharacterEllipsis"
                                                     Visibility="{x:Bind HasArtist}" />
                                             </StackPanel>
                                             <TextBlock

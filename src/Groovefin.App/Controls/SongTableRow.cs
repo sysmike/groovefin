@@ -76,13 +76,15 @@ internal sealed partial class SongTableRow : Grid
             ColumnDefinitions.Clear();
             Children.Clear();
             // The playing song's speaker replaces its number, or sits before its title without a # column.
+            // Its title, artists and album turn the accent colour (#249); the numbers stay grey.
             var hasNumber = columns.Any(c => c.Column == SongColumn.TrackNumber);
             for (var i = 0; i < columns.Count; i++)
             {
                 ColumnDefinitions.Add(new ColumnDefinition());
                 FrameworkElement cell = columns[i].Column switch
                 {
-                    SongColumn.Title => new TrackTitle { ShowsIcon = !hasNumber },
+                    SongColumn.Title => new TrackText { ShowsIcon = !hasNumber },
+                    SongColumn.Artist or SongColumn.Album or SongColumn.AlbumArtist => new TrackText { IsSecondary = true },
                     SongColumn.TrackNumber => new TrackNumber(),
                     _ => new TextBlock { Style = _secondaryStyle },
                 };
@@ -100,9 +102,9 @@ internal sealed partial class SongTableRow : Grid
             var text = _row.Text(columns[i].Column);
             switch (Children[i])
             {
-                case TrackTitle title:
-                    title.Text = text;
-                    title.IsPlaying = _row.IsCurrent;
+                case TrackText track:
+                    track.Text = text;
+                    track.IsPlaying = _row.IsCurrent;
                     break;
                 case TrackNumber number:
                     number.Text = text;
