@@ -6,6 +6,7 @@ using Groovefin.Core.Privacy;
 using Groovefin.Core.Tests.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
+using NSubstitute.ReturnsExtensions;
 
 namespace Groovefin.Core.Tests.History;
 
@@ -152,7 +153,7 @@ public sealed class PlayHistoryTests : IDisposable
     [Fact]
     public async Task Without_a_connection_nothing_is_recorded()
     {
-        _client.Connection.Returns((ServerConnection?)null);
+        _client.Connection.ReturnsNull();
 
         Listen(Song("a"), 150);
         await _sut.SyncAsync();
