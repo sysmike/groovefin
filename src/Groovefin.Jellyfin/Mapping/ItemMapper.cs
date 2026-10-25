@@ -50,6 +50,7 @@ internal static class ItemMapper
             DateAdded = dto.DateCreated,
             IsFavorite = dto.UserData?.IsFavorite ?? false,
             PlayCount = dto.UserData?.PlayCount ?? 0,
+            LastPlayed = dto.UserData?.LastPlayedDate,
             NormalizationGain = dto.NormalizationGain,
             AlbumNormalizationGain = dto.AlbumNormalizationGain,
         };

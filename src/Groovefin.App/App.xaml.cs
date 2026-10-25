@@ -5,6 +5,7 @@ using Groovefin.App.Hosting;
 using Groovefin.Core;
 using Groovefin.Core.Discord;
 using Groovefin.Core.Equalizer;
+using Groovefin.Core.History;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Session;
@@ -116,6 +117,9 @@ public partial class App : Application
         // Lives as long as the app: tells the server what is playing (play counts, recently played).
         _host.Services.GetRequiredService<PlaybackReporting>();
 
+        // Lives as long as the app: records the plays behind "On repeat" (#251).
+        _host.Services.GetRequiredService<PlayHistory>();
+
         // Lives as long as the app: media keys and the Windows media flyout.
         _host.Services.GetRequiredService<SystemMediaControlsSync>();
 
@@ -160,6 +164,7 @@ public partial class App : Application
             RunShutdownStep("save the session", () => services.Services.GetRequiredService<SessionPersistence>().SaveAsync(), ReportFlushTimeout);
             RunShutdownStepOnThisThread("stop playback", () => services.Services.GetRequiredService<IPlaybackEngine>().Stop());
             RunShutdownStep("report playback", () => services.Services.GetRequiredService<PlaybackReporting>().FlushAsync(), ReportFlushTimeout);
+            RunShutdownStep("save the play history", () => services.Services.GetRequiredService<PlayHistory>().FlushAsync(), ReportFlushTimeout);
         }
 
         // From here on, errors are only logged: the handlers must not ask a host that is being disposed (#145).

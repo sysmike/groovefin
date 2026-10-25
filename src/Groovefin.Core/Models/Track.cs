@@ -38,6 +38,9 @@ public sealed record Track
 
     public int PlayCount { get; init; }
 
+    /// <summary>Gets when the user last played the track on any device, or <see langword="null"/> when never (#251).</summary>
+    public DateTimeOffset? LastPlayed { get; init; }
+
     /// <summary>Gets the gain in dB that brings the track to the server's target loudness, or <see langword="null"/> when not analysed.</summary>
     public double? NormalizationGain { get; init; }
 
