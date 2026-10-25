@@ -1,17 +1,22 @@
 # Logo
 
-The Groovefin logo at 1024 × 1024 px, drawn by `scripts/assets/make-logo.py` (needs Pillow) from the
-measurements of the app's `Square150x150Logo.scale-200.png`:
+`groovefin.svg` is the Groovefin logo (#259): a record with a fin. Every logo file of the app is rendered
+from it by `scripts/assets/render-logo.cjs`, each at its own size, so small icons stay sharp:
 
 ```sh
-python3 scripts/assets/make-logo.py 1024 assets/logo/groovefin-1024.png
-python3 scripts/assets/make-logo.py 1024 assets/logo/groovefin-1024-full-bleed.png --full-bleed
+npm i -D playwright && npx playwright install chromium   # once
+node scripts/assets/render-logo.cjs
 ```
 
 | File | Use |
 | --- | --- |
-| `groovefin-1024.png` | The app icon: the rounded tile with transparent corners. README, Store, Discord. |
-| `groovefin-1024-full-bleed.png` | The gradient fills the whole square, for places that round the corners themselves. |
+| `groovefin.svg` | The source. Change the logo here, then render again. |
+| `groovefin-1024.png` | 1024 × 1024 px on a transparent background: README, Store, Discord. |
+| `src/Groovefin.App/Assets/*Logo*.png`, `SplashScreen.scale-200.png` | The app package: Start, taskbar, tiles, Store, lock screen, splash screen. |
+| `src/Groovefin.App/Assets/AppIcon.ico` | The executable, the window and the notification area icon: 16 to 256 px. |
+
+The small icons fill almost the whole square. The tiles and the splash screen keep a margin around the logo,
+because Windows draws them on a plate.
 
 ## Discord
 
