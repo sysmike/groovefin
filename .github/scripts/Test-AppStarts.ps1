@@ -1080,13 +1080,27 @@ try {
         while ([bool] (Get-NavItem $page) -ne $shown -and (Get-Date) -lt $until -and -not $process.HasExited) { Start-Sleep -Milliseconds 300 }
         if ([bool] (Get-NavItem $page) -ne $shown) { Stop-Test 'Navigation layout' "The navigation pane $what." }
     }
+    # The pane is rebuilt on each change: until it is laid out again, an item may be missing from the
+    # automation tree or have no bounds yet. Both are looked up again each time.
     function Test-GenresAboveSongs([bool] $above, [string] $what) {
         $until = (Get-Date).AddSeconds(10)
         do {
-            $isAbove = (Get-Bounds (Get-NavItem 'genres')).Y -lt (Get-Bounds (Get-NavItem 'songs')).Y
-            if ($isAbove -eq $above) { return }
+            $genres = Get-NavItem 'genres'
+            $songs = Get-NavItem 'songs'
+            if ($genres -and $songs) {
+                $g = $genres.Current.BoundingRectangle
+                $s = $songs.Current.BoundingRectangle
+                if (-not $g.IsEmpty -and -not $s.IsEmpty -and ($g.Y -lt $s.Y) -eq $above) { return }
+            }
             Start-Sleep -Milliseconds 300
         } while ((Get-Date) -lt $until -and -not $process.HasExited)
+        $items = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))
+        foreach ($item in $items) {
+            if ($item.Current.AutomationId -like 'NavItem_*') {
+                $r = $item.Current.BoundingRectangle
+                Write-Output ("  {0} '{1}' at {2:0},{3:0}, {4:0}x{5:0}" -f $item.Current.AutomationId, $item.Current.Name, $r.X, $r.Y, $r.Width, $r.Height)
+            }
+        }
         Stop-Test 'Navigation layout' "The navigation pane $what."
     }
     $expanded = $false
