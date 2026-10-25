@@ -17,7 +17,8 @@ public sealed partial class AlbumPreviewViewModel(
     ILibraryService library,
     IPlayer player,
     IErrorReporter errors,
-    IStringResources strings) : ObservableObject
+    IStringResources strings,
+    CurrentTrack currentTrack) : ObservableObject
 {
     private IReadOnlyList<Track> _tracks = [];
 
@@ -58,6 +59,7 @@ public sealed partial class AlbumPreviewViewModel(
         {
             var tracks = await library.GetAlbumTracksAsync(album.Id, cancellationToken);
             Discs = BuildDiscs(album, tracks);
+            currentTrack.Watch(this, () => Discs.SelectMany(d => d.Tracks));
             _tracks = [.. Discs.SelectMany(d => d.Tracks).Select(i => i.Track)];
             Details = AlbumDetailViewModel.BuildDetails(album, tracks, strings);
             PlayCommand.NotifyCanExecuteChanged();

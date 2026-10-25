@@ -304,13 +304,12 @@
                                                 <ColumnDefinition Width="32" />
                                                 <ColumnDefinition Width="56" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock
+                                            <controls:TrackNumber
                                                 VerticalAlignment="Center"
-                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                HorizontalTextAlignment="Right"
+                                                IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
                                                 Text="{x:Bind Number}" />
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                                <controls:TrackTitle IsPlaying="{x:Bind IsCurrent, Mode=OneWay}" Text="{x:Bind Name}" />
                                                 <!--  Track artists as links (compilations, features); also in the row's context menu.  -->
                                                 <ItemsRepeater ItemsSource="{x:Bind ArtistLinks}" Visibility="{x:Bind HasArtist}">
                                                     <ItemsRepeater.Layout>

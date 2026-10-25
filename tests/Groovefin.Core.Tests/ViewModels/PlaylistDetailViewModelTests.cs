@@ -5,12 +5,14 @@ using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
 namespace Groovefin.Core.Tests.ViewModels;
 
 public sealed class PlaylistDetailViewModelTests
 {
+    private readonly PlayingTrack _playing = new();
     private const string Id = "pl1";
 
     private readonly IPlaylistService _playlists = Substitute.For<IPlaylistService>();
@@ -31,7 +33,7 @@ public sealed class PlaylistDetailViewModelTests
         _strings.GetString("Playlist_DeleteMessage").Returns("Delete {0}?");
         _playlists.GetPlaylistAsync(Id, Arg.Any<CancellationToken>()).Returns(new Playlist { Id = Id, Name = "Chill", PrimaryImageTag = "img" });
         _playlists.GetEntriesAsync(Id, Arg.Any<CancellationToken>()).Returns(Entries("a", "b", "c"));
-        _sut = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger);
+        _sut = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, _playing.Current);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -339,5 +341,18 @@ public sealed class PlaylistDetailViewModelTests
         _messenger.Send(new FavouriteChangedMessage("b", true));
 
         _sut.Entries.Select(e => e.IsFavourite).Should().Equal(false, true, false);
+    }
+
+    [Fact]
+    public async Task The_playing_entry_is_marked_also_after_a_move()
+    {
+        _playing.Play("b");
+        await LoadAsync();
+        _sut.Entries.Select(e => e.IsCurrent).Should().Equal(false, true, false);
+
+        await _sut.MoveUpCommand.ExecuteAsync(Row("b"));
+
+        Row("b").IsCurrent.Should().BeTrue();
+        _sut.Entries.Count(e => e.IsCurrent).Should().Be(1);
     }
 }

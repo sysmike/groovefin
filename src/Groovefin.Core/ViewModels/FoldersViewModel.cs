@@ -22,7 +22,7 @@ public sealed record FolderCrumb(string? Id, string Name)
 /// lists its subfolders, then its tracks. Play and add to queue take the folder with all subfolders (up
 /// to <see cref="TrackLimit"/> tracks).
 /// </summary>
-public sealed partial class FoldersViewModel(ILibraryService library, IPlayer player, IErrorReporter errors, IStringResources strings) : ObservableObject
+public sealed partial class FoldersViewModel(ILibraryService library, IPlayer player, IErrorReporter errors, IStringResources strings, CurrentTrack currentTrack) : ObservableObject
 {
     public const int TrackLimit = 1000;
 
@@ -35,7 +35,7 @@ public sealed partial class FoldersViewModel(ILibraryService library, IPlayer pl
 
     public ObservableCollection<Folder> Folders { get; } = [];
 
-    public ObservableCollection<TrackRow> Tracks { get; } = [];
+    public ObservableCollection<TrackRow> Tracks { get; } = currentTrack.Watch(new ObservableCollection<TrackRow>());
 
     public double DisplayScale { get; set; } = 1;
 

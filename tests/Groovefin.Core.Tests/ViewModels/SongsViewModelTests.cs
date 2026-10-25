@@ -11,6 +11,7 @@ namespace Groovefin.Core.Tests.ViewModels;
 
 public sealed class SongsViewModelTests
 {
+    private readonly PlayingTrack _playing = new();
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private readonly InMemorySettingsService _settings = new();
     private readonly IPlayer _player = Substitute.For<IPlayer>();
@@ -35,7 +36,7 @@ public sealed class SongsViewModelTests
                 return new PagedResult<Track>([.. Enumerable.Range(q.StartIndex, count).Select(Song)], total, q.StartIndex);
             });
 
-    private SongsViewModel CreateSut() => new(_library, _settings, _player, _errors, _strings);
+    private SongsViewModel CreateSut() => new(_library, _settings, _player, _errors, _strings, _playing.Current);
 
     [Fact]
     public void Disposing_twice_does_not_throw()
@@ -284,5 +285,18 @@ public sealed class SongsViewModelTests
         var row = new SongRow(new Track { Id = "t", Name = "Digital Love", DateAdded = new DateTimeOffset(2024, 5, 1, 12, 0, 0, TimeSpan.Zero) });
 
         row.Text(SongColumn.DateAdded).Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task The_playing_song_is_marked_also_on_later_pages()
+    {
+        _playing.Play($"t{SongsViewModel.PageSize + 1}");
+        using var sut = CreateSut();
+        await sut.InitializeAsync();
+        sut.Songs.Should().OnlyContain(s => !s.IsCurrent);
+
+        await sut.LoadMoreCommand.ExecuteAsync(null);
+
+        sut.Songs.Single(s => s.IsCurrent).Track.Id.Should().Be($"t{SongsViewModel.PageSize + 1}");
     }
 }

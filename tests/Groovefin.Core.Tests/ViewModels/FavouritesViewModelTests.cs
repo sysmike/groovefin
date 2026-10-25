@@ -6,12 +6,14 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
 namespace Groovefin.Core.Tests.ViewModels;
 
 public sealed class FavouritesViewModelTests
 {
+    private readonly PlayingTrack _playing = new();
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private readonly IPlayer _player = Substitute.For<IPlayer>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
@@ -26,7 +28,7 @@ public sealed class FavouritesViewModelTests
             .Returns(new PagedResult<Album>([new Album { Id = "al1", Name = "Discovery" }], 1, 0));
         _library.GetArtistsAsync(Arg.Any<ArtistQuery>(), Arg.Any<CancellationToken>())
             .Returns(new PagedResult<Artist>([new Artist { Id = "ar1", Name = "Daft Punk" }], 1, 0));
-        _sut = new FavouritesViewModel(_library, _player, _navigation, _errors, new FavouritesService(_library, _messenger, _errors), _messenger);
+        _sut = new FavouritesViewModel(_library, _player, _navigation, _errors, new FavouritesService(_library, _messenger, _errors), _messenger, _playing.Current);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -167,5 +169,15 @@ public sealed class FavouritesViewModelTests
         await _sut.LoadAsync(Ct);
 
         _sut.PlayAllCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task The_playing_favourite_song_is_marked()
+    {
+        await _sut.LoadAsync(Ct);
+
+        _playing.Play("t2");
+
+        _sut.Tracks.Select(t => t.IsCurrent).Should().Equal(false, true);
     }
 }

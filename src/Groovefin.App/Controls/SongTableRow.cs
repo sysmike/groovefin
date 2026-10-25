@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Groovefin.Core.Settings;
 using Groovefin.Core.ViewModels;
 using Microsoft.UI.Xaml;
@@ -7,7 +8,8 @@ namespace Groovefin.App.Controls;
 
 /// <summary>
 /// One row of the songs table: a cell per visible column, as wide as its header. The page hands each
-/// realized row its song with <see cref="Show"/>; the row follows column changes by itself.
+/// realized row its song with <see cref="Show"/>; the row follows column changes, and marks its song while
+/// it plays (#247), by itself.
 /// </summary>
 internal sealed partial class SongTableRow : Grid
 {
@@ -16,12 +18,11 @@ internal sealed partial class SongTableRow : Grid
 
     private SongsViewModel? _table;
     private SongRow? _row;
-    private Style? _primaryStyle;
     private Style? _secondaryStyle;
     private IReadOnlyList<SongColumnViewModel> _columns = [];
 
-    /// <summary>Shows <paramref name="row"/>; the title uses <paramref name="primaryStyle"/>, other cells <paramref name="secondaryStyle"/>.</summary>
-    public void Show(SongsViewModel table, SongRow row, Style primaryStyle, Style secondaryStyle)
+    /// <summary>Shows <paramref name="row"/>; cells other than the title and the number use <paramref name="secondaryStyle"/>.</summary>
+    public void Show(SongsViewModel table, SongRow row, Style secondaryStyle)
     {
         if (!ReferenceEquals(_table, table))
         {
@@ -31,14 +32,31 @@ internal sealed partial class SongTableRow : Grid
             }
 
             _table = table;
-            _primaryStyle = primaryStyle;
             _secondaryStyle = secondaryStyle;
             table.LayoutChanged += OnLayoutChanged;
             _columns = [];
         }
 
+        if (!ReferenceEquals(_row, row))
+        {
+            if (_row is not null)
+            {
+                _row.PropertyChanged -= OnRowChanged;
+            }
+
+            row.PropertyChanged += OnRowChanged;
+        }
+
         _row = row;
         Layout();
+    }
+
+    private void OnRowChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SongRow.IsCurrent) && ReferenceEquals(sender, _row))
+        {
+            Layout();
+        }
     }
 
     private void OnLayoutChanged(object? sender, EventArgs e) => Layout();
@@ -57,15 +75,20 @@ internal sealed partial class SongTableRow : Grid
             _columns = columns;
             ColumnDefinitions.Clear();
             Children.Clear();
+            // The playing song's speaker replaces its number, or sits before its title without a # column.
+            var hasNumber = columns.Any(c => c.Column == SongColumn.TrackNumber);
             for (var i = 0; i < columns.Count; i++)
             {
                 ColumnDefinitions.Add(new ColumnDefinition());
-                var cell = new TextBlock
+                FrameworkElement cell = columns[i].Column switch
                 {
-                    Style = columns[i].Column == SongColumn.Title ? _primaryStyle : _secondaryStyle,
-                    Margin = new Thickness(CellPadding, 0, CellPadding, 0),
-                    HorizontalAlignment = columns[i].IsNumeric ? HorizontalAlignment.Right : HorizontalAlignment.Left,
+                    SongColumn.Title => new TrackTitle { ShowsIcon = !hasNumber },
+                    SongColumn.TrackNumber => new TrackNumber(),
+                    _ => new TextBlock { Style = _secondaryStyle },
                 };
+                cell.Margin = new Thickness(CellPadding, 0, CellPadding, 0);
+                cell.VerticalAlignment = VerticalAlignment.Center;
+                cell.HorizontalAlignment = columns[i].IsNumeric ? HorizontalAlignment.Right : HorizontalAlignment.Left;
                 SetColumn(cell, i);
                 Children.Add(cell);
             }
@@ -74,7 +97,21 @@ internal sealed partial class SongTableRow : Grid
         for (var i = 0; i < columns.Count; i++)
         {
             ColumnDefinitions[i].Width = new GridLength(columns[i].Width);
-            ((TextBlock)Children[i]).Text = _row.Text(columns[i].Column);
+            var text = _row.Text(columns[i].Column);
+            switch (Children[i])
+            {
+                case TrackTitle title:
+                    title.Text = text;
+                    title.IsPlaying = _row.IsCurrent;
+                    break;
+                case TrackNumber number:
+                    number.Text = text;
+                    number.IsPlaying = _row.IsCurrent;
+                    break;
+                case TextBlock cell:
+                    cell.Text = text;
+                    break;
+            }
         }
     }
 }

@@ -208,16 +208,15 @@
                             <ColumnDefinition Width="32" />
                             <ColumnDefinition Width="56" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock
+                        <controls:TrackNumber
                             VerticalAlignment="Center"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            HorizontalTextAlignment="Right"
+                            IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
                             Text="{x:Bind Number, Mode=OneWay}" />
-                        <TextBlock
+                        <controls:TrackTitle
                             Grid.Column="1"
                             VerticalAlignment="Center"
-                            Text="{x:Bind Name}"
-                            TextTrimming="CharacterEllipsis" />
+                            IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                            Text="{x:Bind Name}" />
                         <TextBlock
                             Grid.Column="2"
                             VerticalAlignment="Center"

@@ -127,6 +127,7 @@ internal static class AppHost
         builder.Services.AddSingleton<FavouritesService>();
         builder.Services.AddSingleton<InstantMix>();
         builder.Services.AddSingleton<TrackDrag>();
+        builder.Services.AddSingleton<CurrentTrack>();
         builder.Services.AddSingleton<ContextMenus>();
         builder.Services.AddSingleton<QuickPlay>();
 

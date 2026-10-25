@@ -11,6 +11,7 @@ namespace Groovefin.Core.Tests.ViewModels;
 
 public sealed class GenreDetailViewModelTests
 {
+    private readonly PlayingTrack _playing = new();
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private readonly IPlayer _player = Substitute.For<IPlayer>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
@@ -23,7 +24,7 @@ public sealed class GenreDetailViewModelTests
         _library.GetAlbumsAsync(Arg.Any<AlbumQuery>(), Arg.Any<CancellationToken>())
             .Returns(new PagedResult<Album>([new Album { Id = "al1", Name = "Discovery", PrimaryImageTag = "c" }], 1, 0));
         _library.GetGenreTracksAsync("g1", Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(Songs(3));
-        _sut = new GenreDetailViewModel(_library, _player, _navigation, _errors, new InstantMix(_library, _player, new InMemorySettingsService(), _errors));
+        _sut = new GenreDetailViewModel(_library, _player, _navigation, _errors, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -129,5 +130,17 @@ public sealed class GenreDetailViewModelTests
 
         _sut.LoadFailed.Should().BeFalse();
         _errors.DidNotReceiveWithAnyArgs().Report(default!, default!);
+    }
+
+    [Fact]
+    public async Task The_playing_song_is_marked_and_the_mark_goes_when_playback_stops()
+    {
+        _playing.Play("t2");
+
+        await _sut.LoadAsync("g1", Ct);
+        _sut.Tracks.Select(t => t.IsCurrent).Should().Equal(false, true, false);
+
+        _playing.Engine.Stop();
+        _sut.Tracks.Should().OnlyContain(t => !t.IsCurrent);
     }
 }

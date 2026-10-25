@@ -3,12 +3,14 @@ using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
 namespace Groovefin.Core.Tests.ViewModels;
 
 public sealed class FoldersViewModelTests
 {
+    private readonly PlayingTrack _playing = new();
     private static readonly Folder Artists = new("f1", "Artists");
     private static readonly Folder DaftPunk = new("f2", "Daft Punk");
     private static readonly Track Intro = new() { Id = "t1", Name = "Intro", AlbumId = "al1", AlbumImageTag = "tag" };
@@ -26,7 +28,7 @@ public sealed class FoldersViewModelTests
         _library.GetFolderAsync(null, Arg.Any<CancellationToken>()).Returns(new FolderContent([Artists], []));
         _library.GetFolderAsync("f1", Arg.Any<CancellationToken>()).Returns(new FolderContent([DaftPunk], [Intro, Outro]));
         _library.GetFolderAsync("f2", Arg.Any<CancellationToken>()).Returns(new FolderContent([], []));
-        _sut = new FoldersViewModel(_library, _player, _errors, strings);
+        _sut = new FoldersViewModel(_library, _player, _errors, strings, _playing.Current);
     }
 
     [Fact]
@@ -133,5 +135,16 @@ public sealed class FoldersViewModelTests
 
         _errors.Received(1).Report(failure, Operations.Playback);
         _player.DidNotReceiveWithAnyArgs().Play(default!);
+    }
+
+    [Fact]
+    public async Task The_playing_track_in_a_folder_is_marked()
+    {
+        _playing.Play("t1");
+        await _sut.LoadAsync(TestContext.Current.CancellationToken);
+
+        await _sut.OpenCommand.ExecuteAsync(Artists);
+
+        _sut.Tracks.Select(t => t.IsCurrent).Should().Equal(true, false);
     }
 }
