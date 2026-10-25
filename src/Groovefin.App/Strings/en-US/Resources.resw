@@ -1745,6 +1745,30 @@
   <data name="SettingsStartPageCard.Description" xml:space="preserve">
     <value>The page Groovefin opens with.</value>
   </data>
+  <data name="SettingsNavigationCard.Header" xml:space="preserve">
+    <value>Navigation pane</value>
+  </data>
+  <data name="SettingsNavigationCard.Description" xml:space="preserve">
+    <value>Choose the sections it shows and their order: drag them or use the arrows.</value>
+  </data>
+  <data name="SettingsNavigationResetButton.Content" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="SettingsNavigationResetButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Reset the navigation pane</value>
+  </data>
+  <data name="SettingsNavigationList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Navigation pane sections</value>
+  </data>
+  <data name="Navigation_ShowName" xml:space="preserve">
+    <value>Show {0}</value>
+  </data>
+  <data name="Navigation_MoveUpName" xml:space="preserve">
+    <value>Move {0} up</value>
+  </data>
+  <data name="Navigation_MoveDownName" xml:space="preserve">
+    <value>Move {0} down</value>
+  </data>
   <data name="Settings_LanguageSystem" xml:space="preserve">
     <value>Use Windows language</value>
   </data>

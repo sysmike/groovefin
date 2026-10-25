@@ -1070,6 +1070,70 @@ try {
     Test-Running 'after changing a shortcut'
     Write-Output 'A shortcut got new keys in the change dialog and Reset all restored it.'
 
+    # The navigation pane's layout (#255): Settings hides Genres, which leaves the pane, and shows it again;
+    # its arrow moves it above Songs in the pane and back. The pane's items have the IDs NavItem_<page>.
+    function Get-NavItem([string] $page) {
+        $window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, "NavItem_$page"))
+    }
+    function Wait-NavItem([string] $page, [bool] $shown, [string] $what) {
+        $until = (Get-Date).AddSeconds(10)
+        while ([bool] (Get-NavItem $page) -ne $shown -and (Get-Date) -lt $until -and -not $process.HasExited) { Start-Sleep -Milliseconds 300 }
+        if ([bool] (Get-NavItem $page) -ne $shown) { Stop-Test 'Navigation layout' "The navigation pane $what." }
+    }
+    # The pane is rebuilt on each change: until it is laid out again, an item may be missing from the
+    # automation tree or have no bounds yet. Both are looked up again each time.
+    function Test-GenresAboveSongs([bool] $above, [string] $what) {
+        $until = (Get-Date).AddSeconds(10)
+        do {
+            $genres = Get-NavItem 'genres'
+            $songs = Get-NavItem 'songs'
+            if ($genres -and $songs) {
+                $g = $genres.Current.BoundingRectangle
+                $s = $songs.Current.BoundingRectangle
+                if (-not $g.IsEmpty -and -not $s.IsEmpty -and ($g.Y -lt $s.Y) -eq $above) { return }
+            }
+            Start-Sleep -Milliseconds 300
+        } while ((Get-Date) -lt $until -and -not $process.HasExited)
+        $items = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))
+        foreach ($item in $items) {
+            if ($item.Current.AutomationId -like 'NavItem_*') {
+                $r = $item.Current.BoundingRectangle
+                Write-Output ("  {0} '{1}' at {2:0},{3:0}, {4:0}x{5:0}" -f $item.Current.AutomationId, $item.Current.Name, $r.X, $r.Y, $r.Width, $r.Height)
+            }
+        }
+        Stop-Test 'Navigation layout' "The navigation pane $what."
+    }
+    $expanded = $false
+    $named = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Navigation pane'))
+    foreach ($element in @($named)) {
+        if (-not $expanded -and $element.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $pattern)) {
+            if ($element.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
+            $pattern.Expand()
+            $expanded = $true
+        }
+    }
+    if (-not $expanded) { Stop-Test 'Navigation layout' 'The navigation pane settings could not be expanded.' }
+    Wait-NavItem 'genres' $true 'does not show Genres at first'
+    $switch = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Show Genres'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ClassNameProperty, 'ToggleSwitch'))) "switch 'Show Genres'"
+    if ($switch.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
+    Start-Sleep -Milliseconds 500
+    Save-Screenshot 'settings-navigation'
+    Test-Accessibility 'settings-navigation'
+    $toggle = $switch.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+    $toggle.Toggle()
+    Wait-NavItem 'genres' $false 'still shows Genres after it was hidden'
+    $toggle.Toggle()
+    Wait-NavItem 'genres' $true 'does not show Genres again'
+    Test-GenresAboveSongs $false 'does not show Songs above Genres at first'
+    (Find-Button 'Move Genres up').GetCurrentPattern($invoke).Invoke()
+    Test-GenresAboveSongs $true 'does not show Genres above Songs after Move up'
+    (Find-Button 'Move Genres down').GetCurrentPattern($invoke).Invoke()
+    Test-GenresAboveSongs $false 'does not show Genres below Songs again after Move down'
+    Test-Running 'after changing the navigation pane'
+    Write-Output 'The navigation pane hid Genres and showed it again, and moved it above Songs and back.'
+
     # Mini player (#181, #183): Ctrl+M makes the window a small one on top, 420x140 (cover left, text right).
     # It can be resized, but no larger than 720x200; Esc brings the full window back.
     [System.Windows.Forms.SendKeys]::SendWait('^m')

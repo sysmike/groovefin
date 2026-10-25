@@ -74,6 +74,12 @@ public sealed record AppearanceSettings
     /// <summary>Gets or sets the main section shown after start-up (a key of <see cref="PageKeys.MainSections"/>).</summary>
     public string StartPage { get; set; } = PageKeys.Home;
 
+    /// <summary>
+    /// Gets or sets the order and visibility of the navigation pane's sections (#255); empty is the default
+    /// (<see cref="PageKeys.MainSections"/>, all shown). Read it through <see cref="NavigationLayout.Resolve"/>.
+    /// </summary>
+    public IReadOnlyList<NavigationItemSettings> Navigation { get; set; } = [];
+
     /// <summary>Gets or sets a value indicating whether the taskbar button shows the playback progress.</summary>
     public bool ShowTaskbarProgress { get; set; } = true;
 
@@ -82,6 +88,15 @@ public sealed record AppearanceSettings
 
     /// <summary>Gets or sets a value indicating whether minimizing hides the window to the notification area icon.</summary>
     public bool MinimizeToTray { get; set; }
+}
+
+/// <summary>One section of the navigation pane: which, and whether it shows (#255).</summary>
+public sealed record NavigationItemSettings
+{
+    /// <summary>Gets or sets a key of <see cref="PageKeys.MainSections"/>.</summary>
+    public string Key { get; set; } = string.Empty;
+
+    public bool IsVisible { get; set; } = true;
 }
 
 /// <summary>How tightly lists and controls are packed.</summary>

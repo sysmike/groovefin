@@ -57,6 +57,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly IImageCache _cache;
     private readonly ILauncherService _launcher;
     private bool _loadingLibraries;
+    private bool _fillingNavigation;
 
     public SettingsViewModel(
         IThemeService themeService,
@@ -95,6 +96,8 @@ public sealed partial class SettingsViewModel : ObservableObject
             strings.GetString("Settings_LanguageGerman"),
         ];
         StartPageOptions = [.. PageKeys.MainSections.Select(key => strings.GetString($"StartPage_{key}"))];
+        NavigationItems.CollectionChanged += OnNavigationItemsChanged;
+        FillNavigation(settings.Current.Appearance.Navigation);
         CacheLimitOptions = [.. CacheLimits.Select(mb => ByteSizes.Format(mb * 1024L * 1024L, strings))];
         CrossfadeOptions =
         [
@@ -332,6 +335,83 @@ public sealed partial class SettingsViewModel : ObservableObject
                 _settings.Update(s => s with { Appearance = s.Appearance with { StartPage = PageKeys.MainSections[value] } });
                 OnPropertyChanged();
             }
+        }
+    }
+
+    /// <summary>
+    /// Gets the navigation pane's sections in order, each with its switch (#255). Dragging a row reorders the
+    /// list in place; that is saved like the move buttons.
+    /// </summary>
+    public ObservableCollection<NavigationItemOption> NavigationItems { get; } = [];
+
+    /// <summary>Shows every section again, in the default order.</summary>
+    [RelayCommand]
+    private void ResetNavigation()
+    {
+        FillNavigation([]);
+        _settings.Update(s => s with { Appearance = s.Appearance with { Navigation = [] } });
+    }
+
+    private void FillNavigation(IReadOnlyList<NavigationItemSettings> saved)
+    {
+        _fillingNavigation = true;
+        try
+        {
+            NavigationItems.Clear();
+            foreach (var item in NavigationLayout.Resolve(saved))
+            {
+                NavigationItems.Add(new NavigationItemOption(
+                    item.Key, _strings.GetString($"StartPage_{item.Key}"), _strings, item.IsVisible, MoveNavigationItem, SaveNavigation));
+            }
+        }
+        finally
+        {
+            _fillingNavigation = false;
+        }
+
+        UpdateNavigationRows();
+    }
+
+    private void MoveNavigationItem(NavigationItemOption item, int offset)
+    {
+        var from = NavigationItems.IndexOf(item);
+        var to = from + offset;
+        if (from >= 0 && to >= 0 && to < NavigationItems.Count)
+        {
+            NavigationItems.Move(from, to);
+        }
+    }
+
+    /// <summary>A drag removes the row and inserts it elsewhere: save once it is back.</summary>
+    private void OnNavigationItemsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
+        {
+            SaveNavigation();
+        }
+    }
+
+    private void SaveNavigation()
+    {
+        if (_fillingNavigation)
+        {
+            return;
+        }
+
+        UpdateNavigationRows();
+        IReadOnlyList<NavigationItemSettings> layout = [.. NavigationItems.Select(i => new NavigationItemSettings { Key = i.Key, IsVisible = i.IsVisible })];
+        _settings.Update(s => s with { Appearance = s.Appearance with { Navigation = layout } });
+    }
+
+    private void UpdateNavigationRows()
+    {
+        var visible = NavigationItems.Count(i => i.IsVisible);
+        for (var i = 0; i < NavigationItems.Count; i++)
+        {
+            var item = NavigationItems[i];
+            item.CanToggle = !item.IsVisible || visible > 1;
+            item.CanMoveUp = i > 0;
+            item.CanMoveDown = i < NavigationItems.Count - 1;
         }
     }
 

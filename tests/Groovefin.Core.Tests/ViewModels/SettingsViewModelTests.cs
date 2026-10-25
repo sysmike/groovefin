@@ -527,4 +527,126 @@ public sealed class SettingsViewModelTests
         _settings.Current.Appearance.Density.Should().Be(ListDensity.Compact);
         sut.DensityIndex.Should().Be(1);
     }
+
+    private SettingsViewModel CreateNavigationSut()
+    {
+        _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
+        _strings.GetString("Navigation_ShowName").Returns("Show {0}");
+        _strings.GetString("Navigation_MoveUpName").Returns("Move {0} up");
+        _strings.GetString("Navigation_MoveDownName").Returns("Move {0} down");
+        return CreateSut();
+    }
+
+    private IEnumerable<string> SavedVisibleSections => NavigationLayout.VisibleSections(_settings.Current.Appearance.Navigation);
+
+    [Fact]
+    public void The_navigation_lists_every_section_shown_in_the_default_order()
+    {
+        var sut = CreateNavigationSut();
+
+        sut.NavigationItems.Select(i => i.Key).Should().Equal(PageKeys.MainSections);
+        sut.NavigationItems.Select(i => i.Name).Should().Equal(PageKeys.MainSections.Select(k => $"StartPage_{k}"));
+        sut.NavigationItems.Should().OnlyContain(i => i.IsVisible && i.CanToggle);
+        sut.NavigationItems[4].ShowName.Should().Be("Show StartPage_genres");
+        sut.NavigationItems[4].MoveUpName.Should().Be("Move StartPage_genres up");
+        sut.NavigationItems[4].ToString().Should().Be("StartPage_genres");
+        sut.NavigationItems[0].MoveUpCommand.CanExecute(null).Should().BeFalse();
+        sut.NavigationItems[^1].MoveDownCommand.CanExecute(null).Should().BeFalse();
+        sut.NavigationItems[1].MoveUpCommand.CanExecute(null).Should().BeTrue();
+        _settings.Current.Appearance.Navigation.Should().BeEmpty("opening Settings saves nothing");
+    }
+
+    [Fact]
+    public void A_section_can_be_hidden_and_shown_again()
+    {
+        var sut = CreateNavigationSut();
+        var genres = sut.NavigationItems.Single(i => i.Key == PageKeys.Genres);
+
+        genres.IsVisible = false;
+        SavedVisibleSections.Should().NotContain(PageKeys.Genres);
+
+        genres.IsVisible = true;
+        SavedVisibleSections.Should().Equal(PageKeys.MainSections);
+    }
+
+    [Fact]
+    public void The_last_section_shown_cannot_be_hidden()
+    {
+        var sut = CreateNavigationSut();
+
+        foreach (var item in sut.NavigationItems.Skip(1))
+        {
+            item.IsVisible = false;
+        }
+
+        sut.NavigationItems[0].CanToggle.Should().BeFalse();
+        sut.NavigationItems.Skip(1).Should().OnlyContain(i => i.CanToggle, "a hidden section can be shown again");
+        SavedVisibleSections.Should().Equal(PageKeys.Home);
+
+        sut.NavigationItems[1].IsVisible = true;
+        sut.NavigationItems[0].CanToggle.Should().BeTrue();
+    }
+
+    [Fact]
+    public void The_move_buttons_move_a_section_and_save_the_order()
+    {
+        var sut = CreateNavigationSut();
+        var genres = sut.NavigationItems.Single(i => i.Key == PageKeys.Genres);
+        var index = sut.NavigationItems.IndexOf(genres);
+
+        genres.MoveUpCommand.Execute(null);
+
+        sut.NavigationItems.IndexOf(genres).Should().Be(index - 1);
+        SavedVisibleSections.ElementAt(index - 1).Should().Be(PageKeys.Genres);
+
+        genres.MoveDownCommand.Execute(null);
+        SavedVisibleSections.Should().Equal(PageKeys.MainSections);
+    }
+
+    [Fact]
+    public void Moving_the_first_section_down_updates_the_move_buttons()
+    {
+        var sut = CreateNavigationSut();
+        var home = sut.NavigationItems[0];
+
+        home.MoveDownCommand.Execute(null);
+
+        home.CanMoveUp.Should().BeTrue();
+        sut.NavigationItems[0].CanMoveUp.Should().BeFalse();
+        sut.NavigationItems[0].Key.Should().Be(PageKeys.Albums);
+    }
+
+    [Fact]
+    public void A_dragged_section_is_saved_where_it_was_dropped()
+    {
+        var sut = CreateNavigationSut();
+        var favourites = sut.NavigationItems.Single(i => i.Key == PageKeys.Favourites);
+
+        // A ListView reorders by removing the row and inserting it again.
+        sut.NavigationItems.Remove(favourites);
+        sut.NavigationItems.Insert(0, favourites);
+
+        SavedVisibleSections.Should().Equal([PageKeys.Favourites, .. PageKeys.MainSections.Except([PageKeys.Favourites])]);
+        favourites.CanMoveUp.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Reset_shows_every_section_in_the_default_order()
+    {
+        _settings.Update(s => s with
+        {
+            Appearance = s.Appearance with
+            {
+                Navigation = [new NavigationItemSettings { Key = PageKeys.Songs }, new NavigationItemSettings { Key = PageKeys.Home, IsVisible = false }],
+            },
+        });
+        var sut = CreateNavigationSut();
+        sut.NavigationItems.Select(i => i.Key).Should().StartWith([PageKeys.Songs, PageKeys.Home]);
+
+        sut.ResetNavigationCommand.Execute(null);
+
+        sut.NavigationItems.Select(i => i.Key).Should().Equal(PageKeys.MainSections);
+        sut.NavigationItems.Should().OnlyContain(i => i.IsVisible);
+        _settings.Current.Appearance.Navigation.Should().BeEmpty();
+    }
 }

@@ -35,7 +35,13 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         _settings = settings;
         _logger = logger;
         _navigation.Navigated += OnNavigated;
+        _settings.Changed += OnSettingsChanged;
+        VisibleSections = NavigationLayout.VisibleSections(settings.Current.Appearance.Navigation);
     }
+
+    /// <summary>Gets the keys of the main sections the navigation pane shows, in the user's order (#255).</summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<string> VisibleSections { get; private set; }
 
     /// <summary>Gets the notifications shown above the page content.</summary>
     public ReadOnlyObservableCollection<AppNotification> Notifications => _notifications.Notifications;
@@ -99,9 +105,16 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         _navigation.NavigateTo(PageKeys.Search, SearchText.Trim());
     }
 
-    /// <summary>A start page that is no longer a main section (older settings) falls back to home.</summary>
-    private string StartPage() =>
-        _settings.Current.Appearance.StartPage is { } page && PageKeys.MainSections.Contains(page) ? page : PageKeys.Home;
+    /// <summary>
+    /// A start page that is no longer a main section (older settings) falls back to home; one hidden from the
+    /// navigation pane to the first section shown (#255).
+    /// </summary>
+    private string StartPage()
+    {
+        var page = _settings.Current.Appearance.StartPage;
+        page = PageKeys.MainSections.Contains(page) ? page : PageKeys.Home;
+        return VisibleSections.Contains(page) ? page : VisibleSections[0];
+    }
 
     private bool CanSubmitSearch() => !string.IsNullOrWhiteSpace(SearchText);
 
@@ -118,5 +131,18 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         };
     }
 
-    public void Dispose() => _navigation.Navigated -= OnNavigated;
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
+    {
+        var sections = NavigationLayout.VisibleSections(e.NewSettings.Appearance.Navigation);
+        if (!sections.SequenceEqual(VisibleSections))
+        {
+            VisibleSections = sections;
+        }
+    }
+
+    public void Dispose()
+    {
+        _navigation.Navigated -= OnNavigated;
+        _settings.Changed -= OnSettingsChanged;
+    }
 }

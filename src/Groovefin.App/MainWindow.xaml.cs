@@ -57,6 +57,9 @@ internal sealed partial class MainWindow : Window
     private readonly ISettingsService _settings;
     private readonly ShortcutService _shortcuts;
     private readonly NotificationAreaIcon _tray;
+    /// <summary>The navigation pane's section items by page key, and the separator after Home (#255).</summary>
+    private readonly Dictionary<string, NavigationViewItem> _sectionItems;
+    private readonly NavigationViewItemSeparator _homeSeparator;
     /// <summary>The normal window's presenter, set again when the mini or full-screen player closes.</summary>
     private readonly OverlappedPresenter? _windowPresenter;
     private RectInt32? _restoreBounds;
@@ -90,6 +93,10 @@ internal sealed partial class MainWindow : Window
         Privacy = privacy;
         Suggestions = suggestions;
         InitializeComponent();
+
+        _sectionItems = NavView.MenuItems.OfType<NavigationViewItem>().ToDictionary(item => (string)item.Tag, StringComparer.Ordinal);
+        _homeSeparator = NavView.MenuItems.OfType<NavigationViewItemSeparator>().Single();
+        ApplyNavigationLayout();
 
         _settings = settings;
         Title = new ResourceLoader().GetString("AppDisplayName");
@@ -372,6 +379,45 @@ internal sealed partial class MainWindow : Window
         {
             SyncSelection(ViewModel.SelectedSection);
         }
+        else if (e.PropertyName == nameof(ShellViewModel.VisibleSections))
+        {
+            ApplyNavigationLayout();
+        }
+    }
+
+    /// <summary>
+    /// Shows the sections the user keeps in the navigation pane, in their order (#255). A hidden section's
+    /// page stays reachable by its links and shortcuts; then no item is selected. Only the items that
+    /// differ are moved, added or removed: the others stay in the pane (with their state, such as the
+    /// expanded playlists).
+    /// </summary>
+    private void ApplyNavigationLayout()
+    {
+        var sections = ViewModel.VisibleSections;
+        List<object> wanted = [.. sections.Where(_sectionItems.ContainsKey).Select(key => _sectionItems[key])];
+        if (wanted.Count > 1 && sections[0] == PageKeys.Home)
+        {
+            wanted.Insert(1, _homeSeparator);
+        }
+
+        var items = NavView.MenuItems;
+        for (var i = 0; i < wanted.Count; i++)
+        {
+            if (i < items.Count && ReferenceEquals(items[i], wanted[i]))
+            {
+                continue;
+            }
+
+            items.Remove(wanted[i]);
+            items.Insert(i, wanted[i]);
+        }
+
+        while (items.Count > wanted.Count)
+        {
+            items.RemoveAt(items.Count - 1);
+        }
+
+        SyncSelection(ViewModel.SelectedSection);
     }
 
     private void SyncSelection(string? pageKey)

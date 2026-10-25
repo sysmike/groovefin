@@ -2,6 +2,7 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -229,6 +230,53 @@ public sealed class ShellViewModelTests
         RaiseNavigated(PageKeys.Albums);
 
         sut.CanGoBack.Should().BeFalse();
+    }
+
+    private void Hide(params string[] keys) =>
+        _settings.Update(s => s with
+        {
+            Appearance = s.Appearance with
+            {
+                Navigation = [.. PageKeys.MainSections.Select(k => new NavigationItemSettings { Key = k, IsVisible = !keys.Contains(k) })],
+            },
+        });
+
+    [Fact]
+    public void The_navigation_pane_shows_the_sections_in_the_saved_layout_and_follows_changes()
+    {
+        using var sut = CreateSut();
+        sut.VisibleSections.Should().Equal(PageKeys.MainSections);
+        var changed = new List<string?>();
+        sut.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        Hide(PageKeys.Genres);
+        _settings.Update(s => s with { Appearance = s.Appearance with { Density = ListDensity.Compact } });
+
+        sut.VisibleSections.Should().Equal(PageKeys.MainSections.Where(k => k != PageKeys.Genres));
+        changed.Should().Equal(nameof(ShellViewModel.VisibleSections));
+    }
+
+    [Fact]
+    public void A_hidden_start_page_falls_back_to_the_first_section_shown()
+    {
+        _settings.Update(s => s with { Appearance = s.Appearance with { StartPage = PageKeys.Songs } });
+        Hide(PageKeys.Home, PageKeys.Songs);
+        using var sut = CreateSut();
+
+        sut.Start();
+
+        _navigation.Received(1).NavigateTo(PageKeys.Albums);
+    }
+
+    [Fact]
+    public void Dispose_unsubscribes_from_the_settings()
+    {
+        var sut = CreateSut();
+        sut.Dispose();
+
+        Hide(PageKeys.Genres);
+
+        sut.VisibleSections.Should().Equal(PageKeys.MainSections);
     }
 
     private void RaiseNavigated(string pageKey) =>
