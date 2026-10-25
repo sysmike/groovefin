@@ -219,6 +219,12 @@ public sealed record PlaybackSettings
     public int CrossfadeSeconds { get; set; }
 
     public EqualizerSettings Equalizer { get; set; } = new();
+
+    /// <summary>Gets or sets the volume from 0 to 100, as the user left it (#257).</summary>
+    public int Volume { get; set; } = 100;
+
+    /// <summary>Gets or sets a value indicating whether the sound was muted when the user left (#257).</summary>
+    public bool IsMuted { get; set; }
 }
 
 /// <summary>How lines are aligned in the lyrics pane.</summary>
