@@ -11,6 +11,7 @@ using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Queue;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 
 namespace Groovefin.Core.ViewModels;
 
@@ -40,19 +41,27 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
     private readonly IMessenger _messenger;
     private readonly INavigationService _navigation;
     private readonly IStringResources _strings;
+    private readonly ISettingsService _settings;
 
     public NowPlayingViewModel(
         IPlayer player,
         FavouritesService favourites,
         IMessenger messenger,
         INavigationService navigation,
-        IStringResources strings)
+        IStringResources strings,
+        ISettingsService settings)
     {
         _player = player;
         _favourites = favourites;
         _messenger = messenger;
         _navigation = navigation;
         _strings = strings;
+        _settings = settings;
+
+        // The volume and mute the user left (#257); the window is made after the settings are loaded.
+        var playback = settings.Current.Playback;
+        Engine.Volume = Math.Clamp(playback.Volume, 0, 100) / 100.0;
+        Engine.IsMuted = playback.IsMuted;
 
         _messenger.Register<NowPlayingViewModel, FavouriteChangedMessage>(this, static (r, m) => r.OnFavouriteChanged(m));
 
@@ -120,23 +129,26 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
         ? "-" + Durations.Track(Engine.Duration > Engine.Position ? Engine.Duration - Engine.Position : TimeSpan.Zero)
         : string.Empty;
 
-    /// <summary>Gets or sets the volume from 0 to 100.</summary>
+    /// <summary>Gets or sets the volume from 0 to 100; saved for the next start.</summary>
     public double Volume
     {
         get => Math.Round(Engine.Volume * 100);
         set
         {
             Engine.Volume = value / 100;
+            SaveVolume();
             OnPropertyChanged();
         }
     }
 
+    /// <summary>Gets or sets whether the sound is muted; saved for the next start.</summary>
     public bool IsMuted
     {
         get => Engine.IsMuted;
         set
         {
             Engine.IsMuted = value;
+            SaveVolume();
             OnPropertyChanged();
         }
     }
@@ -193,6 +205,14 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void ToggleMute() => IsMuted = !IsMuted;
+
+    /// <summary>Saves the volume and mute (#257). The settings file is written in the background, the latest change only.</summary>
+    private void SaveVolume()
+    {
+        var volume = (int)Volume;
+        var muted = IsMuted;
+        _settings.Update(s => s with { Playback = s.Playback with { Volume = volume, IsMuted = muted } });
+    }
 
     /// <summary>Raises the volume by <see cref="VolumeStep"/> (Ctrl+Up).</summary>
     [RelayCommand]

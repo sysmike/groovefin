@@ -8,6 +8,7 @@ using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Queue;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
@@ -36,6 +37,7 @@ public sealed class NowPlayingViewModelTests : IDisposable
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
     private readonly WeakReferenceMessenger _messenger = new();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
+    private readonly InMemorySettingsService _settings = new();
     private readonly NowPlayingViewModel _sut;
     private readonly List<string?> _changed = [];
 
@@ -44,7 +46,7 @@ public sealed class NowPlayingViewModelTests : IDisposable
         _player.Queue.Returns(_queue);
         _player.Engine.Returns(_engine);
         _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
-        _sut = new NowPlayingViewModel(_player, new FavouritesService(_library, _messenger, _errors), _messenger, _navigation, _strings) { DisplayScale = 2 };
+        _sut = new NowPlayingViewModel(_player, new FavouritesService(_library, _messenger, _errors), _messenger, _navigation, _strings, _settings) { DisplayScale = 2 };
         _sut.PropertyChanged += (_, e) => _changed.Add(e.PropertyName);
     }
 
@@ -186,6 +188,41 @@ public sealed class NowPlayingViewModelTests : IDisposable
         _sut.IsMuted.Should().BeTrue();
         _engine.IsMuted.Should().BeTrue();
         _changed.Should().Contain([nameof(_sut.Volume), nameof(_sut.IsMuted)]);
+    }
+
+    [Fact]
+    public void Volume_and_mute_are_saved_for_the_next_start()
+    {
+        _sut.Volume = 35;
+        _sut.ToggleMuteCommand.Execute(null);
+
+        _settings.Current.Playback.Volume.Should().Be(35);
+        _settings.Current.Playback.IsMuted.Should().BeTrue();
+
+        _sut.VolumeDownCommand.Execute(null);
+        _sut.ToggleMuteCommand.Execute(null);
+
+        _settings.Current.Playback.Volume.Should().Be(30);
+        _settings.Current.Playback.IsMuted.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(35, 35)]
+    [InlineData(0, 0)]
+    [InlineData(250, 100)]
+    [InlineData(-5, 0)]
+    public void The_saved_volume_and_mute_apply_on_start(int saved, int expected)
+    {
+        _settings.Update(s => s with { Playback = s.Playback with { Volume = saved, IsMuted = true } });
+        var engine = new FakePlaybackEngine();
+        _player.Engine.Returns(engine);
+
+        using var sut = new NowPlayingViewModel(_player, new FavouritesService(_library, _messenger, _errors), _messenger, _navigation, _strings, _settings);
+
+        sut.Volume.Should().Be(expected);
+        sut.IsMuted.Should().BeTrue();
+        engine.Volume.Should().BeApproximately(expected / 100.0, 0.0001);
+        engine.IsMuted.Should().BeTrue();
     }
 
     [Fact]
@@ -364,7 +401,7 @@ public sealed class NowPlayingViewModelTests : IDisposable
     {
         var favourites = new FavouritesService(_library, _messenger, _errors);
         await favourites.SetAsync("t1", false);
-        using var sut = new NowPlayingViewModel(_player, favourites, _messenger, _navigation, _strings);
+        using var sut = new NowPlayingViewModel(_player, favourites, _messenger, _navigation, _strings, _settings);
 
         PlayOneMoreTime();
 
