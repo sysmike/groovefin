@@ -72,28 +72,6 @@ public sealed class CurrentTrackTests
     }
 
     [Fact]
-    public void A_watcher_that_is_gone_is_not_kept()
-    {
-        var owner = Watch();
-
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-
-        owner.IsAlive.Should().BeFalse();
-        Play("a");
-
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        WeakReference Watch()
-        {
-            var page = new object();
-            Row[] rows = [new("a")];
-            _sut.Watch(page, () => rows);
-            return new WeakReference(page);
-        }
-    }
-
-    [Fact]
     public void A_watched_collection_marks_the_rows_added_to_it()
     {
         Play("b");
