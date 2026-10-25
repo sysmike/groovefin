@@ -1726,6 +1726,30 @@
   <data name="SettingsStartPageCard.Description" xml:space="preserve">
     <value>Die Seite, mit der Groovefin startet.</value>
   </data>
+  <data name="SettingsNavigationCard.Header" xml:space="preserve">
+    <value>Navigationsbereich</value>
+  </data>
+  <data name="SettingsNavigationCard.Description" xml:space="preserve">
+    <value>Wähle die Bereiche, die er zeigt, und ihre Reihenfolge: zieh sie oder nutze die Pfeile.</value>
+  </data>
+  <data name="SettingsNavigationResetButton.Content" xml:space="preserve">
+    <value>Zurücksetzen</value>
+  </data>
+  <data name="SettingsNavigationResetButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Navigationsbereich zurücksetzen</value>
+  </data>
+  <data name="SettingsNavigationList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Bereiche im Navigationsbereich</value>
+  </data>
+  <data name="Navigation_ShowName" xml:space="preserve">
+    <value>{0} anzeigen</value>
+  </data>
+  <data name="Navigation_MoveUpName" xml:space="preserve">
+    <value>{0} nach oben verschieben</value>
+  </data>
+  <data name="Navigation_MoveDownName" xml:space="preserve">
+    <value>{0} nach unten verschieben</value>
+  </data>
   <data name="Settings_LanguageSystem" xml:space="preserve">
     <value>Windows-Sprache verwenden</value>
   </data>

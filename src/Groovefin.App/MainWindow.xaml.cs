@@ -57,6 +57,9 @@ internal sealed partial class MainWindow : Window
     private readonly ISettingsService _settings;
     private readonly ShortcutService _shortcuts;
     private readonly NotificationAreaIcon _tray;
+    /// <summary>The navigation pane's section items by page key, and the separator after Home (#255).</summary>
+    private readonly Dictionary<string, NavigationViewItem> _sectionItems;
+    private readonly NavigationViewItemSeparator _homeSeparator;
     /// <summary>The normal window's presenter, set again when the mini or full-screen player closes.</summary>
     private readonly OverlappedPresenter? _windowPresenter;
     private RectInt32? _restoreBounds;
@@ -90,6 +93,10 @@ internal sealed partial class MainWindow : Window
         Privacy = privacy;
         Suggestions = suggestions;
         InitializeComponent();
+
+        _sectionItems = NavView.MenuItems.OfType<NavigationViewItem>().ToDictionary(item => (string)item.Tag, StringComparer.Ordinal);
+        _homeSeparator = NavView.MenuItems.OfType<NavigationViewItemSeparator>().Single();
+        ApplyNavigationLayout();
 
         _settings = settings;
         Title = new ResourceLoader().GetString("AppDisplayName");
@@ -372,6 +379,34 @@ internal sealed partial class MainWindow : Window
         {
             SyncSelection(ViewModel.SelectedSection);
         }
+        else if (e.PropertyName == nameof(ShellViewModel.VisibleSections))
+        {
+            ApplyNavigationLayout();
+        }
+    }
+
+    /// <summary>
+    /// Shows the sections the user keeps in the navigation pane, in their order (#255). A hidden section's
+    /// page stays reachable by its links and shortcuts; then no item is selected.
+    /// </summary>
+    private void ApplyNavigationLayout()
+    {
+        var sections = ViewModel.VisibleSections;
+        NavView.MenuItems.Clear();
+        foreach (var key in sections)
+        {
+            if (_sectionItems.TryGetValue(key, out var item))
+            {
+                NavView.MenuItems.Add(item);
+            }
+        }
+
+        if (sections.Count > 1 && sections[0] == PageKeys.Home)
+        {
+            NavView.MenuItems.Insert(1, _homeSeparator);
+        }
+
+        SyncSelection(ViewModel.SelectedSection);
     }
 
     private void SyncSelection(string? pageKey)

@@ -107,29 +107,33 @@
             Expanding="OnNavigationExpanding"
             ItemInvoked="OnNavigationItemInvoked"
             PaneDisplayMode="Auto">
+            <!--
+                The sections in their default order. The window shows them in the user's order and leaves out the
+                hidden ones (#255); the separator follows Home when Home comes first.
+            -->
             <NavigationView.MenuItems>
-                <NavigationViewItem x:Uid="NavHome" Tag="home">
+                <NavigationViewItem x:Uid="NavHome" AutomationProperties.AutomationId="NavItem_home" Tag="home">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE80F;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItemSeparator />
-                <NavigationViewItem x:Uid="NavAlbums" Tag="albums">
+                <NavigationViewItem x:Uid="NavAlbums" AutomationProperties.AutomationId="NavItem_albums" Tag="albums">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE93C;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="NavArtists" Tag="artists">
+                <NavigationViewItem x:Uid="NavArtists" AutomationProperties.AutomationId="NavItem_artists" Tag="artists">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE77B;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="NavSongs" Tag="songs">
+                <NavigationViewItem x:Uid="NavSongs" AutomationProperties.AutomationId="NavItem_songs" Tag="songs">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEC4F;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="NavGenres" Tag="genres">
+                <NavigationViewItem x:Uid="NavGenres" AutomationProperties.AutomationId="NavItem_genres" Tag="genres">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE8EC;" />
                     </NavigationViewItem.Icon>
@@ -139,6 +143,7 @@
                     x:Name="PlaylistsNavItem"
                     x:Uid="NavPlaylists"
                     AllowDrop="True"
+                    AutomationProperties.AutomationId="NavItem_playlists"
                     DragEnter="OnPlaylistsNavDragEnter"
                     HasUnrealizedChildren="True"
                     Tag="playlists">
@@ -146,18 +151,18 @@
                         <FontIcon Glyph="&#xE8FD;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="NavFolders" Tag="folders">
+                <NavigationViewItem x:Uid="NavFolders" AutomationProperties.AutomationId="NavItem_folders" Tag="folders">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE8B7;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="NavFavourites" Tag="favourites">
+                <NavigationViewItem x:Uid="NavFavourites" AutomationProperties.AutomationId="NavItem_favourites" Tag="favourites">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEB51;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <!--  The tracks played most in the last 30 days (#251).  -->
-                <NavigationViewItem x:Uid="NavOnRepeat" Tag="onrepeat">
+                <NavigationViewItem x:Uid="NavOnRepeat" AutomationProperties.AutomationId="NavItem_onrepeat" Tag="onrepeat">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE8EE;" />
                     </NavigationViewItem.Icon>
