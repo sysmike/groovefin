@@ -14,8 +14,16 @@ using Groovefin.Core.Services;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>A track in the search results.</summary>
-public sealed record SearchTrackItem(Track Track, int Index)
+public sealed partial class SearchTrackItem(Track track, int index) : ObservableObject, ICurrentTrackRow
 {
+    public Track Track { get; } = track;
+
+    public int Index { get; } = index;
+
+    /// <summary>Gets or sets whether the row's track is playing (#247).</summary>
+    [ObservableProperty]
+    public partial bool IsCurrent { get; set; }
+
     public string Name => Track.Name;
 
     /// <summary>Gets the artists and the album, e.g. "Daft Punk · Discovery".</summary>
@@ -35,7 +43,8 @@ public sealed partial class SearchViewModel(
     IPlayer player,
     INavigationService navigation,
     IErrorReporter errors,
-    IStringResources strings) : ObservableObject
+    IStringResources strings,
+    CurrentTrack currentTrack) : ObservableObject
 {
     /// <summary>Most results shown per kind.</summary>
     public const int Limit = 50;
@@ -48,7 +57,7 @@ public sealed partial class SearchViewModel(
 
     public ObservableCollection<AlbumItem> Albums { get; } = [];
 
-    public ObservableCollection<SearchTrackItem> Tracks { get; } = [];
+    public ObservableCollection<SearchTrackItem> Tracks { get; } = currentTrack.Watch(new ObservableCollection<SearchTrackItem>());
 
     public ObservableCollection<PlaylistItem> Playlists { get; } = [];
 

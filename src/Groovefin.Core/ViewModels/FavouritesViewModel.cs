@@ -15,8 +15,16 @@ using Groovefin.Core.Services;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>A favourite song: cover, title, artists · album, length.</summary>
-public sealed record FavouriteTrackItem(Track Track, ImageRequest? Cover)
+public sealed partial class FavouriteTrackItem(Track track, ImageRequest? cover) : ObservableObject, ICurrentTrackRow
 {
+    public Track Track { get; } = track;
+
+    public ImageRequest? Cover { get; } = cover;
+
+    /// <summary>Gets or sets whether the row's track is playing (#247).</summary>
+    [ObservableProperty]
+    public partial bool IsCurrent { get; set; }
+
     public string Name => Track.Name;
 
     public string Details => string.Join(" · ", new[] { string.Join(", ", Track.Artists.Select(a => a.Name)), Track.AlbumName ?? string.Empty }.Where(s => s.Length > 0));
@@ -36,7 +44,8 @@ public sealed partial class FavouritesViewModel(
     INavigationService navigation,
     IErrorReporter errors,
     FavouritesService favourites,
-    IMessenger messenger) : ObservableObject
+    IMessenger messenger,
+    CurrentTrack currentTrack) : ObservableObject
 {
     /// <summary>Most favourites loaded per kind.</summary>
     public const int Limit = 500;
@@ -45,7 +54,7 @@ public sealed partial class FavouritesViewModel(
 
     public const double CoverWidth = 40;
 
-    public ObservableCollection<FavouriteTrackItem> Tracks { get; } = [];
+    public ObservableCollection<FavouriteTrackItem> Tracks { get; } = currentTrack.Watch(new ObservableCollection<FavouriteTrackItem>());
 
     public ObservableCollection<AlbumItem> Albums { get; } = [];
 

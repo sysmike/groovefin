@@ -13,8 +13,14 @@ using Groovefin.Core.Settings;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>One row of the songs table.</summary>
-public sealed record SongRow(Track Track)
+public sealed partial class SongRow(Track track) : ObservableObject, ICurrentTrackRow
 {
+    public Track Track { get; } = track;
+
+    /// <summary>Gets or sets whether the row's track is playing (#247).</summary>
+    [ObservableProperty]
+    public partial bool IsCurrent { get; set; }
+
     /// <summary>Gets the cell text of <paramref name="column"/>.</summary>
     public string Text(SongColumn column) => column switch
     {
@@ -101,8 +107,9 @@ public sealed partial class SongsViewModel : ObservableObject, IDisposable
     private int _generation;
     private bool _initialized;
 
-    public SongsViewModel(ILibraryService library, ISettingsService settings, IPlayer player, IErrorReporter errors, IStringResources strings)
+    public SongsViewModel(ILibraryService library, ISettingsService settings, IPlayer player, IErrorReporter errors, IStringResources strings, CurrentTrack currentTrack)
     {
+        currentTrack.Watch(Songs);
         _library = library;
         _settings = settings;
         _player = player;

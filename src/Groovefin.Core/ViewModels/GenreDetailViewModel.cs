@@ -13,8 +13,16 @@ using Groovefin.Core.Services;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>A track row: cover, title, artists · album, length.</summary>
-public sealed record TrackRow(Track Track, ImageRequest? Cover)
+public sealed partial class TrackRow(Track track, ImageRequest? cover) : ObservableObject, ICurrentTrackRow
 {
+    public Track Track { get; } = track;
+
+    public ImageRequest? Cover { get; } = cover;
+
+    /// <summary>Gets or sets whether the row's track is playing (#247).</summary>
+    [ObservableProperty]
+    public partial bool IsCurrent { get; set; }
+
     public string Name => Track.Name;
 
     public string Details => string.Join(" · ", new[] { string.Join(", ", Track.Artists.Select(a => a.Name)), Track.AlbumName ?? string.Empty }.Where(s => s.Length > 0));
@@ -33,7 +41,8 @@ public sealed partial class GenreDetailViewModel(
     IPlayer player,
     INavigationService navigation,
     IErrorReporter errors,
-    InstantMix instantMix) : ObservableObject
+    InstantMix instantMix,
+    CurrentTrack currentTrack) : ObservableObject
 {
     public const int TrackLimit = 1000;
 
@@ -49,7 +58,7 @@ public sealed partial class GenreDetailViewModel(
 
     public ObservableCollection<AlbumItem> Albums { get; } = [];
 
-    public ObservableCollection<TrackRow> Tracks { get; } = [];
+    public ObservableCollection<TrackRow> Tracks { get; } = currentTrack.Watch(new ObservableCollection<TrackRow>());
 
     public double DisplayScale { get; set; } = 1;
 

@@ -13,6 +13,7 @@ namespace Groovefin.Core.Tests.ViewModels;
 
 public sealed class ArtistDetailViewModelTests
 {
+    private readonly PlayingTrack _playing = new();
     private const string ArtistId = "artist-1";
 
     private static readonly Artist DaftPunk = new()
@@ -51,7 +52,7 @@ public sealed class ArtistDetailViewModelTests
 
     private static PagedResult<Album> Page(params Album[] albums) => new(albums, albums.Length, 0);
 
-    private ArtistDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, new FavouritesService(_library, _messenger, _errors), _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors));
+    private ArtistDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, new FavouritesService(_library, _messenger, _errors), _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current);
 
     [Fact]
     public async Task Load_fills_header_and_all_sections()
@@ -281,5 +282,16 @@ public sealed class ArtistDetailViewModelTests
         await sut.InstantMixCommand.ExecuteAsync(null);
 
         _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Single().Id == "m"));
+    }
+
+    [Fact]
+    public async Task The_playing_top_track_is_marked()
+    {
+        _playing.Play("t2");
+        var sut = CreateSut();
+
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        sut.TopTracks.Select(t => t.IsCurrent).Should().Equal(false, true);
     }
 }

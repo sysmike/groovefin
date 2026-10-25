@@ -3,12 +3,14 @@ using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
 namespace Groovefin.Core.Tests.ViewModels;
 
 public sealed class AlbumPreviewViewModelTests
 {
+    private readonly PlayingTrack _playing = new();
     private static readonly ArtistRef DaftPunk = new("artist-1", "Daft Punk");
 
     private static readonly Album Discovery = new()
@@ -33,7 +35,7 @@ public sealed class AlbumPreviewViewModelTests
         _strings.GetString("Album_Disc").Returns("Disc {0}");
         _strings.GetString("Duration_Minutes").Returns("{0} min");
         _strings.GetString("Cover_Play").Returns("Play {0}");
-        _sut = new AlbumPreviewViewModel(_library, _player, _errors, _strings);
+        _sut = new AlbumPreviewViewModel(_library, _player, _errors, _strings, _playing.Current);
     }
 
     private static Track Track(string id, int number, int? disc, params ArtistRef[] artists) => new()
@@ -114,5 +116,17 @@ public sealed class AlbumPreviewViewModelTests
         _sut.Discs.Should().BeEmpty();
         _sut.PlayCommand.CanExecute(null).Should().BeFalse();
         _errors.Received(1).Report(failure, Operations.LoadAlbum);
+    }
+
+    [Fact]
+    public async Task The_playing_track_is_marked()
+    {
+        _library.GetAlbumTracksAsync("album-1", Arg.Any<CancellationToken>()).Returns([Track("t1", 1, null, DaftPunk), Track("t2", 2, null, DaftPunk)]);
+        _playing.Play("t1");
+
+        await _sut.LoadAsync(Discovery, TestContext.Current.CancellationToken);
+        _playing.Play("t2");
+
+        _sut.Discs.SelectMany(d => d.Tracks).Select(t => t.IsCurrent).Should().Equal(false, true);
     }
 }

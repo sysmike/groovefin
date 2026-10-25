@@ -13,6 +13,7 @@ namespace Groovefin.Core.Tests.ViewModels;
 
 public sealed class AlbumDetailViewModelTests
 {
+    private readonly PlayingTrack _playing = new();
     private static readonly ArtistRef DaftPunk = new("artist-1", "Daft Punk");
 
     private static readonly Album Discovery = new()
@@ -58,7 +59,7 @@ public sealed class AlbumDetailViewModelTests
         Artists = artists,
     };
 
-    private AlbumDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors));
+    private AlbumDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current);
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -370,7 +371,7 @@ public sealed class AlbumDetailViewModelTests
     {
         var favourites = new FavouritesService(_library, _messenger, _errors);
         await favourites.SetAsync("t1", true);
-        var sut = new AlbumDetailViewModel(_library, _player, _navigation, _errors, _strings, favourites, _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors));
+        var sut = new AlbumDetailViewModel(_library, _player, _navigation, _errors, _strings, favourites, _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current);
 
         await sut.LoadAsync("album-1", Ct);
         await sut.LoadAsync("album-1", Ct);
@@ -389,5 +390,21 @@ public sealed class AlbumDetailViewModelTests
         await sut.InstantMixCommand.ExecuteAsync(null);
 
         _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Single().Id == "m"));
+    }
+
+    [Fact]
+    public async Task The_playing_track_is_marked_and_the_mark_follows_it()
+    {
+        _playing.Play("t2");
+        var sut = CreateSut();
+
+        await sut.LoadAsync("album-1", Ct);
+        sut.Discs.SelectMany(d => d.Tracks).Select(t => t.IsCurrent).Should().Equal(false, true);
+
+        _playing.Play("t1");
+        sut.Discs.SelectMany(d => d.Tracks).Select(t => t.IsCurrent).Should().Equal(true, false);
+
+        sut.SortCommand.Execute(AlbumTrackSort.Title);
+        sut.Discs.SelectMany(d => d.Tracks).Single(t => t.IsCurrent).Track.Id.Should().Be("t1");
     }
 }

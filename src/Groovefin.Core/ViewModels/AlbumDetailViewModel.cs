@@ -17,9 +17,13 @@ using Groovefin.Core.Services;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>One track row.</summary>
-public sealed partial class TrackItem(Track track, string? artist, bool isFavourite = false) : ObservableObject
+public sealed partial class TrackItem(Track track, string? artist, bool isFavourite = false) : ObservableObject, ICurrentTrackRow
 {
     public Track Track { get; } = track;
+
+    /// <summary>Gets or sets whether the row's track is playing (#247).</summary>
+    [ObservableProperty]
+    public partial bool IsCurrent { get; set; }
 
     /// <summary>Gets the artists shown in the row, or <see langword="null"/> when they are the album's.</summary>
     public string? Artist { get; } = artist;
@@ -76,7 +80,8 @@ public sealed partial class AlbumDetailViewModel(
     IStringResources strings,
     FavouritesService favourites,
     IMessenger messenger,
-    InstantMix instantMix) : ObservableObject
+    InstantMix instantMix,
+    CurrentTrack currentTrack) : ObservableObject
 {
     private IReadOnlyList<Track> _tracks = [];
 
@@ -388,6 +393,7 @@ public sealed partial class AlbumDetailViewModel(
         }
 
         _shown = Discs.SelectMany(d => d.Tracks).Select(i => i.Track).ToList();
+        currentTrack.Watch(this, () => Discs.SelectMany(d => d.Tracks));
     }
 
     private List<TrackItem> Ordered(List<TrackItem> items)

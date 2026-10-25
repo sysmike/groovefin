@@ -16,9 +16,15 @@ using Groovefin.Core.Services;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>A row of a playlist, in the album page's columns: position, title, artists, album, heart, length (#245).</summary>
-public sealed partial class PlaylistEntryItem(PlaylistEntry entry, bool isFavourite = false) : ObservableObject
+public sealed partial class PlaylistEntryItem(PlaylistEntry entry, bool isFavourite = false) : ObservableObject, ICurrentTrackRow
 {
     public PlaylistEntry Entry { get; } = entry;
+
+    Track ICurrentTrackRow.Track => Entry.Track;
+
+    /// <summary>Gets or sets whether the row's track is playing (#247).</summary>
+    [ObservableProperty]
+    public partial bool IsCurrent { get; set; }
 
     /// <summary>Gets or sets the 1-based position in the playlist; the view model renumbers after each edit.</summary>
     [ObservableProperty]
@@ -56,11 +62,12 @@ public sealed partial class PlaylistDetailViewModel(
     IErrorReporter errors,
     IStringResources strings,
     FavouritesService favourites,
-    IMessenger messenger) : ObservableObject
+    IMessenger messenger,
+    CurrentTrack currentTrack) : ObservableObject
 {
     public const double ImageWidth = 200;
 
-    public ObservableCollection<PlaylistEntryItem> Entries { get; } = [];
+    public ObservableCollection<PlaylistEntryItem> Entries { get; } = currentTrack.Watch(new ObservableCollection<PlaylistEntryItem>());
 
     public double DisplayScale { get; set; } = 1;
 

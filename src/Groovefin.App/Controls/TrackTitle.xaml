@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Groovefin.App.Controls.TrackTitle"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    IsTabStop="False"
+    mc:Ignorable="d">
+
+    <!--
+        A track's title; while the track plays it is drawn in the accent colour, with a speaker before it on
+        rows without a # column (#247). The states take the colour from the theme, so it follows light, dark
+        and high contrast. The speaker is decorative: the row's name says which track it is.
+    -->
+    <Grid ColumnSpacing="6">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="PlayingStates">
+                <VisualState x:Name="NotPlaying" />
+                <VisualState x:Name="Playing">
+                    <VisualState.Setters>
+                        <Setter Target="TitleText.Foreground" Value="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="PlayingWithIcon">
+                    <VisualState.Setters>
+                        <Setter Target="TitleText.Foreground" Value="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <Setter Target="PlayingIcon.Visibility" Value="Visible" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <FontIcon
+            x:Name="PlayingIcon"
+            VerticalAlignment="Center"
+            AutomationProperties.AccessibilityView="Raw"
+            FontSize="12"
+            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+            Glyph="&#xE995;"
+            Visibility="Collapsed" />
+        <TextBlock
+            x:Name="TitleText"
+            Grid.Column="1"
+            VerticalAlignment="Center"
+            MaxLines="1"
+            TextTrimming="CharacterEllipsis"
+            TextWrapping="NoWrap" />
+    </Grid>
+</UserControl>

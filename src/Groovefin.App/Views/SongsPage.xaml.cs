@@ -325,7 +325,7 @@ internal sealed partial class SongsPage : Page
     {
         if (!args.InRecycleQueue && args.Item is SongRow song && args.ItemContainer.ContentTemplateRoot is SongTableRow row)
         {
-            row.Show(ViewModel, song, CellStyle, SecondaryCellStyle);
+            row.Show(ViewModel, song, SecondaryCellStyle);
             AutomationProperties.SetName(args.ItemContainer, song.AccessibleName);
         }
 

@@ -4,12 +4,14 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
 namespace Groovefin.Core.Tests.ViewModels;
 
 public sealed class SearchViewModelTests
 {
+    private readonly PlayingTrack _playing = new();
     private readonly ISearchService _search = Substitute.For<ISearchService>();
     private readonly IPlayer _player = Substitute.For<IPlayer>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
@@ -24,7 +26,7 @@ public sealed class SearchViewModelTests
         _strings.GetString("Search_NoResults").Returns("Nothing for {0}");
         _strings.GetString("Album_TrackCount").Returns("{0} tracks");
         _strings.GetString("Album_TrackCountOne").Returns("{0} track");
-        _sut = new SearchViewModel(_search, _player, _navigation, _errors, _strings);
+        _sut = new SearchViewModel(_search, _player, _navigation, _errors, _strings, _playing.Current);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -144,5 +146,16 @@ public sealed class SearchViewModelTests
         _navigation.Received(1).NavigateTo(PageKeys.Album, "al1");
         _navigation.Received(1).NavigateTo(PageKeys.Playlist, "p1");
         _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "t1", "t2", "t3" })), 1);
+    }
+
+    [Fact]
+    public async Task The_playing_song_among_the_matches_is_marked()
+    {
+        Returns(new SearchResults([], [], [Song("t1"), Song("t2")], []));
+        _playing.Play("t1");
+
+        await _sut.LoadAsync("disco", Ct);
+
+        _sut.Tracks.Select(t => t.IsCurrent).Should().Equal(true, false);
     }
 }

@@ -17,8 +17,16 @@ using Groovefin.Core.Services;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>One row in an artist's top tracks.</summary>
-public sealed record ArtistTrackItem(Track Track, int Rank)
+public sealed partial class ArtistTrackItem(Track track, int rank) : ObservableObject, ICurrentTrackRow
 {
+    public Track Track { get; } = track;
+
+    public int Rank { get; } = rank;
+
+    /// <summary>Gets or sets whether the row's track is playing (#247).</summary>
+    [ObservableProperty]
+    public partial bool IsCurrent { get; set; }
+
     public string Number => Rank.ToString(CultureInfo.CurrentCulture);
 
     public string Name => Track.Name;
@@ -44,7 +52,8 @@ public sealed partial class ArtistDetailViewModel(
     IErrorReporter errors,
     FavouritesService favourites,
     IMessenger messenger,
-    InstantMix instantMix) : ObservableObject
+    InstantMix instantMix,
+    CurrentTrack currentTrack) : ObservableObject
 {
     public const double ImageWidth = 200;
 
@@ -60,7 +69,7 @@ public sealed partial class ArtistDetailViewModel(
     /// <summary>Most albums shown per section; artists with more are rare.</summary>
     public const int AlbumLimit = 200;
 
-    public ObservableCollection<ArtistTrackItem> TopTracks { get; } = [];
+    public ObservableCollection<ArtistTrackItem> TopTracks { get; } = currentTrack.Watch(new ObservableCollection<ArtistTrackItem>());
 
     public ObservableCollection<AlbumItem> Albums { get; } = [];
 
