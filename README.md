@@ -55,7 +55,7 @@ Download the latest release from the [Releases page](https://github.com/sysmike/
 |---|---|
 | `Groovefin_<version>.msixbundle` | Most people: installs the right version for your PC (x64 or ARM64). |
 | `Groovefin_<version>_x64.msix`, `…_ARM64.msix` | One architecture only. |
-| `Groovefin_<version>_<arch>_unpackaged.zip` | Portable: extract anywhere and run `Groovefin.exe`. Nothing to install. |
+| `Groovefin_<version>_<arch>_unpackaged.zip` | Portable: extract anywhere and run `Groovefin.exe`. Nothing to install. On start it adds itself to your Start menu, so Windows can show its name in the media controls. |
 
 - **Requirements:** Windows 11 (version 21H2 or later) on x64 or ARM64, and a
   [Jellyfin](https://jellyfin.org) server. Lyrics need Jellyfin 10.9 or later.

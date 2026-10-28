@@ -179,6 +179,23 @@ try {
     }
     Write-Output 'The equalizer effect is registered.'
 
+    # The unpackaged app's identity (#271): it sets its own AppUserModelID and a Start menu shortcut carries
+    # it, so the shell resolves the ID to the name the media flyout shows instead of "Unknown application".
+    $identity = Select-String -Path $log.FullName -Pattern 'app identity' | Select-Object -Last 1
+    if (-not $identity -or $identity.Line -notmatch 'App identity Groovefin;') {
+        Stop-Test 'App identity' "Groovefin did not set up its app identity: $($identity.Line)"
+    }
+    $until = (Get-Date).AddSeconds(15)
+    do {
+        $app = (New-Object -ComObject Shell.Application).NameSpace('shell:AppsFolder').Items() |
+            Where-Object { $_.Path -eq 'Groovefin' } | Select-Object -First 1
+        if (-not $app) { Start-Sleep -Milliseconds 500 }
+    } while (-not $app -and (Get-Date) -lt $until)
+    if (-not $app -or $app.Name -ne 'Groovefin') {
+        Stop-Test 'App identity' "The shell does not resolve the app ID 'Groovefin' to the name 'Groovefin' (found: '$($app.Name)'). $($identity.Line)"
+    }
+    Write-Output "The shell knows the app ID 'Groovefin' as '$($app.Name)'."
+
     Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
     $automation = [System.Windows.Automation.AutomationElement]
     $scope = [System.Windows.Automation.TreeScope]
