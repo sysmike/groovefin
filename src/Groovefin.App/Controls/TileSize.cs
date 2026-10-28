@@ -13,7 +13,8 @@ namespace Groovefin.App.Controls;
 /// &lt;StackPanel Width="{Binding Width, Source={StaticResource AlbumTile}}"&gt;
 /// &lt;ItemsView controls:TileSize.Source="{StaticResource AlbumTile}"&gt;
 /// </code>
-/// The ItemsView sets <see cref="Width"/>, and its <see cref="UniformGridLayout.MinItemWidth"/>, when it
+/// The ItemsView sets <see cref="Width"/>, and the MinItemWidth of its <see cref="UniformGridLayout"/> or
+/// <see cref="WrapGridLayout"/>, when it
 /// resizes or gets another layout (the list layout of Albums and Artists is left alone).
 /// </summary>
 public sealed partial class TileSize : DependencyObject
@@ -75,13 +76,22 @@ public sealed partial class TileSize : DependencyObject
 
     private static void Fit(ItemsView view)
     {
-        if (GetSource(view) is not { MinWidth: > 0 } size || view.Layout is not UniformGridLayout layout)
+        if (GetSource(view) is not { MinWidth: > 0 } size)
         {
             return;
         }
 
         var available = view.ActualWidth - view.Padding.Left - view.Padding.Right;
-        size.Width = TileGrid.Fit(available, size.MinWidth, layout.MinColumnSpacing);
-        layout.MinItemWidth = size.Width;
+        switch (view.Layout)
+        {
+            case UniformGridLayout uniform:
+                size.Width = TileGrid.Fit(available, size.MinWidth, uniform.MinColumnSpacing);
+                uniform.MinItemWidth = size.Width;
+                break;
+            case WrapGridLayout wrap:
+                size.Width = TileGrid.Fit(available, size.MinWidth, wrap.MinColumnSpacing);
+                wrap.MinItemWidth = size.Width;
+                break;
+        }
     }
 }
