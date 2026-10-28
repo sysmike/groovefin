@@ -12,6 +12,7 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 
 namespace Groovefin.Core.ViewModels;
 
@@ -52,7 +53,9 @@ public sealed partial class PlaylistEntryItem(PlaylistEntry entry, bool isFavour
 /// <summary>
 /// Playlist detail page: play, shuffle, queue, rename, delete (after a confirmation), and edit the
 /// entries (remove, move up/down, drag), and toggle a track's heart. Edits show at once and are sent to the
-/// server; when the server refuses, the entries are loaded again and the error is shown.
+/// server; when the server refuses, the entries are loaded again and the error is shown. The playlist can
+/// be shown in reverse order, last entry first (#267): only here, remembered per playlist, and played as
+/// shown; the server's order stays, so moving entries is off meanwhile.
 /// </summary>
 public sealed partial class PlaylistDetailViewModel(
     IPlaylistService playlists,
@@ -63,9 +66,12 @@ public sealed partial class PlaylistDetailViewModel(
     IStringResources strings,
     FavouritesService favourites,
     IMessenger messenger,
-    CurrentTrack currentTrack) : ObservableObject
+    CurrentTrack currentTrack,
+    ISettingsService settings) : ObservableObject
 {
     public const double ImageWidth = 200;
+
+    private bool _loadingOrder;
 
     public ObservableCollection<PlaylistEntryItem> Entries { get; } = currentTrack.Watch(new ObservableCollection<PlaylistEntryItem>());
 
@@ -73,7 +79,7 @@ public sealed partial class PlaylistDetailViewModel(
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPlaylist), nameof(Name), nameof(IsEmpty))]
-    [NotifyCanExecuteChangedFor(nameof(RenameCommand), nameof(DeleteCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RenameCommand), nameof(DeleteCommand), nameof(ToggleReverseCommand))]
     public partial Playlist? Playlist { get; private set; }
 
     public bool HasPlaylist => Playlist is not null;
@@ -101,6 +107,18 @@ public sealed partial class PlaylistDetailViewModel(
     /// <summary>Gets a value indicating whether the loaded playlist has no entries.</summary>
     public bool IsEmpty => HasPlaylist && !HasEntries;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the entries are shown last first (#267); a change reverses the
+    /// rows and is remembered for the playlist.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanReorder))]
+    [NotifyCanExecuteChangedFor(nameof(MoveUpCommand), nameof(MoveDownCommand))]
+    public partial bool IsReversed { get; set; }
+
+    /// <summary>Gets a value indicating whether entries can be moved: only in the playlist's own order.</summary>
+    public bool CanReorder => !IsReversed;
+
     public async Task LoadAsync(string playlistId, CancellationToken cancellationToken = default)
     {
         // Weak: the page's view model needs no unregistering.
@@ -118,6 +136,9 @@ public sealed partial class PlaylistDetailViewModel(
             var playlist = await playlistTask;
             var entries = await entriesTask;
 
+            _loadingOrder = true;
+            IsReversed = settings.Current.Browse.ReversedPlaylists.Contains(playlist.Id);
+            _loadingOrder = false;
             Playlist = playlist;
             Image = ImageRequest.Primary(playlist.Id, playlist.PrimaryImageTag, ImageWidth, DisplayScale);
             ShowEntries(entries);
@@ -143,6 +164,11 @@ public sealed partial class PlaylistDetailViewModel(
     /// </summary>
     public Task MoveEntryAsync(PlaylistEntryItem item, int newIndex)
     {
+        if (IsReversed)
+        {
+            return Task.CompletedTask;
+        }
+
         Renumber();
         return EditAsync(() => playlists.MoveEntryAsync(Playlist!.Id, item.Entry.EntryId, newIndex));
     }
@@ -161,6 +187,35 @@ public sealed partial class PlaylistDetailViewModel(
     /// <summary>Plays the playlist from <paramref name="item"/> on (a row was clicked).</summary>
     [RelayCommand]
     private void PlayEntry(PlaylistEntryItem item) => player.Play(Tracks, Math.Max(0, Entries.IndexOf(item)));
+
+    /// <summary>Shows the entries the other way round (#267).</summary>
+    [RelayCommand(CanExecute = nameof(HasPlaylist))]
+    private void ToggleReverse() => IsReversed = !IsReversed;
+
+    partial void OnIsReversedChanged(bool value)
+    {
+        if (_loadingOrder || Playlist is not { } playlist)
+        {
+            return;
+        }
+
+        var rows = Entries.Reverse().ToList();
+        Entries.Clear();
+        foreach (var row in rows)
+        {
+            Entries.Add(row);
+        }
+
+        Renumber();
+        RememberReversed(playlist.Id, value);
+    }
+
+    private void RememberReversed(string playlistId, bool reversed) =>
+        settings.Update(s =>
+        {
+            var others = s.Browse.ReversedPlaylists.Where(id => id != playlistId);
+            return s with { Browse = s.Browse with { ReversedPlaylists = reversed ? [.. others, playlistId] : [.. others] } };
+        });
 
     [RelayCommand(CanExecute = nameof(HasPlaylist))]
     private async Task RenameAsync()
@@ -206,6 +261,7 @@ public sealed partial class PlaylistDetailViewModel(
         try
         {
             await playlists.DeleteAsync(playlist.Id);
+            RememberReversed(playlist.Id, false);
             Playlist = null;
             navigation.GoBack();
         }
@@ -248,17 +304,17 @@ public sealed partial class PlaylistDetailViewModel(
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanReorder))]
     private Task MoveUpAsync(PlaylistEntryItem item) => MoveByAsync(item, -1);
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanReorder))]
     private Task MoveDownAsync(PlaylistEntryItem item) => MoveByAsync(item, 1);
 
     private Task MoveByAsync(PlaylistEntryItem item, int offset)
     {
         var index = Entries.IndexOf(item);
         var target = index + offset;
-        if (index < 0 || target < 0 || target >= Entries.Count)
+        if (IsReversed || index < 0 || target < 0 || target >= Entries.Count)
         {
             return Task.CompletedTask;
         }
@@ -296,7 +352,7 @@ public sealed partial class PlaylistDetailViewModel(
     private void ShowEntries(IReadOnlyList<PlaylistEntry> entries)
     {
         Entries.Clear();
-        foreach (var entry in entries)
+        foreach (var entry in IsReversed ? entries.Reverse() : entries)
         {
             Entries.Add(new PlaylistEntryItem(entry, favourites.IsFavourite(entry.Track.Id, entry.Track.IsFavorite)));
         }
@@ -304,12 +360,12 @@ public sealed partial class PlaylistDetailViewModel(
         UpdateDetails();
     }
 
-    /// <summary>The # column follows the rows' order.</summary>
+    /// <summary>The # column is the position in the playlist's own order, also while shown reversed.</summary>
     private void Renumber()
     {
         for (var i = 0; i < Entries.Count; i++)
         {
-            Entries[i].Position = i + 1;
+            Entries[i].Position = IsReversed ? Entries.Count - i : i + 1;
         }
     }
 

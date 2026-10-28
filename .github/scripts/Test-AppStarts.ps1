@@ -944,6 +944,29 @@ try {
     Write-Output "The playlist's tracks have the album's columns, with a divider between them ($contrast levels against the background)."
     Test-Accessibility 'playlist'
 
+    # Reverse order (#267): the button shows the playlist last entry first, numbered as in the playlist's own
+    # order ("2, Track 2, ..." on top), and again in order when pressed once more. Each row's named group
+    # inside its list item reads its number first.
+    function Get-FirstEntry {
+        $list = Find-ById 'PlaylistEntries'
+        $row = @($list.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Group))) |
+            Where-Object { $_.Current.Name -match '^\d+, ' } | Select-Object -First 1
+        if ($row) { $row.Current.Name } else { '' }
+    }
+    function Test-FirstEntry([string] $prefix, [string] $what) {
+        $until = (Get-Date).AddSeconds(10)
+        while (-not (Get-FirstEntry).StartsWith($prefix) -and (Get-Date) -lt $until -and -not $process.HasExited) { Start-Sleep -Milliseconds 300 }
+        if (-not (Get-FirstEntry).StartsWith($prefix)) { Stop-Test 'Playlist order' "The playlist's first row is '$(Get-FirstEntry)' $what, not '$prefix...'." }
+    }
+    Test-FirstEntry '1, Track 1' 'at first'
+    $reverse = Find-ById 'PlaylistReverseButton'
+    $reverse.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
+    Test-FirstEntry '2, Track 2' 'in reverse order'
+    $reverse.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
+    Test-FirstEntry '1, Track 1' 'back in order'
+    Test-Running 'after reversing the playlist'
+    Write-Output 'The playlist showed its last track first in reverse order, and in order again.'
+
     # The queue, the lyrics and the full-screen player, opened and closed with their shortcuts, scanned
     # while they show (#51).
     function Test-Shortcut([string] $keys, [System.Windows.Automation.Condition] $shown, [string] $what, [string] $close) {

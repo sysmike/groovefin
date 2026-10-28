@@ -80,6 +80,14 @@
                     <Button x:Uid="PlaylistQueueButton" Command="{x:Bind ViewModel.AddToQueueCommand}">
                         <FontIcon FontSize="14" Glyph="&#xE710;" />
                     </Button>
+                    <!--  Last entry first (#267), remembered per playlist; Play follows the order shown.  -->
+                    <ToggleButton
+                        x:Uid="PlaylistReverseButton"
+                        AutomationProperties.AutomationId="PlaylistReverseButton"
+                        IsChecked="{x:Bind ViewModel.IsReversed, Mode=TwoWay}"
+                        IsEnabled="{x:Bind ViewModel.HasPlaylist, Mode=OneWay}">
+                        <FontIcon FontSize="14" Glyph="&#xE8CB;" />
+                    </ToggleButton>
                     <Button x:Uid="PlaylistRenameButton" Command="{x:Bind ViewModel.RenameCommand}">
                         <FontIcon FontSize="14" Glyph="&#xE8AC;" />
                     </Button>
@@ -178,16 +186,20 @@
                 Glyph="&#xE823;" />
         </Grid>
 
-        <!--  Entries: click plays from there, drag reorders, the context menu (or Shift+F10) moves and removes.  -->
+        <!--
+            Entries: click plays from there, drag reorders, the context menu (or Shift+F10) moves and removes.
+            Shown reversed (#267), the server's order cannot be edited: no reordering, no moves.
+        -->
         <ListView
             controls:TrackDragSource.IsEnabled="True"
             x:Name="EntriesList"
             x:Uid="PlaylistEntries"
             Grid.Row="2"
+            AutomationProperties.AutomationId="PlaylistEntries"
             Padding="36,0,36,24"
-            AllowDrop="True"
+            AllowDrop="{x:Bind ViewModel.CanReorder, Mode=OneWay}"
             CanDragItems="True"
-            CanReorderItems="True"
+            CanReorderItems="{x:Bind ViewModel.CanReorder, Mode=OneWay}"
             ContextRequested="OnEntryContextRequested"
             DragItemsCompleted="OnEntriesDragCompleted"
             IsItemClickEnabled="True"
