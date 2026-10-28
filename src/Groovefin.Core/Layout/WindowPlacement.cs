@@ -100,7 +100,7 @@ public sealed class WindowPlacement
         return new PixelRect(x, y, width, height);
     }
 
-    private static int Scale(int effective, int dpi) => (int)Math.Ceiling(effective * (dpi > 0 ? dpi : 96) / 96.0);
+    private static int Scale(int effective, int dpi) => (int)Math.Ceiling((double)effective * (dpi > 0 ? dpi : 96) / 96);
 
     private static int Fit(int size, int min, int max) => Math.Min(Math.Max(size, min), max);
 }
