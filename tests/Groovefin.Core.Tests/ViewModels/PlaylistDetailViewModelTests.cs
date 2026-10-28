@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
+using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
@@ -449,5 +450,19 @@ public sealed class PlaylistDetailViewModelTests
         await _sut.DeleteCommand.ExecuteAsync(null);
 
         _settings.Current.Browse.ReversedPlaylists.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Each_row_shows_its_albums_cover_at_the_display_scale()
+    {
+        var entries = Entries("a", "b");
+        entries[1] = entries[1] with { Track = entries[1].Track with { AlbumId = "other", AlbumImageTag = null } };
+        _playlists.GetEntriesAsync(Id, Arg.Any<CancellationToken>()).Returns(entries);
+        _sut.DisplayScale = 2;
+
+        await LoadAsync();
+
+        Row("a").Cover.Should().Be(new ImageRequest("al", ImageKind.Primary, "t", 80));
+        Row("b").Cover.Should().BeNull("an album without a cover shows the placeholder");
     }
 }
