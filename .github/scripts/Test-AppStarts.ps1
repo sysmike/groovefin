@@ -121,7 +121,11 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             '^/items/[0-9a-f-]{32,36}/similar$' { @{ Items = @($similar); TotalRecordCount = $similar.Count; StartIndex = 0 } }
             '^/items/[0-9a-f-]{32,36}$' {
                 $id = $path.Substring(7) -replace '-', ''
-                if ($id -eq $artist.Id) { $artist } elseif ($id -eq $playlist.Id) { $playlist } elseif ($id -eq $genre.Id) { $genre } else { $albums[0] }
+                $track = $tracks | Where-Object { $_.Id -eq $id } | Select-Object -First 1
+                if ($id -eq $artist.Id) { $artist } elseif ($id -eq $playlist.Id) { $playlist } elseif ($id -eq $genre.Id) { $genre }
+                # A song loaded for its info dialog carries its file's details (#282).
+                elseif ($track) { $track + @{ MediaSources = @(@{ Container = 'flac'; Size = 31457280; MediaStreams = @(@{ Type = 'Audio'; Codec = 'flac'; BitDepth = 16; SampleRate = 44100; Channels = 2 }) }) } }
+                else { $albums[0] }
             }
             '^/audio/[0-9a-f-]{32,36}/universal$' { $raw = $wav; $null }
             '^/items$' { @{ Items = $albums; TotalRecordCount = $albums.Count; StartIndex = 0 } }
@@ -500,6 +504,32 @@ try {
     Test-Running 'on the songs page'
     Write-Output 'The songs page opened.'
     Test-Accessibility 'songs'
+
+    # Song info (#282): "Show info" in a song's menu (Shift+F10) loads the song from the server and shows
+    # its tags and file details under headings. Each value is named with its label for Narrator.
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        $songRow = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) |
+            Where-Object { $_.Current.Name -like 'Track 1*' } | Select-Object -First 1
+        if (-not $songRow) { Start-Sleep -Milliseconds 500 }
+    } while (-not $songRow -and (Get-Date) -lt $until)
+    if (-not $songRow) { Stop-Test 'Smoke test' "The song 'Track 1' was not found on the songs page." }
+    Add-Type -AssemblyName System.Windows.Forms
+    $songRow.SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
+    $showInfo = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Show info'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem))) "'Show info' in the song's menu"
+    $showInfo.GetCurrentPattern($invoke).Invoke()
+    foreach ($name in 'File', 'Codec: FLAC', 'Bit depth: 16-bit', 'Channels: Stereo') {
+        $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $name)) "'$name' in the song's info"
+    }
+    Test-Accessibility 'song-info'
+    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+    $until = (Get-Date).AddSeconds(5)
+    while ($window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Codec: FLAC')) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
+    if ($window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Codec: FLAC'))) { Stop-Test 'Smoke test' "The song's info did not close on Esc." }
+    Write-Output "The song's info shows its file details (codec, bit depth, channels) under headings."
 
     # Playback (#167): an album from Home, played through the equalizer effect. The position must move,
     # and no track may fail, nor may the engine have to take the effect out to play it.

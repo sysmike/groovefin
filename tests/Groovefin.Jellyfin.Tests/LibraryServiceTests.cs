@@ -479,4 +479,102 @@ public sealed class LibraryServiceTests : IDisposable
 
         await act.Should().ThrowAsync<JellyfinException>();
     }
+
+    [Fact]
+    public async Task GetTrackDetails_maps_tags_people_provider_ids_and_the_audio_stream()
+    {
+        const string trackId = "22222222333344445555666666666666";
+        _host.Server.Given(Request.Create().WithPath($"/Items/{Guid.Parse(trackId)}").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200).WithHeader("Content-Type", "application/json").WithBodyAsJson(new
+            {
+                Id = Guid.Parse(trackId),
+                Name = "Digital Love",
+                Type = "Audio",
+                Album = "Discovery",
+                AlbumArtists = new[] { new { Id = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), Name = "Daft Punk" } },
+                Genres = new[] { "Electronic" },
+                PremiereDate = "2001-03-12T00:00:00.0000000Z",
+                People = new object[]
+                {
+                    new { Name = "Thomas Bangalter", Type = "Composer" },
+                    new { Name = "Daft Punk", Type = "Artist" },
+                    new { Name = "Romanthony", Type = "Lyricist" },
+                    new { Name = "Someone", Type = "Creator" },
+                },
+                Studios = new[] { new { Name = "Virgin", Id = Guid.Parse("11111111-2222-3333-4444-555555555555") } },
+                Tags = new[] { "Summer" },
+                ProviderIds = new { MusicBrainzTrack = "f2a1b9e3-0000-4000-8000-000000000001", AudioDbAlbum = "2109614", Empty = "" },
+                HasLyrics = true,
+                NormalizationGain = -6.2,
+                UserData = new { IsFavorite = true, PlayCount = 7 },
+                MediaSources = new[]
+                {
+                    new
+                    {
+                        Container = "flac",
+                        Size = 38_502_400L,
+                        Bitrate = 1_100_000,
+                        Path = "/music/Daft Punk/Discovery/03 Digital Love.flac",
+                        MediaStreams = new object[]
+                        {
+                            new { Type = "EmbeddedImage", Codec = "mjpeg" },
+                            new { Type = "Audio", Codec = "flac", BitRate = 1_031_499, SampleRate = 44_100, BitDepth = 16, Channels = 2 },
+                        },
+                    },
+                },
+            }));
+        _host.ConnectAsTestUser();
+
+        var details = await _host.Library.GetTrackDetailsAsync(trackId, TestContext.Current.CancellationToken);
+
+        details.Track.Name.Should().Be("Digital Love");
+        details.Track.PlayCount.Should().Be(7);
+        details.Track.NormalizationGain.Should().BeApproximately(-6.2, 0.001);
+        details.AlbumArtists.Should().Equal("Daft Punk");
+        details.Genres.Should().Equal("Electronic");
+        details.ReleaseDate.Should().Be(new DateOnly(2001, 3, 12));
+        details.People.Should().Equal(
+            new TrackPerson("Thomas Bangalter", PersonRole.Composer),
+            new TrackPerson("Romanthony", PersonRole.Lyricist),
+            new TrackPerson("Someone", PersonRole.Other));
+        details.Studios.Should().Equal("Virgin");
+        details.Tags.Should().Equal("Summer");
+        details.ProviderIds.Should().Equal(
+            KeyValuePair.Create("AudioDbAlbum", "2109614"),
+            KeyValuePair.Create("MusicBrainzTrack", "f2a1b9e3-0000-4000-8000-000000000001"));
+        details.HasLyrics.Should().BeTrue();
+        details.Container.Should().Be("flac");
+        details.Codec.Should().Be("flac");
+        details.Bitrate.Should().Be(1_031_499, "the audio stream's bitrate is the song's own; the source's includes the cover");
+        details.SampleRate.Should().Be(44_100);
+        details.BitDepth.Should().Be(16);
+        details.Channels.Should().Be(2);
+        details.Size.Should().Be(38_502_400);
+        details.Path.Should().Be("/music/Daft Punk/Discovery/03 Digital Love.flac");
+        Guid.Parse(LastQuery()["userId"]).ToString("N").Should().Be(JellyfinTestHost.UserId);
+    }
+
+    [Fact]
+    public async Task GetTrackDetails_of_a_bare_item_leaves_the_details_empty()
+    {
+        const string trackId = "22222222333344445555666666666666";
+        _host.Server.Given(Request.Create().WithPath($"/Items/{Guid.Parse(trackId)}").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200).WithHeader("Content-Type", "application/json").WithBodyAsJson(new
+            {
+                Id = Guid.Parse(trackId),
+                Name = "Untitled",
+                Type = "Audio",
+            }));
+        _host.ConnectAsTestUser();
+
+        var details = await _host.Library.GetTrackDetailsAsync(trackId, TestContext.Current.CancellationToken);
+
+        details.Track.Name.Should().Be("Untitled");
+        details.People.Should().BeEmpty();
+        details.ProviderIds.Should().BeEmpty();
+        details.ReleaseDate.Should().BeNull();
+        details.Codec.Should().BeNull();
+        details.Size.Should().BeNull();
+        details.HasLyrics.Should().BeNull();
+    }
 }

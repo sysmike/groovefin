@@ -56,6 +56,35 @@ internal static class ItemMapper
         };
     }
 
+    /// <summary>Maps an item loaded with all fields (/Items/{id}) for the info dialog (#282).</summary>
+    public static TrackDetails ToTrackDetails(BaseItemDto dto)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        var source = dto.MediaSources?.FirstOrDefault();
+        var audio = (source?.MediaStreams ?? dto.MediaStreams)?.FirstOrDefault(s => s.Type == MediaStream_Type.Audio);
+        return new TrackDetails
+        {
+            Track = ToTrack(dto),
+            AlbumArtists = [.. (dto.AlbumArtists ?? []).Select(a => a.Name).OfType<string>()],
+            Genres = dto.Genres ?? [],
+            ReleaseDate = dto.PremiereDate is { } date ? DateOnly.FromDateTime(date.UtcDateTime) : null,
+            People = [.. (dto.People ?? []).Select(ToPerson).OfType<TrackPerson>()],
+            Studios = [.. (dto.Studios ?? []).Select(s => s.Name).OfType<string>()],
+            Tags = dto.Tags ?? [],
+            ProviderIds = ProviderIds(dto.ProviderIds),
+            HasLyrics = dto.HasLyrics,
+            Container = source?.Container ?? dto.Container,
+            Codec = audio?.Codec,
+            Bitrate = audio?.BitRate ?? source?.Bitrate,
+            SampleRate = audio?.SampleRate,
+            BitDepth = audio?.BitDepth,
+            Channels = audio?.Channels,
+            Size = source?.Size,
+            Path = source?.Path ?? dto.Path,
+        };
+    }
+
     public static Artist ToArtist(BaseItemDto dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
@@ -102,6 +131,41 @@ internal static class ItemMapper
             _ => null,
         };
         return string.IsNullOrWhiteSpace(text) ? null : text;
+    }
+
+    /// <summary>All provider IDs with a value, sorted by key.</summary>
+    private static List<KeyValuePair<string, string>> ProviderIds(BaseItemDto_ProviderIds? ids) =>
+        ids?.AdditionalData is not { } data
+            ? []
+            : [.. data.Keys
+                .Order(StringComparer.Ordinal)
+                .Select(key => (key, value: ProviderId(ids, key)))
+                .Where(p => p.value is not null)
+                .Select(p => KeyValuePair.Create(p.key, p.value!))];
+
+    /// <summary>A contributor; the artists are already on the track, so they are left out.</summary>
+    private static TrackPerson? ToPerson(BaseItemPerson person)
+    {
+        if (string.IsNullOrWhiteSpace(person.Name))
+        {
+            return null;
+        }
+
+        PersonRole? role = person.Type switch
+        {
+            BaseItemPerson_Type.Artist or BaseItemPerson_Type.AlbumArtist => null,
+            BaseItemPerson_Type.Composer => PersonRole.Composer,
+            BaseItemPerson_Type.Lyricist => PersonRole.Lyricist,
+            BaseItemPerson_Type.Writer => PersonRole.Writer,
+            BaseItemPerson_Type.Arranger => PersonRole.Arranger,
+            BaseItemPerson_Type.Conductor => PersonRole.Conductor,
+            BaseItemPerson_Type.Producer => PersonRole.Producer,
+            BaseItemPerson_Type.Engineer => PersonRole.Engineer,
+            BaseItemPerson_Type.Mixer => PersonRole.Mixer,
+            BaseItemPerson_Type.Remixer => PersonRole.Remixer,
+            _ => PersonRole.Other,
+        };
+        return role is { } value ? new TrackPerson(person.Name, value) : null;
     }
 
     private static List<ArtistRef> ToArtistRefs(List<NameGuidPair>? pairs) =>

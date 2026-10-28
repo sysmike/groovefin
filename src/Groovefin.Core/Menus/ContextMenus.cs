@@ -1,7 +1,5 @@
-using System.Globalization;
 using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
-using Groovefin.Core.Formatting;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -187,24 +185,19 @@ public sealed class ContextMenus(
         }
     }
 
-    private Task ShowTrackInfoAsync(Track track)
+    /// <summary>Loads everything the server knows about the track; offline, shows what the list loaded (#282).</summary>
+    private async Task ShowTrackInfoAsync(Track track)
     {
-        var details = new List<KeyValuePair<string, string>>();
-        void Add(string labelKey, string? value)
+        TrackDetails details;
+        try
         {
-            if (!string.IsNullOrEmpty(value))
-            {
-                details.Add(new(strings.GetString(labelKey), value));
-            }
+            details = await library.GetTrackDetailsAsync(track.Id);
+        }
+        catch (Exception ex) when (ex is JellyfinException or InvalidOperationException or ArgumentException)
+        {
+            details = new TrackDetails { Track = track };
         }
 
-        Add("Info_Title", track.Name);
-        Add("Info_Artists", string.Join(", ", track.Artists.Select(a => a.Name)));
-        Add("Info_Album", track.AlbumName);
-        Add("Info_Track", track.TrackNumber?.ToString(CultureInfo.CurrentCulture));
-        Add("Info_Disc", track.DiscNumber?.ToString(CultureInfo.CurrentCulture));
-        Add("Info_Length", Durations.Track(track.Duration));
-        Add("Info_PlayCount", track.PlayCount.ToString(CultureInfo.CurrentCulture));
-        return dialogs.ShowDetailsAsync(track.Name, details, strings.GetString("Dialog_Close"));
+        await dialogs.ShowDetailsAsync(track.Name, TrackInfo.Sections(details, strings), strings.GetString("Dialog_Close"));
     }
 }

@@ -1127,6 +1127,153 @@
   <data name="Info_PlayCount" xml:space="preserve">
     <value>Wiedergaben</value>
   </data>
+  <data name="Info_SectionTags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Info_SectionFile" xml:space="preserve">
+    <value>Datei</value>
+  </data>
+  <data name="Info_SectionLibrary" xml:space="preserve">
+    <value>Bibliothek</value>
+  </data>
+  <data name="Info_AlbumArtists" xml:space="preserve">
+    <value>Albuminterpreten</value>
+  </data>
+  <data name="Info_Year" xml:space="preserve">
+    <value>Jahr</value>
+  </data>
+  <data name="Info_ReleaseDate" xml:space="preserve">
+    <value>Veröffentlicht</value>
+  </data>
+  <data name="Info_Genres" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="InfoRole_Composer" xml:space="preserve">
+    <value>Komponist</value>
+  </data>
+  <data name="InfoRole_Lyricist" xml:space="preserve">
+    <value>Texter</value>
+  </data>
+  <data name="InfoRole_Writer" xml:space="preserve">
+    <value>Autor</value>
+  </data>
+  <data name="InfoRole_Arranger" xml:space="preserve">
+    <value>Arrangement</value>
+  </data>
+  <data name="InfoRole_Conductor" xml:space="preserve">
+    <value>Dirigent</value>
+  </data>
+  <data name="InfoRole_Producer" xml:space="preserve">
+    <value>Produktion</value>
+  </data>
+  <data name="InfoRole_Engineer" xml:space="preserve">
+    <value>Tontechnik</value>
+  </data>
+  <data name="InfoRole_Mixer" xml:space="preserve">
+    <value>Abmischung</value>
+  </data>
+  <data name="InfoRole_Remixer" xml:space="preserve">
+    <value>Remix</value>
+  </data>
+  <data name="InfoRole_Other" xml:space="preserve">
+    <value>Weitere Mitwirkende</value>
+  </data>
+  <data name="Info_Label" xml:space="preserve">
+    <value>Label</value>
+  </data>
+  <data name="Info_TrackGain" xml:space="preserve">
+    <value>Titel-Pegelanpassung</value>
+  </data>
+  <data name="Info_AlbumGain" xml:space="preserve">
+    <value>Album-Pegelanpassung</value>
+  </data>
+  <data name="Info_GainValue" xml:space="preserve">
+    <value>{0} dB</value>
+  </data>
+  <data name="Info_Lyrics" xml:space="preserve">
+    <value>Liedtext</value>
+  </data>
+  <data name="Info_Yes" xml:space="preserve">
+    <value>Ja</value>
+  </data>
+  <data name="Info_No" xml:space="preserve">
+    <value>Nein</value>
+  </data>
+  <data name="Info_ServerTags" xml:space="preserve">
+    <value>Server-Tags</value>
+  </data>
+  <data name="Info_MusicBrainzTrack" xml:space="preserve">
+    <value>MusicBrainz-Titel-ID</value>
+  </data>
+  <data name="Info_MusicBrainzRecording" xml:space="preserve">
+    <value>MusicBrainz-Aufnahme-ID</value>
+  </data>
+  <data name="Info_MusicBrainzAlbum" xml:space="preserve">
+    <value>MusicBrainz-Veröffentlichungs-ID</value>
+  </data>
+  <data name="Info_MusicBrainzReleaseGroup" xml:space="preserve">
+    <value>MusicBrainz-Veröffentlichungsgruppen-ID</value>
+  </data>
+  <data name="Info_MusicBrainzArtist" xml:space="preserve">
+    <value>MusicBrainz-Interpreten-ID</value>
+  </data>
+  <data name="Info_MusicBrainzAlbumArtist" xml:space="preserve">
+    <value>MusicBrainz-Albuminterpreten-ID</value>
+  </data>
+  <data name="Info_ProviderId" xml:space="preserve">
+    <value>{0}-ID</value>
+  </data>
+  <data name="Info_Format" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="Info_Codec" xml:space="preserve">
+    <value>Codec</value>
+  </data>
+  <data name="Info_Bitrate" xml:space="preserve">
+    <value>Bitrate</value>
+  </data>
+  <data name="Info_BitrateValue" xml:space="preserve">
+    <value>{0} kbit/s</value>
+  </data>
+  <data name="Info_SampleRate" xml:space="preserve">
+    <value>Abtastrate</value>
+  </data>
+  <data name="Info_SampleRateValue" xml:space="preserve">
+    <value>{0} kHz</value>
+  </data>
+  <data name="Info_BitDepth" xml:space="preserve">
+    <value>Bittiefe</value>
+  </data>
+  <data name="Info_BitDepthValue" xml:space="preserve">
+    <value>{0} Bit</value>
+  </data>
+  <data name="Info_Channels" xml:space="preserve">
+    <value>Kanäle</value>
+  </data>
+  <data name="Info_Mono" xml:space="preserve">
+    <value>Mono</value>
+  </data>
+  <data name="Info_Stereo" xml:space="preserve">
+    <value>Stereo</value>
+  </data>
+  <data name="Info_ChannelCount" xml:space="preserve">
+    <value>{0} Kanäle</value>
+  </data>
+  <data name="Info_Size" xml:space="preserve">
+    <value>Größe</value>
+  </data>
+  <data name="Info_Path" xml:space="preserve">
+    <value>Pfad</value>
+  </data>
+  <data name="Info_DateAdded" xml:space="preserve">
+    <value>Hinzugefügt</value>
+  </data>
+  <data name="Info_LastPlayed" xml:space="preserve">
+    <value>Zuletzt gespielt</value>
+  </data>
+  <data name="Info_Favourite" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
   <data name="GenresHeader.Text" xml:space="preserve">
     <value>Genres</value>
   </data>
