@@ -66,7 +66,7 @@ public sealed class ContextMenus(
         var actions = new List<MenuAction>(Playback(Tracks)) { AddTo(Tracks) };
         if (track.AlbumId is { } albumId)
         {
-            actions.Add(Action(MenuActionKind.GoToAlbum, "Menu_GoToAlbum", () => navigation.NavigateTo(PageKeys.Album, albumId)));
+            actions.Add(Action(MenuActionKind.GoToAlbum, strings.GetString("Menu_GoToAlbum"), () => navigation.NavigateTo(PageKeys.Album, albumId)));
         }
 
         actions.AddRange(GoToArtists(track.Artists));
