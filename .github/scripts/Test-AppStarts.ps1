@@ -517,9 +517,23 @@ try {
     Add-Type -AssemblyName System.Windows.Forms
     $songRow.SetFocus()
     [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
-    $showInfo = Find-Element ([System.Windows.Automation.AndCondition]::new(
-            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Show info'),
-            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem))) "'Show info' in the song's menu"
+    # A menu opens in a popup window of its own, beside the main window: search every window of the app.
+    $showInfoItem = [System.Windows.Automation.AndCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Show info'),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem))
+    $appWindows = [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $process.Id)
+    $showInfo = $null
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        foreach ($appWindow in $automation::RootElement.FindAll($scope::Children, $appWindows)) {
+            if (-not $showInfo) { $showInfo = $appWindow.FindFirst($scope::Descendants, $showInfoItem) }
+        }
+        if (-not $showInfo) { Start-Sleep -Milliseconds 500 }
+    } while (-not $showInfo -and (Get-Date) -lt $until)
+    if (-not $showInfo) {
+        $open = @($automation::RootElement.FindAll($scope::Children, $appWindows) | ForEach-Object { "$($_.Current.ControlType.ProgrammaticName) '$($_.Current.Name)'" }) -join ', '
+        Stop-Test 'Smoke test' "Shift+F10 on the song did not open its menu with 'Show info' (the app's windows: $open)."
+    }
     $showInfo.GetCurrentPattern($invoke).Invoke()
     foreach ($name in 'File', 'Codec: FLAC', 'Bit depth: 16-bit', 'Channels: Stereo') {
         $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $name)) "'$name' in the song's info"
