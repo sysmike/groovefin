@@ -294,4 +294,36 @@ public sealed class ArtistDetailViewModelTests
 
         sut.TopTracks.Select(t => t.IsCurrent).Should().Equal(false, true);
     }
+
+    [Fact]
+    public async Task Top_tracks_show_their_hearts_and_toggle_them_optimistically()
+    {
+        _library.GetArtistTopTracksAsync(ArtistId, ArtistDetailViewModel.TopTrackCount, Arg.Any<CancellationToken>())
+            .Returns([Track("t1", "One More Time", "Discovery", "album-1") with { IsFavorite = true }, Track("t2", "Around the World", "Homework", "album-2")]);
+        var sut = CreateSut();
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+        sut.TopTracks.Select(t => t.IsFavourite).Should().Equal(true, false);
+
+        await sut.ToggleTopTrackFavouriteCommand.ExecuteAsync(sut.TopTracks[1]);
+        sut.TopTracks[1].IsFavourite.Should().BeTrue();
+        await _library.Received(1).SetFavouriteAsync("t2", true, Arg.Any<CancellationToken>());
+
+        _library.SetFavouriteAsync("t1", false, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new JellyfinException("no")));
+        await sut.ToggleTopTrackFavouriteCommand.ExecuteAsync(sut.TopTracks[0]);
+
+        sut.TopTracks[0].IsFavourite.Should().BeTrue();
+        _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.SetFavourite);
+    }
+
+    [Fact]
+    public async Task A_heart_toggled_elsewhere_updates_the_top_track()
+    {
+        var sut = CreateSut();
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        _messenger.Send(new FavouriteChangedMessage("t2", true));
+
+        sut.TopTracks.Select(t => t.IsFavourite).Should().Equal(false, true);
+    }
 }

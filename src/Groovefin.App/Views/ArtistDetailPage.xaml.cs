@@ -73,6 +73,14 @@ internal sealed partial class ArtistDetailPage : Page
         }
     }
 
+    private void OnTopTrackFavouriteClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is ArtistTrackItem item)
+        {
+            ViewModel.ToggleTopTrackFavouriteCommand.Execute(item);
+        }
+    }
+
     private void OnAlbumInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
     {
         if (args.InvokedItem is AlbumItem item)

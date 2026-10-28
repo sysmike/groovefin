@@ -17,7 +17,7 @@ using Groovefin.Core.Services;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>One row in an artist's top tracks.</summary>
-public sealed partial class ArtistTrackItem(Track track, int rank) : ObservableObject, ICurrentTrackRow
+public sealed partial class ArtistTrackItem(Track track, int rank, bool isFavourite = false) : ObservableObject, ICurrentTrackRow
 {
     public Track Track { get; } = track;
 
@@ -26,6 +26,10 @@ public sealed partial class ArtistTrackItem(Track track, int rank) : ObservableO
     /// <summary>Gets or sets whether the row's track is playing (#247).</summary>
     [ObservableProperty]
     public partial bool IsCurrent { get; set; }
+
+    /// <summary>Gets or sets whether the track is a favourite; the row's heart shows it (#266).</summary>
+    [ObservableProperty]
+    public partial bool IsFavourite { get; set; } = isFavourite;
 
     public string Number => Rank.ToString(CultureInfo.CurrentCulture);
 
@@ -197,12 +201,29 @@ public sealed partial class ArtistDetailViewModel(
         }
     }
 
-    /// <summary>A heart was toggled elsewhere (favourites page, a context menu).</summary>
+    /// <summary>Toggles a top track's heart, optimistic like the album page's.</summary>
+    [RelayCommand]
+    private async Task ToggleTopTrackFavouriteAsync(ArtistTrackItem item)
+    {
+        var target = !item.IsFavourite;
+        item.IsFavourite = target;
+        if (!await favourites.SetAsync(item.Track.Id, target))
+        {
+            item.IsFavourite = !target;
+        }
+    }
+
+    /// <summary>A heart was toggled elsewhere (now playing bar, favourites page, a context menu).</summary>
     private void OnFavouriteChanged(FavouriteChangedMessage message)
     {
         if (Artist?.Id == message.ItemId)
         {
             IsFavourite = message.IsFavourite;
+        }
+
+        foreach (var item in TopTracks.Where(t => t.Track.Id == message.ItemId))
+        {
+            item.IsFavourite = message.IsFavourite;
         }
     }
 
@@ -274,7 +295,7 @@ public sealed partial class ArtistDetailViewModel(
         TopTracks.Clear();
         for (var i = 0; i < tracks.Count; i++)
         {
-            TopTracks.Add(new ArtistTrackItem(tracks[i], i + 1));
+            TopTracks.Add(new ArtistTrackItem(tracks[i], i + 1, favourites.IsFavourite(tracks[i].Id, tracks[i].IsFavorite)));
         }
 
         HasTopTracks = TopTracks.Count > 0;

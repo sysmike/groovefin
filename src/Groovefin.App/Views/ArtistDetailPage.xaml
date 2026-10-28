@@ -232,16 +232,18 @@
                         Click="OnBiographyToggleClick" />
                 </StackPanel>
 
-                <!--  Top tracks; a row plays the top tracks from there.  -->
+                <!--
+                    Top tracks; a row plays the top tracks from there. As wide as the page, with the playlist
+                    table's columns (#266): number, title, album, heart, length.
+                -->
                 <StackPanel Visibility="{x:Bind ViewModel.HasTopTracks, Mode=OneWay}">
                     <TextBlock x:Uid="ArtistTopTracksHeader" Style="{StaticResource SectionHeaderStyle}" />
                     <ListView
                         controls:TrackDragSource.IsEnabled="True"
                         controls:ItemMenu.IsEnabled="True"
                         x:Uid="ArtistTopTracks"
-                        MaxWidth="880"
-                        Margin="24,0"
-                        HorizontalAlignment="Left"
+                        AutomationProperties.AutomationId="ArtistTopTracks"
+                        Padding="36,0"
                         IsItemClickEnabled="True"
                         ItemClick="OnTopTrackClick"
                         ItemsSource="{x:Bind ViewModel.TopTracks}"
@@ -250,30 +252,49 @@
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="vm:ArtistTrackItem">
                                 <Grid
-                                    Padding="0,6"
+                                    Padding="{ThemeResource TrackRowPadding}"
                                     AutomationProperties.Name="{x:Bind AccessibleName}"
                                     ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="24" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="32" />
+                                        <ColumnDefinition Width="3*" />
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="32" />
+                                        <ColumnDefinition Width="56" />
                                     </Grid.ColumnDefinitions>
                                     <controls:TrackNumber
                                         VerticalAlignment="Center"
                                         IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
                                         Text="{x:Bind Number}" />
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <controls:TrackText IsPlaying="{x:Bind IsCurrent, Mode=OneWay}" Text="{x:Bind Name}" />
-                                        <controls:TrackText
-                                            FontSize="12"
-                                            IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
-                                            IsSecondary="True"
-                                            Text="{x:Bind Album}" />
-                                    </StackPanel>
-                                    <TextBlock
+                                    <controls:TrackText
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                        Text="{x:Bind Name}" />
+                                    <controls:TrackText
                                         Grid.Column="2"
                                         VerticalAlignment="Center"
+                                        IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                        IsSecondary="True"
+                                        Text="{x:Bind Album}" />
+                                    <ToggleButton
+                                        x:Uid="AlbumTrackFavouriteButton"
+                                        Grid.Column="3"
+                                        Width="32"
+                                        Height="32"
+                                        Padding="0"
+                                        VerticalAlignment="Center"
+                                        Background="{ThemeResource SubtleFillColorTransparentBrush}"
+                                        BorderThickness="0"
+                                        Click="OnTopTrackFavouriteClick"
+                                        IsChecked="{x:Bind IsFavourite, Mode=OneWay}">
+                                        <FontIcon FontSize="12" Glyph="{x:Bind conv:Glyphs.Heart(IsFavourite), Mode=OneWay}" />
+                                    </ToggleButton>
+                                    <TextBlock
+                                        Grid.Column="4"
+                                        VerticalAlignment="Center"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        HorizontalTextAlignment="Right"
                                         Text="{x:Bind Duration}" />
                                 </Grid>
                             </DataTemplate>
@@ -287,6 +308,7 @@
                     <ItemsView
                         controls:ItemMenu.IsEnabled="True"
                         x:Uid="ArtistAlbums"
+                        AutomationProperties.AutomationId="ArtistAlbums"
                         Height="224"
                         Padding="36,0"
                         IsItemInvokedEnabled="True"
