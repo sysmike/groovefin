@@ -75,6 +75,7 @@
         </StackPanel>
 
         <ItemsView
+            controls:ViewMemory.IsEnabled="True"
             x:Uid="GenresView"
             Grid.Row="1"
             controls:TileSize.Source="{StaticResource GenreTile}"

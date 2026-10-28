@@ -165,6 +165,7 @@
 
         <!--  The tracks: click plays the list from there; the context menu (or Shift+F10) offers what every track does.  -->
         <ListView
+            controls:ViewMemory.IsEnabled="True"
             controls:ItemMenu.IsEnabled="True"
             controls:TrackDragSource.IsEnabled="True"
             x:Uid="OnRepeatEntries"

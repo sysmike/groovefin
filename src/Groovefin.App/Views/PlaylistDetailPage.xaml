@@ -197,6 +197,7 @@
             Shown reversed (#267), the server's order cannot be edited: no reordering, no moves.
         -->
         <ListView
+            controls:ViewMemory.IsEnabled="True"
             controls:TrackDragSource.IsEnabled="True"
             x:Name="EntriesList"
             x:Uid="PlaylistEntries"

@@ -22,7 +22,7 @@
         <x:Double x:Key="SettingsChoiceMinWidth">220</x:Double>
     </Page.Resources>
 
-    <ScrollViewer>
+    <ScrollViewer controls:ViewMemory.IsEnabled="True">
         <StackPanel
             MaxWidth="{StaticResource PageContentMaxWidth}"
             Margin="{StaticResource PageContentMargin}"
