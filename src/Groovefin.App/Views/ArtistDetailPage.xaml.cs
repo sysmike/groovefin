@@ -59,7 +59,7 @@ internal sealed partial class ArtistDetailPage : Page
 
     private void OnShelfLoaded(object sender, RoutedEventArgs e) => Shelf.ScrollHorizontally(sender as ItemsView);
 
-    private void OnRowLoaded(object sender, RoutedEventArgs e) => Shelf.ScrollNever(sender as ItemsView);
+    private void OnGridLoaded(object sender, RoutedEventArgs e) => Shelf.ScrollNever(sender as ItemsView);
 
     /// <summary>The similar artists' row shows as many tiles as fit (#264): the columns of its grid.</summary>
     private void OnSimilarSizeChanged(object sender, SizeChangedEventArgs e)

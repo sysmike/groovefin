@@ -11,7 +11,43 @@
     mc:Ignorable="d">
 
     <Page.Resources>
-        <!--  Square cover, name, year.  -->
+        <!--  The albums grid's tiles grow until whole columns fill each row, as on the Albums page (#232, #263).  -->
+        <controls:TileSize x:Key="AlbumTile" MinWidth="168" />
+
+        <!--  Grid tile: square cover, name, year.  -->
+        <DataTemplate x:Key="AlbumGridTemplate" x:DataType="vm:AlbumItem">
+            <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
+                <StackPanel Width="{Binding Width, Source={StaticResource AlbumTile}}" Padding="0,0,0,8" Spacing="6">
+                    <Grid
+                        Height="{Binding Width, Source={StaticResource AlbumTile}}"
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                        CornerRadius="{StaticResource OverlayCornerRadius}">
+                        <FontIcon
+                            FontSize="44"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Glyph="&#xE93C;" />
+                        <Image
+                            controls:Artwork.Request="{x:Bind Cover}"
+                            AutomationProperties.AccessibilityView="Raw"
+                            Stretch="UniformToFill" />
+                        <!--  Play and the songs popup, on hover (#185, #189).  -->
+                        <controls:CoverActions Tag="{x:Bind}" />
+                    </Grid>
+                    <TextBlock
+                        MaxLines="1"
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        Text="{x:Bind Name}"
+                        TextTrimming="CharacterEllipsis" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        MaxLines="1"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Year}" />
+                </StackPanel>
+            </ItemContainer>
+        </DataTemplate>
+
+        <!--  Shelf tile (appears on): square cover, name, year.  -->
         <DataTemplate x:Key="AlbumTileTemplate" x:DataType="vm:AlbumItem">
             <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
                 <StackPanel Width="152" Padding="0,0,0,8" Spacing="6">
@@ -284,26 +320,35 @@
                     </ListView>
                 </StackPanel>
 
-                <!--  Horizontal shelves: arrow keys move between items, Tab moves to the next shelf.  -->
+                <!--
+                    The artist's albums: a grid like the Albums page's, its rows filling the page's width (#263).
+                    It grows with its rows and never scrolls itself; the page scrolls. Arrow keys move between
+                    tiles, Tab moves to the next section.
+                -->
                 <StackPanel Visibility="{x:Bind ViewModel.HasAlbums, Mode=OneWay}">
                     <TextBlock x:Uid="ArtistAlbumsHeader" Style="{StaticResource SectionHeaderStyle}" />
                     <ItemsView
                         controls:ItemMenu.IsEnabled="True"
                         x:Uid="ArtistAlbums"
-                        Height="224"
+                        controls:TileSize.Source="{StaticResource AlbumTile}"
+                        AutomationProperties.AutomationId="ArtistAlbums"
                         Padding="36,0"
                         IsItemInvokedEnabled="True"
                         ItemInvoked="OnAlbumInvoked"
-                        ItemTemplate="{StaticResource AlbumTileTemplate}"
+                        ItemTemplate="{StaticResource AlbumGridTemplate}"
                         ItemsSource="{x:Bind ViewModel.Albums}"
-                        Loaded="OnShelfLoaded"
+                        Loaded="OnGridLoaded"
                         SelectionMode="None">
                         <ItemsView.Layout>
-                            <StackLayout Orientation="Horizontal" Spacing="16" />
+                            <UniformGridLayout
+                                MinColumnSpacing="16"
+                                MinItemWidth="168"
+                                MinRowSpacing="8" />
                         </ItemsView.Layout>
                     </ItemsView>
                 </StackPanel>
 
+                <!--  Appears on stays a shelf: compilations can be many, and the page goes on below.  -->
                 <StackPanel Visibility="{x:Bind ViewModel.HasAppearsOn, Mode=OneWay}">
                     <TextBlock x:Uid="ArtistAppearsOnHeader" Style="{StaticResource SectionHeaderStyle}" />
                     <ItemsView
@@ -339,7 +384,7 @@
                         ItemInvoked="OnArtistInvoked"
                         ItemTemplate="{StaticResource ArtistTileTemplate}"
                         ItemsSource="{x:Bind ViewModel.SimilarRow}"
-                        Loaded="OnRowLoaded"
+                        Loaded="OnGridLoaded"
                         SelectionMode="None"
                         SizeChanged="OnSimilarSizeChanged">
                         <ItemsView.Layout>

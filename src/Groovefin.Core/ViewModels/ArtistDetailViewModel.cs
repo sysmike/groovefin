@@ -62,6 +62,9 @@ public sealed partial class ArtistDetailViewModel(
 
     public const double TileWidth = 152;
 
+    /// <summary>Least width of the albums grid's tiles (the page's <c>AlbumTile</c>), as on the Albums page (#263); they grow to fill each row.</summary>
+    public const double AlbumGridTileWidth = 168;
+
     public const int TopTrackCount = 10;
 
     /// <summary>Similar artists loaded: more than fit in one row of a usual window; <see cref="SimilarRow"/> shows the first ones.</summary>
@@ -309,7 +312,7 @@ public sealed partial class ArtistDetailViewModel(
         var page = await library.GetAlbumsAsync(
             new AlbumQuery { AlbumArtistId = artistId, SortBy = AlbumSortField.Year, Descending = true, Limit = AlbumLimit },
             cancellationToken);
-        Fill(Albums, page.Items);
+        Fill(Albums, page.Items, AlbumGridTileWidth);
         HasAlbums = Albums.Count > 0;
     }
 
@@ -320,7 +323,7 @@ public sealed partial class ArtistDetailViewModel(
             cancellationToken);
 
         // The server already leaves out albums by the artist; this keeps the two sections disjoint either way.
-        Fill(AppearsOn, page.Items.Where(a => a.AlbumArtists.All(r => r.Id != artistId)));
+        Fill(AppearsOn, page.Items.Where(a => a.AlbumArtists.All(r => r.Id != artistId)), TileWidth);
         HasAppearsOn = AppearsOn.Count > 0;
     }
 
@@ -353,12 +356,12 @@ public sealed partial class ArtistDetailViewModel(
         }
     }
 
-    private void Fill(ObservableCollection<AlbumItem> target, IEnumerable<Album> albums)
+    private void Fill(ObservableCollection<AlbumItem> target, IEnumerable<Album> albums, double coverWidth)
     {
         target.Clear();
         foreach (var album in albums)
         {
-            target.Add(new AlbumItem(album, ImageRequest.Primary(album.Id, album.PrimaryImageTag, TileWidth, DisplayScale)));
+            target.Add(new AlbumItem(album, ImageRequest.Primary(album.Id, album.PrimaryImageTag, coverWidth, DisplayScale)));
         }
     }
 }
