@@ -44,15 +44,18 @@
             </ItemContainer>
         </DataTemplate>
 
+        <!--  The similar artists' tiles grow until whole columns fill their one row (#232, #264).  -->
+        <controls:TileSize x:Key="SimilarTile" MinWidth="152" />
+
         <!--  Round image, name.  -->
         <DataTemplate x:Key="ArtistTileTemplate" x:DataType="vm:ArtistItem">
             <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
-                <StackPanel Width="152" Padding="0,0,0,8" Spacing="8">
+                <StackPanel Width="{Binding Width, Source={StaticResource SimilarTile}}" Padding="0,0,0,8" Spacing="8">
                     <Grid
-                        Width="152"
-                        Height="152"
+                        Width="{Binding Width, Source={StaticResource SimilarTile}}"
+                        Height="{Binding Width, Source={StaticResource SimilarTile}}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
-                        CornerRadius="76">
+                        CornerRadius="{Binding Round, Source={StaticResource SimilarTile}}">
                         <FontIcon
                             FontSize="44"
                             Foreground="{ThemeResource TextFillColorTertiaryBrush}"
@@ -320,21 +323,30 @@
                     </ItemsView>
                 </StackPanel>
 
+                <!--
+                    Similar artists: one row of as many as fit the width, no sideways scrolling (#264). The row
+                    reports its columns to the view model, which shows that many of the loaded artists.
+                -->
                 <StackPanel Visibility="{x:Bind ViewModel.HasSimilar, Mode=OneWay}">
                     <TextBlock x:Uid="ArtistSimilarHeader" Style="{StaticResource SectionHeaderStyle}" />
                     <ItemsView
                         controls:ItemMenu.IsEnabled="True"
                         x:Uid="ArtistSimilar"
-                        Height="208"
+                        controls:TileSize.Source="{StaticResource SimilarTile}"
+                        AutomationProperties.AutomationId="ArtistSimilar"
                         Padding="36,0"
                         IsItemInvokedEnabled="True"
                         ItemInvoked="OnArtistInvoked"
                         ItemTemplate="{StaticResource ArtistTileTemplate}"
-                        ItemsSource="{x:Bind ViewModel.Similar}"
-                        Loaded="OnShelfLoaded"
-                        SelectionMode="None">
+                        ItemsSource="{x:Bind ViewModel.SimilarRow}"
+                        Loaded="OnRowLoaded"
+                        SelectionMode="None"
+                        SizeChanged="OnSimilarSizeChanged">
                         <ItemsView.Layout>
-                            <StackLayout Orientation="Horizontal" Spacing="16" />
+                            <UniformGridLayout
+                                MinColumnSpacing="16"
+                                MinItemWidth="152"
+                                MinRowSpacing="8" />
                         </ItemsView.Layout>
                     </ItemsView>
                 </StackPanel>

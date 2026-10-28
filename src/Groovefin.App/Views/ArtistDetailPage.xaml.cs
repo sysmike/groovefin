@@ -1,5 +1,6 @@
 using Groovefin.App.Controls;
 using Groovefin.App.Services;
+using Groovefin.Core.Layout;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -57,6 +58,18 @@ internal sealed partial class ArtistDetailPage : Page
     }
 
     private void OnShelfLoaded(object sender, RoutedEventArgs e) => Shelf.ScrollHorizontally(sender as ItemsView);
+
+    private void OnRowLoaded(object sender, RoutedEventArgs e) => Shelf.ScrollNever(sender as ItemsView);
+
+    /// <summary>The similar artists' row shows as many tiles as fit (#264): the columns of its grid.</summary>
+    private void OnSimilarSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is ItemsView { Layout: UniformGridLayout layout } view)
+        {
+            var available = e.NewSize.Width - view.Padding.Left - view.Padding.Right;
+            ViewModel.SimilarColumns = TileGrid.Columns(available, ((TileSize)Resources["SimilarTile"]).MinWidth, layout.MinColumnSpacing);
+        }
+    }
 
     private void OnBiographyToggleClick(object sender, RoutedEventArgs e)
     {
