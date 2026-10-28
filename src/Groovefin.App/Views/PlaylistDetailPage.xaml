@@ -160,11 +160,17 @@
                 Grid.Column="0"
                 HorizontalTextAlignment="Right"
                 Style="{StaticResource ColumnLabelStyle}" />
-            <TextBlock
-                x:Uid="AlbumColumnTitle"
+            <!--  The rows show the album's cover before the title (#262): the label starts where the title does.  -->
+            <StackPanel
                 Grid.Column="1"
-                AutomationProperties.AutomationId="PlaylistColumnTitle"
-                Style="{StaticResource ColumnLabelStyle}" />
+                Orientation="Horizontal"
+                Spacing="12">
+                <Border Width="{ThemeResource ListThumbnailSize}" />
+                <TextBlock
+                    x:Uid="AlbumColumnTitle"
+                    AutomationProperties.AutomationId="PlaylistColumnTitle"
+                    Style="{StaticResource ColumnLabelStyle}" />
+            </StackPanel>
             <TextBlock
                 x:Uid="PlaylistColumnArtist"
                 Grid.Column="2"
@@ -224,11 +230,34 @@
                             VerticalAlignment="Center"
                             IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
                             Text="{x:Bind Number, Mode=OneWay}" />
-                        <controls:TrackText
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
-                            Text="{x:Bind Name}" />
+                        <!--  The album's cover, then the title (#262). Decorative: the row's name says it all.  -->
+                        <Grid Grid.Column="1" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid
+                                Width="{ThemeResource ListThumbnailSize}"
+                                Height="{ThemeResource ListThumbnailSize}"
+                                VerticalAlignment="Center"
+                                AutomationProperties.AccessibilityView="Raw"
+                                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                CornerRadius="{StaticResource ControlCornerRadius}">
+                                <FontIcon
+                                    FontSize="16"
+                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                    Glyph="&#xE93C;" />
+                                <Image
+                                    controls:Artwork.Request="{x:Bind Cover}"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    Stretch="UniformToFill" />
+                            </Grid>
+                            <controls:TrackText
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                Text="{x:Bind Name}" />
+                        </Grid>
                         <controls:TrackText
                             Grid.Column="2"
                             VerticalAlignment="Center"

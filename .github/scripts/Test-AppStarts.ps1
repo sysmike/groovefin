@@ -920,6 +920,20 @@ try {
     if (-not $rowAlbum -or [Math]::Abs((Get-Bounds $rowAlbum).Left - $albumLabelLeft) -gt 2) {
         Stop-Test 'Playlist columns' "The playlist's rows don't show their album under the Album header (header at $albumLabelLeft px, album at $(if ($rowAlbum) { (Get-Bounds $rowAlbum).Left } else { 'none' }))."
     }
+    # Each row shows its album's cover before the title (#262); the Title label starts where the titles do.
+    # Searched in the list only: the now playing bar may show the same title.
+    $rowTitle = (Find-ById 'PlaylistEntries').FindFirst($scope::Descendants, [System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Track 1'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text)))
+    $titleLabelLeft = (Get-Bounds $columnLabels.Title).Left
+    if (-not $rowTitle -or [Math]::Abs((Get-Bounds $rowTitle).Left - $titleLabelLeft) -gt 2) {
+        Stop-Test 'Playlist columns' "The playlist's titles don't start under the Title header (header at $titleLabelLeft px, title at $(if ($rowTitle) { (Get-Bounds $rowTitle).Left } else { 'none' }))."
+    }
+    $listLeft = (Get-Bounds (Find-ById 'PlaylistEntries')).Left
+    if ((Get-Bounds $rowTitle).Left - $listLeft -lt 100) {
+        Stop-Test 'Playlist columns' "The playlist's titles start $((Get-Bounds $rowTitle).Left - $listLeft) px into the list: no room for the cover before them."
+    }
+    Write-Output "The playlist's titles start under their header, after the cover ($((Get-Bounds $rowTitle).Left - $listLeft) px into the list)."
     Add-Type -AssemblyName System.Drawing
     $titleLabelBounds = Get-Bounds $columnLabels.Title
     $artistLabelBounds = Get-Bounds $columnLabels.Artist

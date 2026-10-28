@@ -16,10 +16,16 @@ using Groovefin.Core.Settings;
 
 namespace Groovefin.Core.ViewModels;
 
-/// <summary>A row of a playlist, in the album page's columns: position, title, artists, album, heart, length (#245).</summary>
-public sealed partial class PlaylistEntryItem(PlaylistEntry entry, bool isFavourite = false) : ObservableObject, ICurrentTrackRow
+/// <summary>
+/// A row of a playlist, in the album page's columns: position, title (after the album's cover, #262),
+/// artists, album, heart, length (#245).
+/// </summary>
+public sealed partial class PlaylistEntryItem(PlaylistEntry entry, bool isFavourite = false, ImageRequest? cover = null) : ObservableObject, ICurrentTrackRow
 {
     public PlaylistEntry Entry { get; } = entry;
+
+    /// <summary>Gets the cover of the track's album, or <see langword="null"/> for the placeholder.</summary>
+    public ImageRequest? Cover { get; } = cover;
 
     Track ICurrentTrackRow.Track => Entry.Track;
 
@@ -70,6 +76,9 @@ public sealed partial class PlaylistDetailViewModel(
     ISettingsService settings) : ObservableObject
 {
     public const double ImageWidth = 200;
+
+    /// <summary>The width of a row's cover (the list thumbnail size; a compact list draws it smaller).</summary>
+    public const double CoverWidth = 40;
 
     private bool _loadingOrder;
 
@@ -354,7 +363,9 @@ public sealed partial class PlaylistDetailViewModel(
         Entries.Clear();
         foreach (var entry in IsReversed ? entries.Reverse() : entries)
         {
-            Entries.Add(new PlaylistEntryItem(entry, favourites.IsFavourite(entry.Track.Id, entry.Track.IsFavorite)));
+            var track = entry.Track;
+            var cover = track.AlbumId is { } albumId ? ImageRequest.Primary(albumId, track.AlbumImageTag, CoverWidth, DisplayScale) : null;
+            Entries.Add(new PlaylistEntryItem(entry, favourites.IsFavourite(track.Id, track.IsFavorite), cover));
         }
 
         UpdateDetails();
