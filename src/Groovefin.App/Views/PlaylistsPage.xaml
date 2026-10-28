@@ -83,6 +83,7 @@
         </Grid>
 
         <ItemsView
+            controls:ViewMemory.IsEnabled="True"
             controls:ItemMenu.IsEnabled="True"
             x:Uid="PlaylistsView"
             Grid.Row="1"

@@ -1,3 +1,4 @@
+using Groovefin.App.Controls;
 using Groovefin.App.Views;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Services;
@@ -9,7 +10,8 @@ using Microsoft.UI.Xaml.Navigation;
 namespace Groovefin.App.Services;
 
 /// <summary>
-/// <see cref="INavigationService"/> backed by the shell's content <see cref="Frame"/>.
+/// <see cref="INavigationService"/> backed by the shell's content <see cref="Frame"/>. Pages that are not
+/// cached keep their scroll position, tab and focused item for Back and Forward (#284, <see cref="ViewMemory"/>).
 /// </summary>
 internal sealed partial class FrameNavigationService(ILogger<FrameNavigationService> logger) : INavigationService
 {
@@ -34,7 +36,9 @@ internal sealed partial class FrameNavigationService(ILogger<FrameNavigationServ
         [PageKeys.SignIn] = typeof(SignInPage),
     };
 
+    private readonly ViewStateStore _views = new();
     private Frame? _frame;
+    private PageNavigationArgs? _current;
 
     public bool CanGoBack => _frame?.CanGoBack ?? false;
 
@@ -48,6 +52,7 @@ internal sealed partial class FrameNavigationService(ILogger<FrameNavigationServ
     public void Initialize(Frame frame)
     {
         _frame = frame;
+        _frame.Navigating += OnFrameNavigating;
         _frame.Navigated += OnFrameNavigated;
         _frame.NavigationFailed += OnNavigationFailed;
     }
@@ -65,7 +70,8 @@ internal sealed partial class FrameNavigationService(ILogger<FrameNavigationServ
             return false;
         }
 
-        return _frame.Navigate(pageType, new PageNavigationArgs(pageKey, parameter), new EntranceNavigationTransitionInfo());
+        var args = new PageNavigationArgs(pageKey, parameter) { EntryId = _views.NewEntryId() };
+        return _frame.Navigate(pageType, args, new EntranceNavigationTransitionInfo());
     }
 
     public bool GoBack()
@@ -90,11 +96,39 @@ internal sealed partial class FrameNavigationService(ILogger<FrameNavigationServ
         return true;
     }
 
+    /// <summary>The page is about to be left: remember what it shows. Cached pages keep that themselves.</summary>
+    private void OnFrameNavigating(object sender, NavigatingCancelEventArgs e)
+    {
+        if (_frame?.Content is Page { NavigationCacheMode: NavigationCacheMode.Disabled } page && _current is { } current)
+        {
+            _views.Save(current.EntryId, ViewMemory.Capture(page));
+        }
+    }
+
     private void OnFrameNavigated(object sender, NavigationEventArgs e)
     {
         if (e.Parameter is not PageNavigationArgs args)
         {
             return;
+        }
+
+        _current = args;
+        if (e.NavigationMode is NavigationMode.Back or NavigationMode.Forward
+            && e.Content is Page { NavigationCacheMode: NavigationCacheMode.Disabled } page
+            && _views.Get(args.EntryId) is { } state)
+        {
+            ViewMemory.Restore(page, state);
+        }
+
+        // A new page clears the forward stack: forget the pages that left it.
+        if (_frame is not null)
+        {
+            _views.Retain(
+                _frame.BackStack.Concat(_frame.ForwardStack)
+                    .Select(entry => entry.Parameter)
+                    .OfType<PageNavigationArgs>()
+                    .Select(entry => entry.EntryId)
+                    .Append(args.EntryId));
         }
 
         CurrentPageKey = args.PageKey;
@@ -114,5 +148,11 @@ internal sealed partial class FrameNavigationService(ILogger<FrameNavigationServ
     private partial void LogNavigationFailed(Exception exception, string? pageType);
 }
 
-/// <summary>Frame navigation parameter: the page key plus the caller's parameter.</summary>
-internal sealed record PageNavigationArgs(string PageKey, object? Parameter);
+/// <summary>
+/// Frame navigation parameter: the page key plus the caller's parameter. <see cref="EntryId"/> tells the
+/// stack entries apart, so two visits of the same album each keep their own scroll position (#284).
+/// </summary>
+internal sealed record PageNavigationArgs(string PageKey, object? Parameter)
+{
+    public long EntryId { get; init; }
+}

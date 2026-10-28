@@ -123,7 +123,7 @@
         </Style>
     </Page.Resources>
 
-    <ScrollViewer>
+    <ScrollViewer controls:ViewMemory.IsEnabled="True">
         <StackPanel Padding="0,0,0,36">
             <!--  Hero header: blurred image behind in-app acrylic, then round image, name and actions.  -->
             <Grid Visibility="{x:Bind ViewModel.HasArtist, Mode=OneWay}">

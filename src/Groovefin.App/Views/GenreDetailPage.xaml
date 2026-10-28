@@ -53,7 +53,7 @@
         </Style>
     </Page.Resources>
 
-    <ScrollViewer>
+    <ScrollViewer controls:ViewMemory.IsEnabled="True">
         <StackPanel Padding="0,0,0,36">
             <!--  Header: name and actions.  -->
             <StackPanel
