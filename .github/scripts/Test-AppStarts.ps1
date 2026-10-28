@@ -606,6 +606,13 @@ try {
     # the row reaches the right margin, and none in a second row or cut off. The row is at the page's end:
     # scroll there first, and back afterwards.
     $similarList = Find-ById 'ArtistSimilar'
+    # Off screen too, the tiles exist, so Tab reaches them before the page is scrolled there.
+    $listItem = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)
+    $until = (Get-Date).AddSeconds(5)
+    while (-not $similarList.FindFirst($scope::Descendants, $listItem) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
+    if (-not $similarList.FindFirst($scope::Descendants, $listItem)) {
+        Stop-Test 'Artist page' "The similar artists have no tiles before the page is scrolled to them (off screen: $($similarList.Current.IsOffscreen))."
+    }
     $parents = [System.Windows.Automation.TreeWalker]::ControlViewWalker
     $pageScroll = $null
     for ($node = $parents.GetParent($similarList); $node -and -not $pageScroll; $node = $parents.GetParent($node)) {
@@ -613,7 +620,6 @@ try {
         if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $pattern) -and $pattern.Current.VerticallyScrollable) { $pageScroll = $pattern }
     }
     if ($pageScroll) { $pageScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 100); Start-Sleep -Seconds 1 }
-    $listItem = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)
     $until = (Get-Date).AddSeconds(5)
     do {
         $tiles = @($similarList.FindAll($scope::Descendants, $listItem))
