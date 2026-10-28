@@ -1,6 +1,8 @@
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using Groovefin.App.Controls;
 using Groovefin.App.Services;
+using Groovefin.Core.Layout;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -62,6 +64,8 @@ internal sealed partial class MainWindow : Window
     private readonly NavigationViewItemSeparator _homeSeparator;
     /// <summary>The normal window's presenter, set again when the mini or full-screen player closes.</summary>
     private readonly OverlappedPresenter? _windowPresenter;
+    /// <summary>The full window's place and size, saved on closing for the next start (#272).</summary>
+    private readonly WindowPlacement _placement = new();
     private RectInt32? _restoreBounds;
     private bool _restoreMaximized;
 
@@ -106,6 +110,17 @@ internal sealed partial class MainWindow : Window
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         SystemBackdrop = CreateBackdrop();
         _windowPresenter = AppWindow.Presenter as OverlappedPresenter;
+
+        // Where the window was last (#272), before it first shows, so it doesn't jump.
+        RestorePlacement(settings.Current.Window);
+        ObservePlacement();
+        AppWindow.Changed += (_, args) =>
+        {
+            if (args.DidPositionChange || args.DidSizeChange || args.DidPresenterChange)
+            {
+                ObservePlacement();
+            }
+        };
 
         navigation.Initialize(ContentFrame);
         themeService.Attach(this);
@@ -163,6 +178,12 @@ internal sealed partial class MainWindow : Window
         {
             settings.Changed -= OnSettingsChanged;
             _tray.Dispose();
+
+            // Before the app's shutdown flushes the settings.
+            if (_placement.ToSettings() is { } placement)
+            {
+                settings.Update(s => s with { Window = placement });
+            }
         };
 
         // The queue and the lyrics share the right side: opening one closes the other.
@@ -354,6 +375,69 @@ internal sealed partial class MainWindow : Window
                 Math.Max(AppWindow.Size.Height, minimum.Height + frameHeight)));
         }
     }
+
+    /// <summary>
+    /// Opens the window with its saved place, size and maximized state (#272): on the screen it was on if that
+    /// is still there, otherwise centred on the primary screen; see <see cref="WindowPlacement.Restore"/>.
+    /// </summary>
+    private void RestorePlacement(WindowSettings? saved)
+    {
+        if (saved is null || _windowPresenter is null)
+        {
+            return;
+        }
+
+        var bounds = WindowPlacement.Restore(saved, Screens(), MinWindowWidth, MinWindowHeight);
+        AppWindow.MoveAndResize(new RectInt32(bounds.X, bounds.Y, bounds.Width, bounds.Height));
+
+        // Noted before maximizing: un-maximizing gives this size back, and it is what closing saves.
+        _placement.Observe(true, WindowShowState.Normal, bounds, WindowDpi());
+        if (saved.IsMaximized)
+        {
+            _windowPresenter.Maximize();
+        }
+    }
+
+    /// <summary>Notes the window's place and state; only the full window's count (see <see cref="WindowPlacement"/>).</summary>
+    private void ObservePlacement()
+    {
+        var state = _windowPresenter?.State switch
+        {
+            OverlappedPresenterState.Maximized => WindowShowState.Maximized,
+            OverlappedPresenterState.Minimized => WindowShowState.Minimized,
+            _ => WindowShowState.Normal,
+        };
+        var bounds = new PixelRect(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+        _placement.Observe(CurrentMode == WindowMode.Normal, state, bounds, WindowDpi());
+    }
+
+    private int WindowDpi() => (int)GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this));
+
+    /// <summary>The screens' work areas and DPIs. By index: enumerating the list fails in some Windows App SDK versions.</summary>
+    private static List<ScreenArea> Screens()
+    {
+        var areas = DisplayArea.FindAll();
+        var screens = new List<ScreenArea>(areas.Count);
+        for (var i = 0; i < areas.Count; i++)
+        {
+            var area = areas[i];
+            var work = area.WorkArea;
+            var monitor = Microsoft.UI.Win32Interop.GetMonitorFromDisplayId(area.DisplayId);
+            var dpi = GetDpiForMonitor(monitor, 0, out var dpiX, out _) == 0 ? (int)dpiX : 96;
+            screens.Add(new ScreenArea(new PixelRect(work.X, work.Y, work.Width, work.Height), dpi, area.IsPrimary));
+        }
+
+        return screens;
+    }
+
+    [DllImport("user32.dll", ExactSpelling = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static extern uint GetDpiForWindow(IntPtr window);
+
+    /// <summary>MDT_EFFECTIVE_DPI (0): the DPI the screen's scaling setting gives.</summary>
+    [DllImport("shcore.dll", ExactSpelling = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static extern int GetDpiForMonitor(IntPtr monitor, int dpiType, out uint dpiX, out uint dpiY);
 
     /// <summary>Effective pixels in the physical pixels the window APIs take.</summary>
     private SizeInt32 Scaled(int width, int height)

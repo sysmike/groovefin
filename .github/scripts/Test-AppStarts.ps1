@@ -602,6 +602,25 @@ try {
     Test-Accessibility 'artist'
     Test-TabOrder 'artist'
 
+    # The top tracks are as wide as the albums below them (#266), not a column on the left, and each row
+    # has its heart like the album and playlist tables.
+    $topTracks = Find-ById 'ArtistTopTracks'
+    $tracksBounds = Get-Bounds $topTracks
+    $shelfBounds = Get-Bounds (Find-ById 'ArtistAlbums')
+    if ([Math]::Abs($tracksBounds.Left - $shelfBounds.Left) -gt 2 -or [Math]::Abs($tracksBounds.Right - $shelfBounds.Right) -gt 2) {
+        Stop-Test 'Artist page' ("The top tracks span {0:0}-{1:0} px, the albums below {2:0}-{3:0} px." -f $tracksBounds.Left, $tracksBounds.Right, $shelfBounds.Left, $shelfBounds.Right)
+    }
+    $heart = [System.Windows.Automation.AndCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Favourite'),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))
+    $until = (Get-Date).AddSeconds(5)
+    do {
+        $hearts = $topTracks.FindAll($scope::Descendants, $heart)
+        if ($hearts.Count -lt 2) { Start-Sleep -Milliseconds 200 }
+    } while ($hearts.Count -lt 2 -and (Get-Date) -lt $until)
+    if ($hearts.Count -lt 2) { Stop-Test 'Artist page' "The top tracks show $($hearts.Count) hearts for 2 tracks." }
+    Write-Output ("The top tracks span the page like the albums ({0:0}-{1:0} px), each with its heart." -f $tracksBounds.Left, $tracksBounds.Right)
+
     # The similar artists fill one row (#264): of the 16, as many as fit in the width, the tiles grown so that
     # the row reaches the right margin, and none in a second row or cut off. The row is at the page's end:
     # scroll there first, and back afterwards.
