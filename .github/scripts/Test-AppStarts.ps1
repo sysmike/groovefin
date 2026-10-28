@@ -70,7 +70,9 @@ $listener.Start()
 $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
     param($listener)
     $serverId = '0123456789abcdef0123456789abcdef'
-    $artist = @{ Id = 'dddddddddddddddddddddddddddddddd'; Name = 'Artist'; Type = 'MusicArtist'; ImageTags = @{} }
+    $genre = @{ Id = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'; Name = 'Genre'; Type = 'MusicGenre' }
+    $artist = @{ Id = 'dddddddddddddddddddddddddddddddd'; Name = 'Artist'; Type = 'MusicArtist'; ImageTags = @{}
+                 Genres = @($genre.Name); GenreItems = @(@{ Id = $genre.Id; Name = $genre.Name }) }
     $albums = 1..3 | ForEach-Object {
         @{ Id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa$_"; Name = "Album $_"; Type = 'MusicAlbum'; AlbumArtist = 'Artist'
            AlbumArtists = @(@{ Id = $artist.Id; Name = $artist.Name }); ImageTags = @{} }
@@ -116,12 +118,12 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             '^/playlists/[0-9a-f-]{32,36}/items$' { @{ Items = @($playlistEntries); TotalRecordCount = $playlistEntries.Count; StartIndex = 0 } }
             '^/items/[0-9a-f-]{32,36}$' {
                 $id = $path.Substring(7) -replace '-', ''
-                if ($id -eq $artist.Id) { $artist } elseif ($id -eq $playlist.Id) { $playlist } else { $albums[0] }
+                if ($id -eq $artist.Id) { $artist } elseif ($id -eq $playlist.Id) { $playlist } elseif ($id -eq $genre.Id) { $genre } else { $albums[0] }
             }
             '^/audio/[0-9a-f-]{32,36}/universal$' { $raw = $wav; $null }
             '^/items$' { @{ Items = $albums; TotalRecordCount = $albums.Count; StartIndex = 0 } }
             '^/artists(/albumartists)?$' { @{ Items = @($artist); TotalRecordCount = 1; StartIndex = 0 } }
-            '^/genres$' { @{ Items = @(@{ Id = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'; Name = 'Genre'; Type = 'MusicGenre' }); TotalRecordCount = 1; StartIndex = 0 } }
+            '^/genres$' { @{ Items = @($genre); TotalRecordCount = 1; StartIndex = 0 } }
             default { @{ Items = @(); TotalRecordCount = 0; StartIndex = 0 } }
         }
         "$($request.HttpMethod) $($request.Url.PathAndQuery) -> $status"
@@ -601,6 +603,19 @@ try {
     $null = Find-Button 'Play album'
     Test-Running 'after going back and forward'
     Write-Output 'The mouse back and forward buttons and Alt+Left move through the pages.'
+
+    # The artist's genre is a link to its page (#265); back returns to the artist.
+    Send-MouseButton (Find-Button 'Play album') 2
+    $null = Find-ById 'ArtistPlayButton'
+    $genreLink = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Genre'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Hyperlink))) "genre link on the artist page"
+    $genreLink.GetCurrentPattern($invoke).Invoke()
+    $null = Find-Button 'Play the genre'
+    [System.Windows.Forms.SendKeys]::SendWait('%{LEFT}')
+    $null = Find-ById 'ArtistPlayButton'
+    Test-Running 'after following the genre link on the artist page'
+    Write-Output "The artist's genre link opened the genre page."
 
     # The buttons on the covers (#185), clicked with the mouse: pointing at a cover shows them, and a click on
     # one must not open the album or artist as well. Requests to the fake server show what was played.

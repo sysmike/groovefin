@@ -104,6 +104,11 @@ public sealed class ArtistLibraryTests : IDisposable
             Type = "MusicArtist",
             Overview = "French duo.<br/>Formed in 1993 &amp; split in 2021.",
             Genres = new[] { "Electronic", "House" },
+            GenreItems = new[]
+            {
+                new { Name = "Electronic", Id = "e1e1e1e1-2222-3333-4444-555555555555" },
+                new { Name = "House", Id = "e2e2e2e2-2222-3333-4444-555555555555" },
+            },
             UserData = new { IsFavorite = false },
             ProviderIds = new { MusicBrainzArtist = "056e4f3e-d505-4dad-8ec1-d04f521cbb56" },
         });
@@ -113,7 +118,9 @@ public sealed class ArtistLibraryTests : IDisposable
         artist.MusicBrainzArtistId.Should().Be("056e4f3e-d505-4dad-8ec1-d04f521cbb56");
         artist.Name.Should().Be("Daft Punk");
         artist.Biography.Should().Be("French duo.\nFormed in 1993 & split in 2021.");
-        artist.Genres.Should().Equal("Electronic", "House");
+        artist.Genres.Should().Equal(
+            new Genre("e1e1e1e1222233334444555555555555", "Electronic"),
+            new Genre("e2e2e2e2222233334444555555555555", "House"));
         artist.IsFavorite.Should().BeFalse();
     }
 
