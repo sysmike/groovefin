@@ -521,39 +521,69 @@ try {
         if (-not $songRow) { Start-Sleep -Milliseconds 500 }
     } while (-not $songRow -and (Get-Date) -lt $until)
     if (-not $songRow) { Stop-Test 'Smoke test' "The song 'Track 1' was not found on the songs page." }
-    # A right-click on the row opens its menu (Shift+F10 sent by SendKeys did not reach the list).
-    Add-Type -Namespace Smoke -Name RightClick -MemberDefinition @'
+    # The menu: a right-click on the row, else Shift+F10 or the Menu key on it. A menu can open in a popup
+    # window of its own, beside the main window, so every window of the app is searched; each try that finds
+    # nothing prints what UI Automation sees.
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -Namespace Smoke -Name Input -MemberDefinition @'
 [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
 [DllImport("user32.dll")] public static extern void mouse_event(uint flags, int dx, int dy, uint data, System.UIntPtr extra);
+[DllImport("user32.dll")] public static extern void keybd_event(byte key, byte scan, uint flags, System.UIntPtr extra);
 '@
-    $rowBounds = Get-Bounds $songRow
-    $null = [Smoke.RightClick]::SetCursorPos([int] ($rowBounds.X + $rowBounds.Width / 2), [int] ($rowBounds.Y + $rowBounds.Height / 2))
-    Start-Sleep -Milliseconds 200
-    [Smoke.RightClick]::mouse_event(0x0008, 0, 0, 0, [UIntPtr]::Zero) # RIGHTDOWN
-    [Smoke.RightClick]::mouse_event(0x0010, 0, 0, 0, [UIntPtr]::Zero) # RIGHTUP
-    # A menu opens in a popup window of its own, beside the main window: search every window of the app.
     $showInfoItem = [System.Windows.Automation.AndCondition]::new(
         [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Show info'),
         [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem))
     $appWindows = [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $process.Id)
-    $showInfo = $null
-    $until = (Get-Date).AddSeconds(10)
-    do {
-        foreach ($appWindow in $automation::RootElement.FindAll($scope::Children, $appWindows)) {
-            if (-not $showInfo) { $showInfo = $appWindow.FindFirst($scope::Descendants, $showInfoItem) }
+    function Find-ShowInfo {
+        $until = (Get-Date).AddSeconds(5)
+        do {
+            foreach ($appWindow in $automation::RootElement.FindAll($scope::Children, $appWindows)) {
+                if ($found = $appWindow.FindFirst($scope::Descendants, $showInfoItem)) { return $found }
+            }
+            Start-Sleep -Milliseconds 250
+        } while ((Get-Date) -lt $until)
+        $null
+    }
+    function Write-MenuDiagnostics([string] $try) {
+        $raw = [System.Windows.Automation.TreeWalker]::RawViewWalker
+        $tops = @()
+        for ($node = $raw.GetFirstChild($automation::RootElement); $node; $node = $raw.GetNextSibling($node)) {
+            if ($node.Current.ProcessId -eq $process.Id) { $tops += "$($node.Current.ClassName) '$($node.Current.Name)'" }
         }
-        if (-not $showInfo) { Start-Sleep -Milliseconds 500 }
-    } while (-not $showInfo -and (Get-Date) -lt $until)
+        $menus = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem)) | ForEach-Object { $_.Current.Name })
+        $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+        Write-Output "  After $try no 'Show info': the app's windows $($tops -join ', '); menu items in the window: $($menus -join ', '); focus on $($focused.Current.ControlType.ProgrammaticName) '$($focused.Current.Name)'."
+    }
+    $rowBounds = Get-Bounds $songRow
+    $null = [Smoke.Input]::SetCursorPos([int] ($rowBounds.X + $rowBounds.Width / 2), [int] ($rowBounds.Y + $rowBounds.Height / 2))
+    Start-Sleep -Milliseconds 200
+    [Smoke.Input]::mouse_event(0x0008, 0, 0, 0, [UIntPtr]::Zero) # RIGHTDOWN
+    Start-Sleep -Milliseconds 50
+    [Smoke.Input]::mouse_event(0x0010, 0, 0, 0, [UIntPtr]::Zero) # RIGHTUP
+    $showInfo = Find-ShowInfo
     if (-not $showInfo) {
-        $open = @($automation::RootElement.FindAll($scope::Children, $appWindows) | ForEach-Object { "$($_.Current.ControlType.ProgrammaticName) '$($_.Current.Name)'" }) -join ', '
-        Stop-Test 'Smoke test' "A right-click on the song did not open its menu with 'Show info' (the app's windows: $open)."
+        Write-MenuDiagnostics 'a right-click'
+        [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+        $songRow.SetFocus()
+        [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
+        $showInfo = Find-ShowInfo
+    }
+    if (-not $showInfo) {
+        Write-MenuDiagnostics 'Shift+F10'
+        $songRow.SetFocus()
+        [Smoke.Input]::keybd_event(0x5D, 0, 0, [UIntPtr]::Zero) # VK_APPS down
+        [Smoke.Input]::keybd_event(0x5D, 0, 2, [UIntPtr]::Zero) # up
+        $showInfo = Find-ShowInfo
+    }
+    if (-not $showInfo) {
+        Write-MenuDiagnostics 'the Menu key'
+        Stop-Test 'Smoke test' "Neither a right-click, Shift+F10 nor the Menu key on the song opened a menu with 'Show info'."
     }
     $showInfo.GetCurrentPattern($invoke).Invoke()
     foreach ($name in 'File', 'Codec: FLAC', 'Bit depth: 16-bit', 'Channels: Stereo') {
         $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $name)) "'$name' in the song's info"
     }
     Test-Accessibility 'song-info'
-    Add-Type -AssemblyName System.Windows.Forms
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
     $until = (Get-Date).AddSeconds(5)
     while ($window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Codec: FLAC')) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
