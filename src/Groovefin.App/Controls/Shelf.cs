@@ -22,18 +22,36 @@ internal static class Shelf
     }
 
     /// <summary>
-    /// For a grid inside a scrolling page: the view takes its content's height and never scrolls itself, so
-    /// wheel input reaches the page. Call once the view is loaded (its ScrollView exists then).
+    /// For a grid inside a scrolling page: the view never scrolls itself, so wheel input reaches the page,
+    /// and its height follows its content's. Left to size itself there, it would get no room to lay out
+    /// tiles in and show none, so give it a first height in XAML, about one row. Call once the view is
+    /// loaded (its ScrollView exists then).
     /// </summary>
     public static void ScrollNever(ItemsView? view)
     {
-        if (view?.ScrollView is { } scroll)
+        if (view?.ScrollView is not { } scroll)
         {
-            scroll.ContentOrientation = ScrollingContentOrientation.Vertical;
-            scroll.HorizontalScrollMode = ScrollingScrollMode.Disabled;
-            scroll.HorizontalScrollBarVisibility = ScrollingScrollBarVisibility.Hidden;
-            scroll.VerticalScrollMode = ScrollingScrollMode.Disabled;
-            scroll.VerticalScrollBarVisibility = ScrollingScrollBarVisibility.Hidden;
+            return;
+        }
+
+        scroll.ContentOrientation = ScrollingContentOrientation.Vertical;
+        scroll.HorizontalScrollMode = ScrollingScrollMode.Disabled;
+        scroll.HorizontalScrollBarVisibility = ScrollingScrollBarVisibility.Hidden;
+        scroll.VerticalScrollMode = ScrollingScrollMode.Disabled;
+        scroll.VerticalScrollBarVisibility = ScrollingScrollBarVisibility.Hidden;
+
+        // The rows laid out so far give the extent; as the view grows, it lays out the rest.
+        scroll.ExtentChanged += (_, _) => FitHeight(view, scroll);
+        FitHeight(view, scroll);
+    }
+
+    private static void FitHeight(ItemsView view, ScrollView scroll)
+    {
+        var height = scroll.ExtentHeight + view.Padding.Top + view.Padding.Bottom;
+        // Height is NaN until set: the comparison is written so that NaN counts as different.
+        if (scroll.ExtentHeight > 0 && !(Math.Abs(view.Height - height) <= 0.5))
+        {
+            view.Height = height;
         }
     }
 }
