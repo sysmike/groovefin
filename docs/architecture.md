@@ -207,6 +207,10 @@ Media Foundation creates them with `RoActivateInstance`. So the equalizer runs a
 - Settings: JSON in `ApplicationData.LocalFolder` (packaged) or `%LOCALAPPDATA%\Groovefin`
   (unpackaged).
 - Access tokens: `Windows.Security.Credentials.PasswordVault`. Passwords are never stored.
+- App identity: the unpackaged app has no package identity, so on start it sets its own AppUserModelID (`Groovefin`)
+  and writes a per-user Start menu shortcut with the same ID (`AppIdentity`, #271). The shell resolves
+  that ID to the shortcut's name and icon, so the media flyout, which names a session by its app, shows
+  "Groovefin" instead of "Unknown application". The MSIX build uses its package identity instead.
 
 ### MVVM
 
