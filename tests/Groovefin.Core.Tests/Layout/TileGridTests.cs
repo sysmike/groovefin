@@ -49,4 +49,29 @@ public sealed class TileGridTests
     {
         TileGrid.Fit(available, 168, 16).Should().Be(168);
     }
+
+    [Theory]
+    [InlineData(1640, 168, 16, 8)]
+    [InlineData(721, 168, 16, 4)]
+    [InlineData(720, 168, 16, 3)]
+    [InlineData(722, 168, 16, 4)]
+    [InlineData(2560, 152, 16, 15)]
+    public void Columns_counts_the_tiles_of_one_row(double available, double minWidth, double spacing, int expected)
+    {
+        var columns = TileGrid.Columns(available, minWidth, spacing);
+
+        columns.Should().Be(expected);
+        var width = TileGrid.Fit(available, minWidth, spacing);
+        ((columns * width) + ((columns - 1) * spacing)).Should().BeLessThanOrEqualTo(available - TileGrid.RoundingSlack);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(100)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    public void Without_room_for_two_tiles_one_column_stays(double available)
+    {
+        TileGrid.Columns(available, 168, 16).Should().Be(1);
+    }
 }

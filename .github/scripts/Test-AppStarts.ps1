@@ -81,6 +81,8 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
         @{ Id = "ccccccccccccccccccccccccccccccc$_"; Name = "Track $_"; Type = 'Audio'; MediaType = 'Audio'; IndexNumber = $_
            AlbumId = $albums[0].Id; Album = 'Album 1'; AlbumArtist = 'Artist'; RunTimeTicks = 300000000; ImageTags = @{} }
     }
+    # More similar artists than fit in one row of the artist page (#264).
+    $similar = 1..16 | ForEach-Object { @{ Id = '5555555555555555555555555555{0:x4}' -f $_; Name = "Similar $_"; Type = 'MusicArtist'; ImageTags = @{} } }
     # One playlist of both tracks (#245); its entries carry their artist and the playlist's own entry IDs.
     $playlist = @{ Id = '99999999999999999999999999999999'; Name = 'Road trip'; Type = 'Playlist'; MediaType = 'Audio'; ChildCount = 2; ImageTags = @{} }
     $playlistEntries = $tracks | ForEach-Object {
@@ -116,6 +118,7 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             '^/items/tracks$' { @{ Items = $tracks; TotalRecordCount = $tracks.Count; StartIndex = 0 } }
             '^/items/playlists$' { @{ Items = @($playlist); TotalRecordCount = 1; StartIndex = 0 } }
             '^/playlists/[0-9a-f-]{32,36}/items$' { @{ Items = @($playlistEntries); TotalRecordCount = $playlistEntries.Count; StartIndex = 0 } }
+            '^/items/[0-9a-f-]{32,36}/similar$' { @{ Items = @($similar); TotalRecordCount = $similar.Count; StartIndex = 0 } }
             '^/items/[0-9a-f-]{32,36}$' {
                 $id = $path.Substring(7) -replace '-', ''
                 if ($id -eq $artist.Id) { $artist } elseif ($id -eq $playlist.Id) { $playlist } elseif ($id -eq $genre.Id) { $genre } else { $albums[0] }
@@ -617,6 +620,43 @@ try {
     } while ($hearts.Count -lt 2 -and (Get-Date) -lt $until)
     if ($hearts.Count -lt 2) { Stop-Test 'Artist page' "The top tracks show $($hearts.Count) hearts for 2 tracks." }
     Write-Output ("The top tracks span the page like the albums ({0:0}-{1:0} px), each with its heart." -f $tracksBounds.Left, $tracksBounds.Right)
+
+    # The similar artists fill one row (#264): of the 16, as many as fit in the width, the tiles grown so that
+    # the row reaches the right margin, and none in a second row or cut off. The row is at the page's end:
+    # scroll there first, and back afterwards.
+    $similarList = Find-ById 'ArtistSimilar'
+    # Off screen too, the tiles exist, so Tab reaches them before the page is scrolled there.
+    $listItem = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)
+    $until = (Get-Date).AddSeconds(5)
+    while (-not $similarList.FindFirst($scope::Descendants, $listItem) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
+    if (-not $similarList.FindFirst($scope::Descendants, $listItem)) {
+        Stop-Test 'Artist page' "The similar artists have no tiles before the page is scrolled to them (off screen: $($similarList.Current.IsOffscreen))."
+    }
+    $parents = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+    $pageScroll = $null
+    for ($node = $parents.GetParent($similarList); $node -and -not $pageScroll; $node = $parents.GetParent($node)) {
+        $pattern = $null
+        if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $pattern) -and $pattern.Current.VerticallyScrollable) { $pageScroll = $pattern }
+    }
+    if ($pageScroll) { $pageScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 100); Start-Sleep -Seconds 1 }
+    $until = (Get-Date).AddSeconds(5)
+    do {
+        $tiles = @($similarList.FindAll($scope::Descendants, $listItem))
+        if ($tiles.Count -eq 0) { Start-Sleep -Milliseconds 200 }
+    } while ($tiles.Count -eq 0 -and (Get-Date) -lt $until)
+    if ($tiles.Count -eq 0) { Stop-Test 'Artist page' 'The similar artists show no tiles.' }
+    $listBounds = Get-Bounds $similarList
+    $inner = $listBounds.Width - 72
+    $tileWidth = (Get-Bounds $tiles[0]).Width
+    $columns = [Math]::Max(1, [Math]::Floor(($inner + 16) / ($tileWidth + 16)))
+    $rows = @($tiles | ForEach-Object { [Math]::Round((Get-Bounds $_).Top) } | Sort-Object -Unique)
+    $lastRight = ($tiles | ForEach-Object { (Get-Bounds $_).Right } | Measure-Object -Maximum).Maximum
+    $row = $columns * ($tileWidth + 16) - 16
+    if ($tiles.Count -ne [Math]::Min($columns, 16) -or $rows.Count -ne 1 -or $lastRight -gt $listBounds.Right - 36 + 1 -or [Math]::Abs($inner - $row) -gt $columns + 2) {
+        Stop-Test 'Artist page' ("The similar artists show {0} tiles of {1:0} px in {2} rows for {3} columns; the row ends at {4:0} px of {5:0} px." -f $tiles.Count, $tileWidth, $rows.Count, $columns, $lastRight, ($listBounds.Right - 36))
+    }
+    Write-Output ("The similar artists fill one row: {0} of 16 tiles of {1:0} px in {2:0} px." -f $tiles.Count, $tileWidth, $inner)
+    if ($pageScroll) { $pageScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 0); Start-Sleep -Milliseconds 500 }
 
     # Back and forward (#176): the mouse's back button over the artist page's Play button (a control that
     # handles presses itself), its forward button, then Alt+Left.

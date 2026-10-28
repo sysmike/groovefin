@@ -68,10 +68,13 @@ public sealed partial class ArtistDetailViewModel(
 
     public const int TopTrackCount = 10;
 
-    public const int SimilarCount = 12;
+    /// <summary>Similar artists loaded: more than fit in one row of a usual window; <see cref="SimilarRow"/> shows the first ones.</summary>
+    public const int SimilarCount = 16;
 
     /// <summary>Most albums shown per section; artists with more are rare.</summary>
     public const int AlbumLimit = 200;
+
+    private int _similarColumns = SimilarCount;
 
     public ObservableCollection<ArtistTrackItem> TopTracks { get; } = currentTrack.Watch(new ObservableCollection<ArtistTrackItem>());
 
@@ -80,6 +83,27 @@ public sealed partial class ArtistDetailViewModel(
     public ObservableCollection<AlbumItem> AppearsOn { get; } = [];
 
     public ObservableCollection<ArtistItem> Similar { get; } = [];
+
+    /// <summary>Gets the similar artists the page shows: as many as fit in one row (#264).</summary>
+    public ObservableCollection<ArtistItem> SimilarRow { get; } = [];
+
+    /// <summary>
+    /// Gets or sets how many tiles fit in the similar artists' row; the page sets it when the row resizes,
+    /// and <see cref="SimilarRow"/> follows. Until then the row shows them all.
+    /// </summary>
+    public int SimilarColumns
+    {
+        get => _similarColumns;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            if (_similarColumns != value)
+            {
+                _similarColumns = value;
+                FillSimilarRow();
+            }
+        }
+    }
 
     public double DisplayScale { get; set; } = 1;
 
@@ -336,6 +360,23 @@ public sealed partial class ArtistDetailViewModel(
         }
 
         HasSimilar = Similar.Count > 0;
+        SimilarRow.Clear();
+        FillSimilarRow();
+    }
+
+    /// <summary>Adds or removes tiles at the row's end only, so the ones that stay keep their containers.</summary>
+    private void FillSimilarRow()
+    {
+        var count = Math.Min(_similarColumns, Similar.Count);
+        while (SimilarRow.Count > count)
+        {
+            SimilarRow.RemoveAt(SimilarRow.Count - 1);
+        }
+
+        while (SimilarRow.Count < count)
+        {
+            SimilarRow.Add(Similar[SimilarRow.Count]);
+        }
     }
 
     private void Fill(ObservableCollection<AlbumItem> target, IEnumerable<Album> albums)

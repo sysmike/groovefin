@@ -350,4 +350,38 @@ public sealed class ArtistDetailViewModelTests
 
         sut.TopTracks.Select(t => t.IsFavourite).Should().Equal(false, true);
     }
+
+    [Fact]
+    public async Task The_similar_artists_row_shows_as_many_as_fit_and_follows_resizing()
+    {
+        var similar = Enumerable.Range(1, ArtistDetailViewModel.SimilarCount).Select(i => new Artist { Id = $"s{i}", Name = $"Similar {i}" }).ToList();
+        _library.GetSimilarArtistsAsync(ArtistId, ArtistDetailViewModel.SimilarCount, Arg.Any<CancellationToken>()).Returns(similar);
+        var sut = CreateSut();
+        sut.SimilarColumns = 5;
+
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+        sut.Similar.Should().HaveCount(ArtistDetailViewModel.SimilarCount);
+        sut.SimilarRow.Select(a => a.Artist.Id).Should().Equal("s1", "s2", "s3", "s4", "s5");
+
+        var kept = sut.SimilarRow[0];
+        sut.SimilarColumns = 7;
+        sut.SimilarRow.Select(a => a.Artist.Id).Should().Equal("s1", "s2", "s3", "s4", "s5", "s6", "s7");
+        sut.SimilarRow[0].Should().BeSameAs(kept);
+
+        sut.SimilarColumns = 2;
+        sut.SimilarRow.Select(a => a.Artist.Id).Should().Equal("s1", "s2");
+
+        sut.SimilarColumns = 100;
+        sut.SimilarRow.Should().HaveCount(ArtistDetailViewModel.SimilarCount);
+    }
+
+    [Fact]
+    public async Task Before_the_row_has_a_width_it_shows_all_similar_artists()
+    {
+        var sut = CreateSut();
+
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        sut.SimilarRow.Should().ContainSingle().Which.Name.Should().Be("Justice");
+    }
 }
