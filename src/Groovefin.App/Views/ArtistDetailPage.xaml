@@ -7,6 +7,7 @@
     xmlns:conv="using:Groovefin.App.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:Groovefin.Core.Models"
     xmlns:vm="using:Groovefin.Core.ViewModels"
     mc:Ignorable="d">
 
@@ -179,10 +180,24 @@
                             Text="{x:Bind ViewModel.Name, Mode=OneWay}"
                             TextTrimming="CharacterEllipsis"
                             TextWrapping="Wrap" />
-                        <TextBlock
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource BodyTextBlockStyle}"
-                            Text="{x:Bind ViewModel.GenresText, Mode=OneWay}" />
+                        <!--  Genres, each a link to its page (#265).  -->
+                        <ItemsRepeater
+                            x:Uid="ArtistGenres"
+                            ItemsSource="{x:Bind ViewModel.Genres, Mode=OneWay}"
+                            Visibility="{x:Bind ViewModel.HasGenres, Mode=OneWay}">
+                            <ItemsRepeater.Layout>
+                                <StackLayout Orientation="Horizontal" Spacing="4" />
+                            </ItemsRepeater.Layout>
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="models:Genre">
+                                    <HyperlinkButton
+                                        Padding="4,2"
+                                        Click="OnGenreClick"
+                                        Content="{x:Bind Name}"
+                                        Tag="{x:Bind}" />
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
 
                         <StackPanel
                             Margin="0,8,0,0"
@@ -332,6 +347,7 @@
                         x:Uid="ArtistAlbums"
                         controls:TileSize.Source="{StaticResource AlbumTile}"
                         AutomationProperties.AutomationId="ArtistAlbums"
+                        Height="224"
                         Padding="36,0"
                         IsItemInvokedEnabled="True"
                         ItemInvoked="OnAlbumInvoked"
