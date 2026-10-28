@@ -337,8 +337,9 @@
 
                 <!--
                     The artist's albums: a grid like the Albums page's, its rows filling the page's width (#263).
-                    It grows with its rows and never scrolls itself; the page scrolls. Arrow keys move between
-                    tiles, Tab moves to the next section.
+                    It grows with its rows and never scrolls itself; the page scrolls. Its layout creates every
+                    tile, also below the visible part, so Tab reaches them. Arrow keys move between tiles, Tab
+                    moves to the next section.
                 -->
                 <StackPanel Visibility="{x:Bind ViewModel.HasAlbums, Mode=OneWay}">
                     <TextBlock x:Uid="ArtistAlbumsHeader" Style="{StaticResource SectionHeaderStyle}" />
@@ -356,7 +357,7 @@
                         Loaded="OnGridLoaded"
                         SelectionMode="None">
                         <ItemsView.Layout>
-                            <UniformGridLayout
+                            <controls:WrapGridLayout
                                 MinColumnSpacing="16"
                                 MinItemWidth="168"
                                 MinRowSpacing="8" />
