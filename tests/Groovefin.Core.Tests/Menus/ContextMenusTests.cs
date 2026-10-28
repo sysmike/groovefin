@@ -253,4 +253,27 @@ public sealed class ContextMenusTests
         _player.Received(1).AddToQueue(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(AlbumTracks)));
         actions.Select(a => a.Kind).Should().Equal(MenuActionKind.PlayNow, MenuActionKind.PlayNext, MenuActionKind.AddToQueue, MenuActionKind.InstantMix);
     }
+
+    [Fact]
+    public void Every_item_shows_its_translated_text_not_its_resource_key()
+    {
+        // A lookup that never returns the key itself, unlike the one above: a key passed on as text shows.
+        var strings = Substitute.For<IStringResources>();
+        strings.GetString(Arg.Any<string>()).Returns(call => $"«{call.Arg<string>()}»");
+        var menus = new ContextMenus(_player, _library, _playlists, _navigation, _favourites, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _dialogs, _errors, strings);
+
+        IEnumerable<MenuAction> all =
+        [
+            .. menus.ForTrack(Song),
+            .. menus.ForTracks(AlbumTracks),
+            .. menus.ForAlbum(new Album { Id = "al1", Name = "Discovery", AlbumArtists = [new ArtistRef("ar1", "Daft Punk")] }),
+            .. menus.ForArtist(new Artist { Id = "ar1", Name = "Daft Punk" }),
+            .. menus.ForPlaylist(new Playlist { Id = "p1", Name = "Chill" }),
+            .. menus.ForGenre(new Genre("g1", "Electronic")),
+            .. menus.ForFolder(new Folder("f1", "Daft Punk")),
+        ];
+
+        all.Should().OnlyContain(a => a.Text.StartsWith('«'), "each text comes from the resources");
+        menus.ForTrack(Song).Single(a => a.Kind == MenuActionKind.GoToAlbum).Text.Should().Be("«Menu_GoToAlbum»");
+    }
 }
