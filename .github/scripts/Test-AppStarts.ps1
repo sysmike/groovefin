@@ -241,6 +241,28 @@ try {
         Find-Element $condition "button '$name'"
     }
 
+    # The tiles of a grid fill its rows (#232): they grow until whole columns reach the right margin, so the
+    # gap on the right is as wide as on the left (36 px each, the list's padding). The row need not be full:
+    # the width of one tile and the spacing give the columns.
+    # A grid without a name of its own is found by its automation ID.
+    function Test-TilesFillRows([string] $list, [double] $spacing, [string] $id = '') {
+        $view = if ($id) { Find-ById $id } else {
+            Find-Element ([System.Windows.Automation.AndCondition]::new(
+                    [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $list),
+                    [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::List))) "list '$list'"
+        }
+        $tile = $view.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))
+        if (-not $tile) { Stop-Test 'Tile grid' "The list '$list' has no tiles." }
+        $inner = (Get-Bounds $view).Width - 72
+        $width = (Get-Bounds $tile).Width
+        $columns = [Math]::Max(1, [Math]::Floor(($inner + $spacing) / ($width + $spacing)))
+        $row = $columns * ($width + $spacing) - $spacing
+        if ([Math]::Abs($inner - $row) -gt $columns + 2) {
+            Stop-Test 'Tile grid' ("The tiles of '{0}' do not fill the row: {1} columns of {2:0} px make {3:0} px of {4:0} px." -f $list, $columns, $width, $row, $inner)
+        }
+        Write-Output ("The tiles of '{0}' fill the row: {1} columns of {2:0} px in {3:0} px." -f $list, $columns, $width, $inner)
+    }
+
     # Selects a page in the navigation pane by its name.
     function Select-Navigation([string] $name) {
         $item = Find-Element ([System.Windows.Automation.AndCondition]::new(
@@ -621,6 +643,17 @@ try {
     if ($hearts.Count -lt 2) { Stop-Test 'Artist page' "The top tracks show $($hearts.Count) hearts for 2 tracks." }
     Write-Output ("The top tracks span the page like the albums ({0:0}-{1:0} px), each with its heart." -f $tracksBounds.Left, $tracksBounds.Right)
 
+    # The artist's albums are a grid like the Albums page's (#263): its tiles grow to fill the row. They exist
+    # while the grid is still below the visible part of the page, so Tab reaches them.
+    $albumsGrid = Find-ById 'ArtistAlbums'
+    $tileCondition = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)
+    $until = (Get-Date).AddSeconds(5)
+    while (-not $albumsGrid.FindFirst($scope::Descendants, $tileCondition) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
+    if (-not $albumsGrid.FindFirst($scope::Descendants, $tileCondition)) {
+        Stop-Test 'Artist page' "The artist's albums grid has no tiles where it is (off screen: $($albumsGrid.Current.IsOffscreen))."
+    }
+    Test-TilesFillRows "the artist's albums" 16 'ArtistAlbums'
+
     # The similar artists fill one row (#264): of the 16, as many as fit in the width, the tiles grown so that
     # the row reaches the right margin, and none in a second row or cut off. The row is at the page's end:
     # scroll there first, and back afterwards.
@@ -725,25 +758,6 @@ try {
         [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Play album'),
         [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))
     $artistPage = [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'ArtistPlayButton')
-
-    # The tiles of a grid fill its rows (#232): they grow until whole columns reach the right margin, so the
-    # gap on the right is as wide as on the left (36 px each, the list's padding). The row need not be full:
-    # the width of one tile and the spacing give the columns.
-    function Test-TilesFillRows([string] $list, [double] $spacing) {
-        $view = Find-Element ([System.Windows.Automation.AndCondition]::new(
-                [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $list),
-                [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::List))) "list '$list'"
-        $tile = $view.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))
-        if (-not $tile) { Stop-Test 'Tile grid' "The list '$list' has no tiles." }
-        $inner = (Get-Bounds $view).Width - 72
-        $width = (Get-Bounds $tile).Width
-        $columns = [Math]::Max(1, [Math]::Floor(($inner + $spacing) / ($width + $spacing)))
-        $row = $columns * ($width + $spacing) - $spacing
-        if ([Math]::Abs($inner - $row) -gt $columns + 2) {
-            Stop-Test 'Tile grid' ("The tiles of '{0}' do not fill the row: {1} columns of {2:0} px make {3:0} px of {4:0} px." -f $list, $columns, $width, $row, $inner)
-        }
-        Write-Output ("The tiles of '{0}' fill the row: {1} columns of {2:0} px in {3:0} px." -f $list, $columns, $width, $inner)
-    }
 
     Select-Navigation 'Albums'
     Start-Sleep -Seconds 2

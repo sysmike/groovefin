@@ -384,4 +384,16 @@ public sealed class ArtistDetailViewModelTests
 
         sut.SimilarRow.Should().ContainSingle().Which.Name.Should().Be("Justice");
     }
+
+    [Fact]
+    public async Task Album_covers_fit_the_albums_grid_and_the_appears_on_shelf()
+    {
+        var sut = CreateSut();
+        sut.DisplayScale = 1.5;
+
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        sut.Albums[0].Cover!.Width.Should().Be((int)Math.Ceiling(ArtistDetailViewModel.AlbumGridTileWidth * 1.5));
+        sut.AppearsOn[0].Cover!.Width.Should().Be((int)Math.Ceiling(ArtistDetailViewModel.TileWidth * 1.5));
+    }
 }
