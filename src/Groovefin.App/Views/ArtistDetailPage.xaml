@@ -334,6 +334,7 @@
                         x:Uid="ArtistSimilar"
                         controls:TileSize.Source="{StaticResource SimilarTile}"
                         AutomationProperties.AutomationId="ArtistSimilar"
+                        Height="208"
                         Padding="36,0"
                         IsItemInvokedEnabled="True"
                         ItemInvoked="OnArtistInvoked"
