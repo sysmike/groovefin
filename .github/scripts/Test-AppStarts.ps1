@@ -624,8 +624,38 @@ try {
     Test-Accessibility 'artist'
     Test-TabOrder 'artist'
 
-    # The artist's albums are a grid like the Albums page's (#263): its tiles grow to fill the row.
+    # The artist's albums are a grid like the Albums page's (#263): its tiles grow to fill the row. If it shows
+    # no tiles where it is, the log gets its place and contents, and the page is scrolled down to it once.
+    $albumsGrid = Find-ById 'ArtistAlbums'
+    $scrolled = $null
+    $tileCondition = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)
+    if (-not $albumsGrid.FindFirst($scope::Descendants, $tileCondition)) {
+        $g = $albumsGrid.Current.BoundingRectangle
+        $w = $window.Current.BoundingRectangle
+        Write-Output ("The artist's albums grid shows no tiles: at {0:0},{1:0}, {2:0} x {3:0} px, offscreen {4}; the window at {5:0},{6:0}, {7:0} x {8:0} px." -f $g.X, $g.Y, $g.Width, $g.Height, $albumsGrid.Current.IsOffscreen, $w.X, $w.Y, $w.Width, $w.Height)
+        $raw = [System.Windows.Automation.TreeWalker]::RawViewWalker
+        function Write-RawTree([System.Windows.Automation.AutomationElement] $node, [int] $depth) {
+            for ($child = $raw.GetFirstChild($node); $child; $child = $raw.GetNextSibling($child)) {
+                $b = $child.Current.BoundingRectangle
+                Write-Output ("  {0}{1} '{2}' [{3}] at {4:0},{5:0}, {6:0} x {7:0}" -f ('  ' * $depth), $child.Current.ControlType.ProgrammaticName, $child.Current.Name, $child.Current.ClassName, $b.X, $b.Y, $b.Width, $b.Height)
+                if ($depth -lt 3) { Write-RawTree $child ($depth + 1) }
+            }
+        }
+        Write-RawTree $albumsGrid 0
+        $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+        for ($node = $walker.GetParent($albumsGrid); $node; $node = $walker.GetParent($node)) {
+            $pattern = $null
+            if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $pattern) -and $pattern.Current.VerticallyScrollable) {
+                $pattern.ScrollVertical([System.Windows.Automation.ScrollAmount]::LargeIncrement)
+                $scrolled = $pattern
+                Start-Sleep -Seconds 1
+                Write-Output ("Scrolled the page down to {0:0} %: the grid shows {1} tiles." -f $pattern.Current.VerticalScrollPercent, @($albumsGrid.FindAll($scope::Descendants, $tileCondition)).Count)
+                break
+            }
+        }
+    }
     Test-TilesFillRows "the artist's albums" 16 'ArtistAlbums'
+    if ($scrolled) { $scrolled.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 0); Start-Sleep -Milliseconds 500 }
 
     # The similar artists fill one row (#264): of the 16, as many as fit in the width, the tiles grown so that
     # the row reaches the right margin, and none in a second row or cut off. The row is at the page's end:
