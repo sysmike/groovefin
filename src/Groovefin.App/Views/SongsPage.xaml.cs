@@ -334,7 +334,7 @@ internal sealed partial class SongsPage : Page
 
     private void OnSongsDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
     {
-        if ((e.OriginalSource as FrameworkElement)?.DataContext is SongRow row)
+        if (RowAt(e.OriginalSource as DependencyObject) is { Row: var row })
         {
             ViewModel.PlayCommand.Execute(row);
             e.Handled = true;
@@ -353,7 +353,7 @@ internal sealed partial class SongsPage : Page
     /// <summary>The menu of the selected songs; a song outside the selection becomes the selection first.</summary>
     private void OnSongsContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
-        if (e.OriginalSource is not FrameworkElement { DataContext: SongRow row } target)
+        if (RowAt(e.OriginalSource as DependencyObject) is not { Container: var target, Row: var row })
         {
             return;
         }
@@ -367,6 +367,23 @@ internal sealed partial class SongsPage : Page
         var menu = new MenuFlyout();
         ItemMenu.AddTo(menu, App.Services.GetRequiredService<ContextMenus>().ForTracks(SelectedTracks()));
         ItemMenu.Show(menu, target, e);
+    }
+
+    /// <summary>
+    /// The row under the pointer or with focus. The rows are filled in by <see cref="OnContainerContentChanging"/>,
+    /// not bound, so their elements have no <c>DataContext</c>: the row's container is the way to its song (#282).
+    /// </summary>
+    private (ListViewItem Container, SongRow Row)? RowAt(DependencyObject? source)
+    {
+        for (var node = source; node is not null && !ReferenceEquals(node, SongsList); node = VisualTreeHelper.GetParent(node))
+        {
+            if (node is ListViewItem container && SongsList.ItemFromContainer(container) is SongRow row)
+            {
+                return (container, row);
+            }
+        }
+
+        return null;
     }
 
     /// <summary>The selected songs in table order; ranges keep this fast when everything is selected.</summary>
