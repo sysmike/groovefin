@@ -102,6 +102,12 @@ public partial class App : Application
         var version = _host.Services.GetRequiredService<AppVersion>();
         LogStarted(_logger, version.DisplayText, AppPaths.IsPackaged, Environment.OSVersion.VersionString);
 
+        // Before the window and the media player exist: they take the process's ID when they are created.
+        if (!AppPaths.IsPackaged)
+        {
+            ApplyUnpackagedIdentity(logger);
+        }
+
         // Settings must be loaded before any view reads them. LoadAsync falls back to defaults on errors.
         var settings = _host.Services.GetRequiredService<ISettingsService>();
         await settings.LoadAsync();
@@ -324,6 +330,22 @@ public partial class App : Application
         }
     }
 
+    /// <summary>Gives the ZIP build a name and icon in the media flyout and the Start menu (#271).</summary>
+    private static void ApplyUnpackagedIdentity(ILogger logger)
+    {
+        try
+        {
+            AppIdentity.SetProcessId();
+            var written = AppIdentity.EnsureShortcut();
+            LogIdentity(logger, AppIdentity.Id, AppIdentity.ShortcutPath, written ? "written" : "up to date");
+        }
+        catch (Exception ex) when (ex is COMException or UnauthorizedAccessException or IOException or InvalidOperationException)
+        {
+            // The app works without it; only Windows' name for it is missing.
+            LogIdentityFailed(logger, ex);
+        }
+    }
+
     private IErrorReporter? TryGetErrorReporter()
     {
         try
@@ -338,6 +360,12 @@ public partial class App : Application
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Groovefin {Version} started (packaged: {IsPackaged}, OS: {OsVersion})")]
     private static partial void LogStarted(ILogger logger, string version, bool isPackaged, string osVersion);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "App identity {AppId}; Start menu shortcut {Shortcut} {State}")]
+    private static partial void LogIdentity(ILogger logger, string appId, string shortcut, string state);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The app identity could not be set up; Windows may call Groovefin \"Unknown application\"")]
+    private static partial void LogIdentityFailed(ILogger logger, Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The UI language {Language} could not be applied")]
     private static partial void LogLanguageFailed(ILogger logger, Exception exception, string? language);
