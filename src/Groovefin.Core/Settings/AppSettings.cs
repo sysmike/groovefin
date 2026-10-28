@@ -37,6 +37,9 @@ public sealed record AppSettings
 
     public LyricsSettings Lyrics { get; set; } = new();
 
+    /// <summary>Gets or sets the main window's placement from the last run (#272), or <see langword="null"/> before the first.</summary>
+    public WindowSettings? Window { get; set; }
+
     public KeyboardSettings Keyboard { get; set; } = new();
 }
 
@@ -88,6 +91,26 @@ public sealed record AppearanceSettings
 
     /// <summary>Gets or sets a value indicating whether minimizing hides the window to the notification area icon.</summary>
     public bool MinimizeToTray { get; set; }
+}
+
+/// <summary>
+/// The main window's last placement (#272): the full window's bounds in physical pixels (also when it closed
+/// maximized, in the mini player or in full screen), whether it was maximized, and the DPI the bounds are at.
+/// </summary>
+public sealed record WindowSettings
+{
+    public int X { get; set; }
+
+    public int Y { get; set; }
+
+    public int Width { get; set; }
+
+    public int Height { get; set; }
+
+    public bool IsMaximized { get; set; }
+
+    /// <summary>Gets or sets the DPI of the window's screen when the bounds were taken (96 at 100 %).</summary>
+    public int Dpi { get; set; } = 96;
 }
 
 /// <summary>One section of the navigation pane: which, and whether it shows (#255).</summary>
