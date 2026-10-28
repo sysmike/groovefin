@@ -77,6 +77,11 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
         @{ Id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa$_"; Name = "Album $_"; Type = 'MusicAlbum'; AlbumArtist = 'Artist'
            AlbumArtists = @(@{ Id = $artist.Id; Name = $artist.Name }); ImageTags = @{} }
     }
+    # The artist's own albums: more than one row of the artist page's grid holds (#263).
+    $artistAlbums = 1..9 | ForEach-Object {
+        @{ Id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa$_"; Name = "Album $_"; Type = 'MusicAlbum'; AlbumArtist = 'Artist'
+           AlbumArtists = @(@{ Id = $artist.Id; Name = $artist.Name }); ImageTags = @{} }
+    }
     $tracks = 1..2 | ForEach-Object {
         @{ Id = "ccccccccccccccccccccccccccccccc$_"; Name = "Track $_"; Type = 'Audio'; MediaType = 'Audio'; IndexNumber = $_
            AlbumId = $albums[0].Id; Album = 'Album 1'; AlbumArtist = 'Artist'; RunTimeTicks = 300000000; ImageTags = @{} }
@@ -107,6 +112,7 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
         $path = $request.Url.AbsolutePath.ToLowerInvariant()
         if ($path -eq '/items' -and $request.Url.Query -match 'includeItemTypes=Audio') { $path = '/items/tracks' }
         if ($path -eq '/items' -and $request.Url.Query -match 'includeItemTypes=Playlist') { $path = '/items/playlists' }
+        if ($path -eq '/items' -and $request.Url.Query -match '(^|[?&])albumArtistIds=') { $path = '/items/artistalbums' }
         $status = 200
         $raw = $null
         $body = switch -Regex ($path) {
@@ -116,6 +122,7 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             '^/userviews$' { @{ Items = @(@{ Id = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'; Name = 'Music'; Type = 'CollectionFolder'; CollectionType = 'music' }); TotalRecordCount = 1; StartIndex = 0 } }
             '/images/' { $status = 404; $null }
             '^/items/tracks$' { @{ Items = $tracks; TotalRecordCount = $tracks.Count; StartIndex = 0 } }
+            '^/items/artistalbums$' { @{ Items = $artistAlbums; TotalRecordCount = $artistAlbums.Count; StartIndex = 0 } }
             '^/items/playlists$' { @{ Items = @($playlist); TotalRecordCount = 1; StartIndex = 0 } }
             '^/playlists/[0-9a-f-]{32,36}/items$' { @{ Items = @($playlistEntries); TotalRecordCount = $playlistEntries.Count; StartIndex = 0 } }
             '^/items/[0-9a-f-]{32,36}/similar$' { @{ Items = @($similar); TotalRecordCount = $similar.Count; StartIndex = 0 } }
@@ -653,6 +660,21 @@ try {
         Stop-Test 'Artist page' "The artist's albums grid has no tiles where it is (off screen: $($albumsGrid.Current.IsOffscreen))."
     }
     Test-TilesFillRows "the artist's albums" 16 'ArtistAlbums'
+    # All 9 at once, in as many rows as they need (#263): the grid is as high as its rows and doesn't scroll.
+    $artistAlbumCount = 9 # the fake server's $artistAlbums
+    $albumTiles = @($albumsGrid.FindAll($scope::Descendants, $tileCondition))
+    if ($albumTiles.Count -ne $artistAlbumCount) {
+        Stop-Test 'Artist page' "The artist's albums grid shows $($albumTiles.Count) of the artist's $artistAlbumCount albums."
+    }
+    $gridScroll = $null
+    foreach ($node in @($albumsGrid) + @($albumsGrid.FindAll($scope::Descendants, [System.Windows.Automation.Condition]::TrueCondition))) {
+        $pattern = $null
+        if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $pattern)) { $gridScroll = $pattern; break }
+    }
+    if ($gridScroll -and $gridScroll.Current.VerticalViewSize -lt 99.5) {
+        Stop-Test 'Artist page' ("The artist's albums grid shows {0:0} % of its rows and scrolls for the rest." -f $gridScroll.Current.VerticalViewSize)
+    }
+    Write-Output ("The artist's albums grid shows all {0} albums at once{1}." -f $albumTiles.Count, $(if ($gridScroll) { ' and does not scroll' } else { '' }))
 
     # The similar artists fill one row (#264): of the 16, as many as fit in the width, the tiles grown so that
     # the row reaches the right margin, and none in a second row or cut off. The row is at the page's end:
