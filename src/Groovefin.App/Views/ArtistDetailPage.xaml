@@ -405,7 +405,7 @@
                         SelectionMode="None"
                         SizeChanged="OnSimilarSizeChanged">
                         <ItemsView.Layout>
-                            <UniformGridLayout
+                            <controls:WrapGridLayout
                                 MinColumnSpacing="16"
                                 MinItemWidth="152"
                                 MinRowSpacing="8" />

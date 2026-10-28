@@ -65,7 +65,7 @@ internal sealed partial class ArtistDetailPage : Page
     /// <summary>The similar artists' row shows as many tiles as fit (#264): the columns of its grid.</summary>
     private void OnSimilarSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (sender is ItemsView { Layout: UniformGridLayout layout } view)
+        if (sender is ItemsView { Layout: WrapGridLayout layout } view)
         {
             var available = e.NewSize.Width - view.Padding.Left - view.Padding.Right;
             ViewModel.SimilarColumns = TileGrid.Columns(available, ((TileSize)Resources["SimilarTile"]).MinWidth, layout.MinColumnSpacing);

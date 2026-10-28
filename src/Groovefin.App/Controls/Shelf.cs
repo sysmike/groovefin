@@ -48,8 +48,7 @@ internal static class Shelf
     private static void FitHeight(ItemsView view, ScrollView scroll)
     {
         var height = scroll.ExtentHeight + view.Padding.Top + view.Padding.Bottom;
-        // Height is NaN until set: the comparison is written so that NaN counts as different.
-        if (scroll.ExtentHeight > 0 && !(Math.Abs(view.Height - height) <= 0.5))
+        if (scroll.ExtentHeight > 0 && (double.IsNaN(view.Height) || Math.Abs(view.Height - height) > 0.5))
         {
             view.Height = height;
         }
