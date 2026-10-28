@@ -5,6 +5,7 @@ using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
@@ -23,6 +24,7 @@ public sealed class PlaylistDetailViewModelTests
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private readonly WeakReferenceMessenger _messenger = new();
+    private readonly InMemorySettingsService _settings = new();
     private readonly PlaylistDetailViewModel _sut;
 
     public PlaylistDetailViewModelTests()
@@ -33,7 +35,7 @@ public sealed class PlaylistDetailViewModelTests
         _strings.GetString("Playlist_DeleteMessage").Returns("Delete {0}?");
         _playlists.GetPlaylistAsync(Id, Arg.Any<CancellationToken>()).Returns(new Playlist { Id = Id, Name = "Chill", PrimaryImageTag = "img" });
         _playlists.GetEntriesAsync(Id, Arg.Any<CancellationToken>()).Returns(Entries("a", "b", "c"));
-        _sut = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, _playing.Current);
+        _sut = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, _playing.Current, _settings);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -354,5 +356,98 @@ public sealed class PlaylistDetailViewModelTests
 
         Row("b").IsCurrent.Should().BeTrue();
         _sut.Entries.Count(e => e.IsCurrent).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Reverse_order_shows_and_plays_the_last_entry_first_and_keeps_the_positions()
+    {
+        await LoadAsync();
+        _sut.IsReversed.Should().BeFalse();
+
+        _sut.ToggleReverseCommand.Execute(null);
+
+        _sut.IsReversed.Should().BeTrue();
+        Order.Should().Equal("c", "b", "a");
+        _sut.Entries.Select(e => e.Number).Should().Equal("3", "2", "1");
+        _sut.PlayCommand.Execute(null);
+        _sut.PlayEntryCommand.Execute(Row("b"));
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "c", "b", "a" })), 0);
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "c", "b", "a" })), 1);
+
+        _sut.ToggleReverseCommand.Execute(null);
+
+        Order.Should().Equal("a", "b", "c");
+        _sut.Entries.Select(e => e.Number).Should().Equal("1", "2", "3");
+    }
+
+    [Fact]
+    public async Task Reverse_order_is_remembered_for_that_playlist_only()
+    {
+        _settings.Update(s => s with { Browse = s.Browse with { ReversedPlaylists = ["other"] } });
+        await LoadAsync();
+
+        _sut.ToggleReverseCommand.Execute(null);
+        _settings.Current.Browse.ReversedPlaylists.Should().Equal("other", Id);
+
+        var reopened = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, _playing.Current, _settings);
+        await reopened.LoadAsync(Id, Ct);
+        reopened.IsReversed.Should().BeTrue();
+        reopened.Entries.Select(e => e.Entry.Track.Id).Should().Equal("c", "b", "a");
+
+        reopened.ToggleReverseCommand.Execute(null);
+        _settings.Current.Browse.ReversedPlaylists.Should().Equal("other");
+    }
+
+    [Fact]
+    public async Task While_reversed_entries_cannot_be_moved_but_can_be_removed()
+    {
+        await LoadAsync();
+        _sut.ToggleReverseCommand.Execute(null);
+
+        _sut.CanReorder.Should().BeFalse();
+        _sut.MoveUpCommand.CanExecute(Row("a")).Should().BeFalse();
+        await _sut.MoveEntryAsync(Row("a"), 0);
+        await _sut.RemoveCommand.ExecuteAsync(Row("b"));
+
+        await _playlists.DidNotReceiveWithAnyArgs().MoveEntryAsync(default!, default!, default, Ct);
+        await _playlists.Received(1).RemoveEntriesAsync(Id, Arg.Is<IReadOnlyList<string>>(ids => ids.SequenceEqual(new[] { "e-b" })), Arg.Any<CancellationToken>());
+        Order.Should().Equal("c", "a");
+        _sut.Entries.Select(e => e.Number).Should().Equal("2", "1");
+    }
+
+    [Fact]
+    public async Task A_failed_edit_reloads_the_entries_still_reversed()
+    {
+        await LoadAsync();
+        _sut.ToggleReverseCommand.Execute(null);
+        _playlists.RemoveEntriesAsync(default!, default!, Ct).ReturnsForAnyArgs(Task.FromException(new JellyfinException("no")));
+
+        await _sut.RemoveCommand.ExecuteAsync(Row("b"));
+
+        Order.Should().Equal("c", "b", "a");
+        _sut.Entries.Select(e => e.Number).Should().Equal("3", "2", "1");
+    }
+
+    [Fact]
+    public async Task The_toggle_button_reverses_through_the_property_too()
+    {
+        await LoadAsync();
+
+        _sut.IsReversed = true;
+
+        Order.Should().Equal("c", "b", "a");
+        _settings.Current.Browse.ReversedPlaylists.Should().Equal(Id);
+    }
+
+    [Fact]
+    public async Task Deleting_a_reversed_playlist_forgets_its_order()
+    {
+        _dialogs.ConfirmAsync(default!, default!, default!, default!).ReturnsForAnyArgs(true);
+        await LoadAsync();
+        _sut.ToggleReverseCommand.Execute(null);
+
+        await _sut.DeleteCommand.ExecuteAsync(null);
+
+        _settings.Current.Browse.ReversedPlaylists.Should().BeEmpty();
     }
 }

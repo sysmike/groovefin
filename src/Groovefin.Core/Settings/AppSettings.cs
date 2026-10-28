@@ -156,6 +156,9 @@ public sealed record BrowseSettings
 
     /// <summary>Gets or sets the songs table columns in display order; empty means the default layout.</summary>
     public IReadOnlyList<SongColumnSettings> SongColumns { get; set; } = [];
+
+    /// <summary>Gets or sets the IDs of the playlists shown (and played) last entry first (#267).</summary>
+    public IReadOnlyList<string> ReversedPlaylists { get; set; } = [];
 }
 
 /// <summary>A column of the songs table.</summary>

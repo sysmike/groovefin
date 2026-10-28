@@ -94,12 +94,12 @@ internal sealed partial class PlaylistDetailPage : Page
         var index = ViewModel.Entries.IndexOf(item);
         var menu = new MenuFlyout();
         Add(menu, PlayGlyph, "Menu_Play", () => ViewModel.PlayEntryCommand.Execute(item));
-        if (index > 0)
+        if (ViewModel.CanReorder && index > 0)
         {
             Add(menu, UpGlyph, "Menu_MoveUp", () => ViewModel.MoveUpCommand.Execute(item));
         }
 
-        if (index < ViewModel.Entries.Count - 1)
+        if (ViewModel.CanReorder && index < ViewModel.Entries.Count - 1)
         {
             Add(menu, DownGlyph, "Menu_MoveDown", () => ViewModel.MoveDownCommand.Execute(item));
         }
