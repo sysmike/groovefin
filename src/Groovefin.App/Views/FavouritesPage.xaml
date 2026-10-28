@@ -120,6 +120,7 @@
         </Grid>
 
         <SelectorBar
+            controls:ViewMemory.IsEnabled="True"
             x:Name="Sections"
             Grid.Row="1"
             Margin="24,0"
@@ -142,6 +143,7 @@
         <Grid Grid.Row="2" Padding="0,8,0,0">
             <!--  Songs: click plays from there; the heart removes the song from the favourites.  -->
             <ListView
+                controls:ViewMemory.IsEnabled="True"
                 controls:TrackDragSource.IsEnabled="True"
                 controls:ItemMenu.IsEnabled="True"
                 x:Name="SongsList"
@@ -204,6 +206,7 @@
             </ListView>
 
             <ItemsView
+                controls:ViewMemory.IsEnabled="True"
                 controls:ItemMenu.IsEnabled="True"
                 x:Name="AlbumsView"
                 x:Uid="FavouritesAlbums"
@@ -224,6 +227,7 @@
             </ItemsView>
 
             <ItemsView
+                controls:ViewMemory.IsEnabled="True"
                 controls:ItemMenu.IsEnabled="True"
                 x:Name="ArtistsView"
                 x:Uid="FavouritesArtists"

@@ -76,7 +76,7 @@
             </Button>
         </Grid>
 
-        <ScrollViewer Grid.Row="1">
+        <ScrollViewer controls:ViewMemory.IsEnabled="True" Grid.Row="1">
             <ItemsControl
                 Margin="0,0,0,24"
                 IsTabStop="False"

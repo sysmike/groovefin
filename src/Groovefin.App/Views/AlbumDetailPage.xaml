@@ -11,7 +11,7 @@
     xmlns:vm="using:Groovefin.Core.ViewModels"
     mc:Ignorable="d">
 
-    <ScrollViewer>
+    <ScrollViewer controls:ViewMemory.IsEnabled="True">
         <StackPanel>
             <!--  Hero header: blurred cover behind in-app acrylic, then cover, title and actions.  -->
             <Grid Visibility="{x:Bind ViewModel.HasAlbum, Mode=OneWay}">

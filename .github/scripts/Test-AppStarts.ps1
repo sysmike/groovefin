@@ -830,6 +830,44 @@ try {
     Test-Running 'after following the genre link on the artist page'
     Write-Output "The artist's genre link opened the genre page."
 
+    # Back and Forward return to the scroll position (#284): the artist page, scrolled to its end, is there
+    # again after going to its genre and back with Alt+Left, and after Alt+Right and Alt+Left once more.
+    function Get-ArtistPageScroll {
+        $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+        for ($node = $walker.GetParent((Find-ById 'ArtistSimilar')); $node; $node = $walker.GetParent($node)) {
+            $pattern = $null
+            if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $pattern) -and $pattern.Current.VerticallyScrollable) { return $pattern }
+        }
+        Stop-Test 'Scroll position' 'The artist page does not scroll in the test window.'
+    }
+    function Wait-ArtistPageAtEnd([string] $what) {
+        $until = (Get-Date).AddSeconds(10)
+        do {
+            $percent = (Get-ArtistPageScroll).Current.VerticalScrollPercent
+            if ($percent -ge 98) { return }
+            Start-Sleep -Milliseconds 250
+        } while ((Get-Date) -lt $until)
+        Stop-Test 'Scroll position' ("The artist page is scrolled to {0:0}% {1}, not to its end." -f $percent, $what)
+    }
+    (Get-ArtistPageScroll).SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 100)
+    Wait-ArtistPageAtEnd 'after scrolling it there'
+    (Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Genre'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Hyperlink))) "genre link on the artist page").GetCurrentPattern($invoke).Invoke()
+    $null = Find-Button 'Play the genre'
+    [System.Windows.Forms.SendKeys]::SendWait('%{LEFT}')
+    $null = Find-ById 'ArtistPlayButton'
+    Wait-ArtistPageAtEnd 'after going back to it'
+    [System.Windows.Forms.SendKeys]::SendWait('%{RIGHT}')
+    $null = Find-Button 'Play the genre'
+    [System.Windows.Forms.SendKeys]::SendWait('%{LEFT}')
+    $null = Find-ById 'ArtistPlayButton'
+    Wait-ArtistPageAtEnd 'after going forward and back again'
+    (Get-ArtistPageScroll).SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 0)
+    Start-Sleep -Milliseconds 500
+    Test-Running 'after going back to the scrolled artist page'
+    Write-Output 'Back and Forward return the artist page to where it was scrolled.'
+
     # The buttons on the covers (#185), clicked with the mouse: pointing at a cover shows them, and a click on
     # one must not open the album or artist as well. Requests to the fake server show what was played.
     function Get-RequestCount([string] $pattern) {
