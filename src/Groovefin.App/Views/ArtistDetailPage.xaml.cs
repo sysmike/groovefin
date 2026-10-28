@@ -1,5 +1,6 @@
 using Groovefin.App.Controls;
 using Groovefin.App.Services;
+using Groovefin.Core.Models;
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -94,6 +95,14 @@ internal sealed partial class ArtistDetailPage : Page
         if (args.InvokedItem is ArtistItem item)
         {
             ViewModel.OpenArtistCommand.Execute(item);
+        }
+    }
+
+    private void OnGenreClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is Genre genre)
+        {
+            ViewModel.OpenGenreCommand.Execute(genre);
         }
     }
 }

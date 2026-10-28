@@ -67,7 +67,7 @@ internal static class ItemMapper
             PrimaryImageTag = PrimaryImageTag(dto),
             IsFavorite = dto.UserData?.IsFavorite ?? false,
             Biography = PlainText.FromHtml(dto.Overview),
-            Genres = dto.Genres?.Where(g => !string.IsNullOrWhiteSpace(g)).ToList() ?? [],
+            Genres = ToGenres(dto.GenreItems),
             MusicBrainzArtistId = ProviderId(dto.ProviderIds, "MusicBrainzArtist"),
         };
     }
