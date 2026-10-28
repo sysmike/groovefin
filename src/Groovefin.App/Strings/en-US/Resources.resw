@@ -489,6 +489,9 @@
   <data name="ArtistsEmpty.Text" xml:space="preserve">
     <value>No artists match.</value>
   </data>
+  <data name="ArtistGenres.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Genres</value>
+  </data>
   <data name="ArtistKind.Text" xml:space="preserve">
     <value>Artist</value>
   </data>

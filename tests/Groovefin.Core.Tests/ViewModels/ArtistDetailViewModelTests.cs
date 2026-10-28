@@ -22,7 +22,7 @@ public sealed class ArtistDetailViewModelTests
         Name = "Daft Punk",
         PrimaryImageTag = "img",
         Biography = "French duo.",
-        Genres = ["Electronic", "House"],
+        Genres = [new Genre("g1", "Electronic"), new Genre("g2", "House")],
     };
 
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
@@ -64,7 +64,8 @@ public sealed class ArtistDetailViewModelTests
 
         sut.HasArtist.Should().BeTrue();
         sut.Name.Should().Be("Daft Punk");
-        sut.GenresText.Should().Be("Electronic · House");
+        sut.Genres.Select(g => g.Name).Should().Equal("Electronic", "House");
+        sut.HasGenres.Should().BeTrue();
         sut.Biography.Should().Be("French duo.");
         sut.HasBiography.Should().BeTrue();
         sut.Image!.Width.Should().Be((int)Math.Ceiling(ArtistDetailViewModel.ImageWidth * 1.5));
@@ -197,6 +198,29 @@ public sealed class ArtistDetailViewModelTests
             _navigation.NavigateTo(PageKeys.Album, "album-2");
             _navigation.NavigateTo(PageKeys.Artist, "artist-2");
         });
+    }
+
+    [Fact]
+    public async Task Without_genres_the_genre_links_are_hidden()
+    {
+        _library.GetArtistAsync(ArtistId, Arg.Any<CancellationToken>()).Returns(DaftPunk with { Genres = [] });
+        var sut = CreateSut();
+
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        sut.Genres.Should().BeEmpty();
+        sut.HasGenres.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_genre_opens_its_page()
+    {
+        var sut = CreateSut();
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        sut.OpenGenreCommand.Execute(sut.Genres[1]);
+
+        _navigation.Received(1).NavigateTo(PageKeys.Genre, "g2");
     }
 
     [Fact]

@@ -80,7 +80,7 @@ public sealed partial class ArtistDetailViewModel(
     public double DisplayScale { get; set; } = 1;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasArtist), nameof(Name), nameof(GenresText), nameof(Biography), nameof(HasBiography))]
+    [NotifyPropertyChangedFor(nameof(HasArtist), nameof(Name), nameof(Genres), nameof(HasGenres), nameof(Biography), nameof(HasBiography))]
     [NotifyPropertyChangedFor(nameof(MusicBrainzUrl), nameof(HasMusicBrainz), nameof(LastFmUrl), nameof(HasLastFm))]
     [NotifyCanExecuteChangedFor(nameof(ToggleFavouriteCommand), nameof(PlayCommand), nameof(ShuffleCommand), nameof(InstantMixCommand))]
     public partial Artist? Artist { get; private set; }
@@ -99,7 +99,9 @@ public sealed partial class ArtistDetailViewModel(
 
     public string Name => Artist?.Name ?? string.Empty;
 
-    public string GenresText => Artist is null ? string.Empty : string.Join(" · ", Artist.Genres);
+    public IReadOnlyList<Genre> Genres => Artist?.Genres ?? [];
+
+    public bool HasGenres => Genres.Count > 0;
 
     public string Biography => Artist?.Biography ?? string.Empty;
 
@@ -229,6 +231,9 @@ public sealed partial class ArtistDetailViewModel(
 
     [RelayCommand]
     private void OpenArtist(ArtistItem item) => navigation.NavigateTo(PageKeys.Artist, item.Artist.Id);
+
+    [RelayCommand]
+    private void OpenGenre(Genre genre) => navigation.NavigateTo(PageKeys.Genre, genre.Id);
 
     private async Task PlayAllAsync(bool shuffle)
     {

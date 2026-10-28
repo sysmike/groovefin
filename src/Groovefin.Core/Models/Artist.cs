@@ -15,7 +15,8 @@ public sealed record Artist
     /// <summary>Gets the biography as plain text, or <see langword="null"/> when the server has none.</summary>
     public string? Biography { get; init; }
 
-    public IReadOnlyList<string> Genres { get; init; } = [];
+    /// <summary>Gets the genres; the artist page links to their pages.</summary>
+    public IReadOnlyList<Genre> Genres { get; init; } = [];
 
     /// <summary>Gets the MusicBrainz artist ID, if the server knows it (from the files' tags).</summary>
     public string? MusicBrainzArtistId { get; init; }
