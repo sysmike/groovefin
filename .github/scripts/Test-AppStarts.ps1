@@ -512,7 +512,7 @@ try {
     Write-Output 'The songs page opened.'
     Test-Accessibility 'songs'
 
-    # Song info (#282): "Show info" in a song's menu (Shift+F10) loads the song from the server and shows
+    # Song info (#282): "Show info" in a song's menu (right-click) loads the song from the server and shows
     # its tags and file details under headings. Each value is named with its label for Narrator.
     $until = (Get-Date).AddSeconds(10)
     do {
@@ -521,9 +521,16 @@ try {
         if (-not $songRow) { Start-Sleep -Milliseconds 500 }
     } while (-not $songRow -and (Get-Date) -lt $until)
     if (-not $songRow) { Stop-Test 'Smoke test' "The song 'Track 1' was not found on the songs page." }
-    Add-Type -AssemblyName System.Windows.Forms
-    $songRow.SetFocus()
-    [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
+    # A right-click on the row opens its menu (Shift+F10 sent by SendKeys did not reach the list).
+    Add-Type -Namespace Smoke -Name RightClick -MemberDefinition @'
+[DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+[DllImport("user32.dll")] public static extern void mouse_event(uint flags, int dx, int dy, uint data, System.UIntPtr extra);
+'@
+    $rowBounds = Get-Bounds $songRow
+    $null = [Smoke.RightClick]::SetCursorPos([int] ($rowBounds.X + $rowBounds.Width / 2), [int] ($rowBounds.Y + $rowBounds.Height / 2))
+    Start-Sleep -Milliseconds 200
+    [Smoke.RightClick]::mouse_event(0x0008, 0, 0, 0, [UIntPtr]::Zero) # RIGHTDOWN
+    [Smoke.RightClick]::mouse_event(0x0010, 0, 0, 0, [UIntPtr]::Zero) # RIGHTUP
     # A menu opens in a popup window of its own, beside the main window: search every window of the app.
     $showInfoItem = [System.Windows.Automation.AndCondition]::new(
         [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Show info'),
@@ -539,13 +546,14 @@ try {
     } while (-not $showInfo -and (Get-Date) -lt $until)
     if (-not $showInfo) {
         $open = @($automation::RootElement.FindAll($scope::Children, $appWindows) | ForEach-Object { "$($_.Current.ControlType.ProgrammaticName) '$($_.Current.Name)'" }) -join ', '
-        Stop-Test 'Smoke test' "Shift+F10 on the song did not open its menu with 'Show info' (the app's windows: $open)."
+        Stop-Test 'Smoke test' "A right-click on the song did not open its menu with 'Show info' (the app's windows: $open)."
     }
     $showInfo.GetCurrentPattern($invoke).Invoke()
     foreach ($name in 'File', 'Codec: FLAC', 'Bit depth: 16-bit', 'Channels: Stereo') {
         $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $name)) "'$name' in the song's info"
     }
     Test-Accessibility 'song-info'
+    Add-Type -AssemblyName System.Windows.Forms
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
     $until = (Get-Date).AddSeconds(5)
     while ($window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Codec: FLAC')) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
