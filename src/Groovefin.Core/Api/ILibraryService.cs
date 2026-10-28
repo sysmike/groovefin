@@ -24,6 +24,11 @@ public interface ILibraryService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<IReadOnlyList<Track>> GetAlbumTracksAsync(string albumId, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets everything the server knows about a track: its tags, file format and the user's data (#282).</summary>
+    /// <exception cref="InvalidOperationException">There is no active connection.</exception>
+    /// <exception cref="JellyfinException">The track does not exist (HTTP 404) or the request failed.</exception>
+    Task<TrackDetails> GetTrackDetailsAsync(string trackId, CancellationToken cancellationToken = default);
+
     /// <summary>Marks an album, artist or track as favourite of the signed-in user, or removes the mark.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task SetFavouriteAsync(string itemId, bool isFavourite, CancellationToken cancellationToken = default);

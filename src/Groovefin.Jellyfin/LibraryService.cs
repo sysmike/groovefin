@@ -113,6 +113,19 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         return (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
     }
 
+    public async Task<TrackDetails> GetTrackDetailsAsync(string trackId, CancellationToken cancellationToken = default)
+    {
+        var id = ParseId(trackId);
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+
+        // One item from /Items/{id} carries every field: people, studios, provider IDs, media sources and streams.
+        var dto = await JellyfinCall.RunAsync(
+            () => api.Items[id].GetAsync(request => request.QueryParameters.UserId = userId, cancellationToken),
+            "Loading track details").ConfigureAwait(false);
+        return ItemMapper.ToTrackDetails(dto);
+    }
+
     public async Task SetFavouriteAsync(string itemId, bool isFavourite, CancellationToken cancellationToken = default)
     {
         var id = ParseId(itemId);

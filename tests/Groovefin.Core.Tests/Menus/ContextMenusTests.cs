@@ -163,22 +163,43 @@ public sealed class ContextMenusTests
     }
 
     [Fact]
-    public async Task Show_info_lists_the_known_details()
+    public async Task Show_info_loads_the_tracks_details_when_it_opens()
     {
+        var details = new TrackDetails { Track = Song with { PlayCount = 9 }, Codec = "flac" };
+        _library.GetTrackDetailsAsync("t1", Arg.Any<CancellationToken>()).Returns(details);
+        var action = Find(_sut.ForTrack(Song), MenuActionKind.ShowInfo);
+        await _library.DidNotReceiveWithAnyArgs().GetTrackDetailsAsync(default!, TestContext.Current.CancellationToken);
+
+        await action.InvokeAsync();
+
+        await _dialogs.Received(1).ShowDetailsAsync(
+            "Digital Love",
+            Arg.Is<IReadOnlyList<DetailSection>>(s =>
+                s.SelectMany(x => x.Rows).Any(r => r.Key == "Info_PlayCount" && r.Value == "9")
+                && s.SelectMany(x => x.Rows).Any(r => r.Key == "Info_Codec" && r.Value == "FLAC")),
+            "Dialog_Close");
+    }
+
+    [Fact]
+    public async Task Show_info_falls_back_to_the_loaded_track_when_the_server_fails()
+    {
+        _library.GetTrackDetailsAsync("t1", Arg.Any<CancellationToken>()).Returns<TrackDetails>(_ => throw new JellyfinException("offline"));
+
         await Find(_sut.ForTrack(Song), MenuActionKind.ShowInfo).InvokeAsync();
 
         await _dialogs.Received(1).ShowDetailsAsync(
             "Digital Love",
-            Arg.Is<IReadOnlyList<KeyValuePair<string, string>>>(d => d.Select(p => $"{p.Key}={p.Value}").SequenceEqual(new[]
-            {
-                "Info_Title=Digital Love",
-                "Info_Artists=Daft Punk, Romanthony",
-                "Info_Album=Discovery",
-                "Info_Track=3",
-                "Info_Length=4:58",
-                "Info_PlayCount=7",
-            })),
+            Arg.Is<IReadOnlyList<DetailSection>>(s => s.Select(x => x.Heading).SequenceEqual(new[] { "Info_SectionTags", "Info_SectionLibrary" })
+                && s[0].Rows.Select(p => $"{p.Key}={p.Value}").SequenceEqual(new[]
+                {
+                    "Info_Title=Digital Love",
+                    "Info_Artists=Daft Punk, Romanthony",
+                    "Info_Album=Discovery",
+                    "Info_Track=3",
+                    "Info_Length=4:58",
+                })),
             "Dialog_Close");
+        _errors.DidNotReceiveWithAnyArgs().Report(default!, default!);
     }
 
     [Fact]
