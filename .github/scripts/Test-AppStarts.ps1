@@ -1429,15 +1429,19 @@ try {
     for ($try = 0; $try -lt 8; $try++) {
         Wait-Still $navigationCard
         $view = $settingsScroller.Current.BoundingRectangle
-        $cardTop = $navigationCard.Current.BoundingRectangle.Top
+        [double] $cardTop = $navigationCard.Current.BoundingRectangle.Top
+        [double] $viewSize = $pageScroll.Current.VerticalViewSize
+        [double] $percent = $pageScroll.Current.VerticalScrollPercent
+        Write-Output ("  Try {0}: card at {1:0.0}, view {2:0.0}+{3:0.0}, view size {4:0.00}%, scrolled to {5:0.00}%." -f $try, $cardTop, $view.Top, $view.Height, $viewSize, $percent)
+        # The view's height over its share of the page gives the page's height, and what is left scrolls.
+        [double] $scrollable = if ($viewSize -gt 0) { $view.Height * 100.0 / $viewSize - $view.Height } else { 0.0 }
+        if (-not [double]::IsFinite($cardTop) -or -not [double]::IsFinite($view.Top) -or -not [double]::IsFinite($scrollable) -or $scrollable -lt 1.0) { break }
         # A card above the view's edge reports its visible part, which starts at the edge: scroll up by half a view first.
-        $delta = if ($cardTop -lt $view.Top + 1) { -$view.Height / 2 } else { $cardTop - ($view.Top + 2) }
-        if ([Math]::Abs($delta) -lt 1) { break }
-        $scrollable = $view.Height * 100 / $pageScroll.Current.VerticalViewSize - $view.Height
-        if ($scrollable -le 0) { break }
-        $percent = [Math]::Min(100, [Math]::Max(0, $pageScroll.Current.VerticalScrollPercent + $delta * 100 / $scrollable))
-        if ([Math]::Abs($percent - $pageScroll.Current.VerticalScrollPercent) -lt 0.001) { break }
-        $pageScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, $percent)
+        [double] $delta = if ($cardTop -lt $view.Top + 1.0) { -$view.Height / 2.0 } else { $cardTop - ($view.Top + 2.0) }
+        if ([Math]::Abs($delta) -lt 1.0) { break }
+        [double] $target = [Math]::Min([double] 100.0, [Math]::Max([double] 0.0, $percent + $delta * 100.0 / $scrollable))
+        if ([Math]::Abs($target - $percent) -lt 0.001) { break }
+        $pageScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, $target)
     }
     Wait-Still $navigationCard
     Wait-Still $settingsScroller
