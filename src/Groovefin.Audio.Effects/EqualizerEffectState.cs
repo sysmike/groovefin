@@ -11,11 +11,17 @@ internal static unsafe class EqualizerEffectState
 {
     private const int InvalidArgument = unchecked((int)0x80070057);
 
+    /// <summary>How long a request to fade in the next stream holds: the restarted stream opens well within it.</summary>
+    private const long FadeInRequestMilliseconds = 5000;
+
     private static EqualizerParameters _parameters = EqualizerParameters.Off;
     private static long _buffers;
     private static long _processed;
     private static long _errors;
     private static int _lastError;
+
+    /// <summary>When the app asked for the next stream to fade in (<see cref="Environment.TickCount64"/>), or 0.</summary>
+    private static long _fadeInRequested;
 
     /// <summary>Gets the parameters set last. A new instance for each change, so a reference comparison finds changes.</summary>
     public static EqualizerParameters Parameters => Volatile.Read(ref _parameters);
@@ -28,6 +34,20 @@ internal static unsafe class EqualizerEffectState
     {
         Volatile.Write(ref _lastError, result);
         Interlocked.Increment(ref _errors);
+    }
+
+    /// <summary>Takes a recent request to fade in the next stream: only the first stream to start gets it.</summary>
+    public static bool TakeFadeInRequest()
+    {
+        var requested = Interlocked.Exchange(ref _fadeInRequested, 0);
+        return requested != 0 && Environment.TickCount64 - requested <= FadeInRequestMilliseconds;
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = EqualizerEffectContract.FadeInNextStreamExport)]
+    private static int FadeInNextStream()
+    {
+        Interlocked.Exchange(ref _fadeInRequested, Math.Max(1, Environment.TickCount64));
+        return 0;
     }
 
     [UnmanagedCallersOnly(EntryPoint = EqualizerEffectContract.SetParametersExport)]

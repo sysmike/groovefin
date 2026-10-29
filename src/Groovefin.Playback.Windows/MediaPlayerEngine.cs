@@ -180,7 +180,23 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
         return false;
     }
 
-    protected override void RestartCore(Uri url) => Active.Restart(url);
+    /// <summary>The restarted stream is a new one, which the effect cannot tell from the next track: it is told to fade it in (#283).</summary>
+    protected override void RestartCore(Uri url)
+    {
+        if (IsAvailable)
+        {
+            try
+            {
+                EqualizerEffectLibrary.FadeInNextStream();
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+            {
+                LogFadeInNotRequested(ex);
+            }
+        }
+
+        Active.Restart(url);
+    }
 
     protected override void StopCore() => Active.Stop();
 
@@ -693,6 +709,9 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Equalizer settings did not reach the effect")]
     private partial void LogEqualizerNotApplied(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The equalizer effect could not be told to fade in the restarted stream")]
+    private partial void LogFadeInNotRequested(Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Equalizer effect left {Errors} buffers unequalized after errors (last 0x{LastError:X8}); {Processed} of {Buffers} buffers equalized in all")]
     private partial void LogEqualizerErrors(long errors, int lastError, long processed, long buffers);

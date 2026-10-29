@@ -17,6 +17,8 @@ namespace Groovefin.Audio.Effects;
 /// at every buffer; its property set stays unused (#169).
 /// Buffers are processed in place as 32-bit float. While the equalizer is off or flat the samples pass
 /// through untouched, and an error never stops playback: the buffer is left as it is, and the error counted.
+/// After a seek (and when a transcode restarts at one) the sound comes back through a <see cref="SeekFade"/>,
+/// also with the equalizer off, so the jump does not pop (#283).
 /// </summary>
 public sealed partial class EqualizerEffect : IBasicAudioEffect
 {
@@ -25,6 +27,7 @@ public sealed partial class EqualizerEffect : IBasicAudioEffect
 
     private readonly Lock _gate = new();
     private EqualizerProcessor? _processor;
+    private SeekFade? _fade;
     private EqualizerParameters? _applied;
     private bool _discard;
 
@@ -41,7 +44,12 @@ public sealed partial class EqualizerEffect : IBasicAudioEffect
         lock (_gate)
         {
             _processor = new EqualizerProcessor((int)encodingProperties.SampleRate, (int)encodingProperties.ChannelCount);
+            _fade = new SeekFade((int)encodingProperties.SampleRate, (int)encodingProperties.ChannelCount);
             _applied = null;
+            if (EqualizerEffectState.TakeFadeInRequest())
+            {
+                _fade.Start();
+            }
         }
     }
 
@@ -56,17 +64,21 @@ public sealed partial class EqualizerEffect : IBasicAudioEffect
         EqualizerEffectState.CountBuffer();
         var parameters = EqualizerEffectState.Parameters;
         EqualizerProcessor? processor;
+        SeekFade? fade;
         lock (_gate)
         {
             processor = _processor;
-            if (processor is null)
+            fade = _fade;
+            if (processor is null || fade is null)
             {
                 return;
             }
 
+            // The stream jumped (a seek): the filters start over, and the sound comes back softly.
             if (_discard)
             {
                 processor.Reset();
+                fade.Start();
                 _discard = false;
             }
 
@@ -77,7 +89,7 @@ public sealed partial class EqualizerEffect : IBasicAudioEffect
             }
         }
 
-        if (!processor.IsActive)
+        if (!processor.IsActive && !fade.IsActive)
         {
             return;
         }
@@ -86,8 +98,14 @@ public sealed partial class EqualizerEffect : IBasicAudioEffect
         {
             using var buffer = context.InputFrame.LockBuffer(AudioBufferAccessMode.ReadWrite);
             using var reference = buffer.CreateReference();
-            processor.Process(Samples(reference, buffer.Length));
-            EqualizerEffectState.CountProcessed();
+            var samples = Samples(reference, buffer.Length);
+            if (processor.IsActive)
+            {
+                processor.Process(samples);
+                EqualizerEffectState.CountProcessed();
+            }
+
+            fade.Process(samples);
         }
         catch (Exception ex) when (ex is COMException or InvalidOperationException or ObjectDisposedException or NotSupportedException or InvalidCastException)
         {

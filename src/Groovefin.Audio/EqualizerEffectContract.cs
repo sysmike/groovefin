@@ -3,7 +3,7 @@ namespace Groovefin.Audio;
 /// <summary>What the app and the audio effect (Groovefin.Audio.Effects) agree on.</summary>
 /// <remarks>
 /// The parameters do not travel in the property set given to <c>MediaPlayer.AddAudioEffect</c>: changes to it
-/// did not reach the effect (#169). The DLL exports two functions instead, and its effects all use what was
+/// did not reach the effect (#169). The DLL exports functions instead, and its effects all use what was
 /// set last. MediaPlayer loads the DLL into the app's process, so the app calls the same DLL instance.
 /// </remarks>
 public static class EqualizerEffectContract
@@ -22,4 +22,11 @@ public static class EqualizerEffectContract
 
     /// <summary><c>int GetStatus(EqualizerEffectStatus* status)</c>: the counters of all effects. Returns 0.</summary>
     public const string GetStatusExport = "GroovefinEqualizerGetStatus";
+
+    /// <summary>
+    /// <c>int FadeInNextStream()</c>: the next stream an effect starts on, within a few seconds, begins with a
+    /// <see cref="SeekFade"/>. For a transcode restarted at a seek target (#283), which is a new stream and
+    /// not a jump in the old one. Returns 0.
+    /// </summary>
+    public const string FadeInNextStreamExport = "GroovefinEqualizerFadeInNextStream";
 }

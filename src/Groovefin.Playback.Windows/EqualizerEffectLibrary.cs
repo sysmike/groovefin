@@ -28,6 +28,10 @@ public static class EqualizerEffectLibrary
         return status;
     }
 
+    /// <summary>Lets the next stream an effect starts on begin softly: a transcode restarted at a seek target (#283).</summary>
+    /// <inheritdoc cref="SetParameters" path="/exception"/>
+    public static void FadeInNextStream() => Marshal.ThrowExceptionForHR(GroovefinEqualizerFadeInNextStream());
+
     [DllImport(EqualizerEffectContract.LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
     private static extern int GroovefinEqualizerSetParameters(string text, int length);
@@ -35,4 +39,8 @@ public static class EqualizerEffectLibrary
     [DllImport(EqualizerEffectContract.LibraryName, ExactSpelling = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
     private static extern int GroovefinEqualizerGetStatus(out EqualizerEffectStatus status);
+
+    [DllImport(EqualizerEffectContract.LibraryName, ExactSpelling = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
+    private static extern int GroovefinEqualizerFadeInNextStream();
 }
