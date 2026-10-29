@@ -259,6 +259,10 @@ internal sealed partial class MainWindow : Window
         var wanted = Player.IsMiniPlayer ? WindowMode.MiniPlayer
             : Player.IsFullScreen ? WindowMode.FullScreen
             : WindowMode.Normal;
+
+        // The full-screen player covers the title bar, but its row kept the height and pushed the queue and
+        // lyrics panes down: in full screen it is collapsed. Also when Windows' own controls left full screen.
+        AppTitleBar.Visibility = wanted == WindowMode.FullScreen ? Visibility.Collapsed : Visibility.Visible;
         var current = CurrentMode;
         if (wanted == current)
         {

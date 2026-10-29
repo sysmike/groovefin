@@ -1252,6 +1252,25 @@ try {
     Test-Shortcut '{F11}' ([System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Exit full screen'),
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))) 'full screen player' '{F11}'
+    # In full screen the queue reaches the top of the screen (#291): the hidden title bar's row pushed it down
+    # by the title bar's height before. The heading sits 12 px below the pane's top.
+    $exitFullScreen = [System.Windows.Automation.AndCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Exit full screen'),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))
+    [System.Windows.Forms.SendKeys]::SendWait('{F11}')
+    $null = Find-Element $exitFullScreen 'full screen player'
+    [System.Windows.Forms.SendKeys]::SendWait('^q')
+    $queueHeading = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Queue'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))) "queue's heading in full screen"
+    Start-Sleep -Milliseconds 500
+    $queueGap = (Get-Bounds $queueHeading).Top - $window.Current.BoundingRectangle.Top
+    [System.Windows.Forms.SendKeys]::SendWait('^q')
+    [System.Windows.Forms.SendKeys]::SendWait('{F11}')
+    $until = (Get-Date).AddSeconds(5)
+    while ($window.FindFirst($scope::Descendants, $exitFullScreen) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 300 }
+    if ($queueGap -gt 36) { Stop-Test 'Full screen' ("The queue's heading is {0:0} px below the top of the screen in full screen: the pane does not reach the top." -f $queueGap) }
+    Write-Output ("In full screen the queue's heading is {0:0} px below the top of the screen." -f $queueGap)
     if ([Math]::Abs($pageWidths['queue'] - $pageWidths['lyrics']) -gt 1) {
         Stop-Test 'Side panes' ("The queue and the lyrics are not as wide: the page is {0:0} px wide beside the queue and {1:0} px beside the lyrics." -f $pageWidths['queue'], $pageWidths['lyrics'])
     }
