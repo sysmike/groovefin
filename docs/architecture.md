@@ -152,7 +152,14 @@ Media Foundation creates them with `RoActivateInstance`. So the equalizer runs a
 - The effect cannot log and never lets an error stop playback. It counts the buffers it received,
   equalized and left alone after an error (`GetStatusExport`, `EqualizerEffectStatus`); the engine logs new
   errors at the start of each track.
-- The filter maths lives in `Groovefin.Audio` and is unit-tested on every platform. The effect project
+- The effect also takes the pop out of a seek (#283), with the equalizer on or off: after a seek far ahead,
+  playback stops until the new part has arrived and restarts at full level, and the decoder's first frame
+  there can be broken. When Media Foundation flushes the effect for a seek (`DiscardQueuedFrames`), the
+  next 40 ms stay silent, which covers an MP3 or AAC frame, and the next 20 ms rise to full level
+  (`SeekFade`). A transcode restarted at a seek target is a new stream, which the effect cannot tell from
+  the next track: the engine calls `FadeInNextStreamExport` first, and the next stream an effect starts on
+  within 5 seconds fades in the same way.
+- The filter and fade maths live in `Groovefin.Audio` and are unit-tested on every platform. The effect project
   itself builds only on Windows (`cswinrt.exe`). `Groovefin.Audio.Effects.Tests` runs the built DLL in CI:
   Media Foundation's transcoder creates the effect like MediaPlayer does, but needs no sound card. A boost
   of the 1 kHz band must make a 1 kHz tone about 12 dB louder.
