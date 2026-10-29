@@ -1387,22 +1387,62 @@ try {
         }
         Stop-Test 'Navigation layout' "The navigation pane $what."
     }
-    $expanded = $false
+    $navigationCard = $null
     $named = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Navigation pane'))
     foreach ($element in @($named)) {
-        if (-not $expanded -and $element.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $pattern)) {
+        if (-not $navigationCard -and $element.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $pattern)) {
             if ($element.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
             $pattern.Expand()
-            $expanded = $true
+            $navigationCard = $element
         }
     }
-    if (-not $expanded) { Stop-Test 'Navigation layout' 'The navigation pane settings could not be expanded.' }
+    if (-not $navigationCard) { Stop-Test 'Navigation layout' 'The navigation pane settings could not be expanded.' }
     Wait-NavItem 'genres' $true 'does not show Genres at first'
     $switch = Find-Element ([System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Show Genres'),
             [System.Windows.Automation.PropertyCondition]::new($automation::ClassNameProperty, 'ToggleSwitch'))) "switch 'Show Genres'"
-    if ($switch.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
-    Start-Sleep -Milliseconds 500
+
+    # The scan must see the same area on every run (#285). An element that the page's edge cuts down to a
+    # sliver fails BoundingRectangleSizeReasonable, so where the scrolling stopped decided the result. The
+    # expanded card now goes to the top of the page's view, 2 px below its edge: the middle of the 4 px gap
+    # between the cards, so the card above is wholly out of view. The scan waits until nothing moves.
+    function Wait-Still([System.Windows.Automation.AutomationElement] $element) {
+        $last = $null
+        $same = 0
+        $until = (Get-Date).AddSeconds(5)
+        do {
+            $r = $element.Current.BoundingRectangle
+            $now = '{0:0.0},{1:0.0}' -f $r.Top, $r.Height
+            if ($now -eq $last) { $same++ } else { $same = 0; $last = $now }
+            if ($same -ge 2) { return }
+            Start-Sleep -Milliseconds 150
+        } while ((Get-Date) -lt $until)
+    }
+    $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+    $settingsScroller = $null
+    for ($node = $walker.GetParent($navigationCard); $node -and -not $settingsScroller; $node = $walker.GetParent($node)) {
+        $pattern = $null
+        if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $pattern) -and $pattern.Current.VerticallyScrollable) { $settingsScroller = $node }
+    }
+    if (-not $settingsScroller) { Stop-Test 'Navigation layout' 'The settings page does not scroll in the test window.' }
+    $pageScroll = $settingsScroller.GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
+    for ($try = 0; $try -lt 8; $try++) {
+        Wait-Still $navigationCard
+        $view = $settingsScroller.Current.BoundingRectangle
+        $cardTop = $navigationCard.Current.BoundingRectangle.Top
+        # A card above the view's edge reports its visible part, which starts at the edge: scroll up by half a view first.
+        $delta = if ($cardTop -lt $view.Top + 1) { -$view.Height / 2 } else { $cardTop - ($view.Top + 2) }
+        if ([Math]::Abs($delta) -lt 1) { break }
+        $scrollable = $view.Height * 100 / $pageScroll.Current.VerticalViewSize - $view.Height
+        if ($scrollable -le 0) { break }
+        $percent = [Math]::Min(100, [Math]::Max(0, $pageScroll.Current.VerticalScrollPercent + $delta * 100 / $scrollable))
+        if ([Math]::Abs($percent - $pageScroll.Current.VerticalScrollPercent) -lt 0.001) { break }
+        $pageScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, $percent)
+    }
+    Wait-Still $navigationCard
+    Wait-Still $settingsScroller
+    $view = $settingsScroller.Current.BoundingRectangle
+    Write-Output ("The navigation pane settings start {0:0.0} px below the top of the page's view, scrolled to {1:0.0}%." -f ($navigationCard.Current.BoundingRectangle.Top - $view.Top), $pageScroll.Current.VerticalScrollPercent)
     Save-Screenshot 'settings-navigation'
     Test-Accessibility 'settings-navigation'
     $toggle = $switch.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
