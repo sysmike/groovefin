@@ -1387,22 +1387,50 @@ try {
         }
         Stop-Test 'Navigation layout' "The navigation pane $what."
     }
-    $expanded = $false
+    $navigationCard = $null
     $named = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Navigation pane'))
     foreach ($element in @($named)) {
-        if (-not $expanded -and $element.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $pattern)) {
+        if (-not $navigationCard -and $element.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $pattern)) {
             if ($element.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
             $pattern.Expand()
-            $expanded = $true
+            $navigationCard = $element
         }
     }
-    if (-not $expanded) { Stop-Test 'Navigation layout' 'The navigation pane settings could not be expanded.' }
+    if (-not $navigationCard) { Stop-Test 'Navigation layout' 'The navigation pane settings could not be expanded.' }
     Wait-NavItem 'genres' $true 'does not show Genres at first'
     $switch = Find-Element ([System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Show Genres'),
             [System.Windows.Automation.PropertyCondition]::new($automation::ClassNameProperty, 'ToggleSwitch'))) "switch 'Show Genres'"
+
+    # The scan must see the same area on every run (#285). An element that the page's edge cuts down to a
+    # sliver fails BoundingRectangleSizeReasonable, so where the scrolling stopped decided the result: it
+    # started wherever the steps before had left the page, and the scan ran after a fixed 500 ms. Now the
+    # page goes to its top first, so scrolling the switch into view ends at the same place every run, and
+    # the scan waits until the switch has stopped moving.
+    function Wait-Still([System.Windows.Automation.AutomationElement] $element) {
+        $last = $null
+        $same = 0
+        $until = (Get-Date).AddSeconds(5)
+        do {
+            $r = $element.Current.BoundingRectangle
+            $now = '{0:0.0},{1:0.0}' -f $r.Top, $r.Height
+            if ($now -eq $last) { $same++ } else { $same = 0; $last = $now }
+            if ($same -ge 2) { return }
+            Start-Sleep -Milliseconds 150
+        } while ((Get-Date) -lt $until)
+    }
+    $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+    $pageScroll = $null
+    for ($node = $walker.GetParent($navigationCard); $node -and -not $pageScroll; $node = $walker.GetParent($node)) {
+        $pattern = $null
+        if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $pattern) -and $pattern.Current.VerticallyScrollable) { $pageScroll = $pattern }
+    }
+    if (-not $pageScroll) { Stop-Test 'Navigation layout' 'The settings page does not scroll in the test window.' }
+    $pageScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 0)
+    Wait-Still $navigationCard
     if ($switch.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
-    Start-Sleep -Milliseconds 500
+    Wait-Still $switch
+    Write-Output ("The settings page is scrolled to {0:0.00}%, the switch 'Show Genres' at {1:0.0} px." -f $pageScroll.Current.VerticalScrollPercent, $switch.Current.BoundingRectangle.Top)
     Save-Screenshot 'settings-navigation'
     Test-Accessibility 'settings-navigation'
     $toggle = $switch.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
