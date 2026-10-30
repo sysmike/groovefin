@@ -143,15 +143,6 @@ internal sealed partial class MainWindow : Window
         // Also when a control under the pointer (a list, a button) has handled the press itself.
         RootGrid.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(OnRootPointerPressed), handledEventsToo: true);
 
-        // The built-in Settings item has no x:Uid; its access key comes from the resources like the others.
-        NavView.Loaded += (_, _) =>
-        {
-            if (NavView.SettingsItem is NavigationViewItem settingsItem)
-            {
-                settingsItem.AccessKey = _strings.GetString("Nav_SettingsAccessKey");
-            }
-        };
-
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         Closed += (_, _) => ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
 
@@ -532,16 +523,12 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>
     /// Selects the section's item; on another page nothing, except a favourite playlist's own item on its page.
-    /// Only section items have a page key: a favourite playlist's tag is the playlist (#301).
+    /// Only section items have a page key: a favourite playlist's tag is the playlist (#301). Settings is the
+    /// title bar's button (#254).
     /// </summary>
     private void SyncSelection(string? pageKey)
     {
-        if (pageKey == PageKeys.Settings)
-        {
-            NavView.SelectedItem = NavView.SettingsItem;
-            return;
-        }
-
+        SettingsButton.IsChecked = pageKey == PageKeys.Settings;
         NavView.SelectedItem = pageKey is not null
             ? NavView.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(item => item.Tag is string key && key == pageKey)
             : ViewModel.SelectedPlaylistId is { } playlistId && _playlistItems.TryGetValue(playlistId, out var playlist) ? playlist : null;
@@ -555,11 +542,17 @@ internal sealed partial class MainWindow : Window
             return;
         }
 
-        var pageKey = args.IsSettingsInvoked ? PageKeys.Settings : args.InvokedItemContainer?.Tag as string;
-        if (pageKey is not null)
+        if (args.InvokedItemContainer?.Tag is string pageKey)
         {
             ViewModel.NavigateCommand.Execute(pageKey);
         }
+    }
+
+    /// <summary>A click toggles the button: it shows whether Settings is shown, also when it already was.</summary>
+    private void OnSettingsButtonClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.NavigateCommand.Execute(PageKeys.Settings);
+        SyncSelection(ViewModel.SelectedSection);
     }
 
     /// <summary>
@@ -764,6 +757,9 @@ internal sealed partial class MainWindow : Window
                 break;
             case ShortcutAction.PrivacyMode:
                 Privacy.ToggleCommand.Execute(null);
+                break;
+            case ShortcutAction.Settings:
+                ViewModel.NavigateCommand.Execute(PageKeys.Settings);
                 break;
             case ShortcutAction.GoBack:
                 Execute(ViewModel.GoBackCommand);

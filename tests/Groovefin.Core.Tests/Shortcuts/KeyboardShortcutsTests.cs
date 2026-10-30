@@ -17,6 +17,7 @@ public sealed class KeyboardShortcutsTests
         _strings.GetString("Key_Right").Returns("Nach-rechts");
         _strings.GetString("Key_Space").Returns("Leertaste");
         _strings.GetString("Key_NumberPad").Returns("Num {0}");
+        _strings.GetString("Key_Comma").Returns(",");
     }
 
     [Theory]
@@ -35,6 +36,7 @@ public sealed class KeyboardShortcutsTests
     [InlineData(ShortcutAction.GoBack, "Alt+Left")]
     [InlineData(ShortcutAction.GoForward, "Alt+Right")]
     [InlineData(ShortcutAction.PrivacyMode, "Ctrl+Shift+P")]
+    [InlineData(ShortcutAction.Settings, "Ctrl+Comma")]
     public void Every_documented_default_is_in_place(ShortcutAction action, string keys) =>
         KeyboardShortcuts.DefaultOf(action).ToString().Should().Be(keys);
 
@@ -54,12 +56,14 @@ public sealed class KeyboardShortcutsTests
     [InlineData("F5", GestureCheck.Valid)]
     [InlineData("Shift+F24", GestureCheck.Valid)]
     [InlineData("Ctrl+Space", GestureCheck.Valid)]
+    [InlineData("Ctrl+Comma", GestureCheck.Valid)]
     [InlineData("Ctrl+Alt+F4", GestureCheck.Valid)]
     [InlineData("K", GestureCheck.NeedsModifier)]
     [InlineData("Shift+K", GestureCheck.NeedsModifier)]
     [InlineData("Number1", GestureCheck.NeedsModifier)]
     [InlineData("Right", GestureCheck.NeedsModifier)]
     [InlineData("Home", GestureCheck.NeedsModifier)]
+    [InlineData("Comma", GestureCheck.NeedsModifier)]
     [InlineData("Alt+F4", GestureCheck.Reserved)]
     [InlineData("Alt+Space", GestureCheck.Reserved)]
     [InlineData("Ctrl+Control", GestureCheck.Incomplete)]
@@ -85,6 +89,7 @@ public sealed class KeyboardShortcutsTests
     [InlineData("Ctrl+Alt+Shift+Number7", "Strg+Alt+Umschalt+7")]
     [InlineData("Ctrl+NumberPad3", "Strg+Num 3")]
     [InlineData("Ctrl+PageUp", "Strg+Key_PageUp")]
+    [InlineData("Ctrl+Comma", "Strg+,")]
     public void Keys_are_shown_with_the_localized_names(string keys, string shown)
     {
         KeyGesture.TryParse(keys, out var gesture).Should().BeTrue();

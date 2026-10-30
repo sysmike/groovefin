@@ -52,6 +52,12 @@
   <data name="PrivacyButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Privatmodus: Wiedergaben werden nicht an den Server gemeldet und Discord zeigt nichts an, bis du ihn ausschaltest oder Groovefin neu startest</value>
   </data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Einstellungen</value>
+  </data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Einstellungen</value>
+  </data>
   <data name="NavHome.Content" xml:space="preserve">
     <value>Start</value>
   </data>
@@ -1659,6 +1665,9 @@
   <data name="Shortcut_PrivacyMode" xml:space="preserve">
     <value>Privatmodus ein oder aus</value>
   </data>
+  <data name="Shortcut_Settings" xml:space="preserve">
+    <value>Einstellungen öffnen</value>
+  </data>
   <data name="Shortcut_GoBack" xml:space="preserve">
     <value>Zurück (auch die Zurück-Taste der Maus)</value>
   </data>
@@ -2022,9 +2031,8 @@
   <data name="NowPlayingMuteButton.AccessKey" xml:space="preserve">
     <value>U</value>
   </data>
-  <data name="Nav_SettingsAccessKey" xml:space="preserve">
+  <data name="SettingsButton.AccessKey" xml:space="preserve">
     <value>N</value>
-    <comment>Access key of the Settings item in the navigation pane</comment>
   </data>
   <data name="SettingsDensityCard.Header" xml:space="preserve">
     <value>Dichte</value>
@@ -2073,6 +2081,9 @@
   </data>
   <data name="Key_Divide" xml:space="preserve">
     <value>Num /</value>
+  </data>
+  <data name="Key_Comma" xml:space="preserve">
+    <value>,</value>
   </data>
   <data name="Shortcuts_ChangeName" xml:space="preserve">
     <value>Tasten für {0} ändern</value>

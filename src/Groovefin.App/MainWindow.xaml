@@ -37,13 +37,17 @@
                 <ImageIconSource ImageSource="ms-appx:///Assets/AppIcon.ico" />
             </TitleBar.IconSource>
             <TitleBar.Content>
-                <!--  The search box, and privacy mode beside it (#234): accent-coloured while on.  -->
+                <!--
+                    The search box, privacy mode beside it (#234, accent-coloured while on) and Settings next to the
+                    window's buttons (#254), checked while Settings is shown.
+                -->
                 <Grid
                     MaxWidth="{StaticResource TitleBarContentMaxWidth}"
                     HorizontalAlignment="Stretch"
                     ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <AutoSuggestBox
@@ -93,6 +97,15 @@
                         IsChecked="{x:Bind Privacy.IsOn, Mode=TwoWay}">
                         <FontIcon FontSize="16" Glyph="&#xED1A;" />
                     </ToggleButton>
+                    <ToggleButton
+                        x:Name="SettingsButton"
+                        x:Uid="SettingsButton"
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="SettingsButton"
+                        Click="OnSettingsButtonClick">
+                        <FontIcon FontSize="16" Glyph="&#xE713;" />
+                    </ToggleButton>
                 </Grid>
             </TitleBar.Content>
         </TitleBar>
@@ -102,7 +115,7 @@
             Grid.Row="1"
             IsBackButtonVisible="Collapsed"
             IsPaneToggleButtonVisible="False"
-            IsSettingsVisible="True"
+            IsSettingsVisible="False"
             IsTitleBarAutoPaddingEnabled="False"
             DisplayModeChanged="OnDisplayModeChanged"
             ItemInvoked="OnNavigationItemInvoked"
