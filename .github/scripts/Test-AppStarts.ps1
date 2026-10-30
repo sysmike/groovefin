@@ -1278,11 +1278,29 @@ try {
         Stop-Test 'Playlist selection' "After a Ctrl+click on the second entry, $($selectedNames.Count) entries are selected, not 2 ($($selectedNames -join '; ')); focus on $($focused.Current.ControlType.ProgrammaticName) '$($focused.Current.Name)' in process $($focused.Current.ProcessId) (the app is $($process.Id))."
     }
     Test-Accessibility 'playlist-selection'
-    $rows[1].SetFocus()
-    [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
-    $until = (Get-Date).AddSeconds(5)
-    while (-not ($remove = Find-MenuItem 'Remove from playlist') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
-    if (-not $remove) { Stop-Test 'Playlist selection' "Shift+F10 on two selected entries opened no menu with 'Remove from playlist'." }
+    # The menu as for the song's info: a right-click on the second entry, else Shift+F10 on it.
+    function Wait-RemoveItem {
+        $until = (Get-Date).AddSeconds(5)
+        while (-not ($found = Find-MenuItem 'Remove from playlist') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+        $found
+    }
+    $null = [Smoke.Input]::SetCursorPos([int] ($secondBounds.X + $secondBounds.Width / 2), [int] ($secondBounds.Y + $secondBounds.Height / 2))
+    Start-Sleep -Milliseconds 200
+    [Smoke.Input]::mouse_event(0x0008, 0, 0, 0, [UIntPtr]::Zero) # RIGHTDOWN
+    Start-Sleep -Milliseconds 50
+    [Smoke.Input]::mouse_event(0x0010, 0, 0, 0, [UIntPtr]::Zero) # RIGHTUP
+    $remove = Wait-RemoveItem
+    if (-not $remove) {
+        Write-MenuDiagnostics 'a right-click on two selected entries'
+        [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+        $rows[1].SetFocus()
+        [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
+        $remove = Wait-RemoveItem
+    }
+    if (-not $remove) {
+        Write-MenuDiagnostics 'Shift+F10 on two selected entries'
+        Stop-Test 'Playlist selection' "Neither a right-click nor Shift+F10 on two selected entries ($(Get-SelectedCount) selected now) opened a menu with 'Remove from playlist'."
+    }
     foreach ($name in 'Play now', 'Add to queue') {
         if (-not (Find-MenuItem $name)) { Stop-Test 'Playlist selection' "The menu of two entries has no '$name'." }
     }
