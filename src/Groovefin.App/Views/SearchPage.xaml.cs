@@ -89,7 +89,8 @@ internal sealed partial class SearchPage : Page
 
     private void OnTrackClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is SearchTrackItem item)
+        // Ctrl+click and Shift+click select (#295).
+        if (!TrackSelection.IsSelecting && e.ClickedItem is SearchTrackItem item)
         {
             ViewModel.PlayTrackCommand.Execute(item);
         }

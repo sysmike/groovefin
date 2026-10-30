@@ -1,4 +1,3 @@
-using Groovefin.Core.Models;
 using Groovefin.Core.Playback;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,7 +55,7 @@ public static class TrackDragSource
     /// <summary>A list may also reorder its rows (a playlist): the drag then both moves and copies.</summary>
     private static void OnDragItemsStarting(object sender, DragItemsStartingEventArgs e)
     {
-        if (Begin(e.Items) is { } token)
+        if (Begin(Dragged(sender as ListViewBase, e.Items)) is { } token)
         {
             e.Data.SetData(TrackDrag.DataFormat, token);
             e.Data.RequestedOperation |= DataPackageOperation.Copy;
@@ -76,6 +75,20 @@ public static class TrackDragSource
         }
     }
 
+    /// <summary>
+    /// The list drags its own selected rows; a selected row of a list that shares its selection (an album's
+    /// discs, #295) drags the whole selection.
+    /// </summary>
+    private static IList<object> Dragged(ListViewBase? list, IList<object> items)
+    {
+        if (list is not null && TrackSelection.GetIsEnabled(list) && items.Count > 0 && items.All(list.SelectedItems.Contains))
+        {
+            return [.. TrackSelection.Selected(list)];
+        }
+
+        return items;
+    }
+
     /// <summary>Starts a drag of the tracks or the one album in <paramref name="items"/>; <see langword="null"/> when they are neither.</summary>
     private static string? Begin(IList<object> items)
     {
@@ -85,31 +98,6 @@ public static class TrackDragSource
             return drag.BeginAlbum(album.Album);
         }
 
-        var tracks = new List<Track>(items.Count);
-        foreach (var item in items)
-        {
-            if (TrackOf(item) is not { } track)
-            {
-                return null;
-            }
-
-            tracks.Add(track);
-        }
-
-        return tracks.Count > 0 ? drag.Begin(tracks) : null;
+        return TrackSelection.TracksOf(items) is { Count: > 0 } tracks ? drag.Begin(tracks) : null;
     }
-
-    private static Track? TrackOf(object item) => item switch
-    {
-        Track track => track,
-        TrackItem row => row.Track,
-        ArtistTrackItem row => row.Track,
-        SearchTrackItem row => row.Track,
-        FavouriteTrackItem row => row.Track,
-        PlaylistEntryItem row => row.Entry.Track,
-        OnRepeatItem row => row.Track,
-        TrackRow row => row.Track,
-        SongRow row => row.Track,
-        _ => null,
-    };
 }

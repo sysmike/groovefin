@@ -194,11 +194,13 @@
 
         <!--
             Entries: click plays from there, drag reorders, the context menu (or Shift+F10) moves and removes.
+            Ctrl+click and Shift+click select several, to remove, queue or add them at once (#295).
             Shown reversed (#267), the server's order cannot be edited: no reordering, no moves.
         -->
         <ListView
             controls:ViewMemory.IsEnabled="True"
             controls:TrackDragSource.IsEnabled="True"
+            controls:TrackSelection.IsEnabled="True"
             x:Name="EntriesList"
             x:Uid="PlaylistEntries"
             Grid.Row="2"
@@ -212,7 +214,7 @@
             IsItemClickEnabled="True"
             ItemClick="OnEntryClick"
             ItemsSource="{x:Bind ViewModel.Entries}"
-            SelectionMode="None">
+            SelectionChanged="OnEntriesSelectionChanged">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="vm:PlaylistEntryItem">
                     <Grid

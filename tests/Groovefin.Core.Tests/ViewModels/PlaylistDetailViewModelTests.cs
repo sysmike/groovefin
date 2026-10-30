@@ -230,6 +230,22 @@ public sealed class PlaylistDetailViewModelTests
     }
 
     [Fact]
+    public async Task Several_selected_entries_go_in_one_request()
+    {
+        await LoadAsync();
+        var a = Row("a");
+        var c = Row("c");
+        await _sut.RemoveCommand.ExecuteAsync(c);
+        _playlists.ClearReceivedCalls();
+
+        await _sut.RemoveEntriesAsync([a, c, Row("b")]);
+
+        Order.Should().BeEmpty();
+        _sut.HasEntries.Should().BeFalse();
+        await _playlists.Received(1).RemoveEntriesAsync(Id, Arg.Is<IReadOnlyList<string>>(ids => ids.SequenceEqual(new[] { "e-a", "e-b" })), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Move_up_and_down_move_the_row_and_send_the_new_index()
     {
         await LoadAsync();

@@ -295,14 +295,14 @@
                     <ListView
                         controls:TrackDragSource.IsEnabled="True"
                         controls:ItemMenu.IsEnabled="True"
+                        controls:TrackSelection.IsEnabled="True"
                         x:Uid="ArtistTopTracks"
                         AutomationProperties.AutomationId="ArtistTopTracks"
                         Padding="36,0"
                         IsItemClickEnabled="True"
                         ItemClick="OnTopTrackClick"
                         ItemsSource="{x:Bind ViewModel.TopTracks}"
-                        ScrollViewer.VerticalScrollMode="Disabled"
-                        SelectionMode="None">
+                        ScrollViewer.VerticalScrollMode="Disabled">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="vm:ArtistTrackItem">
                                 <Grid

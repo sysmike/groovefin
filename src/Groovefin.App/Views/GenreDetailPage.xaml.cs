@@ -60,7 +60,8 @@ internal sealed partial class GenreDetailPage : Page
 
     private void OnTrackClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is TrackRow row)
+        // Ctrl+click and Shift+click select (#295).
+        if (!TrackSelection.IsSelecting && e.ClickedItem is TrackRow row)
         {
             ViewModel.PlayTrackCommand.Execute(row);
         }

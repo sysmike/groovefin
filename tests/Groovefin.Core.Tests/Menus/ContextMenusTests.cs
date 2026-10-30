@@ -67,12 +67,12 @@ public sealed class ContextMenusTests
     }
 
     [Fact]
-    public async Task Several_tracks_get_playback_and_add_to_playlist()
+    public async Task Several_tracks_get_playback_add_to_playlist_and_favourites()
     {
         var actions = _sut.ForTracks(AlbumTracks);
 
         actions.Select(a => a.Kind).Should().Equal(
-            MenuActionKind.PlayNow, MenuActionKind.PlayNext, MenuActionKind.AddToQueue, MenuActionKind.AddToPlaylist);
+            MenuActionKind.PlayNow, MenuActionKind.PlayNext, MenuActionKind.AddToQueue, MenuActionKind.AddToPlaylist, MenuActionKind.Favourite);
         (await Find(actions, MenuActionKind.AddToPlaylist).Tracks!()).Should().Equal(AlbumTracks);
         await Find(actions, MenuActionKind.PlayNext).InvokeAsync();
         _player.Received(1).PlayNext(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(AlbumTracks)));
@@ -160,6 +160,34 @@ public sealed class ContextMenusTests
         next.Should().ContainSingle(a => a.Kind == MenuActionKind.Unfavourite).Which.Text.Should().Be("Menu_Unfavourite");
         await Find(next, MenuActionKind.Unfavourite).InvokeAsync();
         await _library.Received(1).SetFavouriteAsync("t1", false, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Several_tracks_become_favourites_and_only_the_others_are_sent()
+    {
+        Track[] tracks = [new() { Id = "a1", Name = "a1", IsFavorite = true }, new() { Id = "a2", Name = "a2" }, new() { Id = "a3", Name = "a3" }];
+
+        var favourite = Find(_sut.ForTracks(tracks), MenuActionKind.Favourite);
+        favourite.Text.Should().Be("Menu_Favourite", "one of them is not a favourite yet");
+        await favourite.InvokeAsync();
+
+        await _library.DidNotReceive().SetFavouriteAsync("a1", Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        await _library.Received(1).SetFavouriteAsync("a2", true, Arg.Any<CancellationToken>());
+        await _library.Received(1).SetFavouriteAsync("a3", true, Arg.Any<CancellationToken>());
+        _sut.ForTracks(tracks).Should().ContainSingle(a => a.Kind == MenuActionKind.Unfavourite, "now all are favourites");
+    }
+
+    [Fact]
+    public async Task Several_favourites_are_all_removed()
+    {
+        Track[] tracks = [new() { Id = "a1", Name = "a1", IsFavorite = true }, new() { Id = "a2", Name = "a2", IsFavorite = true }];
+
+        var unfavourite = Find(_sut.ForTracks(tracks), MenuActionKind.Unfavourite);
+        unfavourite.Text.Should().Be("Menu_Unfavourite");
+        await unfavourite.InvokeAsync();
+
+        await _library.Received(1).SetFavouriteAsync("a1", false, Arg.Any<CancellationToken>());
+        await _library.Received(1).SetFavouriteAsync("a2", false, Arg.Any<CancellationToken>());
     }
 
     [Fact]

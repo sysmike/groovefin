@@ -1,3 +1,4 @@
+using Groovefin.App.Controls;
 using Groovefin.Core.Models;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -66,7 +67,8 @@ internal sealed partial class FoldersPage : Page
 
     private void OnTrackClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is TrackRow row)
+        // Ctrl+click and Shift+click select (#295).
+        if (!TrackSelection.IsSelecting && e.ClickedItem is TrackRow row)
         {
             ViewModel.PlayTrackCommand.Execute(row);
         }

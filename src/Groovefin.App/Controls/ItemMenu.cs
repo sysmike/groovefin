@@ -14,7 +14,8 @@ namespace Groovefin.App.Controls;
 /// <summary>
 /// The shared context menu (<see cref="ContextMenus"/>) for list rows and tiles of tracks, albums,
 /// artists, playlists, genres and folders: <c>&lt;ListView controls:ItemMenu.IsEnabled="True" /&gt;</c>. It opens on
-/// right-click, the Menu key and Shift+F10, for the item under the pointer or with focus.
+/// right-click, the Menu key and Shift+F10, for the item under the pointer or with focus, or for all
+/// selected tracks (<see cref="TrackSelection"/>).
 /// </summary>
 public static class ItemMenu
 {
@@ -46,6 +47,23 @@ public static class ItemMenu
             Folder folder => menus.ForFolder(folder),
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// Gets the actions for the item under <paramref name="target"/>: in a list that selects several (#295),
+    /// those of the selected tracks, the item included.
+    /// </summary>
+    public static IReadOnlyList<MenuAction>? ActionsFor(FrameworkElement target, object? item)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        if (item is not null
+            && TrackSelection.ListOf(target) is { } list
+            && TrackSelection.TracksOf(TrackSelection.ForMenu(list, item)) is { Count: > 0 } tracks)
+        {
+            return App.Services.GetRequiredService<ContextMenus>().ForTracks(tracks);
+        }
+
+        return ActionsFor(item);
     }
 
     /// <summary>Adds <paramref name="actions"/> to <paramref name="menu"/>, a separator between groups.</summary>
@@ -97,7 +115,7 @@ public static class ItemMenu
 
     private static void OnContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
-        if (e.OriginalSource is not FrameworkElement target || ActionsFor(target.DataContext) is not { Count: > 0 } actions)
+        if (e.OriginalSource is not FrameworkElement target || ActionsFor(target, target.DataContext) is not { Count: > 0 } actions)
         {
             return;
         }

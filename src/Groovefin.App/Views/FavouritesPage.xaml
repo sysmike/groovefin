@@ -146,13 +146,13 @@
                 controls:ViewMemory.IsEnabled="True"
                 controls:TrackDragSource.IsEnabled="True"
                 controls:ItemMenu.IsEnabled="True"
+                controls:TrackSelection.IsEnabled="True"
                 x:Name="SongsList"
                 x:Uid="FavouritesSongs"
                 Padding="24,0,24,24"
                 IsItemClickEnabled="True"
                 ItemClick="OnTrackClick"
-                ItemsSource="{x:Bind ViewModel.Tracks}"
-                SelectionMode="None">
+                ItemsSource="{x:Bind ViewModel.Tracks}">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="vm:FavouriteTrackItem">
                         <Grid

@@ -132,6 +132,7 @@
                 <TextBlock x:Uid="GenreSongsHeader" Style="{StaticResource SectionHeaderStyle}" />
                 <ListView
                     controls:TrackDragSource.IsEnabled="True"
+                    controls:TrackSelection.IsEnabled="True"
                     x:Uid="GenreSongs"
                     MaxWidth="880"
                     Margin="24,0"
@@ -140,8 +141,7 @@
                     IsItemClickEnabled="True"
                     ItemClick="OnTrackClick"
                     ItemsSource="{x:Bind ViewModel.Tracks}"
-                    ScrollViewer.VerticalScrollMode="Disabled"
-                    SelectionMode="None">
+                    ScrollViewer.VerticalScrollMode="Disabled">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:TrackRow">
                             <Grid

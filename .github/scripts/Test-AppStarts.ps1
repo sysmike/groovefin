@@ -1237,6 +1237,64 @@ try {
     Test-Running 'after reversing the playlist'
     Write-Output 'The playlist showed its last track first in reverse order, and in order again.'
 
+    # Several entries (#295): a real Ctrl+click on the second entry adds it to the selection, the menu then acts
+    # on both (removing them, queueing, favourites; no moves and no "Play" from one entry), and Esc clears it.
+    $selectionItem = [System.Windows.Automation.SelectionItemPattern]::Pattern
+    function Get-EntryRows {
+        @((Find-ById 'PlaylistEntries').FindAll($scope::Descendants,
+                [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)))
+    }
+    function Get-SelectedCount { @(Get-EntryRows | Where-Object { $_.GetCurrentPattern($selectionItem).Current.IsSelected }).Count }
+    function Find-MenuItem([string] $name) {
+        $condition = [System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $name),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem))
+        foreach ($appWindow in $automation::RootElement.FindAll($scope::Children, $appWindows)) {
+            if ($found = $appWindow.FindFirst($scope::Descendants, $condition)) { return $found }
+        }
+        $null
+    }
+    $rows = Get-EntryRows
+    if ($rows.Count -lt 2) { Stop-Test 'Playlist selection' "The playlist shows $($rows.Count) entries, not 2." }
+    $rows[0].GetCurrentPattern($selectionItem).Select()
+    $secondBounds = Get-Bounds $rows[1]
+    $null = [Smoke.Input]::SetCursorPos([int] ($secondBounds.X + $secondBounds.Width / 2), [int] ($secondBounds.Y + $secondBounds.Height / 2))
+    Start-Sleep -Milliseconds 200
+    [Smoke.Input]::keybd_event(0x11, 0, 0, [UIntPtr]::Zero) # VK_CONTROL down
+    [Smoke.Input]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero) # LEFTDOWN
+    Start-Sleep -Milliseconds 50
+    [Smoke.Input]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero) # LEFTUP
+    [Smoke.Input]::keybd_event(0x11, 0, 2, [UIntPtr]::Zero) # up
+    $until = (Get-Date).AddSeconds(5)
+    while ((Get-SelectedCount) -ne 2 -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    if ((Get-SelectedCount) -ne 2) { Stop-Test 'Playlist selection' "After a Ctrl+click on the second entry, $(Get-SelectedCount) entries are selected, not 2." }
+    Test-Accessibility 'playlist-selection'
+    $rows[1].SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
+    $until = (Get-Date).AddSeconds(5)
+    while (-not ($remove = Find-MenuItem 'Remove from playlist') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    if (-not $remove) { Stop-Test 'Playlist selection' "Shift+F10 on two selected entries opened no menu with 'Remove from playlist'." }
+    foreach ($name in 'Play now', 'Add to queue') {
+        if (-not (Find-MenuItem $name)) { Stop-Test 'Playlist selection' "The menu of two entries has no '$name'." }
+    }
+    if (-not (Find-MenuItem 'Add to favourites') -and -not (Find-MenuItem 'Remove from favourites')) {
+        Stop-Test 'Playlist selection' 'The menu of two entries has no favourites entry.'
+    }
+    foreach ($name in 'Play', 'Move up', 'Move down') {
+        if (Find-MenuItem $name) { Stop-Test 'Playlist selection' "The menu of two entries offers '$name', which is for one entry." }
+    }
+    if ((Get-SelectedCount) -ne 2) { Stop-Test 'Playlist selection' "Opening the menu left $(Get-SelectedCount) entries selected, not 2." }
+    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+    $until = (Get-Date).AddSeconds(5)
+    while ((Find-MenuItem 'Remove from playlist') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    $rows[1].SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+    $until = (Get-Date).AddSeconds(5)
+    while ((Get-SelectedCount) -ne 0 -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    if ((Get-SelectedCount) -ne 0) { Stop-Test 'Playlist selection' "Esc left $(Get-SelectedCount) entries selected." }
+    Test-Running 'after selecting two playlist entries'
+    Write-Output 'A Ctrl+click selected a second playlist entry, the menu acted on both, and Esc cleared the selection.'
+
     # The queue, the lyrics and the full-screen player, opened and closed with their shortcuts, scanned
     # while they show (#51).
     function Test-Shortcut([string] $keys, [System.Windows.Automation.Condition] $shown, [string] $what, [string] $close) {

@@ -39,4 +39,22 @@ public sealed class FavouritesService(ILibraryService library, IMessenger messen
         messenger.Send(new FavouriteChangedMessage(itemId, isFavourite));
         return true;
     }
+
+    /// <summary>
+    /// Saves the state for several items, one after the other (#295); stops at the first the server refuses,
+    /// so a lost connection shows one error, not one per item. Returns <see langword="false"/> then.
+    /// </summary>
+    public async Task<bool> SetAllAsync(IReadOnlyList<string> itemIds, bool isFavourite)
+    {
+        ArgumentNullException.ThrowIfNull(itemIds);
+        foreach (var itemId in itemIds)
+        {
+            if (!await SetAsync(itemId, isFavourite))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
