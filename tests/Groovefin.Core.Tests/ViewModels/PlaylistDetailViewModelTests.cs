@@ -36,6 +36,8 @@ public sealed class PlaylistDetailViewModelTests
         _strings.GetString("Playlist_DeleteMessage").Returns("Delete {0}?");
         _playlists.GetPlaylistAsync(Id, Arg.Any<CancellationToken>()).Returns(new Playlist { Id = Id, Name = "Chill", PrimaryImageTag = "img" });
         _playlists.GetEntriesAsync(Id, Arg.Any<CancellationToken>()).Returns(Entries("a", "b", "c"));
+        _messenger.Register<PlaylistDetailViewModelTests, PlaylistChangedMessage>(this, static (r, m) => r._sent.Add(m));
+        _messenger.Register<PlaylistDetailViewModelTests, PlaylistDeletedMessage>(this, static (r, m) => r._sent.Add(m));
         _sut = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, _playing.Current, _settings);
     }
 
@@ -57,6 +59,12 @@ public sealed class PlaylistDetailViewModelTests
     private IEnumerable<string> Order => _sut.Entries.Select(e => e.Entry.Track.Id);
 
     private PlaylistEntryItem Row(string id) => _sut.Entries.Single(e => e.Entry.Track.Id == id);
+
+    private readonly List<object> _sent = [];
+
+    /// <summary>The messages of type <typeparamref name="T"/> sent since the test began listening.</summary>
+    private IEnumerable<T> Sent<T>()
+        where T : class => _sent.OfType<T>();
 
     private Task LoadAsync() => _sut.LoadAsync(Id, Ct);
 
@@ -139,6 +147,7 @@ public sealed class PlaylistDetailViewModelTests
 
         await _playlists.Received(1).RenameAsync(Id, " Calm ", Arg.Any<CancellationToken>());
         _sut.Name.Should().Be("Calm");
+        Sent<PlaylistChangedMessage>().Should().ContainSingle().Which.Playlist.Name.Should().Be("Calm", "the navigation pane shows the new name");
     }
 
     [Theory]
@@ -178,6 +187,33 @@ public sealed class PlaylistDetailViewModelTests
 
         await _playlists.Received(1).DeleteAsync(Id, Arg.Any<CancellationToken>());
         _navigation.Received(1).GoBack();
+        Sent<PlaylistDeletedMessage>().Should().Equal(new PlaylistDeletedMessage(Id));
+    }
+
+    [Fact]
+    public async Task The_heart_shows_the_servers_state_and_saves_a_change()
+    {
+        _playlists.GetPlaylistAsync(Id, Arg.Any<CancellationToken>()).Returns(new Playlist { Id = Id, Name = "Chill", IsFavorite = true });
+        await LoadAsync();
+        _sut.IsFavourite.Should().BeTrue();
+
+        await _sut.ToggleFavouriteCommand.ExecuteAsync(null);
+
+        _sut.IsFavourite.Should().BeFalse();
+        await _library.Received(1).SetFavouriteAsync(Id, false, Arg.Any<CancellationToken>());
+        Sent<PlaylistChangedMessage>().Should().ContainSingle().Which.Playlist.IsFavorite.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_refused_heart_goes_back_and_tells_nobody()
+    {
+        await LoadAsync();
+        _library.SetFavouriteAsync(Id, true, Arg.Any<CancellationToken>()).Returns(Task.FromException(new JellyfinException("no")));
+
+        await _sut.ToggleFavouriteCommand.ExecuteAsync(null);
+
+        _sut.IsFavourite.Should().BeFalse();
+        Sent<PlaylistChangedMessage>().Should().BeEmpty();
     }
 
     [Fact]

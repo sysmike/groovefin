@@ -953,6 +953,12 @@
   <data name="PlaylistQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Zur Warteschlange hinzufügen</value>
   </data>
+  <data name="PlaylistFavouriteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
+  <data name="PlaylistFavouriteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Favorit: im Navigationsbereich zeigen</value>
+  </data>
   <data name="PlaylistReverseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Umgekehrte Reihenfolge</value>
   </data>

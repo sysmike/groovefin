@@ -80,6 +80,14 @@
                     <Button x:Uid="PlaylistQueueButton" Command="{x:Bind ViewModel.AddToQueueCommand}">
                         <FontIcon FontSize="14" Glyph="&#xE710;" />
                     </Button>
+                    <!--  A favourite playlist goes into the navigation pane (#297).  -->
+                    <ToggleButton
+                        x:Uid="PlaylistFavouriteButton"
+                        AutomationProperties.AutomationId="PlaylistFavouriteButton"
+                        Command="{x:Bind ViewModel.ToggleFavouriteCommand}"
+                        IsChecked="{x:Bind ViewModel.IsFavourite, Mode=OneWay}">
+                        <FontIcon FontSize="14" Glyph="{x:Bind conv:Glyphs.Heart(ViewModel.IsFavourite), Mode=OneWay}" />
+                    </ToggleButton>
                     <!--  Last entry first (#267), remembered per playlist; Play follows the order shown.  -->
                     <ToggleButton
                         x:Uid="PlaylistReverseButton"
