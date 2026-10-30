@@ -6,6 +6,7 @@ using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 
 namespace Groovefin.App.Controls;
@@ -14,7 +15,8 @@ namespace Groovefin.App.Controls;
 /// <summary>
 /// The shared context menu (<see cref="ContextMenus"/>) for list rows and tiles of tracks, albums,
 /// artists, playlists, genres and folders: <c>&lt;ListView controls:ItemMenu.IsEnabled="True" /&gt;</c>. It opens on
-/// right-click, the Menu key and Shift+F10, for the item under the pointer or with focus.
+/// right-click, the Menu key and Shift+F10, for the item under the pointer or with focus, or for all
+/// selected tracks (<see cref="TrackSelection"/>).
 /// </summary>
 public static class ItemMenu
 {
@@ -46,6 +48,36 @@ public static class ItemMenu
             Folder folder => menus.ForFolder(folder),
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// Gets the actions for the item under <paramref name="target"/>: in a list that selects several (#295),
+    /// those of the selected tracks, the item included.
+    /// </summary>
+    public static IReadOnlyList<MenuAction>? ActionsFor(FrameworkElement target, object? item)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        if (item is not null
+            && TrackSelection.ListOf(target) is { } list
+            && TrackSelection.TracksOf(TrackSelection.ForMenu(list, item)) is { Count: > 0 } tracks)
+        {
+            return App.Services.GetRequiredService<ContextMenus>().ForTracks(tracks);
+        }
+
+        return ActionsFor(item);
+    }
+
+    /// <summary>
+    /// Gets the item a menu opens for. A right-click starts on an element of the row, whose DataContext is the
+    /// item; Shift+F10 and the Menu key start on the focused row itself, a list's container, which holds the
+    /// item as its content and has no DataContext of its own (#295).
+    /// </summary>
+    public static object? ItemOf(FrameworkElement source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return source is SelectorItem container && ItemsControl.ItemsControlFromItemContainer(container) is { } owner
+            ? owner.ItemFromContainer(container)
+            : source.DataContext;
     }
 
     /// <summary>Adds <paramref name="actions"/> to <paramref name="menu"/>, a separator between groups.</summary>
@@ -97,7 +129,7 @@ public static class ItemMenu
 
     private static void OnContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
-        if (e.OriginalSource is not FrameworkElement target || ActionsFor(target.DataContext) is not { Count: > 0 } actions)
+        if (e.OriginalSource is not FrameworkElement target || ActionsFor(target, ItemOf(target)) is not { Count: > 0 } actions)
         {
             return;
         }

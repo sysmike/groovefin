@@ -74,7 +74,10 @@ public sealed class ContextMenus(
         return actions;
     }
 
-    /// <summary>The menu of several selected tracks: playback and add to playlist; one track gets <see cref="ForTrack"/>.</summary>
+    /// <summary>
+    /// The menu of several selected tracks: playback, add to playlist and favourites (#295); one track gets
+    /// <see cref="ForTrack"/>. Favourites offers removing only when every track is one.
+    /// </summary>
     public IReadOnlyList<MenuAction> ForTracks(IReadOnlyList<Track> tracks)
     {
         ArgumentNullException.ThrowIfNull(tracks);
@@ -84,7 +87,7 @@ public sealed class ContextMenus(
         }
 
         Task<IReadOnlyList<Track>> Tracks() => Task.FromResult(tracks);
-        return [.. Playback(Tracks), AddTo(Tracks)];
+        return [.. Playback(Tracks), AddTo(Tracks), FavouritesToggle(tracks)];
     }
 
     public IReadOnlyList<MenuAction> ForAlbum(Album album)
@@ -159,6 +162,18 @@ public sealed class ContextMenus(
             isFavourite ? MenuActionKind.Unfavourite : MenuActionKind.Favourite,
             strings.GetString(isFavourite ? "Menu_Unfavourite" : "Menu_Favourite"),
             () => favourites.SetAsync(itemId, !isFavourite));
+    }
+
+    /// <summary>Makes all the tracks favourites, or none when all are; only the ones that change are sent.</summary>
+    private MenuAction FavouritesToggle(IReadOnlyList<Track> tracks)
+    {
+        var allFavourite = tracks.All(t => favourites.IsFavourite(t.Id, t.IsFavorite));
+        var target = !allFavourite;
+        List<string> changing = [.. tracks.Where(t => favourites.IsFavourite(t.Id, t.IsFavorite) != target).Select(t => t.Id).Distinct(StringComparer.Ordinal)];
+        return new MenuAction(
+            allFavourite ? MenuActionKind.Unfavourite : MenuActionKind.Favourite,
+            strings.GetString(allFavourite ? "Menu_Unfavourite" : "Menu_Favourite"),
+            () => favourites.SetAllAsync(changing, target));
     }
 
     private static MenuAction Action(MenuActionKind kind, string text, Action invoke) =>

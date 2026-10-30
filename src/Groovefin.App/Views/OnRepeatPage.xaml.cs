@@ -1,3 +1,4 @@
+using Groovefin.App.Controls;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -36,7 +37,8 @@ internal sealed partial class OnRepeatPage : Page
     /// <summary>Click or Enter on a track plays the list from there.</summary>
     private void OnEntryClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is OnRepeatItem item)
+        // Ctrl+click and Shift+click select (#295).
+        if (!TrackSelection.IsSelecting && e.ClickedItem is OnRepeatItem item)
         {
             ViewModel.PlayEntryCommand.Execute(item);
         }

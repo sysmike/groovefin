@@ -81,7 +81,8 @@ internal sealed partial class ArtistDetailPage : Page
 
     private void OnTopTrackClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is ArtistTrackItem item)
+        // Ctrl+click and Shift+click select (#295).
+        if (!TrackSelection.IsSelecting && e.ClickedItem is ArtistTrackItem item)
         {
             ViewModel.PlayTopTrackCommand.Execute(item);
         }

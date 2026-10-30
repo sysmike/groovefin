@@ -168,13 +168,13 @@
             controls:ViewMemory.IsEnabled="True"
             controls:ItemMenu.IsEnabled="True"
             controls:TrackDragSource.IsEnabled="True"
+            controls:TrackSelection.IsEnabled="True"
             x:Uid="OnRepeatEntries"
             Grid.Row="2"
             Padding="36,0,36,24"
             IsItemClickEnabled="True"
             ItemClick="OnEntryClick"
-            ItemsSource="{x:Bind ViewModel.Entries}"
-            SelectionMode="None">
+            ItemsSource="{x:Bind ViewModel.Entries}">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="vm:OnRepeatItem">
                     <Grid

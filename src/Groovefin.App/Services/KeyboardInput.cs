@@ -15,6 +15,7 @@ internal static class KeyboardInput
     /// <summary>Gets a value indicating whether a Windows key is held: those combinations belong to Windows.</summary>
     public static bool IsWindowsKeyDown => IsDown(VirtualKey.LeftWindows) || IsDown(VirtualKey.RightWindows);
 
-    private static bool IsDown(VirtualKey key) =>
+    /// <summary>Gets a value indicating whether <paramref name="key"/> is held right now.</summary>
+    public static bool IsDown(VirtualKey key) =>
         InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
 }

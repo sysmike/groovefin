@@ -281,15 +281,26 @@ public sealed partial class PlaylistDetailViewModel(
     }
 
     [RelayCommand]
-    private Task RemoveAsync(PlaylistEntryItem item)
+    private Task RemoveAsync(PlaylistEntryItem item) => RemoveEntriesAsync([item]);
+
+    /// <summary>Takes the selected entries out at once and sends one request for all (#295); rows already gone are skipped.</summary>
+    public Task RemoveEntriesAsync(IReadOnlyList<PlaylistEntryItem> items)
     {
-        if (!Entries.Remove(item))
+        ArgumentNullException.ThrowIfNull(items);
+        List<PlaylistEntryItem> removing = [.. items.Where(Entries.Contains).Distinct()];
+        if (removing.Count == 0)
         {
             return Task.CompletedTask;
         }
 
+        foreach (var item in removing)
+        {
+            Entries.Remove(item);
+        }
+
         UpdateDetails();
-        return EditAsync(() => playlists.RemoveEntriesAsync(Playlist!.Id, [item.Entry.EntryId]));
+        List<string> ids = [.. removing.Select(item => item.Entry.EntryId)];
+        return EditAsync(() => playlists.RemoveEntriesAsync(Playlist!.Id, ids));
     }
 
     /// <summary>Toggles a track's heart, optimistic like the album page's.</summary>

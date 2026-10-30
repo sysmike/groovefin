@@ -71,7 +71,8 @@ internal sealed partial class AlbumDetailPage : Page
     /// <summary>Click or Enter on a track plays the album from there.</summary>
     private void OnTrackClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is TrackItem item)
+        // Ctrl+click and Shift+click select (#295).
+        if (!TrackSelection.IsSelecting && e.ClickedItem is TrackItem item)
         {
             ViewModel.PlayTrackCommand.Execute(item);
         }

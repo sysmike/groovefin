@@ -134,6 +134,7 @@
 
                 <!--  The folder's own tracks: click plays from there.  -->
                 <ListView
+                    controls:TrackSelection.IsEnabled="True"
                     x:Uid="FoldersTracks"
                     MaxWidth="880"
                     Margin="24,0"
@@ -144,7 +145,6 @@
                     ItemClick="OnTrackClick"
                     ItemsSource="{x:Bind ViewModel.Tracks}"
                     ScrollViewer.VerticalScrollMode="Disabled"
-                    SelectionMode="None"
                     Visibility="{x:Bind ViewModel.HasTracks, Mode=OneWay}">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:TrackRow">

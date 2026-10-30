@@ -51,6 +51,27 @@ public sealed class FavouritesServiceTests
     }
 
     [Fact]
+    public async Task Several_items_are_saved_one_after_the_other()
+    {
+        (await _sut.SetAllAsync(["t1", "t2"], true)).Should().BeTrue();
+
+        _sent.Should().Equal(new FavouriteChangedMessage("t1", true), new FavouriteChangedMessage("t2", true));
+    }
+
+    [Fact]
+    public async Task Several_items_stop_at_the_first_refusal_with_one_error()
+    {
+        var failure = new JellyfinException("offline");
+        _library.SetFavouriteAsync("t2", true, Arg.Any<CancellationToken>()).Returns(Task.FromException(failure));
+
+        (await _sut.SetAllAsync(["t1", "t2", "t3"], true)).Should().BeFalse();
+
+        _sent.Should().Equal(new FavouriteChangedMessage("t1", true));
+        await _library.DidNotReceive().SetFavouriteAsync("t3", Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        _errors.Received(1).Report(failure, Operations.SetFavourite);
+    }
+
+    [Fact]
     public async Task An_empty_id_is_rejected()
     {
         var act = () => _sut.SetAsync(string.Empty, true);

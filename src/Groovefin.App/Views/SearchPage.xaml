@@ -150,6 +150,7 @@
                 <ListView
                     controls:TrackDragSource.IsEnabled="True"
                     controls:ItemMenu.IsEnabled="True"
+                    controls:TrackSelection.IsEnabled="True"
                     x:Uid="SearchTracks"
                     MaxWidth="880"
                     Margin="24,0"
@@ -157,8 +158,7 @@
                     IsItemClickEnabled="True"
                     ItemClick="OnTrackClick"
                     ItemsSource="{x:Bind ViewModel.Tracks}"
-                    ScrollViewer.VerticalScrollMode="Disabled"
-                    SelectionMode="None">
+                    ScrollViewer.VerticalScrollMode="Disabled">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:SearchTrackItem">
                             <Grid
