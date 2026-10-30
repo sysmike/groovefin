@@ -1,4 +1,7 @@
 using System.ComponentModel;
+using Groovefin.Core.Api;
+using Groovefin.Core.Links;
+using Groovefin.Core.Models;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Privacy;
 using Groovefin.Core.Settings;
@@ -24,6 +27,7 @@ public sealed partial class DiscordPresence : IDisposable
     public static readonly TimeSpan SeekThreshold = TimeSpan.FromSeconds(2);
 
     private readonly IPlaybackEngine _engine;
+    private readonly ILibraryService _library;
     private readonly ISettingsService _settings;
     private readonly PrivacyMode _privacy;
     private readonly IDiscordConnection _connection;
@@ -37,9 +41,12 @@ public sealed partial class DiscordPresence : IDisposable
     private bool _dirty;
     private bool _sending;
     private DateTimeOffset _retryAt = DateTimeOffset.MinValue;
+    private string? _linkAlbumId;
+    private Uri? _albumUrl;
 
     public DiscordPresence(
         IPlaybackEngine engine,
+        ILibraryService library,
         ISettingsService settings,
         PrivacyMode privacy,
         IDiscordConnection connection,
@@ -48,6 +55,7 @@ public sealed partial class DiscordPresence : IDisposable
         ILogger<DiscordPresence> logger)
     {
         _engine = engine;
+        _library = library;
         _settings = settings;
         _privacy = privacy;
         _connection = connection;
@@ -88,12 +96,16 @@ public sealed partial class DiscordPresence : IDisposable
         // Discord counts the progress itself from these.
         var start = _time.GetUtcNow() - _engine.Position;
         DateTimeOffset? end = _engine.Duration > TimeSpan.Zero ? start + _engine.Duration : null;
-        return new DiscordActivity(track.Name, artists, track.AlbumName, start, end);
+
+        // The artists link to the first one on Last.fm, the album to MusicBrainz; the title has no link (#304).
+        var artistUrl = ExternalLinks.LastFmArtist(track.Artists.Count > 0 ? track.Artists[0].Name : track.AlbumArtist);
+        return new DiscordActivity(track.Name, artists, track.AlbumName, start, end, artistUrl, AlbumLink(track));
     }
 
     /// <summary>Sends what Discord should show, unless the same was sent already. Call on the UI thread.</summary>
     public async Task UpdateAsync()
     {
+        LoadAlbumLink();
         lock (_gate)
         {
             _wanted = Desired();
@@ -239,6 +251,74 @@ public sealed partial class DiscordPresence : IDisposable
         }
     }
 
+    /// <summary>
+    /// Gets the track's album on MusicBrainz, or <see langword="null"/> while it loads and when the server knows
+    /// no MusicBrainz ID (<see cref="LoadAlbumLink"/>).
+    /// </summary>
+    private Uri? AlbumLink(Track track)
+    {
+        lock (_gate)
+        {
+            return track.AlbumId is { } albumId && albumId == _linkAlbumId ? _albumUrl : null;
+        }
+    }
+
+    /// <summary>
+    /// Track lists do not carry the album's IDs: the album is loaded once, when its first track shows, and the
+    /// status is sent again with the link. Only while the status shows.
+    /// </summary>
+    private void LoadAlbumLink()
+    {
+        if (Desired() is null || _engine.Current?.Track.AlbumId is not { } albumId)
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            if (albumId == _linkAlbumId)
+            {
+                return;
+            }
+
+            _linkAlbumId = albumId;
+            _albumUrl = null;
+        }
+
+        _ = LoadAlbumLinkAsync(albumId);
+    }
+
+    /// <summary>Loads the album's link, on the UI thread like <see cref="Desired"/>; without it the status shows no link.</summary>
+    private async Task LoadAlbumLinkAsync(string albumId)
+    {
+        Uri? url;
+        try
+        {
+            url = ExternalLinks.MusicBrainz(await _library.GetAlbumAsync(albumId));
+        }
+        catch (Exception ex) when (ex is JellyfinException or InvalidOperationException or ArgumentException)
+        {
+            LogAlbumFailed(ex.Message);
+            return;
+        }
+
+        lock (_gate)
+        {
+            if (albumId != _linkAlbumId)
+            {
+                // Another album plays by now.
+                return;
+            }
+
+            _albumUrl = url;
+        }
+
+        if (url is not null)
+        {
+            await UpdateAsync();
+        }
+    }
+
     private void OnChanged(object? sender, EventArgs e) => _ = UpdateAsync();
 
     private void OnPrivacyChanged(object? sender, PropertyChangedEventArgs e)
@@ -289,4 +369,7 @@ public sealed partial class DiscordPresence : IDisposable
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Discord is not reachable: {Reason}")]
     private partial void LogUnreachable(string reason);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "The album's link for Discord could not be loaded: {Reason}")]
+    private partial void LogAlbumFailed(string reason);
 }

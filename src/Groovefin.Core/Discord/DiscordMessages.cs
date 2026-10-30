@@ -21,6 +21,9 @@ public static class DiscordMessages
     /// <summary>Discord's limit for the text fields.</summary>
     public const int MaxTextLength = 128;
 
+    /// <summary>Discord's limit for the links (<c>state_url</c>, <c>large_url</c>); a longer one is left out.</summary>
+    public const int MaxUrlLength = 256;
+
     public static string Handshake(string applicationId) =>
         new JsonObject { ["v"] = 1, ["client_id"] = applicationId }.ToJsonString();
 
@@ -43,6 +46,10 @@ public static class DiscordMessages
         {
             json["state"] = Fit(activity.State);
             json["status_display_type"] = StatusDisplayState;
+            if (Link(activity.StateUrl) is { } stateUrl)
+            {
+                json["state_url"] = stateUrl;
+            }
         }
 
         if (activity.Start is { } start)
@@ -60,11 +67,21 @@ public static class DiscordMessages
         if (!string.IsNullOrWhiteSpace(activity.LargeText))
         {
             assets["large_text"] = Fit(activity.LargeText);
+            if (Link(activity.LargeUrl) is { } largeUrl)
+            {
+                assets["large_url"] = largeUrl;
+            }
         }
 
         json["assets"] = assets;
         return json;
     }
+
+    /// <summary>Discord takes web links of at most <see cref="MaxUrlLength"/> characters.</summary>
+    private static string? Link(Uri? url) =>
+        url is { IsAbsoluteUri: true } && (url.Scheme == Uri.UriSchemeHttps || url.Scheme == Uri.UriSchemeHttp) && url.AbsoluteUri.Length <= MaxUrlLength
+            ? url.AbsoluteUri
+            : null;
 
     /// <summary>
     /// Discord takes 2 to 128 characters: longer text is cut with an ellipsis, a single character gets an

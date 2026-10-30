@@ -34,7 +34,8 @@ WinUI 3.
   Settings is the gear button in the title bar, or Ctrl+,.
 - The mouse's back and forward buttons (or Alt+Left and Alt+Right) move through the pages you visited.
 - An optional Discord status ("Listening to <artist>") with title, artist and progress, through
-  the Discord app on the PC: no keys, and nothing goes to the internet from Groovefin.
+  the Discord app on the PC: no keys, and nothing goes to the internet from Groovefin. The artist
+  links to Last.fm, the album to MusicBrainz when your server knows its ID.
 - A privacy mode (the button beside Settings in the title bar, Ctrl+Shift+P or the tray menu): no plays are
   reported to your server and Discord shows nothing, until you turn it off or restart Groovefin.
 

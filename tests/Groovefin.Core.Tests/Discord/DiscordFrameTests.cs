@@ -76,6 +76,40 @@ public sealed class DiscordFrameTests
         a.GetProperty("timestamps").GetProperty("end").GetInt64().Should().Be(1_700_000_300_000);
         a.GetProperty("assets").GetProperty("large_image").GetString().Should().Be(DiscordMessages.IconAsset);
         a.GetProperty("assets").GetProperty("large_text").GetString().Should().Be("Discovery");
+        a.TryGetProperty("state_url", out _).Should().BeFalse();
+        a.GetProperty("assets").TryGetProperty("large_url", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void The_artists_and_the_album_carry_their_links_and_the_title_none()
+    {
+        var activity = new DiscordActivity(
+            "One More Time",
+            "Daft Punk",
+            "Discovery",
+            null,
+            null,
+            new Uri("https://www.last.fm/music/Daft+Punk"),
+            new Uri("https://musicbrainz.org/release-group/48117b82-8d4a-3e11-8fe1-0ba7a6b2d9a5"));
+
+        using var json = JsonDocument.Parse(DiscordMessages.SetActivity(42, activity, "n1"));
+
+        var a = json.RootElement.GetProperty("args").GetProperty("activity");
+        a.GetProperty("state_url").GetString().Should().Be("https://www.last.fm/music/Daft+Punk");
+        a.GetProperty("assets").GetProperty("large_url").GetString().Should().Be("https://musicbrainz.org/release-group/48117b82-8d4a-3e11-8fe1-0ba7a6b2d9a5");
+        a.TryGetProperty("details_url", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_link_longer_than_Discord_takes_is_left_out()
+    {
+        var activity = new DiscordActivity("Intro", "Artist", null, null, null, new Uri("https://www.last.fm/music/" + new string('a', 250)));
+
+        using var json = JsonDocument.Parse(DiscordMessages.SetActivity(1, activity, "n"));
+
+        var a = json.RootElement.GetProperty("args").GetProperty("activity");
+        a.GetProperty("state").GetString().Should().Be("Artist");
+        a.TryGetProperty("state_url", out _).Should().BeFalse();
     }
 
     [Fact]
