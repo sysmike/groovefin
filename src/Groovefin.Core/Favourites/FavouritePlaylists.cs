@@ -74,14 +74,7 @@ public sealed class FavouritePlaylists : IDisposable
     /// <summary>The server manager raises this after network calls, on a thread-pool thread.</summary>
     private void OnServersChanged(object? sender, EventArgs e)
     {
-        if (_dispatcher.HasThreadAccess)
-        {
-            _ = FollowAsync();
-        }
-        else
-        {
-            _ = _dispatcher.EnqueueAsync(() => _ = FollowAsync());
-        }
+        _ = _dispatcher.HasThreadAccess ? FollowAsync() : _dispatcher.EnqueueAsync(() => _ = FollowAsync());
     }
 
     /// <summary>Starts again when someone else is signed in now; nothing changes for other server changes.</summary>
