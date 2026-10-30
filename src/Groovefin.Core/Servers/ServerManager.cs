@@ -30,7 +30,7 @@ public sealed partial class ServerManager(
         var existing = Find(info.Id);
         var profile = existing is null
             ? new ServerProfile { Id = info.Id, Name = info.Name, Address = uri, Version = info.Version }
-            : existing with { Name = info.Name, Address = uri, Version = info.Version };
+            : existing with { Name = info.Name, Address = uri, Version = info.Version, UnencryptedAccepted = existing.UnencryptedAccepted && existing.Address == uri };
 
         settings.Update(s =>
         {
@@ -60,7 +60,7 @@ public sealed partial class ServerManager(
             throw new InvalidOperationException($"{uri} is a different server ({info.Name}).");
         }
 
-        var updated = current with { Address = uri, Name = info.Name, Version = info.Version };
+        var updated = current with { Address = uri, Name = info.Name, Version = info.Version, UnencryptedAccepted = current.UnencryptedAccepted && current.Address == uri };
         Replace(updated);
 
         if (ActiveServer?.Id == updated.Id)
@@ -116,6 +116,16 @@ public sealed partial class ServerManager(
         else
         {
             client.Disconnect();
+        }
+    }
+
+    public void AcceptUnencrypted(string serverId)
+    {
+        if (Find(serverId) is { UnencryptedAccepted: false } profile)
+        {
+            Replace(profile with { UnencryptedAccepted = true });
+            LogUnencryptedAccepted(profile.Name, profile.Address);
+            Changed?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -213,7 +223,10 @@ public sealed partial class ServerManager(
     private static Uri Normalize(string address) =>
         ServerAddress.TryNormalize(address, out var uri)
             ? uri
-            : throw new ArgumentException("Enter an address such as http://192.168.1.10:8096.", nameof(address));
+            : throw new ArgumentException("Enter an address such as https://192.168.1.10:8920.", nameof(address));
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Signing in to {Name} at {Address} without encryption, as the user chose")]
+    private partial void LogUnencryptedAccepted(string name, Uri address);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Server {Name} added at {Address}")]
     private partial void LogAdded(string name, Uri address);

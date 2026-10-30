@@ -38,6 +38,12 @@ public interface IServerManager
     void Restore();
 
     /// <summary>
+    /// Remembers that the user chose to sign in to a server over plain HTTP (#293), for its current
+    /// address. Does nothing for an unknown server.
+    /// </summary>
+    void AcceptUnencrypted(string serverId);
+
+    /// <summary>
     /// Signs in to a server, stores the access token (never the password), makes the server active and
     /// connects.
     /// </summary>

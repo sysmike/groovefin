@@ -67,8 +67,10 @@ Download the latest release from the [Releases page](https://github.com/sysmike/
 - Check a download with its line in `SHA256SUMS.txt`, or with
   `gh attestation verify <file> --repo sysmike/groovefin`.
 
-On first start, enter your server address (for example `http://192.168.1.10:8096`), then sign in
-with your Jellyfin user, or with Quick Connect.
+On first start, enter your server address (for example `https://192.168.1.10:8920`), then sign in
+with your Jellyfin user, or with Quick Connect. Use the server's `https://` address if it has one:
+over plain `http://`, your password and access token cross the network unencrypted, and Groovefin
+asks before it sends them.
 
 ## Build from source
 

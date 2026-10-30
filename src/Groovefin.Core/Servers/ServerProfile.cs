@@ -26,4 +26,11 @@ public sealed record ServerProfile
     /// music libraries (the default).
     /// </summary>
     public string? LibraryId { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the user chose to sign in although <see cref="Address"/> is plain HTTP
+    /// (<see cref="ServerAddress.IsUnencrypted"/>, #293). The choice holds for this address only: a new
+    /// address asks again.
+    /// </summary>
+    public bool UnencryptedAccepted { get; init; }
 }

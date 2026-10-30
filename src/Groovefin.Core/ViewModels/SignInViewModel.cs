@@ -12,11 +12,14 @@ namespace Groovefin.Core.ViewModels;
 /// <summary>
 /// Sign-in page for one server, with user name and password or with Quick Connect. The password lives
 /// only in this ViewModel and is cleared after a successful sign-in; only the access token is stored.
+/// Over plain HTTP the page says so, and before the first sign-in at that address the user has to choose
+/// to send the password and the token unencrypted (#293), also to a server on the home network.
 /// </summary>
 public sealed partial class SignInViewModel(
     IServerManager servers,
     IAuthenticationService authentication,
     INavigationService navigation,
+    IDialogService dialogs,
     IStringResources strings,
     TimeProvider time,
     ILogger<SignInViewModel> logger)
@@ -35,6 +38,10 @@ public sealed partial class SignInViewModel(
 
     [ObservableProperty]
     public partial string ServerAddress { get; private set; } = string.Empty;
+
+    /// <summary>Gets a value indicating whether the server is reached over plain HTTP, without encryption (#293).</summary>
+    [ObservableProperty]
+    public partial bool IsUnencrypted { get; private set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SignInCommand))]
@@ -70,6 +77,7 @@ public sealed partial class SignInViewModel(
         _server = (serverId is null ? null : servers.Servers.FirstOrDefault(s => s.Id == serverId)) ?? servers.ActiveServer;
         ServerName = _server?.Name ?? string.Empty;
         ServerAddress = _server?.Address.ToString().TrimEnd('/') ?? string.Empty;
+        IsUnencrypted = _server is { } server && Servers.ServerAddress.IsUnencrypted(server.Address);
         UserName = _server?.UserName ?? string.Empty;
         Password = string.Empty;
         Error = null;
@@ -102,6 +110,11 @@ public sealed partial class SignInViewModel(
     private async Task SignInAsync(CancellationToken cancellationToken)
     {
         Error = null;
+        if (!await ConfirmUnencryptedAsync())
+        {
+            return;
+        }
+
         try
         {
             await servers.SignInAsync(_server!.Id, UserName, Password, cancellationToken);
@@ -130,6 +143,11 @@ public sealed partial class SignInViewModel(
     {
         var server = _server!;
         Error = null;
+        if (!await ConfirmUnencryptedAsync())
+        {
+            return;
+        }
+
         try
         {
             var request = await authentication.StartQuickConnectAsync(server.Address, cancellationToken);
@@ -162,6 +180,31 @@ public sealed partial class SignInViewModel(
         {
             QuickConnectCode = null;
         }
+    }
+
+    /// <summary>
+    /// Over plain HTTP, asks once per server and address whether to send the password (or the Quick Connect
+    /// secret) and then the token unencrypted. Gets <see langword="true"/> when it may go ahead.
+    /// </summary>
+    private async Task<bool> ConfirmUnencryptedAsync()
+    {
+        if (_server is not { } server || !Servers.ServerAddress.IsUnencrypted(server.Address) || server.UnencryptedAccepted)
+        {
+            return true;
+        }
+
+        var accepted = await dialogs.ConfirmAsync(
+            strings.GetString("SignIn_UnencryptedTitle"),
+            strings.GetString("SignIn_UnencryptedMessage").Replace("{0}", server.Name, StringComparison.Ordinal),
+            strings.GetString("SignIn_UnencryptedAccept"),
+            strings.GetString("Dialog_Cancel"));
+        if (accepted)
+        {
+            servers.AcceptUnencrypted(server.Id);
+            _server = server with { UnencryptedAccepted = true };
+        }
+
+        return accepted;
     }
 
     /// <summary>Polls until approved (<see langword="true"/>) or <see cref="QuickConnectTimeout"/> passed.</summary>

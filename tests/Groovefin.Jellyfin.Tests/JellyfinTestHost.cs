@@ -1,5 +1,6 @@
 using Groovefin.Core.Api;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using WireMock.Server;
 
 namespace Groovefin.Jellyfin.Tests;
@@ -13,11 +14,20 @@ internal sealed class JellyfinTestHost : IDisposable
 
     private readonly ServiceProvider _services;
 
-    public JellyfinTestHost(TimeSpan? attemptTimeout = null)
+    /// <summary>Starts the fake server and builds the Jellyfin layer against it.</summary>
+    /// <param name="attemptTimeout">A shorter timeout per attempt, for the resilience tests.</param>
+    /// <param name="logs">Receives every log entry, from Trace up: the tests that no secret is logged (#293).</param>
+    public JellyfinTestHost(TimeSpan? attemptTimeout = null, ILoggerProvider? logs = null)
     {
         Server = WireMockServer.Start();
         _services = new ServiceCollection()
-            .AddLogging()
+            .AddLogging(builder =>
+            {
+                if (logs is not null)
+                {
+                    builder.SetMinimumLevel(LogLevel.Trace).AddProvider(logs);
+                }
+            })
             .AddSingleton(Identity)
             .AddGroovefinJellyfin(options =>
             {
