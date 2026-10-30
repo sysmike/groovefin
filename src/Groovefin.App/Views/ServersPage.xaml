@@ -94,6 +94,20 @@
                                     IsTextSelectionEnabled="True"
                                     Style="{StaticResource CaptionTextBlockStyle}"
                                     Text="{x:Bind Address}" />
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    Spacing="4"
+                                    Visibility="{x:Bind IsUnencrypted}">
+                                    <FontIcon
+                                        AutomationProperties.AccessibilityView="Raw"
+                                        FontSize="12"
+                                        Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                                        Glyph="&#xE7BA;" />
+                                    <TextBlock
+                                        x:Uid="ServerUnencryptedBadge"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}" />
+                                </StackPanel>
                                 <TextBlock
                                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                     Style="{StaticResource CaptionTextBlockStyle}"

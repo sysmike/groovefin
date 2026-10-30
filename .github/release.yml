@@ -5,6 +5,9 @@ changelog:
       - skip-changelog
       - tracking
   categories:
+    - title: Security
+      labels:
+        - type:security
     - title: Features
       labels:
         - type:feature

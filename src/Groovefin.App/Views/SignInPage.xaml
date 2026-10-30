@@ -32,6 +32,14 @@
                 Message="{x:Bind ViewModel.Error, Mode=OneWay}"
                 Severity="Error" />
 
+            <!--  Plain HTTP: the password and the token cross the network unencrypted (#293).  -->
+            <InfoBar
+                x:Uid="SignInUnencryptedWarning"
+                AutomationProperties.AutomationId="SignInUnencryptedWarning"
+                IsClosable="False"
+                IsOpen="{x:Bind ViewModel.IsUnencrypted, Mode=OneWay}"
+                Severity="Warning" />
+
             <TextBox
                 x:Name="UserNameBox"
                 x:Uid="SignInUserNameBox"

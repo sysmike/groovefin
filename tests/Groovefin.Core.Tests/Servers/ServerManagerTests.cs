@@ -310,4 +310,43 @@ public sealed class ServerManagerTests
         act.Should().Throw<InvalidOperationException>();
         _sut.Invoking(s => s.Remove("nope")).Should().NotThrow();
     }
+
+    [Fact]
+    public async Task Accepting_plain_http_is_kept_with_the_server()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        var raised = 0;
+        _sut.Changed += (_, _) => raised++;
+
+        _sut.AcceptUnencrypted("id-a");
+        _sut.AcceptUnencrypted("id-a");
+        _sut.AcceptUnencrypted("unknown");
+
+        _sut.Servers.Should().ContainSingle().Which.UnencryptedAccepted.Should().BeTrue();
+        _settings.Current.Servers.Known.Should().ContainSingle().Which.UnencryptedAccepted.Should().BeTrue();
+        raised.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task A_new_address_asks_again()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        _sut.AcceptUnencrypted("id-a");
+        StubServer("http://alpha.lan:8096/", "id-a", "Alpha");
+
+        await _sut.UpdateAddressAsync("id-a", "alpha.lan:8096", Ct);
+
+        _sut.Servers.Should().ContainSingle().Which.UnencryptedAccepted.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Adding_a_server_again_at_the_same_address_keeps_the_choice()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        _sut.AcceptUnencrypted("id-a");
+
+        await _sut.AddAsync("http://alpha:8096", Ct);
+
+        _sut.Servers.Should().ContainSingle().Which.UnencryptedAccepted.Should().BeTrue();
+    }
 }

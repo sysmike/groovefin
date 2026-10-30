@@ -11,25 +11,29 @@ namespace Groovefin.Core.Tests.ViewModels;
 
 public sealed class SignInViewModelTests
 {
-    private static readonly ServerProfile Alpha = new() { Id = "id-a", Name = "Alpha", Address = new Uri("http://alpha:8096/"), UserName = "mike" };
-    private static readonly ServerProfile Beta = new() { Id = "id-b", Name = "Beta", Address = new Uri("http://beta:8096/") };
+    // Plain HTTP, already accepted: the tests of the sign-in itself do not meet the warning (#293).
+    private static readonly ServerProfile Alpha = new() { Id = "id-a", Name = "Alpha", Address = new Uri("http://alpha:8096/"), UserName = "mike", UnencryptedAccepted = true };
+    private static readonly ServerProfile Beta = new() { Id = "id-b", Name = "Beta", Address = new Uri("http://beta:8096/"), UnencryptedAccepted = true };
+    private static readonly ServerProfile Plain = new() { Id = "id-p", Name = "Plain", Address = new Uri("http://192.168.1.10:8096/"), UserName = "mike" };
+    private static readonly ServerProfile Secure = new() { Id = "id-s", Name = "Secure", Address = new Uri("https://media.example.com/"), UserName = "mike" };
 
     private readonly IServerManager _servers = Substitute.For<IServerManager>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
     private readonly IAuthenticationService _authentication = Substitute.For<IAuthenticationService>();
+    private readonly IDialogService _dialogs = Substitute.For<IDialogService>();
     private readonly FakeTimeProvider _time = new();
 
     public SignInViewModelTests()
     {
         _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
-        _servers.Servers.Returns([Alpha, Beta]);
+        _servers.Servers.Returns([Alpha, Beta, Plain, Secure]);
         _servers.ActiveServer.Returns(Alpha);
     }
 
     private SignInViewModel CreateSut(string? serverId = null)
     {
-        var sut = new SignInViewModel(_servers, _authentication, _navigation, _strings, _time, NullLogger<SignInViewModel>.Instance);
+        var sut = new SignInViewModel(_servers, _authentication, _navigation, _dialogs, _strings, _time, NullLogger<SignInViewModel>.Instance);
         sut.Initialize(serverId);
         return sut;
     }
@@ -82,6 +86,80 @@ public sealed class SignInViewModelTests
         sut.Error.Should().Be(expectedKey);
         sut.HasError.Should().BeTrue();
         _navigation.DidNotReceiveWithAnyArgs().NavigateTo(default!, default);
+    }
+
+    [Fact]
+    public async Task Over_plain_http_it_asks_before_sending_the_password()
+    {
+        _strings.GetString("SignIn_UnencryptedMessage").Returns("{0} is unencrypted");
+        var sut = CreateSut("id-p");
+        sut.Password = "secret";
+
+        sut.IsUnencrypted.Should().BeTrue();
+        await sut.SignInCommand.ExecuteAsync(null);
+
+        await _dialogs.Received(1).ConfirmAsync("SignIn_UnencryptedTitle", "Plain is unencrypted", "SignIn_UnencryptedAccept", "Dialog_Cancel");
+        await _servers.DidNotReceiveWithAnyArgs().SignInAsync(default!, default!, default!, TestContext.Current.CancellationToken);
+        _servers.DidNotReceiveWithAnyArgs().AcceptUnencrypted(default!);
+        sut.Password.Should().Be("secret", "cancelling leaves the form as it was");
+        sut.HasError.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Accepting_the_warning_remembers_it_and_signs_in()
+    {
+        _dialogs.ConfirmAsync(default!, default!, default!, default!).ReturnsForAnyArgs(true);
+        var sut = CreateSut("id-p");
+        sut.Password = "secret";
+
+        await sut.SignInCommand.ExecuteAsync(null);
+
+        _servers.Received(1).AcceptUnencrypted("id-p");
+        await _servers.Received(1).SignInAsync("id-p", "mike", "secret", Arg.Any<CancellationToken>());
+
+        // Asked once: the next sign-in on this page goes ahead without the dialog.
+        await sut.SignInCommand.ExecuteAsync(null);
+        await _dialogs.ReceivedWithAnyArgs(1).ConfirmAsync(default!, default!, default!, default!);
+    }
+
+    [Fact]
+    public async Task Local_addresses_are_warned_about_too()
+    {
+        Plain.Address.Host.Should().Be("192.168.1.10", "a private address on the home network");
+        var sut = CreateSut("id-p");
+        await sut.SignInCommand.ExecuteAsync(null);
+
+        await _dialogs.ReceivedWithAnyArgs(1).ConfirmAsync(default!, default!, default!, default!);
+    }
+
+    [Fact]
+    public async Task Https_and_accepted_servers_sign_in_without_asking()
+    {
+        var secure = CreateSut("id-s");
+        secure.IsUnencrypted.Should().BeFalse();
+        await secure.SignInCommand.ExecuteAsync(null);
+
+        var accepted = CreateSut("id-a");
+        accepted.IsUnencrypted.Should().BeTrue("the page still says so");
+        await accepted.SignInCommand.ExecuteAsync(null);
+
+        await _dialogs.DidNotReceiveWithAnyArgs().ConfirmAsync(default!, default!, default!, default!);
+        await _servers.Received(1).SignInAsync("id-s", Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _servers.Received(1).SignInAsync("id-a", Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Quick_Connect_over_plain_http_asks_first()
+    {
+        _authentication.IsQuickConnectEnabledAsync(Plain.Address, Arg.Any<CancellationToken>()).Returns(true);
+        var sut = CreateSut("id-p");
+        await sut.CheckQuickConnectAsync(TestContext.Current.CancellationToken);
+
+        await sut.QuickConnectCommand.ExecuteAsync(null);
+
+        await _dialogs.ReceivedWithAnyArgs(1).ConfirmAsync(default!, default!, default!, default!);
+        await _authentication.DidNotReceiveWithAnyArgs().StartQuickConnectAsync(default!, TestContext.Current.CancellationToken);
+        sut.IsWaitingForQuickConnect.Should().BeFalse();
     }
 
     [Fact]

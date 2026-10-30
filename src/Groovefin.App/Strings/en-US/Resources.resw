@@ -332,7 +332,7 @@
     <value>Server address</value>
   </data>
   <data name="ServerAddressBox.PlaceholderText" xml:space="preserve">
-    <value>http://192.168.1.10:8096</value>
+    <value>https://192.168.1.10:8920</value>
   </data>
   <data name="ServerAddButton.Content" xml:space="preserve">
     <value>Add server</value>
@@ -378,7 +378,7 @@
     <value>Remove</value>
   </data>
   <data name="Servers_InvalidAddress" xml:space="preserve">
-    <value>Enter a valid address, for example http://192.168.1.10:8096.</value>
+    <value>Enter a valid address, for example https://192.168.1.10:8920.</value>
   </data>
   <data name="Servers_Unreachable" xml:space="preserve">
     <value>No server answered at this address. Check the address, the port and your network connection.</value>
@@ -412,6 +412,24 @@
   </data>
   <data name="SignIn_WrongCredentials" xml:space="preserve">
     <value>The user name or password is wrong.</value>
+  </data>
+  <data name="SignIn_UnencryptedTitle" xml:space="preserve">
+    <value>Unencrypted connection</value>
+  </data>
+  <data name="SignIn_UnencryptedMessage" xml:space="preserve">
+    <value>{0} is reached over HTTP, without encryption. Your password, and the access token Groovefin keeps after you sign in, cross the network as plain text: anyone on the network between you and the server can read them, also on your home network. If the server has an https:// address, use that one instead.</value>
+  </data>
+  <data name="SignIn_UnencryptedAccept" xml:space="preserve">
+    <value>Sign in anyway</value>
+  </data>
+  <data name="SignInUnencryptedWarning.Title" xml:space="preserve">
+    <value>Not encrypted</value>
+  </data>
+  <data name="SignInUnencryptedWarning.Message" xml:space="preserve">
+    <value>This server is reached over HTTP. Your password and access token are sent without encryption.</value>
+  </data>
+  <data name="ServerUnencryptedBadge.Text" xml:space="preserve">
+    <value>Not encrypted (HTTP)</value>
   </data>
   <data name="SignIn_Unreachable" xml:space="preserve">
     <value>The server can't be reached. Check your network connection and try again.</value>

@@ -481,9 +481,18 @@ try {
     Write-Output 'Added the fake server.'
     Test-Accessibility 'sign-in'
 
+    # The fake server is plain HTTP (#293): the sign-in page says so, and the first sign-in asks whether
+    # to send the password unencrypted. "Sign in anyway" goes ahead.
+    $null = Find-ById 'SignInUnencryptedWarning'
+    Write-Output 'The sign-in page warns that the server is not encrypted.'
+
     # The fake server accepts any user; the password may be empty.
     Set-Text $userName 'smoke'
     (Find-Button 'Sign in').GetCurrentPattern($invoke).Invoke()
+    $signInAnyway = Find-Button 'Sign in anyway'
+    Test-Accessibility 'unencrypted-dialog'
+    $signInAnyway.GetCurrentPattern($invoke).Invoke()
+    Write-Output 'Signing in asked first whether to send the password unencrypted.'
     $null = Find-Button 'Refresh'
     Start-Sleep -Seconds 5
     Test-Running 'on the home page after signing in'

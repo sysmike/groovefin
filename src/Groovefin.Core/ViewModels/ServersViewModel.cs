@@ -16,6 +16,9 @@ public sealed record ServerItem(ServerProfile Profile, bool IsActive)
     public string Address => Profile.Address.ToString().TrimEnd('/');
 
     public string? Version => Profile.Version;
+
+    /// <summary>Gets a value indicating whether the server is reached over plain HTTP, without encryption (#293).</summary>
+    public bool IsUnencrypted => ServerAddress.IsUnencrypted(Profile.Address);
 }
 
 /// <summary>
