@@ -1257,17 +1257,26 @@ try {
     $rows = Get-EntryRows
     if ($rows.Count -lt 2) { Stop-Test 'Playlist selection' "The playlist shows $($rows.Count) entries, not 2." }
     $rows[0].GetCurrentPattern($selectionItem).Select()
+    # Focus first: keys go to the foreground window, and a Ctrl pressed while another window has it never
+    # reaches the app (the click alone then plays the entry).
+    $rows[0].SetFocus()
     $secondBounds = Get-Bounds $rows[1]
     $null = [Smoke.Input]::SetCursorPos([int] ($secondBounds.X + $secondBounds.Width / 2), [int] ($secondBounds.Y + $secondBounds.Height / 2))
     Start-Sleep -Milliseconds 200
     [Smoke.Input]::keybd_event(0x11, 0, 0, [UIntPtr]::Zero) # VK_CONTROL down
+    Start-Sleep -Milliseconds 100
     [Smoke.Input]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero) # LEFTDOWN
     Start-Sleep -Milliseconds 50
     [Smoke.Input]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero) # LEFTUP
+    Start-Sleep -Milliseconds 50
     [Smoke.Input]::keybd_event(0x11, 0, 2, [UIntPtr]::Zero) # up
     $until = (Get-Date).AddSeconds(5)
     while ((Get-SelectedCount) -ne 2 -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
-    if ((Get-SelectedCount) -ne 2) { Stop-Test 'Playlist selection' "After a Ctrl+click on the second entry, $(Get-SelectedCount) entries are selected, not 2." }
+    if ((Get-SelectedCount) -ne 2) {
+        $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+        $selectedNames = @(Get-EntryRows | Where-Object { $_.GetCurrentPattern($selectionItem).Current.IsSelected } | ForEach-Object { $_.Current.Name })
+        Stop-Test 'Playlist selection' "After a Ctrl+click on the second entry, $($selectedNames.Count) entries are selected, not 2 ($($selectedNames -join '; ')); focus on $($focused.Current.ControlType.ProgrammaticName) '$($focused.Current.Name)' in process $($focused.Current.ProcessId) (the app is $($process.Id))."
+    }
     Test-Accessibility 'playlist-selection'
     $rows[1].SetFocus()
     [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
