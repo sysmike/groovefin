@@ -51,7 +51,7 @@
   </data>
   <data name="PrivacyButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Privacy mode</value>
-    <comment>Title bar toggle next to search (#234)</comment>
+    <comment>Title bar toggle beside Settings (#234, #254)</comment>
   </data>
   <data name="PrivacyButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Privacy mode: plays are not reported to the server and Discord shows nothing, until you turn it off or restart Groovefin</value>

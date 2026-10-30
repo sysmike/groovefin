@@ -37,61 +37,59 @@
                 <ImageIconSource ImageSource="ms-appx:///Assets/AppIcon.ico" />
             </TitleBar.IconSource>
             <TitleBar.Content>
-                <!--
-                    The search box, privacy mode beside it (#234, accent-coloured while on) and Settings next to the
-                    window's buttons (#254), checked while Settings is shown.
-                -->
-                <Grid
+                <!--  The search box, alone in the middle.  -->
+                <AutoSuggestBox
+                    x:Name="SearchBox"
+                    x:Uid="SearchBox"
+                    MinWidth="240"
                     MaxWidth="{StaticResource TitleBarContentMaxWidth}"
                     HorizontalAlignment="Stretch"
-                    ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <AutoSuggestBox
-                        x:Name="SearchBox"
-                        x:Uid="SearchBox"
-                        MinWidth="240"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Center"
-                        ItemsSource="{x:Bind Suggestions.Suggestions}"
-                        QueryIcon="Find"
-                        QuerySubmitted="OnSearchQuerySubmitted"
-                        Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}"
-                        TextChanged="OnSearchTextChanged"
-                        TextMemberPath="Title">
-                        <AutoSuggestBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:SearchSuggestion">
-                                <Grid
-                                    Padding="0,4"
-                                    AutomationProperties.Name="{x:Bind AccessibleName}"
-                                    ColumnSpacing="12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <FontIcon
-                                        FontSize="16"
+                    VerticalAlignment="Center"
+                    ItemsSource="{x:Bind Suggestions.Suggestions}"
+                    QueryIcon="Find"
+                    QuerySubmitted="OnSearchQuerySubmitted"
+                    Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}"
+                    TextChanged="OnSearchTextChanged"
+                    TextMemberPath="Title">
+                    <AutoSuggestBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SearchSuggestion">
+                            <Grid
+                                Padding="0,4"
+                                AutomationProperties.Name="{x:Bind AccessibleName}"
+                                ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <FontIcon
+                                    FontSize="16"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Glyph="{x:Bind conv:Glyphs.Suggestion(Kind)}" />
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                        Glyph="{x:Bind conv:Glyphs.Suggestion(Kind)}" />
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock
-                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                            Style="{StaticResource CaptionTextBlockStyle}"
-                                            Text="{x:Bind Subtitle}"
-                                            TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </AutoSuggestBox.ItemTemplate>
-                    </AutoSuggestBox>
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind Subtitle}"
+                                        TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </AutoSuggestBox.ItemTemplate>
+                </AutoSuggestBox>
+            </TitleBar.Content>
+            <TitleBar.RightHeader>
+                <!--
+                    The app-wide buttons next to the window's own (#254): privacy mode (#234, accent-coloured while
+                    on) and Settings, checked while Settings is shown.
+                -->
+                <StackPanel
+                    Margin="0,0,4,0"
+                    Orientation="Horizontal"
+                    Spacing="4">
                     <ToggleButton
                         x:Name="PrivacyButton"
                         x:Uid="PrivacyButton"
-                        Grid.Column="1"
                         VerticalAlignment="Center"
                         AutomationProperties.AutomationId="PrivacyButton"
                         IsChecked="{x:Bind Privacy.IsOn, Mode=TwoWay}">
@@ -100,14 +98,13 @@
                     <ToggleButton
                         x:Name="SettingsButton"
                         x:Uid="SettingsButton"
-                        Grid.Column="2"
                         VerticalAlignment="Center"
                         AutomationProperties.AutomationId="SettingsButton"
                         Click="OnSettingsButtonClick">
                         <FontIcon FontSize="16" Glyph="&#xE713;" />
                     </ToggleButton>
-                </Grid>
-            </TitleBar.Content>
+                </StackPanel>
+            </TitleBar.RightHeader>
         </TitleBar>
 
         <NavigationView
