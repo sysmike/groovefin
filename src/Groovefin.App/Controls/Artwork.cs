@@ -45,13 +45,26 @@ public static class Artwork
             return;
         }
 
-        var cache = App.Services.GetRequiredService<IImageCache>();
-        var path = await cache.GetAsync(request);
+        var bitmap = await LoadAsync(request);
 
         // The container may have been recycled for another item while we waited.
-        if (path is null || !ReferenceEquals(GetRequest(image), request))
+        if (bitmap is not null && ReferenceEquals(GetRequest(image), request))
         {
-            return;
+            image.Source = bitmap;
+        }
+    }
+
+    /// <summary>
+    /// Gets the decoded artwork, for sources that are not an <see cref="Image"/> (an <see cref="ImageIcon"/>, #299);
+    /// <see langword="null"/> when it cannot be loaded. Call it on the UI thread.
+    /// </summary>
+    public static async Task<BitmapImage?> LoadAsync(ImageRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var cache = App.Services.GetRequiredService<IImageCache>();
+        if (await cache.GetAsync(request) is not { } path)
+        {
+            return null;
         }
 
         if (!Decoded.TryGet(path, out var bitmap))
@@ -66,15 +79,12 @@ public static class Artwork
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or COMException)
             {
                 // A truncated or evicted file: show the placeholder; the next request downloads again.
-                return;
+                return null;
             }
 
             Decoded.Set(path, bitmap);
         }
 
-        if (ReferenceEquals(GetRequest(image), request))
-        {
-            image.Source = bitmap;
-        }
+        return bitmap;
     }
 }

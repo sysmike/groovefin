@@ -66,7 +66,12 @@ public sealed class PlaylistDetailViewModelTests
     private IEnumerable<T> Sent<T>()
         where T : class => _sent.OfType<T>();
 
-    private Task LoadAsync() => _sut.LoadAsync(Id, Ct);
+    /// <summary>Loads the page; messages sent while loading are not counted as the test's.</summary>
+    private async Task LoadAsync()
+    {
+        await _sut.LoadAsync(Id, Ct);
+        _sent.Clear();
+    }
 
     [Fact]
     public async Task Load_shows_the_playlist_and_its_entries()
@@ -251,6 +256,27 @@ public sealed class PlaylistDetailViewModelTests
         Order.Should().Equal("a", "c");
         _sut.Details.Should().Be("2 tracks · 2:00");
         await _playlists.Received(1).RemoveEntriesAsync(Id, Arg.Is<IReadOnlyList<string>>(ids => ids.Single() == "e-b"), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Removing_entries_tells_the_navigation_pane_the_new_count_and_length()
+    {
+        await LoadAsync();
+
+        await _sut.RemoveCommand.ExecuteAsync(Row("b"));
+
+        Sent<PlaylistChangedMessage>().Should().ContainSingle().Which.Playlist.Should().BeEquivalentTo(
+            new { Id, TrackCount = 2, Duration = TimeSpan.FromMinutes(2) }, "the pane shows them for a favourite (#299)");
+    }
+
+    [Fact]
+    public async Task Loading_tells_the_pane_only_when_the_count_or_length_differs()
+    {
+        _playlists.GetPlaylistAsync(Id, Arg.Any<CancellationToken>()).Returns(new Playlist { Id = Id, Name = "Chill", TrackCount = 3, Duration = TimeSpan.FromMinutes(3) });
+
+        await _sut.LoadAsync(Id, Ct);
+
+        Sent<PlaylistChangedMessage>().Should().BeEmpty();
     }
 
     [Fact]

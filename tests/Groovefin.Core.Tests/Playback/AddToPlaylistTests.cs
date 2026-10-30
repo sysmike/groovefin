@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
@@ -13,6 +15,8 @@ public sealed class AddToPlaylistTests
     private readonly INotificationService _notifications = Substitute.For<INotificationService>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
+    private readonly WeakReferenceMessenger _messenger = new();
+    private readonly List<string> _added = [];
     private readonly AddToPlaylist _sut;
 
     public AddToPlaylistTests()
@@ -20,7 +24,8 @@ public sealed class AddToPlaylistTests
         _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
         _strings.GetString("Playlist_Added").Returns("{0} songs to {1}");
         _strings.GetString("Playlist_AddedOne").Returns("{0} song to {1}");
-        _sut = new AddToPlaylist(_playlists, _dialogs, _notifications, _errors, _strings);
+        _messenger.Register<AddToPlaylistTests, PlaylistTracksAddedMessage>(this, static (r, m) => r._added.Add(m.PlaylistId));
+        _sut = new AddToPlaylist(_playlists, _dialogs, _notifications, _errors, _strings, _messenger);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -53,6 +58,7 @@ public sealed class AddToPlaylistTests
 
         await _playlists.Received(1).AddTracksAsync("p1", Arg.Is<IReadOnlyList<string>>(ids => ids.SequenceEqual(new[] { "a", "b" })), Arg.Any<CancellationToken>());
         _notifications.Received(1).Show(new AppNotification(NotificationSeverity.Success, "Playlist_AddedTitle", "2 songs to Chill"));
+        _added.Should().Equal(["p1"], "the navigation pane shows a favourite's new count (#299)");
     }
 
     [Fact]
@@ -72,6 +78,7 @@ public sealed class AddToPlaylistTests
 
         _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.EditPlaylist);
         _notifications.DidNotReceiveWithAnyArgs().Show(default!);
+        _added.Should().BeEmpty();
     }
 
     [Fact]

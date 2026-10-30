@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
@@ -158,6 +159,66 @@ public sealed class FavouritePlaylistsTests : IDisposable
         await start;
 
         Names.Should().Equal("Gym");
+    }
+
+    [Fact]
+    public async Task A_favourite_that_keeps_its_place_is_replaced_there()
+    {
+        await _sut.StartAsync();
+        var changes = new List<NotifyCollectionChangedAction>();
+        _sut.Items.CollectionChanged += (_, e) => changes.Add(e.Action);
+
+        _messenger.Send(new PlaylistChangedMessage(Gym with { TrackCount = 12 }));
+
+        changes.Should().Equal([NotifyCollectionChangedAction.Replace], "its item stays in the pane (#299)");
+        _sut.Items[1].TrackCount.Should().Be(12);
+    }
+
+    [Fact]
+    public async Task Tracks_added_to_a_favourite_load_its_new_count()
+    {
+        await _sut.StartAsync();
+        _playlists.GetPlaylistAsync("p3", Arg.Any<CancellationToken>()).Returns(Gym with { TrackCount = 7, Duration = TimeSpan.FromMinutes(30) });
+
+        _messenger.Send(new PlaylistTracksAddedMessage("p3"));
+
+        _sut.Items.Single(p => p.Id == "p3").Should().BeEquivalentTo(new { Name = "Gym", TrackCount = 7, Duration = TimeSpan.FromMinutes(30) });
+    }
+
+    [Fact]
+    public async Task Tracks_added_to_another_playlist_load_nothing()
+    {
+        await _sut.StartAsync();
+
+        _messenger.Send(new PlaylistTracksAddedMessage("p2"));
+
+        await _playlists.DidNotReceiveWithAnyArgs().GetPlaylistAsync(default!, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task A_reload_that_returns_after_unfavouriting_is_dropped()
+    {
+        await _sut.StartAsync();
+        var reload = new TaskCompletionSource<Playlist>();
+        _playlists.GetPlaylistAsync("p3", Arg.Any<CancellationToken>()).Returns(reload.Task);
+
+        _messenger.Send(new PlaylistTracksAddedMessage("p3"));
+        await _favourites.SetAsync("p3", false);
+        reload.SetResult(Gym with { TrackCount = 7 });
+
+        Names.Should().Equal("chill");
+    }
+
+    [Fact]
+    public async Task A_failed_reload_keeps_the_entry()
+    {
+        await _sut.StartAsync();
+        _playlists.GetPlaylistAsync("p3", Arg.Any<CancellationToken>()).Returns<Playlist>(_ => throw new JellyfinException("offline"));
+
+        _messenger.Send(new PlaylistTracksAddedMessage("p3"));
+
+        Names.Should().Equal("chill", "Gym");
+        _logger.Collector.LatestRecord.Level.Should().Be(LogLevel.Warning);
     }
 
     [Fact]
