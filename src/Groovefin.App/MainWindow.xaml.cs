@@ -470,7 +470,7 @@ internal sealed partial class MainWindow : Window
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ShellViewModel.SelectedSection))
+        if (e.PropertyName is nameof(ShellViewModel.SelectedSection) or nameof(ShellViewModel.SelectedPlaylistId))
         {
             SyncSelection(ViewModel.SelectedSection);
         }
@@ -527,6 +527,10 @@ internal sealed partial class MainWindow : Window
         SyncSelection(ViewModel.SelectedSection);
     }
 
+    /// <summary>
+    /// Selects the section's item; on another page nothing, except a favourite playlist's own item on its page.
+    /// Only section items have a page key: a favourite playlist's tag is the playlist (#301).
+    /// </summary>
     private void SyncSelection(string? pageKey)
     {
         if (pageKey == PageKeys.Settings)
@@ -535,9 +539,9 @@ internal sealed partial class MainWindow : Window
             return;
         }
 
-        NavView.SelectedItem = NavView.MenuItems
-            .OfType<NavigationViewItem>()
-            .FirstOrDefault(item => item.Tag as string == pageKey);
+        NavView.SelectedItem = pageKey is not null
+            ? NavView.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(item => item.Tag is string key && key == pageKey)
+            : ViewModel.SelectedPlaylistId is { } playlistId && _playlistItems.TryGetValue(playlistId, out var playlist) ? playlist : null;
     }
 
     private void OnNavigationItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)

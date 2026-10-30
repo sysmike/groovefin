@@ -128,6 +128,20 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
+    public void A_playlist_page_names_its_playlist_for_the_navigation_pane()
+    {
+        using var sut = CreateSut();
+
+        RaiseNavigated(PageKeys.Playlist, "pl1");
+
+        sut.SelectedPlaylistId.Should().Be("pl1", "the pane selects it when it is a favourite (#301)");
+        sut.SelectedSection.Should().BeNull();
+
+        RaiseNavigated(PageKeys.Search, "pl1");
+        sut.SelectedPlaylistId.Should().BeNull("only a playlist page shows a playlist");
+    }
+
+    [Fact]
     public void Settings_page_is_selectable()
     {
         using var sut = CreateSut();
@@ -279,6 +293,6 @@ public sealed class ShellViewModelTests
         sut.VisibleSections.Should().Equal(PageKeys.MainSections);
     }
 
-    private void RaiseNavigated(string pageKey) =>
-        _navigation.Navigated += Raise.EventWith(_navigation, new NavigatedEventArgs(pageKey, null));
+    private void RaiseNavigated(string pageKey, object? parameter = null) =>
+        _navigation.Navigated += Raise.EventWith(_navigation, new NavigatedEventArgs(pageKey, parameter));
 }
