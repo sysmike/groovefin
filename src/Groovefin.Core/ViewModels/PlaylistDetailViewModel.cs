@@ -424,5 +424,12 @@ public sealed partial class PlaylistDetailViewModel(
         var known = Entries.Select(e => e.Entry.Track.Duration).Where(d => d is not null).Select(d => d!.Value).ToList();
         TimeSpan? total = known.Count > 0 ? known.Aggregate(TimeSpan.Zero, (sum, d) => sum + d) : null;
         Details = PlaylistItem.DetailsText(Entries.Count, total, strings);
+
+        // The navigation pane shows a favourite's count and length too (#299).
+        if (Playlist is { } playlist && (playlist.TrackCount != Entries.Count || playlist.Duration != total))
+        {
+            Playlist = playlist with { TrackCount = Entries.Count, Duration = total };
+            messenger.Send(new PlaylistChangedMessage(Playlist));
+        }
     }
 }

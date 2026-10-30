@@ -8,16 +8,20 @@ using Microsoft.Extensions.Logging;
 
 namespace Groovefin.Core.Favourites;
 
-/// <summary>A playlist's name or favourite state changed; sent by the page that changed it (#297).</summary>
+/// <summary>A playlist's name, favourite state or details changed; sent by the page that changed it (#297, #299).</summary>
 public sealed record PlaylistChangedMessage(Playlist Playlist);
 
 /// <summary>A playlist was deleted.</summary>
 public sealed record PlaylistDeletedMessage(string PlaylistId);
 
+/// <summary>Tracks were added to a playlist from a menu or by drag and drop; its details changed (#299).</summary>
+public sealed record PlaylistTracksAddedMessage(string PlaylistId);
+
 /// <summary>
 /// The favourite playlists the navigation pane lists after its sections (#297), by name. Loaded when a user
 /// signs in, emptied on sign-out and when another server or user becomes active, and kept current by
-/// <see cref="PlaylistChangedMessage"/>, <see cref="PlaylistDeletedMessage"/> and unfavouriting. It loads in
+/// <see cref="PlaylistChangedMessage"/>, <see cref="PlaylistDeletedMessage"/>, unfavouriting and, for the
+/// track count and length the pane shows (#299), <see cref="PlaylistTracksAddedMessage"/>. It loads in
 /// the background, so a failure is logged, not shown: the pane then lists no playlists. Use
 /// <see cref="Items"/> from the UI thread.
 /// </summary>
@@ -57,6 +61,7 @@ public sealed class FavouritePlaylists : IDisposable
         messenger.Register<FavouritePlaylists, PlaylistChangedMessage>(this, static (r, m) => r.Update(m.Playlist));
         messenger.Register<FavouritePlaylists, PlaylistDeletedMessage>(this, static (r, m) => r.Remove(m.PlaylistId));
         messenger.Register<FavouritePlaylists, FavouriteChangedMessage>(this, static (r, m) => r.OnFavouriteChanged(m));
+        messenger.Register<FavouritePlaylists, PlaylistTracksAddedMessage>(this, static (r, m) => _ = r.ReloadAsync(m.PlaylistId));
     }
 
     /// <summary>Gets the favourite playlists, by name.</summary>
@@ -118,24 +123,78 @@ public sealed class FavouritePlaylists : IDisposable
         _logger.LogInformation("{Count} of {Total} playlists are favourites", Items.Count, all.Count);
     }
 
-    /// <summary>A favourite takes its place by name (again, after a rename); any other playlist leaves.</summary>
+    /// <summary>
+    /// A favourite takes its place by name; one that keeps its place is replaced there, so its item stays in
+    /// the pane (#299). Any other playlist leaves.
+    /// </summary>
     private void Update(Playlist playlist)
     {
-        Remove(playlist.Id);
+        var current = IndexOf(playlist.Id);
         if (_owner is null || !_favourites.IsFavourite(playlist.Id, playlist.IsFavorite))
         {
-            _logger.LogInformation("Playlist {PlaylistId} is not in the navigation pane (signed in: {SignedIn})", playlist.Id, _owner is not null);
+            if (current >= 0)
+            {
+                Items.RemoveAt(current);
+                _logger.LogInformation("Playlist {PlaylistId} left the navigation pane", playlist.Id);
+            }
+
             return;
         }
 
-        var index = 0;
-        while (index < Items.Count && ByName.Compare(Items[index], playlist) <= 0)
+        var target = Items.Count(p => p.Id != playlist.Id && ByName.Compare(p, playlist) <= 0);
+        if (current == target)
         {
-            index++;
+            Items[current] = playlist;
+            return;
         }
 
-        Items.Insert(index, playlist);
-        _logger.LogInformation("Playlist {PlaylistId} is in the navigation pane at {Index}", playlist.Id, index);
+        if (current >= 0)
+        {
+            Items.RemoveAt(current);
+        }
+
+        Items.Insert(target, playlist);
+        _logger.LogInformation("Playlist {PlaylistId} is in the navigation pane at {Index}", playlist.Id, target);
+    }
+
+    /// <summary>Loads a favourite again after tracks were added to it, for its count and length.</summary>
+    private async Task ReloadAsync(string playlistId)
+    {
+        if (IndexOf(playlistId) < 0)
+        {
+            return;
+        }
+
+        var load = _load;
+        Playlist playlist;
+        try
+        {
+            playlist = await _playlists.GetPlaylistAsync(playlistId);
+        }
+        catch (Exception ex) when (ex is JellyfinException or InvalidOperationException or ArgumentException)
+        {
+            _logger.LogWarning(ex, "Loading playlist {PlaylistId} for the navigation pane failed", playlistId);
+            return;
+        }
+
+        // Still the same user's list, and still in it (not unfavourited or deleted meanwhile).
+        if (load == _load && IndexOf(playlistId) >= 0)
+        {
+            Update(playlist);
+        }
+    }
+
+    private int IndexOf(string playlistId)
+    {
+        for (var i = 0; i < Items.Count; i++)
+        {
+            if (Items[i].Id == playlistId)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private void Remove(string playlistId)

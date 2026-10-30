@@ -22,7 +22,7 @@ public sealed class TrackDragTests
     {
         var strings = Substitute.For<IStringResources>();
         strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
-        var addToPlaylist = new AddToPlaylist(_playlists, Substitute.For<IDialogService>(), Substitute.For<INotificationService>(), _errors, strings);
+        var addToPlaylist = new AddToPlaylist(_playlists, Substitute.For<IDialogService>(), Substitute.For<INotificationService>(), _errors, strings, new CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger());
         _sut = new TrackDrag(_library, _player, addToPlaylist, _errors);
     }
 

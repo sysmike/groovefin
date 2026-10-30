@@ -1,5 +1,7 @@
 using System.Globalization;
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Services;
@@ -16,7 +18,8 @@ public sealed class AddToPlaylist(
     IDialogService dialogs,
     INotificationService notifications,
     IErrorReporter errors,
-    IStringResources strings)
+    IStringResources strings,
+    IMessenger messenger)
 {
     /// <summary>Gets the playlists to offer, by name; empty (and reported) when they cannot be loaded.</summary>
     public async Task<IReadOnlyList<Playlist>> GetTargetsAsync(CancellationToken cancellationToken = default)
@@ -45,6 +48,7 @@ public sealed class AddToPlaylist(
         try
         {
             await playlists.AddTracksAsync(target.Id, [.. tracks.Select(t => t.Id)]);
+            messenger.Send(new PlaylistTracksAddedMessage(target.Id));
             Added(target.Name, tracks.Count);
         }
         catch (Exception ex) when (ex is JellyfinException or InvalidOperationException or ArgumentException)
