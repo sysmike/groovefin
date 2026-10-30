@@ -14,6 +14,7 @@ internal sealed class JellyfinTestHost : IDisposable
 
     private readonly ServiceProvider _services;
 
+    /// <summary>Starts the fake server and builds the Jellyfin layer against it.</summary>
     /// <param name="attemptTimeout">A shorter timeout per attempt, for the resilience tests.</param>
     /// <param name="logs">Receives every log entry, from Trace up: the tests that no secret is logged (#293).</param>
     public JellyfinTestHost(TimeSpan? attemptTimeout = null, ILoggerProvider? logs = null)
