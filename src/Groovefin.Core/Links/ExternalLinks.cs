@@ -43,8 +43,12 @@ public static class ExternalLinks
     public static Uri? LastFm(Artist artist)
     {
         ArgumentNullException.ThrowIfNull(artist);
-        return string.IsNullOrWhiteSpace(artist.Name) ? null : new Uri($"https://www.last.fm/music/{Segment(artist.Name)}");
+        return LastFmArtist(artist.Name);
     }
+
+    /// <summary>Gets an artist on Last.fm by name, or <see langword="null"/> without one: the Discord status (#304).</summary>
+    public static Uri? LastFmArtist(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? null : new Uri($"https://www.last.fm/music/{Segment(name)}");
 
     /// <summary>Last.fm writes spaces as "+" in its paths; everything else is escaped.</summary>
     private static string Segment(string name) => Uri.EscapeDataString(name.Trim()).Replace("%20", "+", StringComparison.Ordinal);

@@ -1,3 +1,4 @@
+using Groovefin.Core.Api;
 using Groovefin.Core.Discord;
 using Groovefin.Core.Models;
 using Groovefin.Core.Playback;
@@ -17,25 +18,33 @@ public sealed class DiscordPresenceTests : IDisposable
     private readonly InMemorySettingsService _settings = new();
     private readonly FakeDiscordConnection _discord = new();
     private readonly PrivacyMode _privacy = new();
+    private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private DiscordPresence? _sut;
 
     public DiscordPresenceTests()
     {
         _time = new(new DateTimeOffset(2026, 10, 20, 12, 0, 0, TimeSpan.Zero));
         _engine = new(time: _time);
+        _library.GetAlbumAsync("al1", Arg.Any<CancellationToken>()).Returns(new Album
+        {
+            Id = "al1",
+            Name = "Discovery",
+            MusicBrainzReleaseGroupId = "48117b82-8d4a-3e11-8fe1-0ba7a6b2d9a5",
+        });
     }
 
     public void Dispose() => _sut?.Dispose();
 
     private DiscordPresence Start(DiscordApplication? application = null) =>
-        _sut = new DiscordPresence(_engine, _settings, _privacy, _discord, application ?? App, _time, NullLogger<DiscordPresence>.Instance);
+        _sut = new DiscordPresence(_engine, _library, _settings, _privacy, _discord, application ?? App, _time, NullLogger<DiscordPresence>.Instance);
 
     private void TurnOn(bool on = true) => _settings.Update(s => s with { Playback = s.Playback with { DiscordPresence = on } });
 
-    private static PlaybackSource Source(string name = "One More Time") => new("q1", new Uri("https://server/Audio/1"), new Track
+    private static PlaybackSource Source(string name = "One More Time", string albumId = "al1") => new("q1", new Uri("https://server/Audio/1"), new Track
     {
         Id = "t1",
         Name = name,
+        AlbumId = albumId,
         AlbumName = "Discovery",
         AlbumArtist = "Daft Punk",
         Artists = [new ArtistRef("a1", "Daft Punk"), new ArtistRef("a2", "Romanthony")],
@@ -305,6 +314,105 @@ public sealed class DiscordPresenceTests : IDisposable
 
         _discord.Connects.Should().Be(2);
         _discord.Sent[^1]!.Details.Should().Be("Aerodynamic");
+    }
+
+    [Fact]
+    public void The_artists_link_to_the_first_on_Last_fm_and_the_album_to_MusicBrainz()
+    {
+        TurnOn();
+        Start();
+
+        Play();
+
+        var shown = _discord.Sent[^1]!;
+        shown.StateUrl.Should().Be(new Uri("https://www.last.fm/music/Daft+Punk"));
+        shown.LargeUrl.Should().Be(new Uri("https://musicbrainz.org/release-group/48117b82-8d4a-3e11-8fe1-0ba7a6b2d9a5"));
+    }
+
+    [Fact]
+    public async Task The_album_is_loaded_once_for_its_tracks()
+    {
+        TurnOn();
+        Start();
+
+        Play();
+        Play(Source("Aerodynamic"));
+        _engine.Seek(TimeSpan.FromSeconds(30));
+
+        await _library.Received(1).GetAlbumAsync("al1", Arg.Any<CancellationToken>());
+        _discord.Sent[^1]!.LargeUrl.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void The_status_shows_at_once_and_again_with_the_link_once_the_album_is_loaded()
+    {
+        var album = new TaskCompletionSource<Album>();
+        _library.GetAlbumAsync("al4", Arg.Any<CancellationToken>()).Returns(album.Task);
+        TurnOn();
+        Start();
+
+        Play(Source(albumId: "al4"));
+        var before = _discord.Sent.Count;
+        album.SetResult(new Album { Id = "al4", Name = "Discovery", MusicBrainzReleaseId = "b1a9c0e9-d987-4042-ae91-78d6a3267d69" });
+
+        _discord.Sent[before - 1]!.LargeUrl.Should().BeNull();
+        _discord.Sent.Should().HaveCount(before + 1);
+        _discord.Sent[^1]!.LargeUrl.Should().Be(new Uri("https://musicbrainz.org/release/b1a9c0e9-d987-4042-ae91-78d6a3267d69"));
+    }
+
+    [Fact]
+    public void An_album_loaded_after_the_next_one_started_sends_nothing()
+    {
+        var album = new TaskCompletionSource<Album>();
+        _library.GetAlbumAsync("al4", Arg.Any<CancellationToken>()).Returns(album.Task);
+        TurnOn();
+        Start();
+
+        Play(Source(albumId: "al4"));
+        Play(Source("Aerodynamic"));
+        var before = _discord.Sent.Count;
+        album.SetResult(new Album { Id = "al4", Name = "Discovery", MusicBrainzReleaseId = "b1a9c0e9-d987-4042-ae91-78d6a3267d69" });
+
+        _discord.Sent.Should().HaveCount(before);
+        _discord.Sent[^1]!.Details.Should().Be("Aerodynamic");
+    }
+
+    [Fact]
+    public void An_album_without_a_MusicBrainz_ID_has_no_link()
+    {
+        _library.GetAlbumAsync("al2", Arg.Any<CancellationToken>()).Returns(new Album { Id = "al2", Name = "Homework" });
+        TurnOn();
+        Start();
+
+        Play(Source(albumId: "al2"));
+
+        var shown = _discord.Sent[^1]!;
+        shown.LargeUrl.Should().BeNull();
+        shown.StateUrl.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void When_the_album_cannot_be_loaded_the_status_shows_without_its_link()
+    {
+        _library.GetAlbumAsync("al3", Arg.Any<CancellationToken>()).Returns<Album>(_ => throw new JellyfinException("Offline"));
+        TurnOn();
+        Start();
+
+        Play(Source(albumId: "al3"));
+
+        var shown = _discord.Sent[^1]!;
+        shown.Details.Should().Be("One More Time");
+        shown.LargeUrl.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task While_the_status_is_off_no_album_is_loaded()
+    {
+        Start();
+
+        Play();
+
+        await _library.DidNotReceive().GetAlbumAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
