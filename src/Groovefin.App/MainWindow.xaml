@@ -104,7 +104,6 @@
             IsPaneToggleButtonVisible="False"
             IsSettingsVisible="True"
             IsTitleBarAutoPaddingEnabled="False"
-            Expanding="OnNavigationExpanding"
             ItemInvoked="OnNavigationItemInvoked"
             PaneDisplayMode="Auto">
             <!--
@@ -138,15 +137,8 @@
                         <FontIcon Glyph="&#xE8EC;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <!--  Expands to the user's playlists (loaded each time), which take dropped tracks and albums.  -->
-                <NavigationViewItem
-                    x:Name="PlaylistsNavItem"
-                    x:Uid="NavPlaylists"
-                    AllowDrop="True"
-                    AutomationProperties.AutomationId="NavItem_playlists"
-                    DragEnter="OnPlaylistsNavDragEnter"
-                    HasUnrealizedChildren="True"
-                    Tag="playlists">
+                <!--  The favourite playlists follow the sections at the end of the pane (#297), so this has no dropdown.  -->
+                <NavigationViewItem x:Uid="NavPlaylists" AutomationProperties.AutomationId="NavItem_playlists" Tag="playlists">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE8FD;" />
                     </NavigationViewItem.Icon>

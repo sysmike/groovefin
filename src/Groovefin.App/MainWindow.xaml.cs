@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Groovefin.App.Controls;
 using Groovefin.App.Services;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Layout;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
@@ -15,6 +16,7 @@ using Groovefin.Core.ViewModels;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
@@ -53,7 +55,7 @@ internal sealed partial class MainWindow : Window
     private const int MinWindowHeight = 600;
 
     private readonly FrameNavigationService _navigation;
-    private readonly AddToPlaylist _addToPlaylist;
+    private readonly FavouritePlaylists _favouritePlaylists;
     private readonly TrackDrag _trackDrag;
     private readonly IStringResources _strings;
     private readonly ISettingsService _settings;
@@ -62,6 +64,9 @@ internal sealed partial class MainWindow : Window
     /// <summary>The navigation pane's section items by page key, and the separator after Home (#255).</summary>
     private readonly Dictionary<string, NavigationViewItem> _sectionItems;
     private readonly NavigationViewItemSeparator _homeSeparator;
+    /// <summary>The favourite playlists' items by playlist ID, after their separator at the end of the pane (#297).</summary>
+    private readonly Dictionary<string, NavigationViewItem> _playlistItems = new(StringComparer.Ordinal);
+    private readonly NavigationViewItemSeparator _playlistsSeparator = new();
     /// <summary>The normal window's presenter, set again when the mini or full-screen player closes.</summary>
     private readonly OverlappedPresenter? _windowPresenter;
     /// <summary>The full window's place and size, saved on closing for the next start (#272).</summary>
@@ -79,7 +84,7 @@ internal sealed partial class MainWindow : Window
         LyricsViewModel lyrics,
         NowPlayingViewModel nowPlaying,
         PrivacyMode privacy,
-        AddToPlaylist addToPlaylist,
+        FavouritePlaylists favouritePlaylists,
         TrackDrag trackDrag,
         IStringResources strings,
         ISettingsService settings,
@@ -87,7 +92,7 @@ internal sealed partial class MainWindow : Window
     {
         _navigation = navigation;
         _shortcuts = shortcuts;
-        _addToPlaylist = addToPlaylist;
+        _favouritePlaylists = favouritePlaylists;
         _trackDrag = trackDrag;
         _strings = strings;
         ViewModel = viewModel;
@@ -101,6 +106,7 @@ internal sealed partial class MainWindow : Window
         _sectionItems = NavView.MenuItems.OfType<NavigationViewItem>().ToDictionary(item => (string)item.Tag, StringComparer.Ordinal);
         _homeSeparator = NavView.MenuItems.OfType<NavigationViewItemSeparator>().Single();
         ApplyNavigationLayout();
+        favouritePlaylists.Items.CollectionChanged += (_, _) => ApplyNavigationLayout();
 
         _settings = settings;
         Title = new ResourceLoader().GetString("AppDisplayName");
@@ -203,6 +209,7 @@ internal sealed partial class MainWindow : Window
         };
 
         ViewModel.Start();
+        _ = favouritePlaylists.StartAsync();
     }
 
     public ShellViewModel ViewModel { get; }
@@ -476,8 +483,8 @@ internal sealed partial class MainWindow : Window
     /// <summary>
     /// Shows the sections the user keeps in the navigation pane, in their order (#255). A hidden section's
     /// page stays reachable by its links and shortcuts; then no item is selected. Only the items that
-    /// differ are moved, added or removed: the others stay in the pane (with their state, such as the
-    /// expanded playlists).
+    /// differ are moved, added or removed: the others stay in the pane (with their state, such as
+    /// focus). The favourite playlists follow the sections, after a separator (#297).
     /// </summary>
     private void ApplyNavigationLayout()
     {
@@ -486,6 +493,18 @@ internal sealed partial class MainWindow : Window
         if (wanted.Count > 1 && sections[0] == PageKeys.Home)
         {
             wanted.Insert(1, _homeSeparator);
+        }
+
+        var playlists = _favouritePlaylists.Items;
+        foreach (var id in _playlistItems.Keys.Where(id => !playlists.Any(p => p.Id == id)).ToList())
+        {
+            _playlistItems.Remove(id);
+        }
+
+        if (playlists.Count > 0)
+        {
+            wanted.Add(_playlistsSeparator);
+            wanted.AddRange(playlists.Select(PlaylistItem));
         }
 
         var items = NavView.MenuItems;
@@ -536,32 +555,24 @@ internal sealed partial class MainWindow : Window
         }
     }
 
-    /// <summary>Loads the playlists under the Playlists item each time it opens, so new and renamed ones show.</summary>
-    private async void OnNavigationExpanding(NavigationView sender, NavigationViewItemExpandingEventArgs args)
+    /// <summary>
+    /// A favourite playlist's item (#297): opens the playlist, takes dropped tracks and albums. Kept per
+    /// playlist, so a rename only changes its name.
+    /// </summary>
+    private NavigationViewItem PlaylistItem(Playlist playlist)
     {
-        if (args.ExpandingItemContainer != PlaylistsNavItem)
+        if (!_playlistItems.TryGetValue(playlist.Id, out var item))
         {
-            return;
-        }
-
-        var playlists = await _addToPlaylist.GetTargetsAsync();
-        PlaylistsNavItem.MenuItems.Clear();
-        foreach (var playlist in playlists)
-        {
-            var item = new NavigationViewItem { Content = playlist.Name, Tag = playlist, AllowDrop = true, Icon = new FontIcon { Glyph = "\uEC4F" } };
+            item = new NavigationViewItem { AllowDrop = true, Icon = new FontIcon { Glyph = "\uEC4F" } };
+            AutomationProperties.SetAutomationId(item, $"NavPlaylist_{playlist.Id}");
             item.DragOver += OnPlaylistNavDragOver;
             item.Drop += OnPlaylistNavDrop;
-            PlaylistsNavItem.MenuItems.Add(item);
+            _playlistItems[playlist.Id] = item;
         }
-    }
 
-    /// <summary>Dragging tracks over Playlists opens it, so they can be dropped on a playlist.</summary>
-    private void OnPlaylistsNavDragEnter(object sender, DragEventArgs e)
-    {
-        if (e.DataView.Contains(TrackDrag.DataFormat))
-        {
-            PlaylistsNavItem.IsExpanded = true;
-        }
+        item.Content = playlist.Name;
+        item.Tag = playlist;
+        return item;
     }
 
     private void OnPlaylistNavDragOver(object sender, DragEventArgs e)

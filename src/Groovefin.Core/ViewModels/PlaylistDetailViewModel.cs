@@ -58,7 +58,8 @@ public sealed partial class PlaylistEntryItem(PlaylistEntry entry, bool isFavour
 
 /// <summary>
 /// Playlist detail page: play, shuffle, queue, rename, delete (after a confirmation), and edit the
-/// entries (remove, move up/down, drag), and toggle a track's heart. Edits show at once and are sent to the
+/// entries (remove, move up/down, drag), and toggle a track's heart or the playlist's, which puts it into the
+/// navigation pane (#297). Edits show at once and are sent to the
 /// server; when the server refuses, the entries are loaded again and the error is shown. The playlist can
 /// be shown in reverse order, last entry first (#267): only here, remembered per playlist, and played as
 /// shown; the server's order stays, so moving entries is off meanwhile.
@@ -88,8 +89,12 @@ public sealed partial class PlaylistDetailViewModel(
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPlaylist), nameof(Name), nameof(IsEmpty))]
-    [NotifyCanExecuteChangedFor(nameof(RenameCommand), nameof(DeleteCommand), nameof(ToggleReverseCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RenameCommand), nameof(DeleteCommand), nameof(ToggleReverseCommand), nameof(ToggleFavouriteCommand))]
     public partial Playlist? Playlist { get; private set; }
+
+    /// <summary>Gets a value indicating whether the playlist is a favourite: it is then in the navigation pane (#297).</summary>
+    [ObservableProperty]
+    public partial bool IsFavourite { get; private set; }
 
     public bool HasPlaylist => Playlist is not null;
 
@@ -148,7 +153,8 @@ public sealed partial class PlaylistDetailViewModel(
             _loadingOrder = true;
             IsReversed = settings.Current.Browse.ReversedPlaylists.Contains(playlist.Id);
             _loadingOrder = false;
-            Playlist = playlist;
+            IsFavourite = favourites.IsFavourite(playlist.Id, playlist.IsFavorite);
+            Playlist = playlist with { IsFavorite = IsFavourite };
             Image = ImageRequest.Primary(playlist.Id, playlist.PrimaryImageTag, ImageWidth, DisplayScale);
             ShowEntries(entries);
         }
@@ -245,6 +251,7 @@ public sealed partial class PlaylistDetailViewModel(
         {
             await playlists.RenameAsync(playlist.Id, name);
             Playlist = playlist with { Name = name.Trim() };
+            messenger.Send(new PlaylistChangedMessage(Playlist));
         }
         catch (Exception ex) when (ex is JellyfinException or InvalidOperationException)
         {
@@ -270,6 +277,7 @@ public sealed partial class PlaylistDetailViewModel(
         try
         {
             await playlists.DeleteAsync(playlist.Id);
+            messenger.Send(new PlaylistDeletedMessage(playlist.Id));
             RememberReversed(playlist.Id, false);
             Playlist = null;
             navigation.GoBack();
@@ -301,6 +309,24 @@ public sealed partial class PlaylistDetailViewModel(
         UpdateDetails();
         List<string> ids = [.. removing.Select(item => item.Entry.EntryId)];
         return EditAsync(() => playlists.RemoveEntriesAsync(Playlist!.Id, ids));
+    }
+
+    /// <summary>The playlist's heart (#297), optimistic like the album page's; a favourite goes into the navigation pane.</summary>
+    [RelayCommand(CanExecute = nameof(HasPlaylist))]
+    private async Task ToggleFavouriteAsync()
+    {
+        var playlist = Playlist!;
+        var target = !IsFavourite;
+        IsFavourite = target;
+        if (await favourites.SetAsync(playlist.Id, target))
+        {
+            Playlist = playlist with { IsFavorite = target };
+            messenger.Send(new PlaylistChangedMessage(Playlist));
+        }
+        else
+        {
+            IsFavourite = !target;
+        }
     }
 
     /// <summary>Toggles a track's heart, optimistic like the album page's.</summary>

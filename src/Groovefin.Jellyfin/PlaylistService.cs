@@ -24,6 +24,8 @@ internal sealed class PlaylistService(JellyfinClient client) : IPlaylistService
                     p.Recursive = true;
                     p.SortBy = [ItemSortBy.SortName];
                     p.Fields = [ItemFields.ChildCount];
+                    // The favourite flag: favourite playlists go into the navigation pane (#297).
+                    p.EnableUserData = true;
                     p.ImageTypeLimit = 1;
                     p.EnableImageTypes = [ImageType.Primary];
                     p.EnableTotalRecordCount = false;

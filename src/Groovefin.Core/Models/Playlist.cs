@@ -14,4 +14,7 @@ public sealed record Playlist
     public int? TrackCount { get; init; }
 
     public TimeSpan? Duration { get; init; }
+
+    /// <summary>Gets a value indicating whether the user marked the playlist as a favourite (#297).</summary>
+    public bool IsFavorite { get; init; }
 }

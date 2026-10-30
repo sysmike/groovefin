@@ -185,6 +185,7 @@ internal static class ItemMapper
             PrimaryImageTag = PrimaryImageTag(dto),
             TrackCount = dto.ChildCount,
             Duration = dto.RunTimeTicks is { } ticks ? TimeSpan.FromTicks(ticks) : null,
+            IsFavorite = dto.UserData?.IsFavorite ?? false,
         };
     }
 

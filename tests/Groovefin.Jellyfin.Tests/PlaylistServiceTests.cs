@@ -96,12 +96,16 @@ public sealed class PlaylistServiceTests : IDisposable
     [Fact]
     public async Task Lists_the_users_audio_playlists_by_name()
     {
-        Stub("/Items", r => r.UsingGet(), new { Items = new[] { new { Id = "11110000-0000-0000-0000-000000000001", Name = "Chill", Type = "Playlist", ChildCount = 3 } } });
+        Stub("/Items", r => r.UsingGet(), new
+        {
+            Items = new[] { new { Id = "11110000-0000-0000-0000-000000000001", Name = "Chill", Type = "Playlist", ChildCount = 3, UserData = new { IsFavorite = true } } },
+        });
 
         var playlists = await Sut.GetPlaylistsAsync(Ct);
 
-        playlists.Should().ContainSingle().Which.Should().BeEquivalentTo(new { Id = "11110000000000000000000000000001", Name = "Chill", TrackCount = 3 });
+        playlists.Should().ContainSingle().Which.Should().BeEquivalentTo(new { Id = "11110000000000000000000000000001", Name = "Chill", TrackCount = 3, IsFavorite = true });
         var query = LastQuery();
+        query["enableUserData"].Should().Be("true", "favourite playlists go into the navigation pane (#297)");
         query["includeItemTypes"].Should().Be("Playlist");
         query["mediaTypes"].Should().Be("Audio");
         query["sortBy"].Should().Be("SortName");
@@ -118,6 +122,7 @@ public sealed class PlaylistServiceTests : IDisposable
 
         playlist.Name.Should().Be("Chill");
         playlist.Duration.Should().Be(TimeSpan.FromMinutes(10));
+        playlist.IsFavorite.Should().BeFalse("the server sent no user data");
     }
 
     [Fact]

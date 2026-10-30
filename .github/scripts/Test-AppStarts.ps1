@@ -1324,6 +1324,37 @@ try {
     Test-Running 'after selecting two playlist entries'
     Write-Output 'A Ctrl+click selected a second playlist entry, the menu acted on both, and Esc cleared the selection.'
 
+    # A favourite playlist goes into the navigation pane, after the sections (#297), and leaves it again.
+    # The fake server keeps no state: the app shows its own change.
+    $navPlaylistId = "NavPlaylist_$($playlist.Id)"
+    function Find-NavPlaylist {
+        $window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, $navPlaylistId))
+    }
+    $toggle = [System.Windows.Automation.TogglePattern]::Pattern
+    if (Find-NavPlaylist) { Stop-Test 'Favourite playlist' "'Road trip' is in the navigation pane before it is a favourite." }
+    (Find-ById 'PlaylistFavouriteButton').GetCurrentPattern($toggle).Toggle()
+    $until = (Get-Date).AddSeconds(5)
+    while (-not ($navPlaylist = Find-NavPlaylist) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    if (-not $navPlaylist) { Stop-Test 'Favourite playlist' "After its heart was set, 'Road trip' is not in the navigation pane." }
+    if ($navPlaylist.Current.Name -cne 'Road trip') { Stop-Test 'Favourite playlist' "The navigation pane names the favourite playlist '$($navPlaylist.Current.Name)', not 'Road trip'." }
+    $lastSection = Find-ById 'NavItem_onrepeat'
+    if ((Get-Bounds $navPlaylist).Top -lt (Get-Bounds $lastSection).Bottom) {
+        Stop-Test 'Favourite playlist' "The favourite playlist is not after the sections (at $((Get-Bounds $navPlaylist).Top) px, On repeat ends at $((Get-Bounds $lastSection).Bottom) px)."
+    }
+    $playlistsItem = Find-ById 'NavItem_playlists'
+    $expand = $null
+    if ($playlistsItem.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $expand) -and
+        $expand.Current.ExpandCollapseState -ne [System.Windows.Automation.ExpandCollapseState]::LeafNode) {
+        Stop-Test 'Favourite playlist' "The Playlists item can still expand ($($expand.Current.ExpandCollapseState))."
+    }
+    Test-Accessibility 'playlist-favourite'
+    (Find-ById 'PlaylistFavouriteButton').GetCurrentPattern($toggle).Toggle()
+    $until = (Get-Date).AddSeconds(5)
+    while ((Find-NavPlaylist) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    if (Find-NavPlaylist) { Stop-Test 'Favourite playlist' "After its heart was cleared, 'Road trip' is still in the navigation pane." }
+    Test-Running 'after favouriting a playlist'
+    Write-Output 'The playlist went into the navigation pane after the sections when its heart was set, and left it when cleared.'
+
     # The queue, the lyrics and the full-screen player, opened and closed with their shortcuts, scanned
     # while they show (#51).
     function Test-Shortcut([string] $keys, [System.Windows.Automation.Condition] $shown, [string] $what, [string] $close) {
