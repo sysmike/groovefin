@@ -172,7 +172,7 @@ internal sealed partial class QueuePanel : UserControl
 
     private void OnUpNextContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
-        if ((e.OriginalSource as FrameworkElement)?.DataContext is not QueueEntry entry)
+        if (e.OriginalSource is not FrameworkElement source || ItemMenu.ItemOf(source) is not QueueEntry entry)
         {
             return;
         }
@@ -195,7 +195,7 @@ internal sealed partial class QueuePanel : UserControl
 
     private void OnHistoryContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
-        if ((e.OriginalSource as FrameworkElement)?.DataContext is QueueEntry entry)
+        if (e.OriginalSource is FrameworkElement source && ItemMenu.ItemOf(source) is QueueEntry entry)
         {
             ShowMenu(e, (PlayGlyph, "Menu_PlayAgain", () => ViewModel.PlayAgainCommand.Execute(entry)));
         }

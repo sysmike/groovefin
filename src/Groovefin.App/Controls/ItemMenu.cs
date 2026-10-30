@@ -6,6 +6,7 @@ using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 
 namespace Groovefin.App.Controls;
@@ -66,6 +67,19 @@ public static class ItemMenu
         return ActionsFor(item);
     }
 
+    /// <summary>
+    /// Gets the item a menu opens for. A right-click starts on an element of the row, whose DataContext is the
+    /// item; Shift+F10 and the Menu key start on the focused row itself, a list's container, which holds the
+    /// item as its content and has no DataContext of its own (#295).
+    /// </summary>
+    public static object? ItemOf(FrameworkElement source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return source is SelectorItem container && ItemsControl.ItemsControlFromItemContainer(container) is { } owner
+            ? owner.ItemFromContainer(container)
+            : source.DataContext;
+    }
+
     /// <summary>Adds <paramref name="actions"/> to <paramref name="menu"/>, a separator between groups.</summary>
     public static void AddTo(MenuFlyout menu, IReadOnlyList<MenuAction> actions)
     {
@@ -115,7 +129,7 @@ public static class ItemMenu
 
     private static void OnContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
-        if (e.OriginalSource is not FrameworkElement target || ActionsFor(target, target.DataContext) is not { Count: > 0 } actions)
+        if (e.OriginalSource is not FrameworkElement target || ActionsFor(target, ItemOf(target)) is not { Count: > 0 } actions)
         {
             return;
         }

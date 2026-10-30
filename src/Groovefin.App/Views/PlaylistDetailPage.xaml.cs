@@ -98,7 +98,7 @@ internal sealed partial class PlaylistDetailPage : Page
 
     private void OnEntryContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
-        if ((e.OriginalSource as FrameworkElement)?.DataContext is not PlaylistEntryItem item || e.OriginalSource is not FrameworkElement target)
+        if (e.OriginalSource is not FrameworkElement target || ItemMenu.ItemOf(target) is not PlaylistEntryItem item)
         {
             return;
         }

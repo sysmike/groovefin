@@ -1289,17 +1289,19 @@ try {
     [Smoke.Input]::mouse_event(0x0008, 0, 0, 0, [UIntPtr]::Zero) # RIGHTDOWN
     Start-Sleep -Milliseconds 50
     [Smoke.Input]::mouse_event(0x0010, 0, 0, 0, [UIntPtr]::Zero) # RIGHTUP
-    $remove = Wait-RemoveItem
-    if (-not $remove) {
+    if (-not ($remove = Wait-RemoveItem)) {
         Write-MenuDiagnostics 'a right-click on two selected entries'
-        [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
-        $rows[1].SetFocus()
-        [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
-        $remove = Wait-RemoveItem
+        Stop-Test 'Playlist selection' "A right-click on two selected entries ($(Get-SelectedCount) selected now) opened no menu with 'Remove from playlist'."
     }
-    if (-not $remove) {
+    # From the keyboard too: Shift+F10 starts on the focused row's container, which has no DataContext (#295).
+    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+    $until = (Get-Date).AddSeconds(5)
+    while ((Find-MenuItem 'Remove from playlist') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    $rows[1].SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
+    if (-not ($remove = Wait-RemoveItem)) {
         Write-MenuDiagnostics 'Shift+F10 on two selected entries'
-        Stop-Test 'Playlist selection' "Neither a right-click nor Shift+F10 on two selected entries ($(Get-SelectedCount) selected now) opened a menu with 'Remove from playlist'."
+        Stop-Test 'Playlist selection' "Shift+F10 on two selected entries ($(Get-SelectedCount) selected now) opened no menu with 'Remove from playlist'."
     }
     foreach ($name in 'Play now', 'Add to queue') {
         if (-not (Find-MenuItem $name)) { Stop-Test 'Playlist selection' "The menu of two entries has no '$name'." }
