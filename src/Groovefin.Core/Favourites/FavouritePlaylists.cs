@@ -121,6 +121,8 @@ public sealed class FavouritePlaylists : IDisposable
         {
             Items.Add(playlist);
         }
+
+        _logger.LogInformation("{Count} of {Total} playlists are favourites", Items.Count, all.Count);
     }
 
     /// <summary>A favourite takes its place by name (again, after a rename); any other playlist leaves.</summary>
@@ -129,6 +131,7 @@ public sealed class FavouritePlaylists : IDisposable
         Remove(playlist.Id);
         if (_owner is null || !_favourites.IsFavourite(playlist.Id, playlist.IsFavorite))
         {
+            _logger.LogInformation("Playlist {PlaylistId} is not in the navigation pane (signed in: {SignedIn})", playlist.Id, _owner is not null);
             return;
         }
 
@@ -139,6 +142,7 @@ public sealed class FavouritePlaylists : IDisposable
         }
 
         Items.Insert(index, playlist);
+        _logger.LogInformation("Playlist {PlaylistId} is in the navigation pane at {Index}", playlist.Id, index);
     }
 
     private void Remove(string playlistId)

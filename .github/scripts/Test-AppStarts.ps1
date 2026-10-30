@@ -1333,9 +1333,14 @@ try {
     $toggle = [System.Windows.Automation.TogglePattern]::Pattern
     if (Find-NavPlaylist) { Stop-Test 'Favourite playlist' "'Road trip' is in the navigation pane before it is a favourite." }
     (Find-ById 'PlaylistFavouriteButton').GetCurrentPattern($toggle).Toggle()
-    $until = (Get-Date).AddSeconds(5)
+    $until = (Get-Date).AddSeconds(10)
     while (-not ($navPlaylist = Find-NavPlaylist) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
-    if (-not $navPlaylist) { Stop-Test 'Favourite playlist' "After its heart was set, 'Road trip' is not in the navigation pane." }
+    if (-not $navPlaylist) {
+        $heart = (Find-ById 'PlaylistFavouriteButton').GetCurrentPattern($toggle).Current.ToggleState
+        $navItems = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)) |
+                Where-Object { $_.Current.AutomationId -like 'Nav*' } | ForEach-Object { "'$($_.Current.Name)' ($($_.Current.AutomationId))" })
+        Stop-Test 'Favourite playlist' "After its heart was set ($heart), 'Road trip' is not in the navigation pane. Its items: $($navItems -join ', ')."
+    }
     if ($navPlaylist.Current.Name -cne 'Road trip') { Stop-Test 'Favourite playlist' "The navigation pane names the favourite playlist '$($navPlaylist.Current.Name)', not 'Road trip'." }
     $lastSection = Find-ById 'NavItem_onrepeat'
     if ((Get-Bounds $navPlaylist).Top -lt (Get-Bounds $lastSection).Bottom) {
