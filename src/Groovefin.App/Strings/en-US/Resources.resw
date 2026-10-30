@@ -51,10 +51,17 @@
   </data>
   <data name="PrivacyButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Privacy mode</value>
-    <comment>Title bar toggle next to search (#234)</comment>
+    <comment>Title bar toggle beside Settings (#234, #254)</comment>
   </data>
   <data name="PrivacyButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Privacy mode: plays are not reported to the server and Discord shows nothing, until you turn it off or restart Groovefin</value>
+  </data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Settings</value>
+    <comment>Title bar button beside privacy mode (#254)</comment>
+  </data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Settings</value>
   </data>
   <data name="NavHome.Content" xml:space="preserve">
     <value>Home</value>
@@ -1678,6 +1685,9 @@
   <data name="Shortcut_PrivacyMode" xml:space="preserve">
     <value>Privacy mode on or off</value>
   </data>
+  <data name="Shortcut_Settings" xml:space="preserve">
+    <value>Open Settings</value>
+  </data>
   <data name="Shortcut_GoBack" xml:space="preserve">
     <value>Back (also the mouse's back button)</value>
   </data>
@@ -2041,9 +2051,8 @@
   <data name="NowPlayingMuteButton.AccessKey" xml:space="preserve">
     <value>E</value>
   </data>
-  <data name="Nav_SettingsAccessKey" xml:space="preserve">
+  <data name="SettingsButton.AccessKey" xml:space="preserve">
     <value>T</value>
-    <comment>Access key of the Settings item in the navigation pane</comment>
   </data>
   <data name="SettingsDensityCard.Header" xml:space="preserve">
     <value>Density</value>
@@ -2092,6 +2101,9 @@
   </data>
   <data name="Key_Divide" xml:space="preserve">
     <value>Num /</value>
+  </data>
+  <data name="Key_Comma" xml:space="preserve">
+    <value>,</value>
   </data>
   <data name="Shortcuts_ChangeName" xml:space="preserve">
     <value>Change the keys for {0}</value>

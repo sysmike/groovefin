@@ -31,10 +31,11 @@ WinUI 3.
 - An optional icon in the notification area, with playback controls.
 - A full-screen player with a blurred cover backdrop, and an always-on-top mini player.
 - Keyboard shortcuts for everything you do often, listed in Settings, where you can give each one other keys.
+  Settings is the gear button in the title bar, or Ctrl+,.
 - The mouse's back and forward buttons (or Alt+Left and Alt+Right) move through the pages you visited.
 - An optional Discord status ("Listening to <artist>") with title, artist and progress, through
   the Discord app on the PC: no keys, and nothing goes to the internet from Groovefin.
-- A privacy mode (the button beside the search box, Ctrl+Shift+P or the tray menu): no plays are
+- A privacy mode (the button beside Settings in the title bar, Ctrl+Shift+P or the tray menu): no plays are
   reported to your server and Discord shows nothing, until you turn it off or restart Groovefin.
 
 **Look and feel**

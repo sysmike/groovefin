@@ -387,7 +387,7 @@ try {
     # and a place on screen, Tab must not get stuck, and each part of the window (title bar, search box,
     # navigation, page, now playing bar) must be one run of stops, not visited in pieces. The order is printed.
     # The landmarks MainContent (the page) and NowPlaying come before NavView, which holds the page too.
-    $regions = 'SearchBox', 'PrivacyButton', 'MainContent', 'NowPlaying', 'NavView'
+    $regions = 'SearchBox', 'PrivacyButton', 'SettingsButton', 'MainContent', 'NowPlaying', 'NavView'
     function Get-Region([System.Windows.Automation.AutomationElement] $element) {
         $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
         for ($e = $element; $e; $e = $walker.GetParent($e)) {
@@ -1436,12 +1436,19 @@ try {
     Test-Running 'after the queue, the lyrics and the full-screen player'
     Write-Output 'The queue, the lyrics and the full-screen player open and close with their shortcuts.'
 
-    # Settings, with the equalizer's sliders.
-    Select-Navigation 'Settings'
+    # Settings, with the equalizer's sliders, opened with the title bar's button, which is then checked (#254).
+    # The navigation pane has no Settings item.
+    $settingsToggle = (Find-ById 'SettingsButton').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+    $settingsToggle.Toggle()
     $equalizerCard = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) "equalizer settings"
     Start-Sleep -Seconds 2
     Test-Running 'on the settings page'
-    Write-Output 'The settings page opened with the equalizer.'
+    if ($settingsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Settings' 'The title bar''s Settings button is not checked on the settings page.' }
+    $settingsItem = $window.FindFirst($scope::Descendants, [System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Settings'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)))
+    if ($settingsItem) { Stop-Test 'Settings' 'The navigation pane still has a Settings item.' }
+    Write-Output 'The title bar''s Settings button opened the settings page with the equalizer and is checked; the navigation pane has no Settings item.'
     # Shown only in a build with the Discord application ID (#160).
     Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, "Show what I'm playing in Discord")) 'Discord setting' | Out-Null
     Write-Output 'The Discord setting is shown.'
@@ -1659,9 +1666,20 @@ try {
         Stop-Test 'Smoke test' ("The mini player should resize to 520x170 and stop at 720x200, not {0:0}x{1:0} and {2:0}x{3:0}." -f $resized.Width, $resized.Height, $largest.Width, $largest.Height)
     }
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
-    $null = Select-Navigation 'Settings'
+    Start-Sleep -Seconds 1
     Test-Running 'after the mini player'
     Write-Output 'The mini player opened at 420x140, resized within its limits, and Esc left it.'
+
+    # Ctrl+, opens Settings (#254): from Albums, and the title bar's button is checked again.
+    Select-Navigation 'Albums'
+    Start-Sleep -Seconds 1
+    $settingsToggle = (Find-ById 'SettingsButton').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+    if ($settingsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::Off) { Stop-Test 'Settings' 'The title bar''s Settings button is still checked on Albums.' }
+    [System.Windows.Forms.SendKeys]::SendWait('^,')
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) 'settings page after Ctrl+,'
+    Start-Sleep -Seconds 1
+    if ($settingsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Settings' 'Ctrl+, did not open Settings, or the title bar''s Settings button is not checked there.' }
+    Write-Output 'Ctrl+, opened Settings from Albums; the title bar''s Settings button is unchecked on Albums and checked on Settings.'
 
     # Minimum size (#241): shrunk far below it, the window's client area stops at 860x600, and with the queue
     # open every button of the title bar, the now playing bar and the queue is whole inside the window; the

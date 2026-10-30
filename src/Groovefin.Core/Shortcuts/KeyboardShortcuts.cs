@@ -21,6 +21,7 @@ public enum ShortcutAction
     GoBack,
     GoForward,
     PrivacyMode,
+    Settings,
 }
 
 /// <summary>An action and the keys that run it.</summary>
@@ -69,11 +70,12 @@ public static class KeyboardShortcuts
         new(ShortcutAction.GoBack, new("Left", Alt: true)),
         new(ShortcutAction.GoForward, new("Right", Alt: true)),
         new(ShortcutAction.PrivacyMode, new("P", Control: true, Shift: true)),
+        new(ShortcutAction.Settings, new("Comma", Control: true)),
     ];
 
     /// <summary>Keys shown by a name of their own (<c>Key_{name}</c> in the strings); they need Ctrl or Alt, except Space.</summary>
     public static IReadOnlyList<string> NamedKeys { get; } =
-        ["Space", "Left", "Right", "Up", "Down", "Home", "End", "PageUp", "PageDown", "Insert", "Delete", "Add", "Subtract", "Multiply", "Divide"];
+        ["Space", "Left", "Right", "Up", "Down", "Home", "End", "PageUp", "PageDown", "Insert", "Delete", "Add", "Subtract", "Multiply", "Divide", "Comma"];
 
     private static readonly HashSet<string> Modifiers = new(
         ["Control", "Shift", "Menu", "LeftControl", "RightControl", "LeftShift", "RightShift", "LeftMenu", "RightMenu", "LeftWindows", "RightWindows"],
