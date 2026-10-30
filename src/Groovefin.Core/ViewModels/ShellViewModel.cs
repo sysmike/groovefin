@@ -50,6 +50,13 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string? SelectedSection { get; private set; }
 
+    /// <summary>
+    /// Gets the ID of the playlist shown, or <see langword="null"/> on other pages: the navigation pane selects
+    /// it when it is a favourite (#301).
+    /// </summary>
+    [ObservableProperty]
+    public partial string? SelectedPlaylistId { get; private set; }
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(GoBackCommand))]
     public partial bool CanGoBack { get; private set; }
@@ -122,6 +129,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     {
         CanGoBack = _navigation.CanGoBack;
         CanGoForward = _navigation.CanGoForward;
+        SelectedPlaylistId = e.PageKey == PageKeys.Playlist ? e.Parameter as string : null;
         SelectedSection = e.PageKey switch
         {
             // Server management is part of Settings.

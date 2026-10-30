@@ -1356,6 +1356,29 @@ try {
         Stop-Test 'Favourite playlist' "The Playlists item can still expand ($($expand.Current.ExpandCollapseState))."
     }
     Test-Accessibility 'playlist-favourite'
+
+    # The pane selects the favourite on its own page, and nothing on a page that is not a section (#301): it
+    # selected the first favourite there. The search page is one; its Back button returns to the playlist.
+    function Test-NavPlaylistSelected([bool] $expected, [string] $when) {
+        $until = (Get-Date).AddSeconds(5)
+        while ((Find-NavPlaylist).GetCurrentPattern($selectionItem).Current.IsSelected -ne $expected -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
+        if ((Find-NavPlaylist).GetCurrentPattern($selectionItem).Current.IsSelected -ne $expected) {
+            Stop-Test 'Favourite playlist' "The favourite playlist's item is $(if ($expected) { 'not ' })selected $when."
+        }
+    }
+    Test-NavPlaylistSelected $true 'on its own page'
+    $searchEdit = (Find-ById 'SearchBox').FindFirst($scope::Descendants,
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit))
+    $searchEdit.SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait('Track{ENTER}')
+    $until = (Get-Date).AddSeconds(10)
+    while ($window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'PlaylistFavouriteButton')) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    Test-NavPlaylistSelected $false 'on the search page'
+    # The title bar's Back button: Alt+Left stays in the search box, which still has focus.
+    $searchEdit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('')
+    (Find-Button 'Back').GetCurrentPattern($invoke).Invoke()
+    $null = Find-ById 'PlaylistFavouriteButton'
+    Test-NavPlaylistSelected $true 'back on its own page'
     (Find-ById 'PlaylistFavouriteButton').GetCurrentPattern($toggle).Toggle()
     $until = (Get-Date).AddSeconds(10)
     while ((Find-NavPlaylist) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
