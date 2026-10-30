@@ -1325,7 +1325,8 @@ try {
     Write-Output 'A Ctrl+click selected a second playlist entry, the menu acted on both, and Esc cleared the selection.'
 
     # A favourite playlist goes into the navigation pane, after the sections (#297), and leaves it again.
-    # The fake server keeps no state: the app shows its own change.
+    # The fake server keeps no state: the app shows its own change. It answers one request at a time, so the
+    # heart's request can wait behind a stream still being sent: up to 30 seconds.
     $navPlaylistId = "NavPlaylist_$($playlist.Id)"
     function Find-NavPlaylist {
         $window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, $navPlaylistId))
@@ -1333,7 +1334,7 @@ try {
     $toggle = [System.Windows.Automation.TogglePattern]::Pattern
     if (Find-NavPlaylist) { Stop-Test 'Favourite playlist' "'Road trip' is in the navigation pane before it is a favourite." }
     (Find-ById 'PlaylistFavouriteButton').GetCurrentPattern($toggle).Toggle()
-    $until = (Get-Date).AddSeconds(10)
+    $until = (Get-Date).AddSeconds(30)
     while (-not ($navPlaylist = Find-NavPlaylist) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
     if (-not $navPlaylist) {
         $heart = (Find-ById 'PlaylistFavouriteButton').GetCurrentPattern($toggle).Current.ToggleState
@@ -1354,7 +1355,7 @@ try {
     }
     Test-Accessibility 'playlist-favourite'
     (Find-ById 'PlaylistFavouriteButton').GetCurrentPattern($toggle).Toggle()
-    $until = (Get-Date).AddSeconds(5)
+    $until = (Get-Date).AddSeconds(30)
     while ((Find-NavPlaylist) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
     if (Find-NavPlaylist) { Stop-Test 'Favourite playlist' "After its heart was cleared, 'Road trip' is still in the navigation pane." }
     Test-Running 'after favouriting a playlist'
