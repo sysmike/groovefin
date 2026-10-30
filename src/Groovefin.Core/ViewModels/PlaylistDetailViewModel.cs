@@ -287,22 +287,20 @@ public sealed partial class PlaylistDetailViewModel(
     public Task RemoveEntriesAsync(IReadOnlyList<PlaylistEntryItem> items)
     {
         ArgumentNullException.ThrowIfNull(items);
-        var removed = new List<string>(items.Count);
-        foreach (var item in items)
-        {
-            if (Entries.Remove(item))
-            {
-                removed.Add(item.Entry.EntryId);
-            }
-        }
-
-        if (removed.Count == 0)
+        List<PlaylistEntryItem> removing = [.. items.Where(Entries.Contains).Distinct()];
+        if (removing.Count == 0)
         {
             return Task.CompletedTask;
         }
 
+        foreach (var item in removing)
+        {
+            Entries.Remove(item);
+        }
+
         UpdateDetails();
-        return EditAsync(() => playlists.RemoveEntriesAsync(Playlist!.Id, removed));
+        List<string> ids = [.. removing.Select(item => item.Entry.EntryId)];
+        return EditAsync(() => playlists.RemoveEntriesAsync(Playlist!.Id, ids));
     }
 
     /// <summary>Toggles a track's heart, optimistic like the album page's.</summary>
