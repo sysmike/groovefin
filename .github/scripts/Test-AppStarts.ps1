@@ -1343,6 +1343,8 @@ try {
         Stop-Test 'Favourite playlist' "After its heart was set ($heart), 'Road trip' is not in the navigation pane. Its items: $($navItems -join ', ')."
     }
     if ($navPlaylist.Current.Name -cne 'Road trip') { Stop-Test 'Favourite playlist' "The navigation pane names the favourite playlist '$($navPlaylist.Current.Name)', not 'Road trip'." }
+    # Its details below the name, beside the cover (#299): the fake playlist has 2 tracks.
+    if ($navPlaylist.Current.HelpText -notlike '2 tracks*') { Stop-Test 'Favourite playlist' "The favourite playlist's details read '$($navPlaylist.Current.HelpText)', not '2 tracks'." }
     $lastSection = Find-ById 'NavItem_onrepeat'
     if ((Get-Bounds $navPlaylist).Top -lt (Get-Bounds $lastSection).Bottom) {
         Stop-Test 'Favourite playlist' "The favourite playlist is not after the sections (at $((Get-Bounds $navPlaylist).Top) px, On repeat ends at $((Get-Bounds $lastSection).Bottom) px)."

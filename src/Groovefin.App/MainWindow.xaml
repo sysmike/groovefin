@@ -104,7 +104,10 @@
             IsPaneToggleButtonVisible="False"
             IsSettingsVisible="True"
             IsTitleBarAutoPaddingEnabled="False"
+            DisplayModeChanged="OnDisplayModeChanged"
             ItemInvoked="OnNavigationItemInvoked"
+            PaneClosing="OnPaneClosing"
+            PaneOpening="OnPaneOpening"
             PaneDisplayMode="Auto">
             <!--
                 The sections in their default order. The window shows them in the user's order and leaves out the

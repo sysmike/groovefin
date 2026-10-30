@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Groovefin.App.Controls;
 using Groovefin.App.Services;
 using Groovefin.Core.Favourites;
+using Groovefin.Core.Images;
 using Groovefin.Core.Layout;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
@@ -66,6 +67,8 @@ internal sealed partial class MainWindow : Window
     private readonly NavigationViewItemSeparator _homeSeparator;
     /// <summary>The favourite playlists' items by playlist ID, after their separator at the end of the pane (#297).</summary>
     private readonly Dictionary<string, NavigationViewItem> _playlistItems = new(StringComparer.Ordinal);
+    /// <summary>Whether the pane shows names: the favourite playlists then show their cover beside them, else as their icon (#299).</summary>
+    private bool _paneOpen = true;
     private readonly NavigationViewItemSeparator _playlistsSeparator = new();
     /// <summary>The normal window's presenter, set again when the mini or full-screen player closes.</summary>
     private readonly OverlappedPresenter? _windowPresenter;
@@ -504,7 +507,7 @@ internal sealed partial class MainWindow : Window
         if (playlists.Count > 0)
         {
             wanted.Add(_playlistsSeparator);
-            wanted.AddRange(playlists.Select(PlaylistItem));
+            wanted.AddRange(playlists.Select(NavPlaylistItem));
         }
 
         var items = NavView.MenuItems;
@@ -561,22 +564,55 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>
     /// A favourite playlist's item (#297): opens the playlist, takes dropped tracks and albums. Kept per
-    /// playlist, so a rename only changes its name.
+    /// playlist, so a rename only changes its name. It shows the cover, name and details (#299).
     /// </summary>
-    private NavigationViewItem PlaylistItem(Playlist playlist)
+    private NavigationViewItem NavPlaylistItem(Playlist playlist)
     {
         if (!_playlistItems.TryGetValue(playlist.Id, out var item))
         {
-            item = new NavigationViewItem { AllowDrop = true, Icon = new FontIcon { Glyph = "\uEC4F" } };
+            item = new NavigationViewItem { AllowDrop = true, Content = new PlaylistNavItem() };
             AutomationProperties.SetAutomationId(item, $"NavPlaylist_{playlist.Id}");
             item.DragOver += OnPlaylistNavDragOver;
             item.Drop += OnPlaylistNavDrop;
             _playlistItems[playlist.Id] = item;
         }
 
-        item.Content = playlist.Name;
+        var details = PlaylistItem.DetailsText(playlist.TrackCount, playlist.Duration, _strings);
+        var scale = RootGrid.XamlRoot?.RasterizationScale ?? 1;
+        var content = (PlaylistNavItem)item.Content;
+        content.Show(playlist.Name, details, ImageRequest.Primary(playlist.Id, playlist.PrimaryImageTag, PlaylistNavItem.CoverSize, scale));
         item.Tag = playlist;
+        AutomationProperties.SetName(item, playlist.Name);
+        AutomationProperties.SetHelpText(item, details);
+        ToolTipService.SetToolTip(item, playlist.Name);
+        ShowPlaylistIcon(item);
         return item;
+    }
+
+    /// <summary>The cover goes beside the name in the open pane, and is the icon in the closed compact pane.</summary>
+    private void ShowPlaylistIcon(NavigationViewItem item) =>
+        item.Icon = _paneOpen ? null : ((PlaylistNavItem)item.Content).Icon;
+
+    private void OnPaneOpening(NavigationView sender, object args) => SetPaneOpen(true);
+
+    private void OnPaneClosing(NavigationView sender, NavigationViewPaneClosingEventArgs args) => SetPaneOpen(false);
+
+    /// <summary>Only the expanded mode starts open; compact and minimal open over the page later.</summary>
+    private void OnDisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args) =>
+        SetPaneOpen(args.DisplayMode == NavigationViewDisplayMode.Expanded);
+
+    private void SetPaneOpen(bool open)
+    {
+        if (open == _paneOpen)
+        {
+            return;
+        }
+
+        _paneOpen = open;
+        foreach (var item in _playlistItems.Values)
+        {
+            ShowPlaylistIcon(item);
+        }
     }
 
     private void OnPlaylistNavDragOver(object sender, DragEventArgs e)
