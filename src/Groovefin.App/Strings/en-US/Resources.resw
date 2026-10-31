@@ -1057,6 +1057,35 @@
     <value>{0} song added to “{1}”.</value>
     <comment>{0} = 1, {1} = playlist name</comment>
   </data>
+  <data name="Playlist_DuplicateTitle" xml:space="preserve">
+    <value>Already in the playlist</value>
+    <comment>Asked before adding songs a playlist already has (#312)</comment>
+  </data>
+  <data name="Playlist_DuplicateOne" xml:space="preserve">
+    <value>“{0}” is already in “{1}”. Add it again?</value>
+    <comment>{0} = song, {1} = playlist</comment>
+  </data>
+  <data name="Playlist_DuplicateAll" xml:space="preserve">
+    <value>These {0} songs are already in “{1}”. Add them again?</value>
+    <comment>{0} = number of songs, {1} = playlist</comment>
+  </data>
+  <data name="Playlist_DuplicateSomeOne" xml:space="preserve">
+    <value>“{0}” is already in “{1}”. Add it again with the other songs, or only the new ones?</value>
+    <comment>{0} = song, {1} = playlist</comment>
+  </data>
+  <data name="Playlist_DuplicateSome" xml:space="preserve">
+    <value>{0} of these {1} songs are already in “{2}”. Add them again with the others, or only the new ones?</value>
+    <comment>{0} = songs already there, {1} = all songs, {2} = playlist</comment>
+  </data>
+  <data name="Playlist_AddAgain" xml:space="preserve">
+    <value>Add again</value>
+  </data>
+  <data name="Playlist_AddAll" xml:space="preserve">
+    <value>Add all</value>
+  </data>
+  <data name="Playlist_AddNewOnly" xml:space="preserve">
+    <value>Add only new ones</value>
+  </data>
   <data name="Operation_LoadPlaylists" xml:space="preserve">
     <value>Couldn't load the playlists</value>
   </data>

@@ -21,6 +21,19 @@ internal sealed class ContentDialogService : IDialogService
         return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 
+    public async Task<DialogChoice> ChooseAsync(string title, string message, string primaryButtonText, string secondaryButtonText, string closeButtonText)
+    {
+        var dialog = Create(title, primaryButtonText, closeButtonText);
+        dialog.SecondaryButtonText = secondaryButtonText;
+        dialog.Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap };
+        return await dialog.ShowAsync() switch
+        {
+            ContentDialogResult.Primary => DialogChoice.Primary,
+            ContentDialogResult.Secondary => DialogChoice.Secondary,
+            _ => DialogChoice.None,
+        };
+    }
+
     public async Task<string?> PromptAsync(string title, string label, string initialText, string primaryButtonText, string closeButtonText)
     {
         var box = new TextBox { Header = label, Text = initialText, InputScope = Url() };
