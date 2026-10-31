@@ -57,6 +57,8 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>The drag data of a favourite playlist being moved in the pane (#306): its ID.</summary>
     private const string PlaylistMoveFormat = "Groovefin.FavouritePlaylist";
+    /// <summary>How far the mouse moves with the button held before a favourite playlist's drag starts.</summary>
+    private const double PlaylistDragThreshold = 4;
     private const string UpGlyph = "\uE74A";
     private const string DownGlyph = "\uE74B";
 
@@ -76,6 +78,8 @@ internal sealed partial class MainWindow : Window
     private bool _paneOpen = true;
     /// <summary>The favourite playlist being dragged to another place in the pane (#306), or <see langword="null"/>.</summary>
     private string? _movingPlaylistId;
+    /// <summary>Where the left mouse button went down on a favourite playlist, until it moves far enough to drag (#308).</summary>
+    private Windows.Foundation.Point? _playlistPressPoint;
     private readonly NavigationViewItemSeparator _playlistsSeparator = new();
     /// <summary>The normal window's presenter, set again when the mini or full-screen player closes.</summary>
     private readonly OverlappedPresenter? _windowPresenter;
@@ -578,6 +582,9 @@ internal sealed partial class MainWindow : Window
             item.DragOver += OnPlaylistNavDragOver;
             item.Drop += OnPlaylistNavDrop;
             item.ContextRequested += OnPlaylistNavContextRequested;
+            item.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(OnPlaylistNavPointerPressed), handledEventsToo: true);
+            item.AddHandler(UIElement.PointerMovedEvent, new PointerEventHandler(OnPlaylistNavPointerMoved), handledEventsToo: true);
+            item.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler((_, _) => _playlistPressPoint = null), handledEventsToo: true);
             _playlistItems[playlist.Id] = item;
         }
 
@@ -617,6 +624,49 @@ internal sealed partial class MainWindow : Window
         {
             ShowPlaylistIcon(item);
         }
+    }
+
+    private void OnPlaylistNavPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        var point = e.GetCurrentPoint((UIElement)sender);
+        _playlistPressPoint = e.Pointer.PointerDeviceType == Microsoft.UI.Input.PointerDeviceType.Mouse && point.Properties.IsLeftButtonPressed ? point.Position : null;
+    }
+
+    /// <summary>
+    /// The item captures the pointer when it is pressed, for its pressed look, and then never sees a drag
+    /// (#308): once the mouse has moved far enough, the capture goes and the drag starts here. Losing the
+    /// capture also ends the press, so letting go does not open the playlist.
+    /// </summary>
+    private async void OnPlaylistNavPointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        if (_playlistPressPoint is not { } start || sender is not NavigationViewItem item)
+        {
+            return;
+        }
+
+        var point = e.GetCurrentPoint(item);
+        if (!point.Properties.IsLeftButtonPressed)
+        {
+            _playlistPressPoint = null;
+            return;
+        }
+
+        if (Math.Abs(point.Position.X - start.X) < PlaylistDragThreshold && Math.Abs(point.Position.Y - start.Y) < PlaylistDragThreshold)
+        {
+            return;
+        }
+
+        _playlistPressPoint = null;
+        for (var element = e.OriginalSource as DependencyObject; element is not null; element = VisualTreeHelper.GetParent(element))
+        {
+            (element as UIElement)?.ReleasePointerCapture(e.Pointer);
+            if (ReferenceEquals(element, item))
+            {
+                break;
+            }
+        }
+
+        await item.StartDragAsync(point);
     }
 
     private void OnPlaylistNavDragStarting(UIElement sender, DragStartingEventArgs args)
