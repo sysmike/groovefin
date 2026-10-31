@@ -1313,6 +1313,30 @@ try {
         if (Find-MenuItem $name) { Stop-Test 'Playlist selection' "The menu of two entries offers '$name', which is for one entry." }
     }
     if ((Get-SelectedCount) -ne 2) { Stop-Test 'Playlist selection' "Opening the menu left $(Get-SelectedCount) entries selected, not 2." }
+    # Adding the two entries to their own playlist asks first (#312): both are in it already. Cancel adds nothing.
+    $addToPlaylist = Find-MenuItem 'Add to playlist'
+    if (-not $addToPlaylist) { Stop-Test 'Duplicate warning' "The menu of two entries has no 'Add to playlist'." }
+    $addToPlaylist.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+    $until = (Get-Date).AddSeconds(10)
+    while (-not ($roadTrip = Find-MenuItem 'Road trip') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    if (-not $roadTrip) {
+        Write-MenuDiagnostics "'Add to playlist' expanded"
+        Stop-Test 'Duplicate warning' "'Add to playlist' does not offer the playlist 'Road trip'."
+    }
+    $addsBefore = Get-RequestCount '^POST /Playlists/9{32}/Items'
+    $roadTrip.GetCurrentPattern($invoke).Invoke()
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Already in the playlist')) 'question about songs already in the playlist'
+    $null = Find-Button 'Add again'
+    Test-Accessibility 'duplicate-warning'
+    (Find-Button 'Cancel').GetCurrentPattern($invoke).Invoke()
+    $until = (Get-Date).AddSeconds(5)
+    while ($window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Already in the playlist')) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    Start-Sleep -Seconds 1
+    if ((Get-RequestCount '^POST /Playlists/9{32}/Items') -ne $addsBefore) { Stop-Test 'Duplicate warning' 'Cancel in the question about songs already in the playlist still added them.' }
+    Write-Output 'Adding the playlist''s own entries to it asked first, and Cancel added nothing.'
+    $rows[1].SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
+    if (-not (Wait-RemoveItem)) { Stop-Test 'Playlist selection' 'After the question, Shift+F10 on two selected entries opened no menu.' }
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
     $until = (Get-Date).AddSeconds(5)
     while ((Find-MenuItem 'Remove from playlist') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }

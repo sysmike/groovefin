@@ -14,7 +14,7 @@ WinUI 3.
 - Albums, artists, genres, playlists and folders, in a grid or a list, with sorting and filters.
 - A songs table with sortable, resizable and movable columns.
 - Global search with live suggestions, grouped by artists, albums, tracks and playlists.
-- Favourites, playlists (create, rename, reorder, add by drag and drop; favourite playlists in the navigation pane, in your own order) and instant mixes.
+- Favourites, playlists (create, rename, reorder, add by drag and drop, with a question before adding songs a playlist already has; favourite playlists in the navigation pane, in your own order) and instant mixes.
 
 **Playback**
 - Gapless playback, volume normalization from the server's loudness data (track or album), and

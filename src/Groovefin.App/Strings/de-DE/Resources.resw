@@ -1037,6 +1037,34 @@
     <value>{0} Titel zu „{1}“ hinzugefügt.</value>
     <comment>{0} = 1, {1} = playlist name</comment>
   </data>
+  <data name="Playlist_DuplicateTitle" xml:space="preserve">
+    <value>Schon in der Playlist</value>
+  </data>
+  <data name="Playlist_DuplicateOne" xml:space="preserve">
+    <value>„{0}“ ist schon in „{1}“. Noch einmal hinzufügen?</value>
+    <comment>{0} = song, {1} = playlist</comment>
+  </data>
+  <data name="Playlist_DuplicateAll" xml:space="preserve">
+    <value>Diese {0} Titel sind schon in „{1}“. Noch einmal hinzufügen?</value>
+    <comment>{0} = number of songs, {1} = playlist</comment>
+  </data>
+  <data name="Playlist_DuplicateSomeOne" xml:space="preserve">
+    <value>„{0}“ ist schon in „{1}“. Mit den anderen Titeln noch einmal hinzufügen oder nur die neuen?</value>
+    <comment>{0} = song, {1} = playlist</comment>
+  </data>
+  <data name="Playlist_DuplicateSome" xml:space="preserve">
+    <value>{0} dieser {1} Titel sind schon in „{2}“. Mit den anderen noch einmal hinzufügen oder nur die neuen?</value>
+    <comment>{0} = songs already there, {1} = all songs, {2} = playlist</comment>
+  </data>
+  <data name="Playlist_AddAgain" xml:space="preserve">
+    <value>Noch einmal hinzufügen</value>
+  </data>
+  <data name="Playlist_AddAll" xml:space="preserve">
+    <value>Alle hinzufügen</value>
+  </data>
+  <data name="Playlist_AddNewOnly" xml:space="preserve">
+    <value>Nur neue hinzufügen</value>
+  </data>
   <data name="Operation_LoadPlaylists" xml:space="preserve">
     <value>Playlists konnten nicht geladen werden</value>
   </data>
