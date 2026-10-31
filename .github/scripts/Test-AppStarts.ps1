@@ -1357,6 +1357,24 @@ try {
     }
     Test-Accessibility 'playlist-favourite'
 
+    # Its menu, from the keyboard (#306): Move up and Move down, both disabled for the only favourite.
+    $navPlaylist.SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
+    $until = (Get-Date).AddSeconds(5)
+    while (-not ($moveUp = Find-MenuItem 'Move up') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    if (-not $moveUp) {
+        Write-MenuDiagnostics 'Shift+F10 on the favourite playlist'
+        Stop-Test 'Favourite playlist' "Shift+F10 on the favourite playlist opened no menu with 'Move up'."
+    }
+    if (-not ($moveDown = Find-MenuItem 'Move down')) { Stop-Test 'Favourite playlist' "The favourite playlist's menu has no 'Move down'." }
+    if ($moveUp.Current.IsEnabled -or $moveDown.Current.IsEnabled) {
+        Stop-Test 'Favourite playlist' "The only favourite playlist can move: Move up is $(if ($moveUp.Current.IsEnabled) { 'enabled' } else { 'disabled' }), Move down $(if ($moveDown.Current.IsEnabled) { 'enabled' } else { 'disabled' })."
+    }
+    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+    $until = (Get-Date).AddSeconds(5)
+    while ((Find-MenuItem 'Move up') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    Write-Output 'The favourite playlist''s menu has Move up and Move down, disabled for the only favourite.'
+
     # The pane selects the favourite on its own page, and nothing on a page that is not a section (#301): it
     # selected the first favourite there. The search page is one; its Back button returns to the playlist.
     function Test-NavPlaylistSelected([bool] $expected, [string] $when) {

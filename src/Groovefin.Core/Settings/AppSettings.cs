@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Groovefin.Core.Api;
 using Groovefin.Core.Equalizer;
 using Groovefin.Core.Navigation;
@@ -82,6 +83,14 @@ public sealed record AppearanceSettings
     /// (<see cref="PageKeys.MainSections"/>, all shown). Read it through <see cref="NavigationLayout.Resolve"/>.
     /// </summary>
     public IReadOnlyList<NavigationItemSettings> Navigation { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the order of the favourite playlists in the navigation pane (#306) by server and user
+    /// (<c>"{server ID}/{user ID}"</c>): playlist IDs, top first. Favourites not in it follow by name; there is
+    /// none until the user rearranges them. The default is one shared empty instance, so that defaults compare
+    /// equal.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<string>> FavouritePlaylistOrder { get; set; } = ReadOnlyDictionary<string, IReadOnlyList<string>>.Empty;
 
     /// <summary>Gets or sets a value indicating whether the taskbar button shows the playback progress.</summary>
     public bool ShowTaskbarProgress { get; set; } = true;

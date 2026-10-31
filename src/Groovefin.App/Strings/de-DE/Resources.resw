@@ -1459,6 +1459,14 @@
     <value>Zu {0} hinzufügen</value>
     <comment>{0} = playlist name</comment>
   </data>
+  <data name="Drag_MoveAbove" xml:space="preserve">
+    <value>Über {0} verschieben</value>
+    <comment>Dragging a favourite playlist in the navigation pane (#306); {0} = the playlist it is over</comment>
+  </data>
+  <data name="Drag_MoveBelow" xml:space="preserve">
+    <value>Unter {0} verschieben</value>
+    <comment>{0} = the playlist it is over</comment>
+  </data>
   <data name="LyricsPanelHeader.Text" xml:space="preserve">
     <value>Liedtext</value>
   </data>

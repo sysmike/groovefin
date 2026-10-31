@@ -86,6 +86,20 @@ public sealed class JsonSettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task The_favourite_playlists_order_survives_a_reload()
+    {
+        var sut = CreateSut();
+        var orders = new Dictionary<string, IReadOnlyList<string>> { ["s1/u1"] = ["p3", "p1"], ["s2/u7"] = ["p9"] };
+        sut.Update(s => s with { Appearance = s.Appearance with { FavouritePlaylistOrder = orders } });
+        await sut.FlushAsync();
+
+        var reloaded = CreateSut();
+        await reloaded.LoadAsync(TestContext.Current.CancellationToken);
+
+        reloaded.Current.Appearance.FavouritePlaylistOrder.Should().BeEquivalentTo(orders, o => o.WithStrictOrdering());
+    }
+
+    [Fact]
     public async Task Server_profiles_survive_a_reload()
     {
         var sut = CreateSut();
