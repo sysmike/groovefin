@@ -55,6 +55,11 @@ internal sealed partial class MainWindow : Window
     private const int MinWindowWidth = 860;
     private const int MinWindowHeight = 600;
 
+    /// <summary>The drag data of a favourite playlist being moved in the pane (#306): its ID.</summary>
+    private const string PlaylistMoveFormat = "Groovefin.FavouritePlaylist";
+    private const string UpGlyph = "\uE74A";
+    private const string DownGlyph = "\uE74B";
+
     private readonly FrameNavigationService _navigation;
     private readonly FavouritePlaylists _favouritePlaylists;
     private readonly TrackDrag _trackDrag;
@@ -69,6 +74,8 @@ internal sealed partial class MainWindow : Window
     private readonly Dictionary<string, NavigationViewItem> _playlistItems = new(StringComparer.Ordinal);
     /// <summary>Whether the pane shows names: the favourite playlists then show their cover beside them, else as their icon (#299).</summary>
     private bool _paneOpen = true;
+    /// <summary>The favourite playlist being dragged to another place in the pane (#306), or <see langword="null"/>.</summary>
+    private string? _movingPlaylistId;
     private readonly NavigationViewItemSeparator _playlistsSeparator = new();
     /// <summary>The normal window's presenter, set again when the mini or full-screen player closes.</summary>
     private readonly OverlappedPresenter? _windowPresenter;
@@ -557,16 +564,20 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>
     /// A favourite playlist's item (#297): opens the playlist, takes dropped tracks and albums. Kept per
-    /// playlist, so a rename only changes its name. It shows the cover, name and details (#299).
+    /// playlist, so a rename only changes its name. It shows the cover, name and details (#299). It can be
+    /// dragged to another place among the favourites, or moved with its menu (#306).
     /// </summary>
     private NavigationViewItem NavPlaylistItem(Playlist playlist)
     {
         if (!_playlistItems.TryGetValue(playlist.Id, out var item))
         {
-            item = new NavigationViewItem { AllowDrop = true, Content = new PlaylistNavItem() };
+            item = new NavigationViewItem { AllowDrop = true, CanDrag = true, Content = new PlaylistNavItem() };
             AutomationProperties.SetAutomationId(item, $"NavPlaylist_{playlist.Id}");
+            item.DragStarting += OnPlaylistNavDragStarting;
+            item.DropCompleted += (_, _) => _movingPlaylistId = null;
             item.DragOver += OnPlaylistNavDragOver;
             item.Drop += OnPlaylistNavDrop;
+            item.ContextRequested += OnPlaylistNavContextRequested;
             _playlistItems[playlist.Id] = item;
         }
 
@@ -608,9 +619,41 @@ internal sealed partial class MainWindow : Window
         }
     }
 
+    private void OnPlaylistNavDragStarting(UIElement sender, DragStartingEventArgs args)
+    {
+        if (sender is not FrameworkElement { Tag: Playlist playlist })
+        {
+            args.Cancel = true;
+            return;
+        }
+
+        _movingPlaylistId = playlist.Id;
+        args.Data.SetData(PlaylistMoveFormat, playlist.Id);
+        args.Data.RequestedOperation = DataPackageOperation.Move;
+    }
+
+    /// <summary>Tracks and albums are added to the playlist; another favourite moves above or below it (#306).</summary>
     private void OnPlaylistNavDragOver(object sender, DragEventArgs e)
     {
-        if (e.DataView.Contains(TrackDrag.DataFormat) && sender is FrameworkElement { Tag: Playlist playlist })
+        if (sender is not FrameworkElement { Tag: Playlist playlist } item)
+        {
+            return;
+        }
+
+        if (e.DataView.Contains(PlaylistMoveFormat))
+        {
+            e.Handled = true;
+            if (_movingPlaylistId is null || _movingPlaylistId == playlist.Id)
+            {
+                e.AcceptedOperation = DataPackageOperation.None;
+                return;
+            }
+
+            e.AcceptedOperation = DataPackageOperation.Move;
+            var key = DropsBelow(item, e) ? "Drag_MoveBelow" : "Drag_MoveAbove";
+            e.DragUIOverride.Caption = _strings.GetString(key).Replace("{0}", playlist.Name, StringComparison.Ordinal);
+        }
+        else if (e.DataView.Contains(TrackDrag.DataFormat))
         {
             e.AcceptedOperation = DataPackageOperation.Copy;
             e.DragUIOverride.Caption = _strings.GetString("Drag_AddToPlaylist").Replace("{0}", playlist.Name, StringComparison.Ordinal);
@@ -618,8 +661,23 @@ internal sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>The lower half of a playlist's item puts the dragged one below it.</summary>
+    private static bool DropsBelow(FrameworkElement item, DragEventArgs e) => e.GetPosition(item).Y > item.ActualHeight / 2;
+
     private async void OnPlaylistNavDrop(object sender, DragEventArgs e)
     {
+        if (sender is FrameworkElement { Tag: Playlist target } item && e.DataView.Contains(PlaylistMoveFormat))
+        {
+            e.Handled = true;
+            if (_movingPlaylistId is { } moving)
+            {
+                _favouritePlaylists.MoveNextTo(moving, target.Id, DropsBelow(item, e));
+            }
+
+            _movingPlaylistId = null;
+            return;
+        }
+
         if (!e.DataView.Contains(TrackDrag.DataFormat) || sender is not FrameworkElement { Tag: Playlist playlist })
         {
             return;
@@ -635,6 +693,34 @@ internal sealed partial class MainWindow : Window
         {
             deferral.Complete();
         }
+    }
+
+    /// <summary>Move up and Move down, for the keyboard and Narrator (#306); disabled at the ends.</summary>
+    private void OnPlaylistNavContextRequested(UIElement sender, ContextRequestedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: Playlist playlist } item)
+        {
+            return;
+        }
+
+        var menu = new MenuFlyout();
+        foreach (var (glyph, key, offset) in new[] { (UpGlyph, "Menu_MoveUp", -1), (DownGlyph, "Menu_MoveDown", 1) })
+        {
+            var entry = new MenuFlyoutItem
+            {
+                Text = _strings.GetString(key),
+                Icon = new FontIcon { Glyph = glyph },
+                IsEnabled = _favouritePlaylists.CanMove(playlist.Id, offset),
+            };
+            entry.Click += (_, _) =>
+            {
+                _favouritePlaylists.MoveBy(playlist.Id, offset);
+                _ = DispatcherQueue.TryEnqueue(() => _playlistItems.GetValueOrDefault(playlist.Id)?.Focus(FocusState.Keyboard));
+            };
+            menu.Items.Add(entry);
+        }
+
+        ItemMenu.Show(menu, item, e);
     }
 
     private void OnTitleBarBackRequested(TitleBar sender, object args) => ViewModel.GoBackCommand.Execute(null);

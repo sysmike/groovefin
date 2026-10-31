@@ -18,6 +18,7 @@ public sealed class FavouritePlaylistsTests : IDisposable
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private readonly WeakReferenceMessenger _messenger = new();
     private readonly FakeLogger<FavouritePlaylists> _logger = new();
+    private readonly InMemorySettingsService _settings = new();
     private readonly FavouritesService _favourites;
     private readonly FavouritePlaylists _sut;
 
@@ -26,7 +27,7 @@ public sealed class FavouritePlaylistsTests : IDisposable
         _favourites = new FavouritesService(_library, _messenger, Substitute.For<IErrorReporter>());
         SignIn("s1", "u1");
         _playlists.GetPlaylistsAsync(Arg.Any<CancellationToken>()).Returns([Chill, Road, Gym]);
-        _sut = new FavouritePlaylists(_playlists, _servers, _favourites, _messenger, new ImmediateDispatcher(), _logger);
+        _sut = new FavouritePlaylists(_playlists, _servers, _favourites, _settings, _messenger, new ImmediateDispatcher(), _logger);
     }
 
     private static Playlist Chill => new() { Id = "p1", Name = "chill", IsFavorite = true };
@@ -36,6 +37,8 @@ public sealed class FavouritePlaylistsTests : IDisposable
     private static Playlist Gym => new() { Id = "p3", Name = "Gym", IsFavorite = true };
 
     private IEnumerable<string> Names => _sut.Items.Select(p => p.Name);
+
+    private IReadOnlyDictionary<string, IReadOnlyList<string>> Orders => _settings.Current.Appearance.FavouritePlaylistOrder;
 
     public void Dispose() => _sut.Dispose();
 
@@ -227,5 +230,119 @@ public sealed class FavouritePlaylistsTests : IDisposable
         _messenger.Send(new PlaylistChangedMessage(Chill));
 
         _sut.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Moving_a_favourite_keeps_the_order_for_this_server_and_user()
+    {
+        await _sut.StartAsync();
+
+        _sut.MoveBy("p3", -1);
+
+        Names.Should().Equal("Gym", "chill");
+        Orders.Should().ContainKey("s1/u1").WhoseValue.Should().Equal("p3", "p1");
+    }
+
+    [Fact]
+    public async Task The_order_comes_back_on_the_next_sign_in_and_another_user_keeps_their_own()
+    {
+        _settings.Update(s => s with
+        {
+            Appearance = s.Appearance with
+            {
+                FavouritePlaylistOrder = new Dictionary<string, IReadOnlyList<string>> { ["s1/u1"] = ["p3", "p1"], ["s1/u2"] = ["p1", "p3"] },
+            },
+        });
+
+        await _sut.StartAsync();
+        Names.Should().Equal("Gym", "chill");
+
+        SignIn("s1", "u2");
+        RaiseChanged();
+        Names.Should().Equal("chill", "Gym");
+
+        SignIn("s2", "u1");
+        RaiseChanged();
+        Names.Should().Equal(["chill", "Gym"], "this server has no order: by name");
+    }
+
+    [Fact]
+    public async Task Once_rearranged_a_new_favourite_goes_at_the_end()
+    {
+        _playlists.GetPlaylistsAsync(Arg.Any<CancellationToken>()).Returns([Chill, Road, Gym, new Playlist { Id = "p4", Name = "Zen", IsFavorite = true }]);
+        await _sut.StartAsync();
+        _sut.MoveTo("p4", 0);
+
+        _messenger.Send(new PlaylistChangedMessage(Road with { IsFavorite = true }));
+
+        Names.Should().Equal("Zen", "chill", "Gym", "Road trip");
+    }
+
+    [Fact]
+    public async Task Favourites_not_in_the_order_follow_it_by_name()
+    {
+        _settings.Update(s => s with
+        {
+            Appearance = s.Appearance with { FavouritePlaylistOrder = new Dictionary<string, IReadOnlyList<string>> { ["s1/u1"] = ["p3", "gone"] } },
+        });
+        _playlists.GetPlaylistsAsync(Arg.Any<CancellationToken>()).Returns([Chill, Road with { IsFavorite = true }, Gym]);
+
+        await _sut.StartAsync();
+
+        Names.Should().Equal("Gym", "chill", "Road trip");
+    }
+
+    [Fact]
+    public async Task A_renamed_favourite_keeps_its_place_in_the_order()
+    {
+        await _sut.StartAsync();
+        _sut.MoveBy("p1", 1);
+
+        _messenger.Send(new PlaylistChangedMessage(Chill with { Name = "Aaa" }));
+
+        Names.Should().Equal("Gym", "Aaa");
+    }
+
+    [Fact]
+    public async Task Unfavouriting_or_deleting_takes_the_playlist_out_of_the_order()
+    {
+        _playlists.GetPlaylistsAsync(Arg.Any<CancellationToken>()).Returns([Chill, Road with { IsFavorite = true }, Gym]);
+        await _sut.StartAsync();
+        _sut.MoveBy("p3", -2);
+
+        await _favourites.SetAsync("p3", false);
+        _messenger.Send(new PlaylistDeletedMessage("p2"));
+
+        Orders["s1/u1"].Should().Equal("p1");
+    }
+
+    [Fact]
+    public async Task A_favourite_dropped_on_another_goes_above_it_or_below()
+    {
+        _playlists.GetPlaylistsAsync(Arg.Any<CancellationToken>()).Returns([Chill, Road with { IsFavorite = true }, Gym]);
+        await _sut.StartAsync();
+
+        _sut.MoveNextTo("p1", "p2", after: true);
+        Names.Should().Equal("Gym", "Road trip", "chill");
+
+        _sut.MoveNextTo("p1", "p3", after: false);
+        Names.Should().Equal("chill", "Gym", "Road trip");
+
+        _sut.MoveNextTo("p1", "p3", after: true);
+        Names.Should().Equal("Gym", "chill", "Road trip");
+    }
+
+    [Fact]
+    public async Task Only_a_move_that_stays_in_the_list_can_be_made()
+    {
+        await _sut.StartAsync();
+
+        _sut.CanMove("p1", -1).Should().BeFalse();
+        _sut.CanMove("p1", 1).Should().BeTrue();
+        _sut.CanMove("p3", 1).Should().BeFalse();
+        _sut.CanMove("p2", 1).Should().BeFalse("not a favourite");
+
+        _sut.MoveBy("p1", -1);
+        Orders.Should().BeEmpty("nothing moved");
     }
 }
