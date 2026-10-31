@@ -685,7 +685,7 @@ internal sealed partial class MainWindow : Window
     /// <summary>Tracks and albums are added to the playlist; another favourite moves above or below it (#306).</summary>
     private void OnPlaylistNavDragOver(object sender, DragEventArgs e)
     {
-        if (sender is not FrameworkElement { Tag: Playlist playlist } item)
+        if (sender is not FrameworkElement { Tag: Playlist playlist })
         {
             return;
         }
@@ -699,9 +699,9 @@ internal sealed partial class MainWindow : Window
                 return;
             }
 
+            // No caption (#310): the playlist goes where the pointer is.
             e.AcceptedOperation = DataPackageOperation.Move;
-            var key = DropsBelow(item, e) ? "Drag_MoveBelow" : "Drag_MoveAbove";
-            e.DragUIOverride.Caption = _strings.GetString(key).Replace("{0}", playlist.Name, StringComparison.Ordinal);
+            e.DragUIOverride.IsCaptionVisible = false;
         }
         else if (e.DataView.Contains(TrackDrag.DataFormat))
         {
