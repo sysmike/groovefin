@@ -1422,11 +1422,8 @@ try {
     # track, and does not open it as well. The closed compact pane shows only the cover, without the button:
     # the runner's window is that narrow, so the title bar's pane button opens the pane over the page first.
     function Switch-Pane {
-        $paneButton = Find-Element ([System.Windows.Automation.OrCondition]::new(
-                [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'PaneToggleButton'),
-                [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Open Navigation'),
-                [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Close Navigation'))) "title bar's pane button"
-        $paneButton.GetCurrentPattern($invoke).Invoke()
+        # The TitleBar template's part name, as WinUI's own tests find it.
+        (Find-ById 'PART_PaneToggleButton').GetCurrentPattern($invoke).Invoke()
     }
     $itemBounds = Get-Bounds (Find-NavPlaylist)
     $openedPane = $itemBounds.Width -lt 100
