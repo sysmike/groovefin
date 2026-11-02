@@ -1381,7 +1381,7 @@ try {
     }
     Test-Accessibility 'playlist-favourite'
 
-    # Its menu, from the keyboard (#306): Move up and Move down, both disabled for the only favourite.
+    # Its menu, from the keyboard (#306): Play (#315), and Move up and Move down, both disabled for the only favourite.
     $navPlaylist.SetFocus()
     [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
     $until = (Get-Date).AddSeconds(5)
@@ -1391,13 +1391,15 @@ try {
         Stop-Test 'Favourite playlist' "Shift+F10 on the favourite playlist opened no menu with 'Move up'."
     }
     if (-not ($moveDown = Find-MenuItem 'Move down')) { Stop-Test 'Favourite playlist' "The favourite playlist's menu has no 'Move down'." }
+    if (-not ($menuPlay = Find-MenuItem 'Play')) { Stop-Test 'Favourite playlist' "The favourite playlist's menu has no 'Play'." }
+    if (-not $menuPlay.Current.IsEnabled) { Stop-Test 'Favourite playlist' "'Play' in the favourite playlist's menu is disabled." }
     if ($moveUp.Current.IsEnabled -or $moveDown.Current.IsEnabled) {
         Stop-Test 'Favourite playlist' "The only favourite playlist can move: Move up is $(if ($moveUp.Current.IsEnabled) { 'enabled' } else { 'disabled' }), Move down $(if ($moveDown.Current.IsEnabled) { 'enabled' } else { 'disabled' })."
     }
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
     $until = (Get-Date).AddSeconds(5)
     while ((Find-MenuItem 'Move up') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
-    Write-Output 'The favourite playlist''s menu has Move up and Move down, disabled for the only favourite.'
+    Write-Output 'The favourite playlist''s menu has Play, and Move up and Move down, disabled for the only favourite.'
 
     # The pane selects the favourite on its own page, and nothing on a page that is not a section (#301): it
     # selected the first favourite there. The search page is one; its Back button returns to the playlist.
@@ -1416,6 +1418,24 @@ try {
     $until = (Get-Date).AddSeconds(10)
     while ($window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'PlaylistFavouriteButton')) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
     Test-NavPlaylistSelected $false 'on the search page'
+    # The play button on its cover (#315), clicked with the mouse there: it plays the playlist, from its first
+    # track, and does not open it as well.
+    $navPlay = (Find-NavPlaylist).FindFirst($scope::Descendants, [System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Play Road trip'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
+    if (-not $navPlay) { Stop-Test 'Favourite playlist' "The favourite playlist in the navigation pane has no button 'Play Road trip'." }
+    if ($navPlay.Current.IsOffscreen) { Stop-Test 'Favourite playlist' "The favourite playlist's play button is off the screen: the navigation pane is not open." }
+    $roadTripStart = '/audio/c{31}1/universal'
+    $before = Get-RequestCount $roadTripStart
+    Send-Click $navPlay
+    $until = (Get-Date).AddSeconds(10)
+    while ((Get-RequestCount $roadTripStart) -le $before -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
+    Save-Screenshot 'favourite-playlist-play'
+    if ((Get-RequestCount $roadTripStart) -le $before) { Stop-Test 'Favourite playlist' "The play button on the favourite playlist's cover was clicked, but Groovefin did not play 'Track 1'." }
+    Start-Sleep -Seconds 2
+    Test-NavPlaylistSelected $false 'after a click on its play button on the search page'
+    Test-Running 'after playing a favourite playlist from the navigation pane'
+    Write-Output 'The play button on the favourite playlist''s cover played it without opening it.'
     # The title bar's Back button: Alt+Left stays in the search box, which still has focus.
     $searchEdit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('')
     (Find-Button 'Back').GetCurrentPattern($invoke).Invoke()
