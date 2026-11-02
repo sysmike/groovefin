@@ -36,11 +36,29 @@ public sealed partial class PlaylistNavItem : UserControl
     /// <summary>Raised when the play button on the cover is clicked.</summary>
     public event EventHandler? PlayRequested;
 
-    /// <summary>Shows the play button on the cover while the pointer is on the item.</summary>
+    /// <summary>
+    /// Shows the play button on the cover while the pointer is on the item. Out of the window (a playlist
+    /// that is no longer a favourite keeps its item), it changes without the fade, which needs the item
+    /// on screen.
+    /// </summary>
     public void ShowPlay(bool show)
     {
-        PlayLayer.Opacity = show ? 1 : 0;
+        if (PlayLayer.IsHitTestVisible == show)
+        {
+            return;
+        }
+
         PlayLayer.IsHitTestVisible = show;
+        if (IsLoaded)
+        {
+            PlayLayer.Opacity = show ? 1 : 0;
+            return;
+        }
+
+        var fade = PlayLayer.OpacityTransition;
+        PlayLayer.OpacityTransition = null;
+        PlayLayer.Opacity = show ? 1 : 0;
+        PlayLayer.OpacityTransition = fade;
     }
 
     /// <summary>Whether <paramref name="element"/> is the play button or inside it: a press there is no drag.</summary>
