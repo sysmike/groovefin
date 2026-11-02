@@ -10,12 +10,13 @@
 
     <!--
         A favourite playlist in the expanded navigation pane (#299): its cover, then its name and below it the
-        track count and length. The item itself carries the name for Narrator, so this is all decorative, but
-        for the play button that fades in on the cover while the pointer is on the item (#315).
+        track count and length. The item itself carries the name for Narrator, so all but the play button on the
+        cover (#315) is left out of UI Automation. Each element is, not the grid: a button inside a left-out
+        grid, once clicked or found by UI Automation, was an unhandled XAML error on every later resize of the
+        window after its playlist had left the pane.
     -->
     <Grid
         Margin="0,4"
-        AutomationProperties.AccessibilityView="Raw"
         ColumnSpacing="12">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
@@ -28,10 +29,14 @@
             Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
             CornerRadius="{StaticResource ControlCornerRadius}">
             <FontIcon
+                AutomationProperties.AccessibilityView="Raw"
                 FontSize="16"
                 Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                 Glyph="&#xEC4F;" />
-            <Image x:Name="CoverImage" Stretch="UniformToFill" />
+            <Image
+                x:Name="CoverImage"
+                AutomationProperties.AccessibilityView="Raw"
+                Stretch="UniformToFill" />
             <!--
                 Collapsed until the pointer is on the item. Not a tab stop: the item has the focus, and Play in
                 its menu (#315).
@@ -58,10 +63,12 @@
         <StackPanel Grid.Column="1" VerticalAlignment="Center">
             <TextBlock
                 x:Name="NameText"
+                AutomationProperties.AccessibilityView="Raw"
                 MaxLines="1"
                 TextTrimming="CharacterEllipsis" />
             <TextBlock
                 x:Name="DetailsText"
+                AutomationProperties.AccessibilityView="Raw"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                 MaxLines="1"
                 Style="{StaticResource CaptionTextBlockStyle}"

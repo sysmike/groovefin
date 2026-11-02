@@ -69,8 +69,9 @@ static bool IsFrameworkIssue(ScanResult error)
             && parentClass == "Microsoft.UI.Content.PopupWindowSiteBridge");
 }
 
+// Some elements come without properties.
 static string Property(ElementInfo element, string name) =>
-    element.Properties.TryGetValue(name, out var value) ? value : string.Empty;
+    element.Properties?.TryGetValue(name, out var value) == true ? value : string.Empty;
 
 // The element and its ancestors, innermost first: control type, name, automation id and class.
 static string Describe(ElementInfo element)
