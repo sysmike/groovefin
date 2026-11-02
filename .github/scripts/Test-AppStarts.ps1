@@ -1456,6 +1456,10 @@ try {
     Start-Sleep -Seconds 2
     Test-NavPlaylistSelected $false 'after a click on its play button on the search page'
     Test-Running 'after playing a favourite playlist from the navigation pane'
+    # The pointer leaves the pane, as a hand does before closing it: a tooltip still open on the item, which
+    # leaves the window when its heart is cleared below, failed on every later resize of the window.
+    $windowBounds = $window.Current.BoundingRectangle
+    Move-Pointer ([int] ($windowBounds.X + $windowBounds.Width * 3 / 4)) ([int] ($windowBounds.Y + $windowBounds.Height / 2))
     if ($openedPane) { Switch-Pane }
     Write-Output 'The play button on the favourite playlist''s cover played it without opening it.'
     # The title bar's Back button: Alt+Left stays in the search box, which still has focus.
