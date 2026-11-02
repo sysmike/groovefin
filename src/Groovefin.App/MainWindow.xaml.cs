@@ -630,12 +630,10 @@ internal sealed partial class MainWindow : Window
             return;
         }
 
-        // Only the favourites in the pane: one that left it gets its icon again when it comes back (#315).
         _paneOpen = open;
-        foreach (var item in _playlistItems.Values.Where(NavView.MenuItems.Contains))
+        foreach (var item in _playlistItems.Values)
         {
             ShowPlaylistIcon(item);
-            ((PlaylistNavItem)item.Content).ShowPlay(false);
         }
     }
 
