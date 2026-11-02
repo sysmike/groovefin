@@ -61,10 +61,12 @@ internal sealed partial class MainWindow : Window
     private const double PlaylistDragThreshold = 4;
     private const string UpGlyph = "\uE74A";
     private const string DownGlyph = "\uE74B";
+    private const string PlayGlyph = "\uE768";
 
     private readonly FrameNavigationService _navigation;
     private readonly FavouritePlaylists _favouritePlaylists;
     private readonly TrackDrag _trackDrag;
+    private readonly QuickPlay _quickPlay;
     private readonly IStringResources _strings;
     private readonly ISettingsService _settings;
     private readonly ShortcutService _shortcuts;
@@ -100,6 +102,7 @@ internal sealed partial class MainWindow : Window
         PrivacyMode privacy,
         FavouritePlaylists favouritePlaylists,
         TrackDrag trackDrag,
+        QuickPlay quickPlay,
         IStringResources strings,
         ISettingsService settings,
         ShortcutService shortcuts)
@@ -108,6 +111,7 @@ internal sealed partial class MainWindow : Window
         _shortcuts = shortcuts;
         _favouritePlaylists = favouritePlaylists;
         _trackDrag = trackDrag;
+        _quickPlay = quickPlay;
         _strings = strings;
         ViewModel = viewModel;
         Queue = queue;
@@ -503,6 +507,8 @@ internal sealed partial class MainWindow : Window
         var playlists = _favouritePlaylists.Items;
         foreach (var id in _playlistItems.Keys.Where(id => !playlists.Any(p => p.Id == id)).ToList())
         {
+            // Its play button goes first: one left in an item outside the pane breaks later resizes (#315).
+            ((PlaylistNavItem)_playlistItems[id].Content).ShowPlay(false);
             _playlistItems.Remove(id);
         }
 
@@ -569,13 +575,16 @@ internal sealed partial class MainWindow : Window
     /// <summary>
     /// A favourite playlist's item (#297): opens the playlist, takes dropped tracks and albums. Kept per
     /// playlist, so a rename only changes its name. It shows the cover, name and details (#299). It can be
-    /// dragged to another place among the favourites, or moved with its menu (#306).
+    /// dragged to another place among the favourites, or moved with its menu (#306). Pointed at with the
+    /// mouse, its cover shows a play button (#315).
     /// </summary>
     private NavigationViewItem NavPlaylistItem(Playlist playlist)
     {
         if (!_playlistItems.TryGetValue(playlist.Id, out var item))
         {
-            item = new NavigationViewItem { AllowDrop = true, CanDrag = true, Content = new PlaylistNavItem() };
+            var navContent = new PlaylistNavItem();
+            var created = item = new NavigationViewItem { AllowDrop = true, CanDrag = true, Content = navContent };
+            navContent.PlayRequested += (_, _) => PlayNavPlaylist(created);
             AutomationProperties.SetAutomationId(item, $"NavPlaylist_{playlist.Id}");
             item.DragStarting += OnPlaylistNavDragStarting;
             item.DropCompleted += (_, _) => _movingPlaylistId = null;
@@ -585,6 +594,10 @@ internal sealed partial class MainWindow : Window
             item.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(OnPlaylistNavPointerPressed), handledEventsToo: true);
             item.AddHandler(UIElement.PointerMovedEvent, new PointerEventHandler(OnPlaylistNavPointerMoved), handledEventsToo: true);
             item.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler((_, _) => _playlistPressPoint = null), handledEventsToo: true);
+            item.AddHandler(UIElement.PointerEnteredEvent, new PointerEventHandler(OnPlaylistNavPointerOver), handledEventsToo: true);
+            item.AddHandler(UIElement.PointerMovedEvent, new PointerEventHandler(OnPlaylistNavPointerOver), handledEventsToo: true);
+            item.AddHandler(UIElement.PointerExitedEvent, new PointerEventHandler(OnPlaylistNavPointerExited), handledEventsToo: true);
+            item.AddHandler(UIElement.PointerCanceledEvent, new PointerEventHandler((_, _) => navContent.ShowPlay(false)), handledEventsToo: true);
             _playlistItems[playlist.Id] = item;
         }
 
@@ -626,10 +639,50 @@ internal sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// The play button shows while the mouse is on the item, also once it moves again after a click on the
+    /// button, which took the pointer away from the item for a moment. Touch has no hover: a tap opens it.
+    /// </summary>
+    private void OnPlaylistNavPointerOver(object sender, PointerRoutedEventArgs e)
+    {
+        if (e.Pointer.PointerDeviceType != Microsoft.UI.Input.PointerDeviceType.Touch && _movingPlaylistId is null)
+        {
+            ((PlaylistNavItem)((NavigationViewItem)sender).Content).ShowPlay(true);
+        }
+    }
+
+    /// <summary>
+    /// Hides the play button once the pointer has left the item. Leaving the button itself also bubbles here,
+    /// and must not unload it while the pointer is still on the item.
+    /// </summary>
+    private void OnPlaylistNavPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        var item = (NavigationViewItem)sender;
+        var point = e.GetCurrentPoint(item).Position;
+        if (point.X < 0 || point.Y < 0 || point.X >= item.ActualWidth || point.Y >= item.ActualHeight)
+        {
+            ((PlaylistNavItem)item.Content).ShowPlay(false);
+        }
+    }
+
+    /// <summary>Plays a favourite playlist from its item's play button or menu (#315), without opening it.</summary>
+    private void PlayNavPlaylist(FrameworkElement item)
+    {
+        if (item.Tag is Playlist playlist)
+        {
+            _ = _quickPlay.PlayPlaylistAsync(playlist);
+        }
+    }
+
+    /// <summary>A press on the play button is a click, not the start of a drag.</summary>
     private void OnPlaylistNavPointerPressed(object sender, PointerRoutedEventArgs e)
     {
-        var point = e.GetCurrentPoint((UIElement)sender);
-        _playlistPressPoint = e.Pointer.PointerDeviceType == Microsoft.UI.Input.PointerDeviceType.Mouse && point.Properties.IsLeftButtonPressed ? point.Position : null;
+        var item = (NavigationViewItem)sender;
+        var point = e.GetCurrentPoint(item);
+        _playlistPressPoint = e.Pointer.PointerDeviceType == Microsoft.UI.Input.PointerDeviceType.Mouse && point.Properties.IsLeftButtonPressed &&
+            !((PlaylistNavItem)item.Content).IsPlayButton(e.OriginalSource as DependencyObject)
+            ? point.Position
+            : null;
     }
 
     /// <summary>
@@ -666,6 +719,7 @@ internal sealed partial class MainWindow : Window
             }
         }
 
+        ((PlaylistNavItem)item.Content).ShowPlay(false);
         await item.StartDragAsync(point);
     }
 
@@ -745,7 +799,10 @@ internal sealed partial class MainWindow : Window
         }
     }
 
-    /// <summary>Move up and Move down, for the keyboard and Narrator (#306); disabled at the ends.</summary>
+    /// <summary>
+    /// Play (#315), then Move up and Move down (#306), disabled at the ends: for the keyboard and Narrator,
+    /// which do not reach the play button on the cover.
+    /// </summary>
     private void OnPlaylistNavContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
         if (sender is not FrameworkElement { Tag: Playlist playlist } item)
@@ -754,6 +811,10 @@ internal sealed partial class MainWindow : Window
         }
 
         var menu = new MenuFlyout();
+        var play = new MenuFlyoutItem { Text = _strings.GetString("Menu_Play"), Icon = new FontIcon { Glyph = PlayGlyph } };
+        play.Click += (_, _) => PlayNavPlaylist(item);
+        menu.Items.Add(play);
+        menu.Items.Add(new MenuFlyoutSeparator());
         foreach (var (glyph, key, offset) in new[] { (UpGlyph, "Menu_MoveUp", -1), (DownGlyph, "Menu_MoveDown", 1) })
         {
             var entry = new MenuFlyoutItem

@@ -139,6 +139,7 @@ jobs:
           }
 
       - name: Package MSIX (unsigned)
+        id: msix
         shell: pwsh
         run: >
           dotnet build src/Groovefin.App/Groovefin.App.csproj
@@ -149,6 +150,7 @@ jobs:
           "-p:AppxPackageDir=${{ runner.temp }}\out\msix\\"
 
       - name: Publish unpackaged (self-contained)
+        id: unpackaged
         shell: pwsh
         # The MSIX build above leaves a resources.pri without the Windows App SDK's own resources (a
         # package gets them from the runtime package). The PRI step would reuse it as up to date, and
@@ -203,6 +205,8 @@ jobs:
           retention-days: 7
 
       - name: Upload MSIX
+        # Also after a failed test, so the build can still be tried by hand.
+        if: ${{ !cancelled() && steps.msix.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: groovefin-msix-${{ matrix.platform }}
@@ -211,6 +215,7 @@ jobs:
           retention-days: 7
 
       - name: Upload unpackaged
+        if: ${{ !cancelled() && steps.unpackaged.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: groovefin-unpackaged-${{ matrix.platform }}

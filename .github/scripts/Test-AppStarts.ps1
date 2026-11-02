@@ -1381,7 +1381,7 @@ try {
     }
     Test-Accessibility 'playlist-favourite'
 
-    # Its menu, from the keyboard (#306): Move up and Move down, both disabled for the only favourite.
+    # Its menu, from the keyboard (#306): Play (#315), and Move up and Move down, both disabled for the only favourite.
     $navPlaylist.SetFocus()
     [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
     $until = (Get-Date).AddSeconds(5)
@@ -1391,13 +1391,15 @@ try {
         Stop-Test 'Favourite playlist' "Shift+F10 on the favourite playlist opened no menu with 'Move up'."
     }
     if (-not ($moveDown = Find-MenuItem 'Move down')) { Stop-Test 'Favourite playlist' "The favourite playlist's menu has no 'Move down'." }
+    if (-not ($menuPlay = Find-MenuItem 'Play')) { Stop-Test 'Favourite playlist' "The favourite playlist's menu has no 'Play'." }
+    if (-not $menuPlay.Current.IsEnabled) { Stop-Test 'Favourite playlist' "'Play' in the favourite playlist's menu is disabled." }
     if ($moveUp.Current.IsEnabled -or $moveDown.Current.IsEnabled) {
         Stop-Test 'Favourite playlist' "The only favourite playlist can move: Move up is $(if ($moveUp.Current.IsEnabled) { 'enabled' } else { 'disabled' }), Move down $(if ($moveDown.Current.IsEnabled) { 'enabled' } else { 'disabled' })."
     }
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
     $until = (Get-Date).AddSeconds(5)
     while ((Find-MenuItem 'Move up') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
-    Write-Output 'The favourite playlist''s menu has Move up and Move down, disabled for the only favourite.'
+    Write-Output 'The favourite playlist''s menu has Play, and Move up and Move down, disabled for the only favourite.'
 
     # The pane selects the favourite on its own page, and nothing on a page that is not a section (#301): it
     # selected the first favourite there. The search page is one; its Back button returns to the playlist.
@@ -1416,7 +1418,28 @@ try {
     $until = (Get-Date).AddSeconds(10)
     while ($window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'PlaylistFavouriteButton')) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
     Test-NavPlaylistSelected $false 'on the search page'
-    # The title bar's Back button: Alt+Left stays in the search box, which still has focus.
+    # Play in its menu (#315) plays the playlist, from its first track, and does not open it as well. The play
+    # button on its cover runs the same code. The test does not point at the item to show that button: on the
+    # runner, WinUI then logs "Unspecified error" while the window resizes later, which it does not on a PC.
+    (Find-NavPlaylist).SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
+    $until = (Get-Date).AddSeconds(5)
+    while (-not ($menuPlay = Find-MenuItem 'Play') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    if (-not $menuPlay) {
+        Write-MenuDiagnostics 'Shift+F10 on the favourite playlist on the search page'
+        Stop-Test 'Favourite playlist' "Shift+F10 on the favourite playlist on the search page opened no menu with 'Play'."
+    }
+    $roadTripStart = '/audio/c{31}1/universal'
+    $before = Get-RequestCount $roadTripStart
+    $menuPlay.GetCurrentPattern($invoke).Invoke()
+    $until = (Get-Date).AddSeconds(10)
+    while ((Get-RequestCount $roadTripStart) -le $before -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
+    if ((Get-RequestCount $roadTripStart) -le $before) { Stop-Test 'Favourite playlist' "Play in the favourite playlist's menu did not play 'Track 1'." }
+    Start-Sleep -Seconds 2
+    Test-NavPlaylistSelected $false 'after Play in its menu on the search page'
+    Test-Running 'after playing a favourite playlist from the navigation pane'
+    Write-Output 'Play in the favourite playlist''s menu played it without opening it.'
+    # The title bar's Back button.
     $searchEdit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('')
     (Find-Button 'Back').GetCurrentPattern($invoke).Invoke()
     $null = Find-ById 'PlaylistFavouriteButton'
@@ -1808,7 +1831,7 @@ try {
     }
 }
 catch {
-    Stop-Test 'Smoke test' "The test failed: $($_.Exception.Message)"
+    Stop-Test 'Smoke test' "The test failed: $($_.Exception.Message) (line $($_.InvocationInfo.ScriptLineNumber): $($_.InvocationInfo.Line.Trim()))"
 }
 finally {
     if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
