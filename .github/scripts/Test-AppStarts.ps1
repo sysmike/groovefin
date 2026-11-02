@@ -1419,13 +1419,30 @@ try {
     while ($window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'PlaylistFavouriteButton')) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
     Test-NavPlaylistSelected $false 'on the search page'
     # The play button on its cover (#315), clicked with the mouse there: it plays the playlist, from its first
-    # track, and does not open it as well.
+    # track, and does not open it as well. The closed compact pane shows only the cover, without the button:
+    # the runner's window is that narrow, so the title bar's pane button opens the pane over the page first.
+    function Switch-Pane {
+        $paneButton = Find-Element ([System.Windows.Automation.OrCondition]::new(
+                [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'PaneToggleButton'),
+                [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Open Navigation'),
+                [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Close Navigation'))) "title bar's pane button"
+        $paneButton.GetCurrentPattern($invoke).Invoke()
+    }
+    $itemBounds = Get-Bounds (Find-NavPlaylist)
+    $openedPane = $itemBounds.Width -lt 100
+    if ($openedPane) {
+        Switch-Pane
+        $until = (Get-Date).AddSeconds(5)
+        while ((Get-Bounds (Find-NavPlaylist)).Width -lt 100 -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+        Start-Sleep -Milliseconds 500
+        $itemBounds = Get-Bounds (Find-NavPlaylist)
+        if ($itemBounds.Width -lt 100) { Stop-Test 'Favourite playlist' "The title bar's pane button did not open the navigation pane (the favourite is $($itemBounds.Width) px wide)." }
+    }
     $navPlay = (Find-NavPlaylist).FindFirst($scope::Descendants, [System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Play Road trip'),
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
     if (-not $navPlay) { Stop-Test 'Favourite playlist' "The favourite playlist in the navigation pane has no button 'Play Road trip'." }
     # Pointing at the item shows the button; its bounds must then be on the item.
-    $itemBounds = Get-Bounds (Find-NavPlaylist)
     Move-Pointer ([int] ($itemBounds.X + $itemBounds.Width / 2)) ([int] ($itemBounds.Y + $itemBounds.Height / 2))
     Start-Sleep -Milliseconds 500
     $playBounds = Get-Bounds $navPlay
@@ -1442,6 +1459,7 @@ try {
     Start-Sleep -Seconds 2
     Test-NavPlaylistSelected $false 'after a click on its play button on the search page'
     Test-Running 'after playing a favourite playlist from the navigation pane'
+    if ($openedPane) { Switch-Pane }
     Write-Output 'The play button on the favourite playlist''s cover played it without opening it.'
     # The title bar's Back button: Alt+Left stays in the search box, which still has focus.
     $searchEdit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('')
@@ -1835,7 +1853,7 @@ try {
     }
 }
 catch {
-    Stop-Test 'Smoke test' "The test failed: $($_.Exception.Message)"
+    Stop-Test 'Smoke test' "The test failed: $($_.Exception.Message) (line $($_.InvocationInfo.ScriptLineNumber): $($_.InvocationInfo.Line.Trim()))"
 }
 finally {
     if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
