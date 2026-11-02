@@ -1435,13 +1435,13 @@ try {
         $itemBounds = Get-Bounds (Find-NavPlaylist)
         if ($itemBounds.Width -lt 100) { Stop-Test 'Favourite playlist' "The title bar's pane button did not open the navigation pane (the favourite is $($itemBounds.Width) px wide)." }
     }
+    # Pointing at the item shows the button (collapsed until then); its bounds must be on the item.
+    Move-Pointer ([int] ($itemBounds.X + $itemBounds.Width / 2)) ([int] ($itemBounds.Y + $itemBounds.Height / 2))
+    Start-Sleep -Milliseconds 500
     $navPlay = (Find-NavPlaylist).FindFirst($scope::Descendants, [System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Play Road trip'),
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
-    if (-not $navPlay) { Stop-Test 'Favourite playlist' "The favourite playlist in the navigation pane has no button 'Play Road trip'." }
-    # Pointing at the item shows the button; its bounds must then be on the item.
-    Move-Pointer ([int] ($itemBounds.X + $itemBounds.Width / 2)) ([int] ($itemBounds.Y + $itemBounds.Height / 2))
-    Start-Sleep -Milliseconds 500
+    if (-not $navPlay) { Stop-Test 'Favourite playlist' "Pointing at the favourite playlist in the navigation pane shows no button 'Play Road trip'." }
     $playBounds = Get-Bounds $navPlay
     if ($playBounds.Width -le 0 -or -not $itemBounds.Contains($playBounds)) {
         Stop-Test 'Favourite playlist' "The favourite playlist's play button ($playBounds) is not on its item ($itemBounds): the navigation pane is not open."
@@ -1456,8 +1456,7 @@ try {
     Start-Sleep -Seconds 2
     Test-NavPlaylistSelected $false 'after a click on its play button on the search page'
     Test-Running 'after playing a favourite playlist from the navigation pane'
-    # The pointer leaves the pane, as a hand does before closing it: a tooltip still open on the item, which
-    # leaves the window when its heart is cleared below, failed on every later resize of the window.
+    # The pointer leaves the pane, as a hand does before closing it.
     $windowBounds = $window.Current.BoundingRectangle
     Move-Pointer ([int] ($windowBounds.X + $windowBounds.Width * 3 / 4)) ([int] ($windowBounds.Y + $windowBounds.Height / 2))
     if ($openedPane) { Switch-Pane }

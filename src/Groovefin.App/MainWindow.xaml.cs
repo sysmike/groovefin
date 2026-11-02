@@ -613,7 +613,7 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>The cover goes beside the name in the open pane, and is the icon in the closed compact pane.</summary>
     private void ShowPlaylistIcon(NavigationViewItem item) =>
-        item.Icon = _paneOpen ? null : ((PlaylistNavItem)item.Content).CreateIcon();
+        item.Icon = _paneOpen ? null : ((PlaylistNavItem)item.Content).Icon;
 
     private void OnPaneOpening(NavigationView sender, object args) => SetPaneOpen(true);
 

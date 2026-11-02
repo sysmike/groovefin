@@ -33,17 +33,10 @@
                 Glyph="&#xEC4F;" />
             <Image x:Name="CoverImage" Stretch="UniformToFill" />
             <!--
-                Faded as a whole, like the tiles' cover buttons: a button with no opacity of its own has no
-                place on screen for UI Automation. Not a tab stop: the item has the focus, and Play in its
-                menu (#315).
+                Collapsed until the pointer is on the item. Not a tab stop: the item has the focus, and Play in
+                its menu (#315).
             -->
-            <Grid
-                x:Name="PlayLayer"
-                IsHitTestVisible="False"
-                Opacity="0">
-                <Grid.OpacityTransition>
-                    <ScalarTransition Duration="0:0:0.083" />
-                </Grid.OpacityTransition>
+            <Grid x:Name="PlayLayer" Visibility="Collapsed">
                 <Button
                     x:Name="PlayButton"
                     Width="28"
