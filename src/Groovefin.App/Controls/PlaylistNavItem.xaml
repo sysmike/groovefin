@@ -13,7 +13,8 @@
         track count and length. The item itself carries the name for Narrator, so all but the play button on the
         cover (#315) is left out of UI Automation. Each element is, not the grid: a button inside a left-out
         grid, once clicked or found by UI Automation, was an unhandled XAML error on every later resize of the
-        window after its playlist had left the pane.
+        window after its playlist had left the pane. On the CI runner the button still was, so it only exists
+        while the pointer is on the item.
     -->
     <Grid
         Margin="0,4"
@@ -38,10 +39,10 @@
                 AutomationProperties.AccessibilityView="Raw"
                 Stretch="UniformToFill" />
             <!--
-                Collapsed until the pointer is on the item. Not a tab stop: the item has the focus, and Play in
+                Loaded while the pointer is on the item. Not a tab stop: the item has the focus, and Play in
                 its menu (#315).
             -->
-            <Grid x:Name="PlayLayer" Visibility="Collapsed">
+            <Grid x:Name="PlayLayer" x:Load="False">
                 <Button
                     x:Name="PlayButton"
                     Width="28"

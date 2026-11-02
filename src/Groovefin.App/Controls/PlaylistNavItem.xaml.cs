@@ -23,6 +23,8 @@ public sealed partial class PlaylistNavItem : UserControl
     private readonly ImageIcon _coverIcon = new();
     private readonly FontIcon _placeholderIcon = new() { Glyph = "" };
     private ImageRequest? _cover;
+    private string _playName = string.Empty;
+    private Grid? _playLayer;
 
     public PlaylistNavItem()
     {
@@ -36,15 +38,27 @@ public sealed partial class PlaylistNavItem : UserControl
     /// <summary>Raised when the play button on the cover is clicked.</summary>
     public event EventHandler? PlayRequested;
 
-    /// <summary>Shows the play button on the cover while the pointer is on the item.</summary>
-    public void ShowPlay(bool show) => PlayLayer.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+    /// <summary>Shows the play button on the cover while the pointer is on the item, and unloads it after.</summary>
+    public void ShowPlay(bool show)
+    {
+        if (show && _playLayer is null)
+        {
+            _playLayer = (Grid)FindName(nameof(PlayLayer));
+            SetPlayName();
+        }
+        else if (!show && _playLayer is not null)
+        {
+            UnloadObject(_playLayer);
+            _playLayer = null;
+        }
+    }
 
     /// <summary>Whether <paramref name="element"/> is the play button or inside it: a press there is no drag.</summary>
     public bool IsPlayButton(DependencyObject? element)
     {
         for (; element is not null && !ReferenceEquals(element, this); element = VisualTreeHelper.GetParent(element))
         {
-            if (ReferenceEquals(element, PlayButton))
+            if (_playLayer is not null && ReferenceEquals(element, _playLayer.Children[0]))
             {
                 return true;
             }
@@ -57,9 +71,8 @@ public sealed partial class PlaylistNavItem : UserControl
     public async void Show(string name, string details, ImageRequest? cover)
     {
         NameText.Text = name;
-        var play = _strings.GetString("Cover_Play").Replace("{0}", name, StringComparison.Ordinal);
-        AutomationProperties.SetName(PlayButton, play);
-        ToolTipService.SetToolTip(PlayButton, play);
+        _playName = _strings.GetString("Cover_Play").Replace("{0}", name, StringComparison.Ordinal);
+        SetPlayName();
         DetailsText.Text = details;
         DetailsText.Visibility = details.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (Equals(cover, _cover))
@@ -73,6 +86,15 @@ public sealed partial class PlaylistNavItem : UserControl
         if (cover is not null && await Artwork.LoadAsync(cover) is { } bitmap && Equals(cover, _cover))
         {
             _coverIcon.Source = bitmap;
+        }
+    }
+
+    private void SetPlayName()
+    {
+        if (_playLayer?.Children[0] is { } button)
+        {
+            AutomationProperties.SetName(button, _playName);
+            ToolTipService.SetToolTip(button, _playName);
         }
     }
 

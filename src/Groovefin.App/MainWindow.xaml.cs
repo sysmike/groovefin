@@ -507,6 +507,8 @@ internal sealed partial class MainWindow : Window
         var playlists = _favouritePlaylists.Items;
         foreach (var id in _playlistItems.Keys.Where(id => !playlists.Any(p => p.Id == id)).ToList())
         {
+            // Its play button goes first: one left in an item outside the pane breaks later resizes (#315).
+            ((PlaylistNavItem)_playlistItems[id].Content).ShowPlay(false);
             _playlistItems.Remove(id);
         }
 
@@ -594,7 +596,7 @@ internal sealed partial class MainWindow : Window
             item.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler((_, _) => _playlistPressPoint = null), handledEventsToo: true);
             item.AddHandler(UIElement.PointerEnteredEvent, new PointerEventHandler(OnPlaylistNavPointerOver), handledEventsToo: true);
             item.AddHandler(UIElement.PointerMovedEvent, new PointerEventHandler(OnPlaylistNavPointerOver), handledEventsToo: true);
-            item.AddHandler(UIElement.PointerExitedEvent, new PointerEventHandler((_, _) => navContent.ShowPlay(false)), handledEventsToo: true);
+            item.AddHandler(UIElement.PointerExitedEvent, new PointerEventHandler(OnPlaylistNavPointerExited), handledEventsToo: true);
             item.AddHandler(UIElement.PointerCanceledEvent, new PointerEventHandler((_, _) => navContent.ShowPlay(false)), handledEventsToo: true);
             _playlistItems[playlist.Id] = item;
         }
@@ -646,6 +648,20 @@ internal sealed partial class MainWindow : Window
         if (e.Pointer.PointerDeviceType != Microsoft.UI.Input.PointerDeviceType.Touch && _movingPlaylistId is null)
         {
             ((PlaylistNavItem)((NavigationViewItem)sender).Content).ShowPlay(true);
+        }
+    }
+
+    /// <summary>
+    /// Hides the play button once the pointer has left the item. Leaving the button itself also bubbles here,
+    /// and must not unload it while the pointer is still on the item.
+    /// </summary>
+    private void OnPlaylistNavPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        var item = (NavigationViewItem)sender;
+        var point = e.GetCurrentPoint(item).Position;
+        if (point.X < 0 || point.Y < 0 || point.X >= item.ActualWidth || point.Y >= item.ActualHeight)
+        {
+            ((PlaylistNavItem)item.Content).ShowPlay(false);
         }
     }
 
