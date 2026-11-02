@@ -39,8 +39,8 @@ public sealed partial class PlaylistNavItem : UserControl
     /// <summary>Shows the play button on the cover while the pointer is on the item.</summary>
     public void ShowPlay(bool show)
     {
-        PlayButton.Opacity = show ? 1 : 0;
-        PlayButton.IsHitTestVisible = show;
+        PlayLayer.Opacity = show ? 1 : 0;
+        PlayLayer.IsHitTestVisible = show;
     }
 
     /// <summary>Whether <paramref name="element"/> is the play button or inside it: a press there is no drag.</summary>

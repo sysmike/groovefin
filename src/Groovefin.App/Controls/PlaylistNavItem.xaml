@@ -32,28 +32,35 @@
                 Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                 Glyph="&#xEC4F;" />
             <Image x:Name="CoverImage" Stretch="UniformToFill" />
-            <!-- Not a tab stop: the item has the focus, and Play in its menu (#315). -->
-            <Button
-                x:Name="PlayButton"
-                Width="28"
-                Height="28"
-                Padding="0"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                AutomationProperties.AccessibilityView="Content"
-                Click="OnPlayClick"
-                CornerRadius="14"
-                DoubleTapped="OnPlayDoubleTapped"
+            <!--
+                Faded as a whole, like the tiles' cover buttons: a button with no opacity of its own has no
+                place on screen for UI Automation. Not a tab stop: the item has the focus, and Play in its
+                menu (#315).
+            -->
+            <Grid
+                x:Name="PlayLayer"
                 IsHitTestVisible="False"
-                IsTabStop="False"
-                Opacity="0"
-                Style="{StaticResource AccentButtonStyle}"
-                Tapped="OnPlayTapped">
-                <Button.OpacityTransition>
+                Opacity="0">
+                <Grid.OpacityTransition>
                     <ScalarTransition Duration="0:0:0.083" />
-                </Button.OpacityTransition>
-                <FontIcon FontSize="12" Glyph="&#xE768;" />
-            </Button>
+                </Grid.OpacityTransition>
+                <Button
+                    x:Name="PlayButton"
+                    Width="28"
+                    Height="28"
+                    Padding="0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    AutomationProperties.AccessibilityView="Content"
+                    Click="OnPlayClick"
+                    CornerRadius="14"
+                    DoubleTapped="OnPlayDoubleTapped"
+                    IsTabStop="False"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Tapped="OnPlayTapped">
+                    <FontIcon FontSize="12" Glyph="&#xE768;" />
+                </Button>
+            </Grid>
         </Grid>
         <StackPanel Grid.Column="1" VerticalAlignment="Center">
             <TextBlock

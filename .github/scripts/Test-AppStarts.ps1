@@ -1424,9 +1424,11 @@ try {
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Play Road trip'),
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
     if (-not $navPlay) { Stop-Test 'Favourite playlist' "The favourite playlist in the navigation pane has no button 'Play Road trip'." }
-    # Hidden until the pointer is on the item, the button counts as off the screen: its bounds must be on the item.
-    $playBounds = Get-Bounds $navPlay
+    # Pointing at the item shows the button; its bounds must then be on the item.
     $itemBounds = Get-Bounds (Find-NavPlaylist)
+    Move-Pointer ([int] ($itemBounds.X + $itemBounds.Width / 2)) ([int] ($itemBounds.Y + $itemBounds.Height / 2))
+    Start-Sleep -Milliseconds 500
+    $playBounds = Get-Bounds $navPlay
     if ($playBounds.Width -le 0 -or -not $itemBounds.Contains($playBounds)) {
         Stop-Test 'Favourite playlist' "The favourite playlist's play button ($playBounds) is not on its item ($itemBounds): the navigation pane is not open."
     }
