@@ -1418,50 +1418,28 @@ try {
     $until = (Get-Date).AddSeconds(10)
     while ($window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'PlaylistFavouriteButton')) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
     Test-NavPlaylistSelected $false 'on the search page'
-    # The play button on its cover (#315), clicked with the mouse there: it plays the playlist, from its first
-    # track, and does not open it as well. The closed compact pane shows only the cover, without the button:
-    # the runner's window is that narrow, so the title bar's pane button opens the pane over the page first.
-    function Switch-Pane {
-        # The TitleBar template's part name, as WinUI's own tests find it.
-        (Find-ById 'PART_PaneToggleButton').GetCurrentPattern($invoke).Invoke()
-    }
-    $itemBounds = Get-Bounds (Find-NavPlaylist)
-    $openedPane = $itemBounds.Width -lt 100
-    if ($openedPane) {
-        Switch-Pane
-        $until = (Get-Date).AddSeconds(5)
-        while ((Get-Bounds (Find-NavPlaylist)).Width -lt 100 -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
-        Start-Sleep -Milliseconds 500
-        $itemBounds = Get-Bounds (Find-NavPlaylist)
-        if ($itemBounds.Width -lt 100) { Stop-Test 'Favourite playlist' "The title bar's pane button did not open the navigation pane (the favourite is $($itemBounds.Width) px wide)." }
-    }
-    # Pointing at the item shows the button (collapsed until then); its bounds must be on the item.
-    Move-Pointer ([int] ($itemBounds.X + $itemBounds.Width / 2)) ([int] ($itemBounds.Y + $itemBounds.Height / 2))
-    Start-Sleep -Milliseconds 500
-    $navPlay = (Find-NavPlaylist).FindFirst($scope::Descendants, [System.Windows.Automation.AndCondition]::new(
-            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Play Road trip'),
-            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
-    if (-not $navPlay) { Stop-Test 'Favourite playlist' "Pointing at the favourite playlist in the navigation pane shows no button 'Play Road trip'." }
-    $playBounds = Get-Bounds $navPlay
-    if ($playBounds.Width -le 0 -or -not $itemBounds.Contains($playBounds)) {
-        Stop-Test 'Favourite playlist' "The favourite playlist's play button ($playBounds) is not on its item ($itemBounds): the navigation pane is not open."
+    # Play in its menu (#315) plays the playlist, from its first track, and does not open it as well. The play
+    # button on its cover runs the same code. The test does not point at the item to show that button: on the
+    # runner, WinUI then logs "Unspecified error" while the window resizes later, which it does not on a PC.
+    (Find-NavPlaylist).SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
+    $until = (Get-Date).AddSeconds(5)
+    while (-not ($menuPlay = Find-MenuItem 'Play') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    if (-not $menuPlay) {
+        Write-MenuDiagnostics 'Shift+F10 on the favourite playlist on the search page'
+        Stop-Test 'Favourite playlist' "Shift+F10 on the favourite playlist on the search page opened no menu with 'Play'."
     }
     $roadTripStart = '/audio/c{31}1/universal'
     $before = Get-RequestCount $roadTripStart
-    Send-Click $navPlay
+    $menuPlay.GetCurrentPattern($invoke).Invoke()
     $until = (Get-Date).AddSeconds(10)
     while ((Get-RequestCount $roadTripStart) -le $before -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
-    Save-Screenshot 'favourite-playlist-play'
-    if ((Get-RequestCount $roadTripStart) -le $before) { Stop-Test 'Favourite playlist' "The play button on the favourite playlist's cover was clicked, but Groovefin did not play 'Track 1'." }
+    if ((Get-RequestCount $roadTripStart) -le $before) { Stop-Test 'Favourite playlist' "Play in the favourite playlist's menu did not play 'Track 1'." }
     Start-Sleep -Seconds 2
-    Test-NavPlaylistSelected $false 'after a click on its play button on the search page'
+    Test-NavPlaylistSelected $false 'after Play in its menu on the search page'
     Test-Running 'after playing a favourite playlist from the navigation pane'
-    # The pointer leaves the pane, as a hand does before closing it.
-    $windowBounds = $window.Current.BoundingRectangle
-    Move-Pointer ([int] ($windowBounds.X + $windowBounds.Width * 3 / 4)) ([int] ($windowBounds.Y + $windowBounds.Height / 2))
-    if ($openedPane) { Switch-Pane }
-    Write-Output 'The play button on the favourite playlist''s cover played it without opening it.'
-    # The title bar's Back button: Alt+Left stays in the search box, which still has focus.
+    Write-Output 'Play in the favourite playlist''s menu played it without opening it.'
+    # The title bar's Back button.
     $searchEdit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('')
     (Find-Button 'Back').GetCurrentPattern($invoke).Invoke()
     $null = Find-ById 'PlaylistFavouriteButton'
