@@ -1415,10 +1415,22 @@ try {
 
     # The pane selects the favourite on its own page, and nothing on a page that is not a section (#301): it
     # selected the first favourite there. The search page is one; its Back button returns to the playlist.
+    # UI Automation can miss the item for a moment, e.g. just after its menu closed, when the Release job,
+    # which runs no accessibility scans, gets there quickly (#323): wait for it.
+    function Wait-NavPlaylist([string] $when) {
+        $until = (Get-Date).AddSeconds(5)
+        while (-not ($item = Find-NavPlaylist) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
+        if (-not $item) {
+            $navItems = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)) |
+                    Where-Object { $_.Current.AutomationId -like 'Nav*' } | ForEach-Object { "'$($_.Current.Name)' ($($_.Current.AutomationId))" })
+            Stop-Test 'Favourite playlist' "'Road trip' is not in the navigation pane $when. Its items: $($navItems -join ', ')."
+        }
+        $item
+    }
     function Test-NavPlaylistSelected([bool] $expected, [string] $when) {
         $until = (Get-Date).AddSeconds(5)
-        while ((Find-NavPlaylist).GetCurrentPattern($selectionItem).Current.IsSelected -ne $expected -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
-        if ((Find-NavPlaylist).GetCurrentPattern($selectionItem).Current.IsSelected -ne $expected) {
+        while ((Wait-NavPlaylist $when).GetCurrentPattern($selectionItem).Current.IsSelected -ne $expected -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
+        if ((Wait-NavPlaylist $when).GetCurrentPattern($selectionItem).Current.IsSelected -ne $expected) {
             Stop-Test 'Favourite playlist' "The favourite playlist's item is $(if ($expected) { 'not ' })selected $when."
         }
     }
@@ -1433,7 +1445,7 @@ try {
     # Play in its menu (#315) plays the playlist, from its first track, and does not open it as well. The play
     # button on its cover runs the same code. The test does not point at the item to show that button: on the
     # runner, WinUI then logs "Unspecified error" while the window resizes later, which it does not on a PC.
-    (Find-NavPlaylist).SetFocus()
+    (Wait-NavPlaylist 'on the search page').SetFocus()
     [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
     $until = (Get-Date).AddSeconds(5)
     while (-not ($menuPlay = Find-MenuItem 'Play') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
