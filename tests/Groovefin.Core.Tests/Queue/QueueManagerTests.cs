@@ -590,6 +590,35 @@ public sealed class QueueManagerTests
     }
 
     [Fact]
+    public void PlayNow_without_an_index_while_shuffled_starts_with_a_random_entry()
+    {
+        var names = Enumerable.Range(0, 20).Select(i => $"t{i}").ToArray();
+        _sut.Shuffle = true;
+        var starts = new HashSet<string>();
+
+        for (var i = 0; i < 10; i++)
+        {
+            _sut.PlayNow(Tracks(names));
+            _sut.CurrentIndex.Should().Be(0);
+            Order.Should().BeEquivalentTo(names);
+            starts.Add(CurrentName!);
+        }
+
+        starts.Should().HaveCountGreaterThan(1);
+    }
+
+    [Fact]
+    public void PlayNow_with_an_index_while_shuffled_starts_with_that_entry()
+    {
+        _sut.Shuffle = true;
+
+        _sut.PlayNow(Tracks("a", "b", "c", "d"), startIndex: 0);
+
+        CurrentName.Should().Be("a");
+        _sut.CurrentIndex.Should().Be(0);
+    }
+
+    [Fact]
     public void Turning_shuffle_off_restores_the_original_order_and_keeps_the_current_entry()
     {
         var names = Enumerable.Range(0, 10).Select(i => $"t{i}").ToArray();

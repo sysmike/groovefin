@@ -27,7 +27,6 @@ public sealed partial class Player : IPlayer, IDisposable
     private readonly ISettingsService _settings;
     private readonly IErrorReporter _errors;
     private readonly ILogger<Player> _logger;
-    private readonly Random _random;
     private string? _loadedItemId;
     private int _failures;
     private bool _driving;
@@ -40,8 +39,7 @@ public sealed partial class Player : IPlayer, IDisposable
         IJellyfinClient client,
         ISettingsService settings,
         IErrorReporter errors,
-        ILogger<Player> logger,
-        Random? random = null)
+        ILogger<Player> logger)
     {
         Queue = queue;
         Engine = engine;
@@ -50,7 +48,6 @@ public sealed partial class Player : IPlayer, IDisposable
         _settings = settings;
         _errors = errors;
         _logger = logger;
-        _random = random ?? Random.Shared;
 
         Engine.Ended += OnEnded;
         Engine.Failed += OnFailed;
@@ -64,7 +61,7 @@ public sealed partial class Player : IPlayer, IDisposable
 
     public IPlaybackEngine Engine { get; }
 
-    public void Play(IReadOnlyList<Track> tracks, int startIndex = 0)
+    public void Play(IReadOnlyList<Track> tracks, int? startIndex = null)
     {
         ArgumentNullException.ThrowIfNull(tracks);
         if (tracks.Count == 0)
@@ -87,7 +84,7 @@ public sealed partial class Player : IPlayer, IDisposable
         Drive(() =>
         {
             Queue.Shuffle = true;
-            Queue.PlayNow(tracks, _random.Next(tracks.Count));
+            Queue.PlayNow(tracks);
         });
         LoadCurrent();
     }

@@ -56,7 +56,7 @@ public sealed class GenreDetailViewModelTests
         _sut.PlayCommand.Execute(null);
 
         _sut.Tracks.Should().HaveCount(GenreDetailViewModel.TracksShown);
-        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Count == GenreDetailViewModel.TracksShown + 5), 0);
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Count == GenreDetailViewModel.TracksShown + 5));
     }
 
     [Fact]

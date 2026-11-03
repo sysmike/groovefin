@@ -187,7 +187,7 @@ public sealed class AlbumDetailViewModelTests
         sut.PlayCommand.Execute(null);
         sut.PlayTrackCommand.Execute(sut.Discs[0].Tracks[1]);
 
-        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "t2", "t1" })), 0);
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "t2", "t1" })));
         _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "t2", "t1" })), 1);
     }
 
@@ -309,7 +309,7 @@ public sealed class AlbumDetailViewModelTests
         sut.ShuffleCommand.Execute(null);
         sut.AddToQueueCommand.Execute(null);
 
-        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(ids)), 0);
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(ids)));
         _player.Received(1).Shuffle(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 2));
         _player.Received(1).AddToQueue(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 2));
     }

@@ -243,7 +243,7 @@ public sealed class ArtistDetailViewModelTests
         await sut.PlayCommand.ExecuteAsync(null);
         await sut.ShuffleCommand.ExecuteAsync(null);
 
-        _player.Received(1).Play(all, 0);
+        _player.Received(1).Play(all);
         _player.Received(1).Shuffle(all);
     }
 

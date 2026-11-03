@@ -94,15 +94,19 @@ public sealed class QueueManager
 
     /// <summary>
     /// Replaces the queue with <paramref name="tracks"/> and makes the track at <paramref name="startIndex"/>
-    /// current. With shuffle on, that track plays first and the rest are shuffled.
+    /// current. With shuffle on, that track plays first and the rest are shuffled. Without an index the queue
+    /// starts with the first track, or with shuffle on with a random one (#317).
     /// </summary>
-    public void PlayNow(IEnumerable<Track> tracks, int startIndex = 0)
+    public void PlayNow(IEnumerable<Track> tracks, int? startIndex = null)
     {
         var items = Wrap(tracks);
-        ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
-        if (items.Count > 0)
+        if (startIndex is { } index)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(startIndex, items.Count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            if (items.Count > 0)
+            {
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, items.Count);
+            }
         }
 
         MoveCurrentToHistory();
@@ -110,7 +114,7 @@ public sealed class QueueManager
         _original.AddRange(items);
         _order.Clear();
         _order.AddRange(items);
-        CurrentIndex = items.Count > 0 ? startIndex : -1;
+        CurrentIndex = items.Count == 0 ? -1 : startIndex ?? (_shuffle ? _random.Next(items.Count) : 0);
         if (_shuffle)
         {
             ShuffleOrder(Current);

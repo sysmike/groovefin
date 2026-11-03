@@ -150,7 +150,7 @@ public sealed class OnRepeatViewModelTests : IDisposable
         _sut.ShuffleCommand.Execute(null);
         _sut.PlayEntryCommand.Execute(_sut.Entries[1]);
 
-        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "a", "b" })), 0);
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "a", "b" })));
         _player.Received(1).Shuffle(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 2));
         _player.Received(1).Play(Arg.Any<IReadOnlyList<Track>>(), 1);
     }

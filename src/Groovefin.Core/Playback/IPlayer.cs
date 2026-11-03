@@ -13,8 +13,11 @@ public interface IPlayer
 
     IPlaybackEngine Engine { get; }
 
-    /// <summary>Replaces the queue with <paramref name="tracks"/> and plays the one at <paramref name="startIndex"/>.</summary>
-    void Play(IReadOnlyList<Track> tracks, int startIndex = 0);
+    /// <summary>
+    /// Replaces the queue with <paramref name="tracks"/> and plays the one at <paramref name="startIndex"/>.
+    /// Without an index it plays the first, or with shuffle on a random one (#317).
+    /// </summary>
+    void Play(IReadOnlyList<Track> tracks, int? startIndex = null);
 
     /// <summary>Turns shuffle on and plays <paramref name="tracks"/> from a random track.</summary>
     void Shuffle(IReadOnlyList<Track> tracks);
