@@ -1334,12 +1334,24 @@ try {
     Start-Sleep -Seconds 1
     if ((Get-RequestCount '^POST /Playlists/9{32}/Items') -ne $addsBefore) { Stop-Test 'Duplicate warning' 'Cancel in the question about songs already in the playlist still added them.' }
     Write-Output 'Adding the playlist''s own entries to it asked first, and Cancel added nothing.'
+    # Removing them asks first as well (#319); Cancel keeps both and sends nothing.
     $rows[1].SetFocus()
     [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
-    if (-not (Wait-RemoveItem)) { Stop-Test 'Playlist selection' 'After the question, Shift+F10 on two selected entries opened no menu.' }
-    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+    if (-not ($remove = Wait-RemoveItem)) { Stop-Test 'Playlist selection' 'After the question, Shift+F10 on two selected entries opened no menu.' }
+    $entriesBefore = @(Get-EntryRows).Count
+    $removesBefore = Get-RequestCount '^DELETE /Playlists/9{32}/Items'
+    $remove.GetCurrentPattern($invoke).Invoke()
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Remove from playlist?')) 'question before removing songs from the playlist'
+    $null = Find-Button 'Remove'
+    Test-Accessibility 'remove-question'
+    (Find-Button 'Cancel').GetCurrentPattern($invoke).Invoke()
     $until = (Get-Date).AddSeconds(5)
-    while ((Find-MenuItem 'Remove from playlist') -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    while ($window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Remove from playlist?')) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 250 }
+    Start-Sleep -Seconds 1
+    if ((Get-RequestCount '^DELETE /Playlists/9{32}/Items') -ne $removesBefore) { Stop-Test 'Remove question' 'Cancel in the question before removing songs still removed them on the server.' }
+    if (@(Get-EntryRows).Count -ne $entriesBefore) { Stop-Test 'Remove question' "Cancel in the question before removing songs left $(@(Get-EntryRows).Count) entries, not $entriesBefore." }
+    if ((Get-SelectedCount) -ne 2) { Stop-Test 'Remove question' "After Cancel in the question before removing songs, $(Get-SelectedCount) entries are selected, not 2." }
+    Write-Output 'Removing two playlist entries asked first, and Cancel kept them.'
     $rows[1].SetFocus()
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
     $until = (Get-Date).AddSeconds(5)

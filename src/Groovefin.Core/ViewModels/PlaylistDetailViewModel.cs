@@ -58,7 +58,7 @@ public sealed partial class PlaylistEntryItem(PlaylistEntry entry, bool isFavour
 
 /// <summary>
 /// Playlist detail page: play, shuffle, queue, rename, delete (after a confirmation), and edit the
-/// entries (remove, move up/down, drag), and toggle a track's heart or the playlist's, which puts it into the
+/// entries (remove after a confirmation, move up/down, drag), and toggle a track's heart or the playlist's, which puts it into the
 /// navigation pane (#297). Edits show at once and are sent to the
 /// server; when the server refuses, the entries are loaded again and the error is shown. The playlist can
 /// be shown in reverse order, last entry first (#267): only here, remembered per playlist, and played as
@@ -291,14 +291,24 @@ public sealed partial class PlaylistDetailViewModel(
     [RelayCommand]
     private Task RemoveAsync(PlaylistEntryItem item) => RemoveEntriesAsync([item]);
 
-    /// <summary>Takes the selected entries out at once and sends one request for all (#295); rows already gone are skipped.</summary>
-    public Task RemoveEntriesAsync(IReadOnlyList<PlaylistEntryItem> items)
+    /// <summary>
+    /// Takes the selected entries out at once, after a confirmation (#319), and sends one request for all
+    /// (#295); rows already gone are skipped.
+    /// </summary>
+    public async Task RemoveEntriesAsync(IReadOnlyList<PlaylistEntryItem> items)
     {
         ArgumentNullException.ThrowIfNull(items);
         List<PlaylistEntryItem> removing = [.. items.Where(Entries.Contains).Distinct()];
+        if (removing.Count == 0 || !await ConfirmRemoveAsync(removing))
+        {
+            return;
+        }
+
+        // Rows may have gone while the question was open.
+        removing.RemoveAll(item => !Entries.Contains(item));
         if (removing.Count == 0)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         foreach (var item in removing)
@@ -308,7 +318,20 @@ public sealed partial class PlaylistDetailViewModel(
 
         UpdateDetails();
         List<string> ids = [.. removing.Select(item => item.Entry.EntryId)];
-        return EditAsync(() => playlists.RemoveEntriesAsync(Playlist!.Id, ids));
+        await EditAsync(() => playlists.RemoveEntriesAsync(Playlist!.Id, ids));
+    }
+
+    private Task<bool> ConfirmRemoveAsync(IReadOnlyList<PlaylistEntryItem> items)
+    {
+        // The playlist goes in first: a song's name may hold "{1}" itself.
+        var (key, what) = items.Count == 1
+            ? ("Playlist_RemoveOne", items[0].Name)
+            : ("Playlist_RemoveSome", items.Count.ToString(CultureInfo.CurrentCulture));
+        return dialogs.ConfirmAsync(
+            strings.GetString("Playlist_RemoveTitle"),
+            strings.GetString(key).Replace("{1}", Name, StringComparison.Ordinal).Replace("{0}", what, StringComparison.Ordinal),
+            strings.GetString("Playlist_RemoveConfirm"),
+            strings.GetString("Dialog_Cancel"));
     }
 
     /// <summary>The playlist's heart (#297), optimistic like the album page's; a favourite goes into the navigation pane.</summary>
