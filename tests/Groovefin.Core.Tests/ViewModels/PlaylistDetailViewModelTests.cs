@@ -136,7 +136,7 @@ public sealed class PlaylistDetailViewModelTests
         _sut.AddToQueueCommand.Execute(null);
         _sut.PlayEntryCommand.Execute(Row("b"));
 
-        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "a", "b", "c" })), 0);
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "a", "b", "c" })));
         _player.Received(1).Shuffle(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 3));
         _player.Received(1).AddToQueue(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 3));
         _player.Received(1).Play(Arg.Any<IReadOnlyList<Track>>(), 1);
@@ -450,7 +450,7 @@ public sealed class PlaylistDetailViewModelTests
         _sut.Entries.Select(e => e.Number).Should().Equal("3", "2", "1");
         _sut.PlayCommand.Execute(null);
         _sut.PlayEntryCommand.Execute(Row("b"));
-        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "c", "b", "a" })), 0);
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "c", "b", "a" })));
         _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Select(x => x.Id).SequenceEqual(new[] { "c", "b", "a" })), 1);
 
         _sut.ToggleReverseCommand.Execute(null);

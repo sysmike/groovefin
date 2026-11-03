@@ -93,7 +93,7 @@ public sealed class FavouritesViewModelTests
         _sut.ShuffleCommand.Execute(null);
         _sut.PlayTrackCommand.Execute(_sut.Tracks[1]);
 
-        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 2), 0);
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 2));
         _player.Received(1).Shuffle(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 2));
         _player.Received(1).Play(Arg.Any<IReadOnlyList<Track>>(), 1);
     }

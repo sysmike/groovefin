@@ -101,7 +101,7 @@ public sealed class AlbumPreviewViewModelTests
 
         _sut.PlayCommand.Execute(null);
 
-        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(tracks)), 0);
+        _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(tracks)));
     }
 
     [Fact]
