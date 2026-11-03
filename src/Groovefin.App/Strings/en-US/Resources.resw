@@ -1046,6 +1046,21 @@
   <data name="Playlist_DeleteConfirm" xml:space="preserve">
     <value>Delete</value>
   </data>
+  <data name="Playlist_RemoveTitle" xml:space="preserve">
+    <value>Remove from playlist?</value>
+    <comment>Asked before removing songs from a playlist (#319)</comment>
+  </data>
+  <data name="Playlist_RemoveOne" xml:space="preserve">
+    <value>“{0}” will be removed from “{1}”. The song stays in your library.</value>
+    <comment>{0} = song, {1} = playlist</comment>
+  </data>
+  <data name="Playlist_RemoveSome" xml:space="preserve">
+    <value>{0} songs will be removed from “{1}”. They stay in your library.</value>
+    <comment>{0} = number of songs, {1} = playlist</comment>
+  </data>
+  <data name="Playlist_RemoveConfirm" xml:space="preserve">
+    <value>Remove</value>
+  </data>
   <data name="Playlist_AddedTitle" xml:space="preserve">
     <value>Added to playlist</value>
   </data>

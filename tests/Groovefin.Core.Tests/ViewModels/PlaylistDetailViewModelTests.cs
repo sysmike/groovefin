@@ -34,6 +34,10 @@ public sealed class PlaylistDetailViewModelTests
         _strings.GetString("Album_TrackCount").Returns("{0} tracks");
         _strings.GetString("Album_TrackCountOne").Returns("{0} track");
         _strings.GetString("Playlist_DeleteMessage").Returns("Delete {0}?");
+        _strings.GetString("Playlist_RemoveOne").Returns("Remove {0} from {1}?");
+        _strings.GetString("Playlist_RemoveSome").Returns("Remove {0} songs from {1}?");
+        // Removing asks first (#319); the tests of the edit itself answer Remove.
+        _dialogs.ConfirmAsync("Playlist_RemoveTitle", Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>()).Returns(true);
         _playlists.GetPlaylistAsync(Id, Arg.Any<CancellationToken>()).Returns(new Playlist { Id = Id, Name = "Chill", PrimaryImageTag = "img" });
         _playlists.GetEntriesAsync(Id, Arg.Any<CancellationToken>()).Returns(Entries("a", "b", "c"));
         _messenger.Register<PlaylistDetailViewModelTests, PlaylistChangedMessage>(this, static (r, m) => r._sent.Add(m));
@@ -244,6 +248,58 @@ public sealed class PlaylistDetailViewModelTests
         _navigation.DidNotReceive().GoBack();
         _sut.HasPlaylist.Should().BeTrue();
         _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.EditPlaylist);
+    }
+
+    [Fact]
+    public async Task Remove_asks_first_with_the_song_and_the_playlist()
+    {
+        await LoadAsync();
+
+        await _sut.RemoveCommand.ExecuteAsync(Row("b"));
+
+        await _dialogs.Received(1).ConfirmAsync("Playlist_RemoveTitle", "Remove Song b from Chill?", "Playlist_RemoveConfirm", "Dialog_Cancel");
+    }
+
+    [Fact]
+    public async Task Removing_several_entries_asks_once_with_their_number()
+    {
+        await LoadAsync();
+
+        await _sut.RemoveEntriesAsync([Row("a"), Row("c")]);
+
+        await _dialogs.Received(1).ConfirmAsync("Playlist_RemoveTitle", "Remove 2 songs from Chill?", "Playlist_RemoveConfirm", "Dialog_Cancel");
+        Order.Should().Equal("b");
+    }
+
+    [Fact]
+    public async Task Cancel_keeps_the_entries_and_sends_nothing()
+    {
+        await LoadAsync();
+        _dialogs.ConfirmAsync("Playlist_RemoveTitle", Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+
+        await _sut.RemoveEntriesAsync([Row("a"), Row("b")]);
+
+        Order.Should().Equal("a", "b", "c");
+        _sut.Details.Should().Be("3 tracks · 3:00");
+        await _playlists.DidNotReceiveWithAnyArgs().RemoveEntriesAsync(default!, default!, Ct);
+    }
+
+    [Fact]
+    public async Task An_entry_removed_while_the_question_was_open_is_not_sent_again()
+    {
+        await LoadAsync();
+        var question = new TaskCompletionSource<bool>();
+        _dialogs.ConfirmAsync("Playlist_RemoveTitle", Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>()).Returns(question.Task, Task.FromResult(true));
+        var a = Row("a");
+        var b = Row("b");
+
+        var asking = _sut.RemoveEntriesAsync([a, b]);
+        await _sut.RemoveCommand.ExecuteAsync(b);
+        question.SetResult(true);
+        await asking;
+
+        Order.Should().Equal("c");
+        await _playlists.Received(1).RemoveEntriesAsync(Id, Arg.Is<IReadOnlyList<string>>(ids => ids.SequenceEqual(new[] { "e-a" })), Arg.Any<CancellationToken>());
     }
 
     [Fact]
