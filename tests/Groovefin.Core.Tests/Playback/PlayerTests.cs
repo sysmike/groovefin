@@ -27,7 +27,7 @@ public sealed class PlayerTests : IDisposable
         _client.Connection.Returns(new ServerConnection(Server, "user", "token"));
         _streams.GetStreamUrl(Arg.Any<string>(), Arg.Any<StreamOptions>())
             .Returns(call => new Uri($"http://stream/{call.Arg<string>()}"));
-        _sut = new Player(_queue, _engine, _streams, _client, _settings, _errors, NullLogger<Player>.Instance, new Random(7));
+        _sut = new Player(_queue, _engine, _streams, _client, _settings, _errors, NullLogger<Player>.Instance);
     }
 
     public void Dispose() => _sut.Dispose();
@@ -55,7 +55,7 @@ public sealed class PlayerTests : IDisposable
         var queue = new QueueManager(new Random(1));
         var engine = new FakePlaybackEngine(time: new Microsoft.Extensions.Time.Testing.FakeTimeProvider());
         _settings.Update(s => s with { Playback = s.Playback with { CrossfadeSeconds = 4 } });
-        using var player = new Player(queue, engine, _streams, _client, _settings, _errors, NullLogger<Player>.Instance, new Random(7));
+        using var player = new Player(queue, engine, _streams, _client, _settings, _errors, NullLogger<Player>.Instance);
         player.Play([new Track { Id = "a", Name = "a", AlbumId = "x", Duration = TimeSpan.FromSeconds(200) },
             new Track { Id = "b", Name = "b", AlbumId = "y", Duration = TimeSpan.FromSeconds(200) }]);
         engine.SimulateState(PlaybackState.Playing);
@@ -125,6 +125,25 @@ public sealed class PlayerTests : IDisposable
         _queue.Shuffle.Should().BeTrue();
         _queue.CurrentIndex.Should().Be(0);
         Playing.Should().Be(_queue.Current!.Track.Id);
+    }
+
+    [Fact]
+    public void Play_with_shuffle_on_starts_with_a_random_track_unless_one_is_chosen()
+    {
+        var names = Enumerable.Range(0, 20).Select(i => $"t{i}").ToArray();
+        _queue.Shuffle = true;
+        var starts = new HashSet<string>();
+
+        for (var i = 0; i < 10; i++)
+        {
+            _sut.Play(Tracks(names));
+            Playing.Should().Be(_queue.Current!.Track.Id);
+            starts.Add(Playing!);
+        }
+
+        starts.Should().HaveCountGreaterThan(1);
+        _sut.Play(Tracks(names), startIndex: 3);
+        Playing.Should().Be("t3");
     }
 
     [Fact]
