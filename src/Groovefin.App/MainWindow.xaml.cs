@@ -652,14 +652,14 @@ internal sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Hides the play button once the pointer has left the item. Leaving the button itself also bubbles here,
-    /// and must not unload it while the pointer is still on the item.
+    /// Hides the play button once the pointer is on no part of the item. Leaving the button itself also bubbles
+    /// here, and must not unload it while the pointer is still on the item. Its bounds are no test: the part
+    /// that takes the pointer has a margin inside them, so the pointer leaves it within them (#325).
     /// </summary>
     private void OnPlaylistNavPointerExited(object sender, PointerRoutedEventArgs e)
     {
         var item = (NavigationViewItem)sender;
-        var point = e.GetCurrentPoint(item).Position;
-        if (point.X < 0 || point.Y < 0 || point.X >= item.ActualWidth || point.Y >= item.ActualHeight)
+        if (!VisualTreeHelper.FindElementsInHostCoordinates(e.GetCurrentPoint(null).Position, item).Any())
         {
             ((PlaylistNavItem)item.Content).ShowPlay(false);
         }
