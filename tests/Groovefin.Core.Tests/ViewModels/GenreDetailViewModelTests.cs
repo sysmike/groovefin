@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -16,6 +18,7 @@ public sealed class GenreDetailViewModelTests
     private readonly IPlayer _player = Substitute.For<IPlayer>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
+    private readonly WeakReferenceMessenger _messenger = new();
     private readonly GenreDetailViewModel _sut;
 
     public GenreDetailViewModelTests()
@@ -24,7 +27,7 @@ public sealed class GenreDetailViewModelTests
         _library.GetAlbumsAsync(Arg.Any<AlbumQuery>(), Arg.Any<CancellationToken>())
             .Returns(new PagedResult<Album>([new Album { Id = "al1", Name = "Discovery", PrimaryImageTag = "c" }], 1, 0));
         _library.GetGenreTracksAsync("g1", Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(Songs(3));
-        _sut = new GenreDetailViewModel(_library, _player, _navigation, _errors, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current);
+        _sut = new GenreDetailViewModel(_library, _player, _navigation, _errors, new FavouritesService(_library, _messenger, _errors), _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -142,5 +145,45 @@ public sealed class GenreDetailViewModelTests
 
         _playing.Engine.Stop();
         _sut.Tracks.Should().OnlyContain(t => !t.IsCurrent);
+    }
+
+    [Fact]
+    public async Task Songs_show_their_artists_album_and_heart_in_columns()
+    {
+        _library.GetGenreTracksAsync("g1", Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns([.. Songs(2).Select((t, i) => i == 0 ? t with { IsFavorite = true, Artists = [new ArtistRef("a", "Daft Punk"), new ArtistRef("b", "Pharrell")] } : t)]);
+
+        await _sut.LoadAsync("g1", Ct);
+
+        _sut.Tracks.Select(t => (t.Artists, t.Album, t.IsFavourite)).Should().Equal(
+            ("Daft Punk, Pharrell", "Discovery", true),
+            ("Daft Punk", "Discovery", false));
+    }
+
+    [Fact]
+    public async Task A_songs_heart_toggles_optimistically_and_rolls_back_on_failure()
+    {
+        await _sut.LoadAsync("g1", Ct);
+
+        await _sut.ToggleTrackFavouriteCommand.ExecuteAsync(_sut.Tracks[1]);
+        _sut.Tracks[1].IsFavourite.Should().BeTrue();
+        await _library.Received(1).SetFavouriteAsync("t2", true, Arg.Any<CancellationToken>());
+
+        _library.SetFavouriteAsync("t1", true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new JellyfinException("no")));
+        await _sut.ToggleTrackFavouriteCommand.ExecuteAsync(_sut.Tracks[0]);
+
+        _sut.Tracks[0].IsFavourite.Should().BeFalse();
+        _errors.Received(1).Report(Arg.Any<JellyfinException>(), Operations.SetFavourite);
+    }
+
+    [Fact]
+    public async Task A_heart_toggled_elsewhere_updates_the_song()
+    {
+        await _sut.LoadAsync("g1", Ct);
+
+        _messenger.Send(new FavouriteChangedMessage("t3", true));
+
+        _sut.Tracks.Select(t => t.IsFavourite).Should().Equal(false, false, true);
     }
 }

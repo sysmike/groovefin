@@ -66,4 +66,12 @@ internal sealed partial class GenreDetailPage : Page
             ViewModel.PlayTrackCommand.Execute(row);
         }
     }
+
+    private void OnTrackFavouriteClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is TrackRow row)
+        {
+            ViewModel.ToggleTrackFavouriteCommand.Execute(row);
+        }
+    }
 }
