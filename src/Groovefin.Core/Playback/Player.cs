@@ -1,7 +1,9 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Queue;
+using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
 using Microsoft.Extensions.Logging;
 
@@ -12,7 +14,9 @@ namespace Groovefin.Core.Playback;
 /// streaming settings for the active server, moves on when a track ends, and skips tracks that fail
 /// (up to <see cref="MaxConsecutiveFailures"/> in a row, then stops). The entry after the current one is
 /// queued in the engine (<see cref="IPlaybackEngine.SetNext"/>) so it follows without a gap; when the
-/// engine moves on by itself, the queue follows. Use it from the UI thread.
+/// engine moves on by itself, the queue follows. A downloaded song plays from its file, also when the server is
+/// reachable; offline, the songs that are not downloaded are skipped without a try (#333). Use it from the UI
+/// thread.
 /// </summary>
 public sealed partial class Player : IPlayer, IDisposable
 {
@@ -27,6 +31,8 @@ public sealed partial class Player : IPlayer, IDisposable
     private readonly ISettingsService _settings;
     private readonly IErrorReporter _errors;
     private readonly ILogger<Player> _logger;
+    private readonly IOfflineLibrary? _offline;
+    private readonly INetworkStatus? _network;
     private string? _loadedItemId;
     private int _failures;
     private bool _driving;
@@ -39,7 +45,9 @@ public sealed partial class Player : IPlayer, IDisposable
         IJellyfinClient client,
         ISettingsService settings,
         IErrorReporter errors,
-        ILogger<Player> logger)
+        ILogger<Player> logger,
+        IOfflineLibrary? offline = null,
+        INetworkStatus? network = null)
     {
         Queue = queue;
         Engine = engine;
@@ -48,6 +56,8 @@ public sealed partial class Player : IPlayer, IDisposable
         _settings = settings;
         _errors = errors;
         _logger = logger;
+        _offline = offline;
+        _network = network;
 
         Engine.Ended += OnEnded;
         Engine.Failed += OnFailed;
@@ -267,6 +277,19 @@ public sealed partial class Player : IPlayer, IDisposable
             return;
         }
 
+        if (!CanPlay(item))
+        {
+            if (!SkipToPlayable())
+            {
+                _errors.Report(new NotDownloadedException(), Operations.Playback);
+                Stop();
+                return;
+            }
+
+            item = Queue.Current!;
+            startPosition = TimeSpan.Zero;
+        }
+
         try
         {
             var source = SourceFor(item) with { StartPosition = startPosition };
@@ -300,6 +323,12 @@ public sealed partial class Player : IPlayer, IDisposable
         }
 
         var item = Queue.PeekNext();
+        if (item is not null && !CanPlay(item))
+        {
+            // Offline and not downloaded: the end of this one skips to the next that is (LoadCurrent).
+            item = null;
+        }
+
         if (item?.Id == Engine.Next?.Id)
         {
             return;
@@ -317,13 +346,44 @@ public sealed partial class Player : IPlayer, IDisposable
         }
     }
 
-    /// <exception cref="InvalidOperationException">Not connected to a server.</exception>
+    /// <summary>Whether the entry can play: online every one can, offline only a downloaded one.</summary>
+    private bool CanPlay(QueueItem item) => _network is not { IsOnline: false } || _offline?.FileOf(item.Track.Id) is not null;
+
+    /// <summary>Offline: moves the queue on to the next downloaded entry; <see langword="false"/> when there is none.</summary>
+    private bool SkipToPlayable()
+    {
+        for (var i = 0; i < Queue.Items.Count; i++)
+        {
+            QueueItem? next = null;
+            Drive(() => next = Queue.Next());
+            if (next is null)
+            {
+                return false;
+            }
+
+            if (CanPlay(next))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>The song's downloaded file when there is one (seeking in it needs no new URL), else a stream.</summary>
+    /// <exception cref="InvalidOperationException">Not downloaded, and not connected to a server.</exception>
     private PlaybackSource SourceFor(QueueItem item)
     {
+        var gain = Normalization.VolumeFactor(item.Track, _settings.Current.Playback.Normalization);
+        if (_offline?.FileOf(item.Track.Id) is { } file)
+        {
+            return new PlaybackSource(item.Id, new Uri(file), item.Track, gain);
+        }
+
         var server = _client.Connection?.ServerUrl ?? throw new InvalidOperationException("Not connected to a server.");
         var options = _settings.Current.Streaming.OptionsFor(server);
         var url = _streams.GetStreamUrl(item.Track.Id, options);
-        return new PlaybackSource(item.Id, url, item.Track, Normalization.VolumeFactor(item.Track, _settings.Current.Playback.Normalization))
+        return new PlaybackSource(item.Id, url, item.Track, gain)
         {
             UrlAt = position => _streams.GetStreamUrl(item.Track.Id, options with { StartPosition = position }),
         };

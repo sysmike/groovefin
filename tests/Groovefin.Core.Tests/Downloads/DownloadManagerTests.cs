@@ -353,6 +353,36 @@ public sealed class DownloadManagerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_downloaded_song_has_its_file_and_another_one_none()
+    {
+        await _sut.SyncAsync();
+
+        _sut.FileOf("a").Should().Be(Path.Join(Folder, "a.flac"));
+        _sut.FileOf("unknown").Should().BeNull();
+        File.Delete(Path.Join(Folder, "a.flac"));
+        _sut.FileOf("a").Should().BeNull("the file is gone from disk");
+    }
+
+    [Fact]
+    public async Task The_files_are_known_from_the_first_song_after_start_up()
+    {
+        await _sut.SyncAsync();
+        using var later = new DownloadManager(
+            _client, _library, _playlists, _source, _store, _settings, _network, Substitute.For<IServerManager>(), new WeakReferenceMessenger(), _time, NullLogger<DownloadManager>.Instance);
+
+        later.FileOf("c").Should().Be(Path.Join(Folder, "c.flac"));
+    }
+
+    [Fact]
+    public async Task Signed_out_no_song_has_a_file()
+    {
+        await _sut.SyncAsync();
+        _client.Connection.Returns((ServerConnection?)null);
+
+        _sut.FileOf("a").Should().BeNull();
+    }
+
+    [Fact]
     public async Task Remove_all_deletes_every_download()
     {
         await _sut.SyncAsync();

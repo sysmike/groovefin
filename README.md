@@ -25,8 +25,9 @@ WinUI 3.
 - Synced lyrics that follow the song (LRC), with click-to-seek and an offset.
 - Resume where you left off: the queue and position come back after a restart.
 - Downloads of your favourite songs, albums and artists and all playlists, kept in sync on their own, as the
-  original files or AAC, with a question before a large download (Settings → Downloads). Playing them without
-  the server follows (#58).
+  original files or AAC, with a question before a large download (Settings → Downloads). Downloaded songs play
+  from their files, also offline, where the songs that are not downloaded are skipped. Browsing them offline
+  follows (#58).
 
 **Windows integration**
 - Media keys and the Windows media flyout.

@@ -114,6 +114,8 @@ internal static class AppHost
         builder.Services.AddSingleton<NetworkStatus>();
         builder.Services.AddSingleton<INetworkStatus>(sp => sp.GetRequiredService<NetworkStatus>());
         builder.Services.AddSingleton<DownloadManager>();
+        // The player plays downloaded songs from their files (#333).
+        builder.Services.AddSingleton<IOfflineLibrary>(sp => sp.GetRequiredService<DownloadManager>());
         builder.Services.AddSingleton<ISystemMediaControls, SystemMediaControls>();
         builder.Services.AddSingleton<SystemMediaControlsSync>();
         builder.Services.AddSingleton(new SessionStoreOptions(Path.Join(AppPaths.LocalData, "session.json")));

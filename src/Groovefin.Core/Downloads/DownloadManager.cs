@@ -79,7 +79,7 @@ public sealed record DownloadStatus
 /// that failed <see cref="MaxAttempts"/> times waits for <see cref="SyncNowAsync"/>.
 /// </para>
 /// </summary>
-public sealed partial class DownloadManager : IDisposable
+public sealed partial class DownloadManager : IOfflineLibrary, IDisposable
 {
     /// <summary>The favourite songs read per sync, at most.</summary>
     public const int MaxFavouriteSongs = 10_000;
@@ -105,6 +105,9 @@ public sealed partial class DownloadManager : IDisposable
 
     /// <summary>A change syncs this long after it, so a run of changes syncs once.</summary>
     public static readonly TimeSpan ChangeDelay = TimeSpan.FromSeconds(3);
+
+    /// <summary>How long the first song after start-up waits for the index (see <see cref="FileOf"/>).</summary>
+    public static readonly TimeSpan IndexWait = TimeSpan.FromSeconds(2);
 
     /// <summary>A download that receives nothing for this long fails.</summary>
     public static readonly TimeSpan IdleTimeout = TimeSpan.FromMinutes(1);
@@ -184,6 +187,9 @@ public sealed partial class DownloadManager : IDisposable
         messenger.Register<DownloadManager, PlaylistChangedMessage>(this, static (r, _) => r.OnCollectionChanged(favourites: false));
         messenger.Register<DownloadManager, PlaylistTracksAddedMessage>(this, static (r, _) => r.OnCollectionChanged(favourites: false));
         messenger.Register<DownloadManager, PlaylistDeletedMessage>(this, static (r, _) => r.OnCollectionChanged(favourites: false));
+
+        // The player asks for files from the first song on (#333).
+        _ = RefreshStatusAsync();
     }
 
     /// <summary>Raised on any thread after <see cref="Status"/> changed.</summary>
@@ -198,6 +204,33 @@ public sealed partial class DownloadManager : IDisposable
                 return _status;
             }
         }
+    }
+
+    /// <summary>
+    /// Gets the song's downloaded file (#333): any format, as long as it is on disk. Reads the user's index first
+    /// when none is loaded yet (the first song after start-up).
+    /// </summary>
+    public string? FileOf(string trackId)
+    {
+        if (_client.Connection?.UserDataKey is not { } key)
+        {
+            return null;
+        }
+
+        EnsureLoaded(key);
+        string? fileName;
+        lock (_indexLock)
+        {
+            fileName = _key == key && _index.Tracks.TryGetValue(trackId, out var downloaded) ? downloaded.FileName : null;
+        }
+
+        if (fileName is null)
+        {
+            return null;
+        }
+
+        var path = Path.Join(_store.FolderOf(key), fileName);
+        return File.Exists(path) ? path : null;
     }
 
     /// <summary>Syncs at once, as the timer does: a song that failed <see cref="MaxAttempts"/> times waits.</summary>
@@ -335,7 +368,39 @@ public sealed partial class DownloadManager : IDisposable
     {
         _ = StopRunningAsync();
         _ = RemoveOtherServersAsync();
+        _ = RefreshStatusAsync();
         SyncSoon();
+    }
+
+    /// <summary>
+    /// Loads the user's index at once when none is (only the first song after start-up or a user change gets here
+    /// before <see cref="RefreshStatusAsync"/> is done). The gate is held only briefly, by loads and saves that never
+    /// wait for the UI thread, so the wait is short; after <see cref="IndexWait"/> the song streams instead.
+    /// </summary>
+    private void EnsureLoaded(string key)
+    {
+        lock (_indexLock)
+        {
+            if (_key == key)
+            {
+                return;
+            }
+        }
+
+        if (!_indexGate.Wait(IndexWait))
+        {
+            return;
+        }
+
+        try
+        {
+            // Every await below runs without the caller's context, so waiting here cannot deadlock.
+            LoadIndexAsync(key, CancellationToken.None).GetAwaiter().GetResult();
+        }
+        finally
+        {
+            _indexGate.Release();
+        }
     }
 
     /// <summary>

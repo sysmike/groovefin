@@ -1,5 +1,6 @@
 using System.Globalization;
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
 using Microsoft.Extensions.Logging;
@@ -52,6 +53,7 @@ public sealed partial class ErrorReporter(
         JellyfinException => ("Error_Server", true),
         PlaybackException { InnerException: UnauthorizedAccessException } => ("Error_StreamRefused", true),
         PlaybackException => ("Error_StreamFailed", true),
+        NotDownloadedException => ("Error_NotDownloaded", true),
         IOException or UnauthorizedAccessException => ("Error_Storage", true),
         _ => ("Error_Unexpected", false),
     };

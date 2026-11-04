@@ -2438,4 +2438,7 @@
   <data name="SettingsDownloadArtistsCard.Description" xml:space="preserve">
     <value>Every song of each artist with a heart. This can be a lot.</value>
   </data>
+  <data name="Error_NotDownloaded" xml:space="preserve">
+    <value>You're offline, and none of the songs left in the queue is downloaded.</value>
+  </data>
 </root>
