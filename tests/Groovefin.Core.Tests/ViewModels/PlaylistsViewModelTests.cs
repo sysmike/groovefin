@@ -1,4 +1,5 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -38,6 +39,19 @@ public sealed class PlaylistsViewModelTests
         item.Details.Should().Be("4 tracks");
         item.Image!.Width.Should().Be(336);
         _sut.IsEmpty.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_playlist_downloaded_with_every_song_is_marked()
+    {
+        _playlists.GetPlaylistsAsync(Arg.Any<CancellationToken>()).Returns([new Playlist { Id = "p1", Name = "Chill" }, new Playlist { Id = "p2", Name = "Road trip" }]);
+        var downloads = Substitute.For<IOfflineLibrary>();
+        downloads.IsComplete("p2").Returns(true);
+        var sut = new PlaylistsViewModel(_playlists, _navigation, _dialogs, _errors, _strings, downloads);
+
+        await sut.LoadAsync(Ct);
+
+        sut.Playlists.Select(p => p.IsDownloaded).Should().Equal(false, true);
     }
 
     [Fact]

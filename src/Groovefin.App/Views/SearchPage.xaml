@@ -170,7 +170,11 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <controls:TrackText IsPlaying="{x:Bind IsCurrent, Mode=OneWay}" ShowsIcon="True" Text="{x:Bind Name}" />
+                                    <controls:TrackText
+                                        IsDownloaded="{x:Bind IsDownloaded, Mode=OneWay}"
+                                        IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                        ShowsIcon="True"
+                                        Text="{x:Bind Name}" />
                                     <controls:TrackText
                                         FontSize="12"
                                         IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"

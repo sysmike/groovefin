@@ -33,6 +33,10 @@ public sealed partial class PlaylistEntryItem(PlaylistEntry entry, bool isFavour
     [ObservableProperty]
     public partial bool IsCurrent { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the track is downloaded (#337).</summary>
+    [ObservableProperty]
+    public partial bool IsDownloaded { get; set; }
+
     /// <summary>Gets or sets the 1-based position in the playlist; the view model renumbers after each edit.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Number), nameof(AccessibleName))]

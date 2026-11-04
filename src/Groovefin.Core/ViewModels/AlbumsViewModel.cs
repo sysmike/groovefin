@@ -23,6 +23,9 @@ public sealed record AlbumItem(Album Album, ImageRequest? Cover)
 
     /// <summary>Gets the text Narrator reads for the item, e.g. "Discovery, Daft Punk, 2001".</summary>
     public string AccessibleName => string.Join(", ", new[] { Name, Artist, Year }.Where(s => s.Length > 0));
+
+    /// <summary>Gets a value indicating whether the album is downloaded with every song (#337).</summary>
+    public bool IsDownloaded { get; init; }
 }
 
 /// <summary>

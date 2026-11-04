@@ -24,6 +24,10 @@ public sealed partial class OnRepeatItem(Track track, int rank, int plays, strin
     [ObservableProperty]
     public partial bool IsCurrent { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the track is downloaded (#337).</summary>
+    [ObservableProperty]
+    public partial bool IsDownloaded { get; set; }
+
     /// <summary>Gets or sets the row's heart; kept in line with the server by the view model.</summary>
     [ObservableProperty]
     public partial bool IsFavourite { get; set; } = isFavourite;

@@ -24,6 +24,10 @@ public sealed partial class SearchTrackItem(Track track, int index) : Observable
     [ObservableProperty]
     public partial bool IsCurrent { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the track is downloaded (#337).</summary>
+    [ObservableProperty]
+    public partial bool IsDownloaded { get; set; }
+
     public string Name => Track.Name;
 
     /// <summary>Gets the artists and the album, e.g. "Daft Punk · Discovery".</summary>

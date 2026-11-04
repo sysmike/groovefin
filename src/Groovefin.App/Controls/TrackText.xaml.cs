@@ -25,6 +25,9 @@ public sealed partial class TrackText : UserControl
     public static readonly DependencyProperty IsSecondaryProperty = DependencyProperty.Register(
         nameof(IsSecondary), typeof(bool), typeof(TrackText), new PropertyMetadata(false, OnStateChanged));
 
+    public static readonly DependencyProperty IsDownloadedProperty = DependencyProperty.Register(
+        nameof(IsDownloaded), typeof(bool), typeof(TrackText), new PropertyMetadata(false, OnIsDownloadedChanged));
+
     public TrackText()
     {
         InitializeComponent();
@@ -56,6 +59,16 @@ public sealed partial class TrackText : UserControl
         get => (bool)GetValue(IsSecondaryProperty);
         set => SetValue(IsSecondaryProperty, value);
     }
+
+    /// <summary>Gets or sets whether the track is downloaded: a mark then shows at the end (#337).</summary>
+    public bool IsDownloaded
+    {
+        get => (bool)GetValue(IsDownloadedProperty);
+        set => SetValue(IsDownloadedProperty, value);
+    }
+
+    private static void OnIsDownloadedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
+        ((TrackText)d).DownloadedIcon.Visibility = e.NewValue is true ? Visibility.Visible : Visibility.Collapsed;
 
     private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
         ((TrackText)d).Label.Text = e.NewValue as string ?? string.Empty;

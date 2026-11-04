@@ -159,6 +159,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
     private readonly ConcurrentDictionary<string, DownloadFailure> _failures = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, string> _current = new(StringComparer.Ordinal);
     private DownloadStatus _status = DownloadStatus.Empty;
+    private (string? Key, int Songs, long Bytes) _downloads;
     private volatile bool _syncing;
     private volatile DownloadStop _stopped;
 
@@ -205,6 +206,8 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
 
     /// <summary>Raised on any thread after <see cref="Status"/> changed.</summary>
     public event EventHandler? StatusChanged;
+
+    public event EventHandler? Changed;
 
     public DownloadStatus Status
     {
@@ -267,6 +270,42 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
             return null;
+        }
+    }
+
+    public bool IsDownloaded(string trackId)
+    {
+        if (_client.Connection?.UserDataKey is not { } key)
+        {
+            return false;
+        }
+
+        EnsureLoaded(key);
+        lock (_indexLock)
+        {
+            return _key == key && _index.Tracks.ContainsKey(trackId);
+        }
+    }
+
+    public bool IsComplete(string itemId)
+    {
+        if (_client.Connection?.UserDataKey is not { } key)
+        {
+            return false;
+        }
+
+        EnsureLoaded(key);
+        lock (_indexLock)
+        {
+            if (_key != key)
+            {
+                return false;
+            }
+
+            var songs = _index.Albums.FirstOrDefault(a => a.Album.Id == itemId)?.TrackIds
+                ?? _index.Artists.FirstOrDefault(a => a.Artist.Id == itemId)?.TrackIds
+                ?? _index.Playlists.FirstOrDefault(p => p.Playlist.Id == itemId)?.TrackIds;
+            return songs is { Count: > 0 } && songs.All(_index.Tracks.ContainsKey);
         }
     }
 
@@ -1087,12 +1126,14 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         bool loaded;
         int wanted = 0, downloaded = 0;
         long bytes = 0;
+        int songs = 0;
         lock (_indexLock)
         {
             loaded = key is not null && key == _key;
             if (loaded)
             {
                 var index = _index;
+                songs = index.Tracks.Count;
                 var ids = index.WantedTrackIds().ToHashSet(StringComparer.Ordinal);
                 wanted = ids.Count;
                 downloaded = ids.Count(id => index.Tracks.TryGetValue(id, out var t) && t.Format == format);
@@ -1113,17 +1154,26 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             }
             : DownloadStatus.Empty with { IsSyncing = _syncing, Stopped = stopped };
 
+        // The marks in the lists follow what is on disk: another user, or songs downloaded or deleted.
+        var downloads = (loaded ? key : null, songs, bytes);
+        bool statusChanged, downloadsChanged;
         lock (_gate)
         {
-            if (status == _status)
-            {
-                return;
-            }
-
+            statusChanged = status != _status;
+            downloadsChanged = downloads != _downloads;
             _status = status;
+            _downloads = downloads;
         }
 
-        StatusChanged?.Invoke(this, EventArgs.Empty);
+        if (statusChanged)
+        {
+            StatusChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        if (downloadsChanged)
+        {
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void TryDelete(string path)
