@@ -257,6 +257,40 @@ try {
         Find-Element $condition "button '$name'"
     }
 
+    # A page's content is centred in the page area (#347): as far from its left edge as from its right, and
+    # whole inside the window. The Servers page was once laid out wider than its area, so its content sat
+    # to the right and ran past the window edge.
+    function Test-Centred([string] $page, [System.Windows.Automation.AutomationElement] $content, [switch] $Report) {
+        # After the page's entrance animation.
+        Start-Sleep -Seconds 1
+        $area = Get-Bounds (Find-ById 'MainContent')
+        $windowBounds = $window.Current.BoundingRectangle
+        $r = Get-Bounds $content
+        $left = $r.Left - $area.Left
+        $right = $area.Right - $r.Right
+        Write-Output ("{0}: the page area spans {1:0} to {2:0} (window {3:0} to {4:0}), the content {5:0} to {6:0}: {7:0} px on the left, {8:0} px on the right." -f $page, $area.Left, $area.Right, $windowBounds.Left, $windowBounds.Right, $r.Left, $r.Right, $left, $right)
+        if ([Math]::Abs($left - $right) -gt 2 -or $r.Right -gt $windowBounds.Right + 1) {
+            Save-Screenshot "not-centred-$page"
+            # Where it went wrong: the content's ancestors up to the page area, and how the page's scroll
+            # view sees its content.
+            $tree = [System.Windows.Automation.TreeWalker]::RawViewWalker
+            for ($node = $tree.GetParent($content); $node; $node = $tree.GetParent($node)) {
+                $b = $node.Current.BoundingRectangle
+                $line = "  {0} #{1} ({2}): {3:0} to {4:0}" -f $node.Current.ControlType.ProgrammaticName, $node.Current.AutomationId, $node.Current.ClassName, $b.Left, $b.Right
+                $scrollPattern = $null
+                if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $scrollPattern)) {
+                    $line += "; scrolls horizontally: {0}, view {1:0.0}% at {2:0.0}%" -f $scrollPattern.Current.HorizontallyScrollable, $scrollPattern.Current.HorizontalViewSize, $scrollPattern.Current.HorizontalScrollPercent
+                }
+                Write-Output $line
+                if ($node.Current.AutomationId -eq 'MainContent') { break }
+            }
+            $message = "The {0} page is not centred: {1:0} px from the left of the page area, {2:0} px from the right." -f $page, $left, $right
+            if ($Report) { $centringFailures.Add($message); Write-Output $message }
+            else { Stop-Test 'Centred pages' $message }
+        }
+    }
+    $centringFailures = [System.Collections.Generic.List[string]]::new()
+
     # The tiles of a grid fill its rows (#232): they grow until whole columns reach the right margin, so the
     # gap on the right is as wide as on the left (36 px each, the list's padding). The row need not be full:
     # the width of one tile and the spacing give the columns.
@@ -485,6 +519,8 @@ try {
     Test-Running 'while adding a server'
     Write-Output 'Added the fake server.'
     Test-Accessibility 'sign-in'
+    # The sign-in form (at most 440 px, narrower than the page area here) is centred like the Servers page (#347).
+    Test-Centred 'sign-in' $userName
 
     # The fake server is plain HTTP (#293): the sign-in page says so, and the first sign-in asks whether
     # to send the password unencrypted. "Sign in anyway" goes ahead.
@@ -1810,6 +1846,73 @@ try {
     Start-Sleep -Seconds 1
     if ($settingsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Settings' 'Ctrl+, did not open Settings, or the title bar''s Settings button is not checked there.' }
     Write-Output 'Ctrl+, opened Settings from Albums; the title bar''s Settings button is unchecked on Albums and checked on Settings.'
+
+    # The Servers page from Settings, in the maximized window, is centred like Settings (#347). UI Automation's
+    # Invoke on the card failed with an invalid cast, and the first card found can be a stale one without a
+    # place on screen: each card found gets the focus (which scrolls it into view) and Space, until the
+    # Servers page shows.
+    $byId = { param($id) [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, $id) }
+    $until = (Get-Date).AddSeconds(20)
+    $serverList = $null
+    while (-not $serverList) {
+        foreach ($card in $window.FindAll($scope::Descendants, (& $byId 'SettingsServersCard'))) {
+            try { $card.SetFocus(); [System.Windows.Forms.SendKeys]::SendWait(' ') }
+            catch { Write-Output "A Servers card could not take the focus: $($_.Exception.Message)" }
+            if ($serverList = $window.FindFirst($scope::Descendants, (& $byId 'ServersIntro'))) { break }
+        }
+        $wait = (Get-Date).AddSeconds(3)
+        while (-not $serverList -and (Get-Date) -lt $wait) {
+            Start-Sleep -Milliseconds 300
+            $serverList = $window.FindFirst($scope::Descendants, (& $byId 'ServersIntro'))
+        }
+        if (-not $serverList -and (Get-Date) -gt $until) { Stop-Test 'Centred pages' 'The Servers card in Settings did not open the Servers page.' }
+    }
+    Test-Centred 'servers-from-settings' $serverList
+    Save-Screenshot 'servers'
+    # In the runner's screen (1024 px) the page area is narrower than the page's maximum width, so the content
+    # fills it. On a wide screen it does not: there the Servers page sat to the right (#347). Set-DisplayResolution
+    # is a Windows Server cmdlet; without it the wide check is skipped.
+    $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+    $wide = $false
+    if (Get-Command Set-DisplayResolution -ErrorAction SilentlyContinue) {
+        try { Set-DisplayResolution -Width 1920 -Height 1080 -Force; $wide = $true }
+        catch { Write-Output "::warning title=Wide screen::No wide screen for the Servers page: $($_.Exception.Message)" }
+    }
+    else { Write-Output '::warning title=Wide screen::No wide screen for the Servers page: Set-DisplayResolution is not available.' }
+    if ($wide) {
+        Start-Sleep -Seconds 2
+        $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized)
+        Start-Sleep -Seconds 1
+        Test-Centred 'servers-wide' ($window.FindFirst($scope::Descendants, (& $byId 'ServersIntro'))) -Report
+        Save-Screenshot 'servers-wide'
+        # Settings has the same layout: measured by its Servers card, which the focus scrolls into view. Then
+        # the Servers page again, opened at this size, against the one that was open when the screen grew.
+        Select-Navigation 'Albums'
+        Start-Sleep -Seconds 1
+        [System.Windows.Forms.SendKeys]::SendWait('^,')
+        Start-Sleep -Seconds 2
+        $settingsCard = $null
+        foreach ($card in $window.FindAll($scope::Descendants, (& $byId 'SettingsServersCard'))) {
+            try { $card.SetFocus() } catch { continue }
+            Start-Sleep -Milliseconds 500
+            $b = $card.Current.BoundingRectangle
+            if (-not $b.IsEmpty -and $b.Width -gt 0) { $settingsCard = $card; break }
+        }
+        if ($settingsCard) {
+            Test-Centred 'settings-wide' $settingsCard -Report
+            [System.Windows.Forms.SendKeys]::SendWait(' ')
+            Start-Sleep -Seconds 2
+            Test-Centred 'servers-wide-opened' ($window.FindFirst($scope::Descendants, (& $byId 'ServersIntro'))) -Report
+        }
+        else { Write-Output 'settings-wide: no Servers card with a place on screen.' }
+        Set-DisplayResolution -Width $screen.Width -Height $screen.Height -Force
+        Start-Sleep -Seconds 2
+        $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized)
+        Start-Sleep -Seconds 1
+    }
+    if ($centringFailures.Count -gt 0) { Stop-Test 'Centred pages' ($centringFailures -join ' ') }
+    Select-Navigation 'Albums'
+    Start-Sleep -Seconds 1
 
     # Minimum size (#241): shrunk far below it, the window's client area stops at 860x600, and with the queue
     # open every button of the title bar, the now playing bar and the queue is whole inside the window; the

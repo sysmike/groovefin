@@ -24,478 +24,487 @@
     </Page.Resources>
 
     <ScrollViewer app:ViewMemory.IsEnabled="True">
-        <StackPanel
-            MaxWidth="{StaticResource PageContentMaxWidth}"
-            Margin="{StaticResource PageContentMargin}"
-            HorizontalAlignment="Stretch"
-            Spacing="4">
-            <TextBlock
-                x:Uid="SettingsHeader"
-                AutomationProperties.HeadingLevel="Level1"
-                Style="{StaticResource TitleTextBlockStyle}" />
+        <!--
+            A Grid between the ScrollViewer and the content of limited width: the ScrollViewer places
+            content smaller than its view by the width the content asks for, not the width it gets, so a
+            page with only short lines sat to the right (#347). The Grid takes the whole width and
+            centres the content.
+        -->
+        <Grid>
+            <StackPanel
+                MaxWidth="{StaticResource PageContentMaxWidth}"
+                Margin="{StaticResource PageContentMargin}"
+                HorizontalAlignment="Stretch"
+                Spacing="4">
+                <TextBlock
+                    x:Uid="SettingsHeader"
+                    AutomationProperties.HeadingLevel="Level1"
+                    Style="{StaticResource TitleTextBlockStyle}" />
 
-            <!--  Appearance  -->
-            <TextBlock
-                x:Uid="SettingsAppearanceHeader"
-                AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource SettingsSectionHeaderStyle}" />
-            <controls:SettingsCard x:Uid="SettingsThemeCard" HeaderIcon="{ui:FontIcon Glyph=&#xE790;}">
-                <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}">
-                    <ComboBoxItem x:Uid="SettingsThemeSystem" />
-                    <ComboBoxItem x:Uid="SettingsThemeLight" />
-                    <ComboBoxItem x:Uid="SettingsThemeDark" />
-                </ComboBox>
-            </controls:SettingsCard>
-            <controls:SettingsCard x:Uid="SettingsAccentCard" HeaderIcon="{ui:FontIcon Glyph=&#xE771;}">
-                <ToggleSwitch IsOn="{x:Bind ViewModel.UseAccentColor, Mode=TwoWay}" />
-            </controls:SettingsCard>
-            <controls:SettingsCard x:Uid="SettingsDensityCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8FD;}">
-                <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.DensityIndex, Mode=TwoWay}">
-                    <ComboBoxItem x:Uid="SettingsDensityStandard" />
-                    <ComboBoxItem x:Uid="SettingsDensityCompact" />
-                </ComboBox>
-            </controls:SettingsCard>
-            <controls:SettingsCard x:Uid="SettingsLanguageCard" HeaderIcon="{ui:FontIcon Glyph=&#xE774;}">
-                <ComboBox
-                    MinWidth="{StaticResource SettingsChoiceMinWidth}"
-                    ItemsSource="{x:Bind ViewModel.LanguageOptions}"
-                    SelectedIndex="{x:Bind ViewModel.LanguageIndex, Mode=TwoWay}" />
-            </controls:SettingsCard>
-            <controls:SettingsCard x:Uid="SettingsStartPageCard" HeaderIcon="{ui:FontIcon Glyph=&#xE80F;}">
-                <ComboBox
-                    MinWidth="{StaticResource SettingsChoiceMinWidth}"
-                    ItemsSource="{x:Bind ViewModel.StartPageOptions}"
-                    SelectedIndex="{x:Bind ViewModel.StartPageIndex, Mode=TwoWay}" />
-            </controls:SettingsCard>
-            <!--
-                The navigation pane's sections (#255): each can be hidden and moved, with the arrows or by dragging
-                its row. The last section shown cannot be hidden. A list view, as the expander's own items cannot
-                be dragged.
-            -->
-            <controls:SettingsExpander x:Uid="SettingsNavigationCard" HeaderIcon="{ui:FontIcon Glyph=&#xE700;}">
-                <Button x:Uid="SettingsNavigationResetButton" Command="{x:Bind ViewModel.ResetNavigationCommand}" />
-                <controls:SettingsExpander.ItemsHeader>
-                    <ListView
-                        x:Uid="SettingsNavigationList"
-                        Padding="0,4"
-                        AllowDrop="True"
-                        AutomationProperties.AutomationId="SettingsNavigationList"
-                        CanDragItems="True"
-                        CanReorderItems="True"
-                        ItemsSource="{x:Bind ViewModel.NavigationItems}"
-                        SelectionMode="None">
-                        <ListView.ItemContainerStyle>
-                            <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
-                                <Setter Property="Padding" Value="0" />
-                                <Setter Property="Margin" Value="0,1" />
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="vm:NavigationItemOption">
-                                <controls:SettingsCard
-                                    MinHeight="48"
-                                    Padding="58,4,16,4"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Header="{x:Bind Name}"
-                                    HeaderIcon="{ui:FontIcon Glyph=&#xE76F;}">
-                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <Button
-                                            AutomationProperties.Name="{x:Bind MoveUpName}"
-                                            Command="{x:Bind MoveUpCommand}"
-                                            Style="{StaticResource SubtleButtonStyle}"
-                                            ToolTipService.ToolTip="{x:Bind MoveUpName}">
-                                            <FontIcon FontSize="14" Glyph="&#xE70E;" />
-                                        </Button>
-                                        <Button
-                                            AutomationProperties.Name="{x:Bind MoveDownName}"
-                                            Command="{x:Bind MoveDownCommand}"
-                                            Style="{StaticResource SubtleButtonStyle}"
-                                            ToolTipService.ToolTip="{x:Bind MoveDownName}">
-                                            <FontIcon FontSize="14" Glyph="&#xE70D;" />
-                                        </Button>
-                                        <ToggleSwitch
-                                            MinWidth="0"
-                                            Margin="12,0,0,0"
-                                            AutomationProperties.Name="{x:Bind ShowName}"
-                                            IsEnabled="{x:Bind CanToggle, Mode=OneWay}"
-                                            IsOn="{x:Bind IsVisible, Mode=TwoWay}" />
-                                    </StackPanel>
-                                </controls:SettingsCard>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </controls:SettingsExpander.ItemsHeader>
-            </controls:SettingsExpander>
-            <controls:SettingsCard x:Uid="SettingsTaskbarProgressCard" HeaderIcon="{ui:FontIcon Glyph=&#xE7C4;}">
-                <ToggleSwitch IsOn="{x:Bind ViewModel.ShowTaskbarProgress, Mode=TwoWay}" />
-            </controls:SettingsCard>
-            <controls:SettingsExpander x:Uid="SettingsTrayCard" HeaderIcon="{ui:FontIcon Glyph=&#xE7E7;}">
-                <ToggleSwitch IsOn="{x:Bind ViewModel.ShowTrayIcon, Mode=TwoWay}" />
-                <controls:SettingsExpander.Items>
-                    <controls:SettingsCard x:Uid="SettingsMinimizeToTrayCard" IsEnabled="{x:Bind ViewModel.ShowTrayIcon, Mode=OneWay}">
-                        <ToggleSwitch IsOn="{x:Bind ViewModel.MinimizeToTray, Mode=TwoWay}" />
-                    </controls:SettingsCard>
-                </controls:SettingsExpander.Items>
-            </controls:SettingsExpander>
-
-            <!--  Account and servers  -->
-            <TextBlock
-                x:Uid="SettingsAccountHeader"
-                AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource SettingsSectionHeaderStyle}" />
-            <controls:SettingsCard
-                Description="{x:Bind ViewModel.ServerName}"
-                Header="{x:Bind ViewModel.UserName}"
-                HeaderIcon="{ui:FontIcon Glyph=&#xE77B;}">
-                <Button x:Uid="SettingsSignOutButton" Command="{x:Bind ViewModel.SignOutCommand}" />
-            </controls:SettingsCard>
-            <controls:SettingsCard
-                x:Uid="SettingsServersCard"
-                Command="{x:Bind ViewModel.ManageServersCommand}"
-                HeaderIcon="{ui:FontIcon Glyph=&#xE968;}"
-                IsClickEnabled="True" />
-            <!--  Only shown when the server has more than one music library.  -->
-            <controls:SettingsCard
-                x:Uid="SettingsLibraryCard"
-                HeaderIcon="{ui:FontIcon Glyph=&#xE8F1;}"
-                Visibility="{x:Bind ViewModel.HasLibraryChoice, Mode=OneWay}">
-                <ComboBox
-                    MinWidth="{StaticResource SettingsChoiceMinWidth}"
-                    ItemsSource="{x:Bind ViewModel.Libraries}"
-                    SelectedIndex="{x:Bind ViewModel.SelectedLibraryIndex, Mode=TwoWay}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:LibraryOption">
-                            <TextBlock Text="{x:Bind Name}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </controls:SettingsCard>
-
-            <!--  Streaming  -->
-            <TextBlock
-                x:Uid="SettingsStreamingHeader"
-                AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource SettingsSectionHeaderStyle}" />
-            <controls:SettingsExpander
-                x:Uid="SettingsStreamingCard"
-                HeaderIcon="{ui:FontIcon Glyph=&#xE93E;}"
-                IsExpanded="True">
-                <controls:SettingsExpander.Items>
-                    <controls:SettingsCard x:Uid="SettingsLocalBitrateCard">
-                        <ComboBox
-                            MinWidth="{StaticResource SettingsChoiceMinWidth}"
-                            ItemsSource="{x:Bind ViewModel.BitrateOptions}"
-                            SelectedIndex="{x:Bind ViewModel.LocalBitrateIndex, Mode=TwoWay}">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="vm:BitrateOption">
-                                    <TextBlock Text="{x:Bind Label}" />
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsRemoteBitrateCard">
-                        <ComboBox
-                            MinWidth="{StaticResource SettingsChoiceMinWidth}"
-                            ItemsSource="{x:Bind ViewModel.BitrateOptions}"
-                            SelectedIndex="{x:Bind ViewModel.RemoteBitrateIndex, Mode=TwoWay}">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="vm:BitrateOption">
-                                    <TextBlock Text="{x:Bind Label}" />
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsCodecCard">
-                        <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.CodecIndex, Mode=TwoWay}">
-                            <ComboBoxItem x:Uid="SettingsCodecAac" />
-                            <ComboBoxItem x:Uid="SettingsCodecMp3" />
-                        </ComboBox>
-                    </controls:SettingsCard>
-                </controls:SettingsExpander.Items>
-            </controls:SettingsExpander>
-
-            <!--
-                Downloads (#327): the collections kept offline, kept in sync on their own. The expander shows what
-                is on disk; its header row what happens now, or why nothing does.
-            -->
-            <TextBlock
-                x:Uid="SettingsDownloadsHeader"
-                AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource SettingsSectionHeaderStyle}" />
-            <controls:SettingsExpander
-                x:Uid="SettingsDownloadsCard"
-                Description="{x:Bind Downloads.StatusText, Mode=OneWay}"
-                HeaderIcon="{ui:FontIcon Glyph=&#xE896;}"
-                IsExpanded="True">
-                <Button x:Uid="SettingsDownloadSyncButton" Command="{x:Bind Downloads.SyncNowCommand}" />
-                <controls:SettingsExpander.Items>
-                    <controls:SettingsCard Header="{x:Bind Downloads.ActivityText, Mode=OneWay}" Visibility="{x:Bind Downloads.HasActivity, Mode=OneWay}" />
-                    <controls:SettingsCard x:Uid="SettingsDownloadFavouritesCard">
-                        <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteSongs, Mode=TwoWay}" />
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsDownloadAlbumsCard">
-                        <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteAlbums, Mode=TwoWay}" />
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsDownloadArtistsCard">
-                        <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteArtists, Mode=TwoWay}" />
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsDownloadPlaylistsCard">
-                        <ToggleSwitch AutomationProperties.AutomationId="DownloadPlaylistsSwitch" IsOn="{x:Bind Downloads.Playlists, Mode=TwoWay}" />
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsDownloadFormatCard">
-                        <ComboBox
-                            MinWidth="{StaticResource SettingsChoiceMinWidth}"
-                            ItemsSource="{x:Bind Downloads.FormatOptions}"
-                            SelectedIndex="{x:Bind Downloads.FormatIndex, Mode=TwoWay}" />
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsDownloadMeteredCard">
-                        <ToggleSwitch IsOn="{x:Bind Downloads.AllowMetered, Mode=TwoWay}" />
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsDownloadFailuresCard" Visibility="{x:Bind Downloads.HasFailures, Mode=OneWay}">
-                        <controls:SettingsCard.Description>
-                            <ItemsControl ItemsSource="{x:Bind Downloads.Failures}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="x:String">
-                                        <TextBlock Text="{x:Bind}" TextWrapping="Wrap" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </controls:SettingsCard.Description>
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsDownloadRemoveCard">
-                        <Button x:Uid="SettingsDownloadRemoveButton" Command="{x:Bind Downloads.RemoveAllCommand}" />
-                    </controls:SettingsCard>
-                </controls:SettingsExpander.Items>
-            </controls:SettingsExpander>
-
-            <!--  Playback  -->
-            <TextBlock
-                x:Uid="SettingsPlaybackHeader"
-                AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource SettingsSectionHeaderStyle}" />
-            <controls:SettingsCard x:Uid="SettingsNormalizationCard" HeaderIcon="{ui:FontIcon Glyph=&#xE995;}">
-                <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.NormalizationIndex, Mode=TwoWay}">
-                    <ComboBoxItem x:Uid="SettingsNormalizationOff" />
-                    <ComboBoxItem x:Uid="SettingsNormalizationTrack" />
-                    <ComboBoxItem x:Uid="SettingsNormalizationAlbum" />
-                </ComboBox>
-            </controls:SettingsCard>
-            <controls:SettingsCard x:Uid="SettingsInstantMixCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8B1;}">
-                <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.InstantMixIndex, Mode=TwoWay}">
-                    <ComboBoxItem x:Uid="SettingsInstantMixReplace" />
-                    <ComboBoxItem x:Uid="SettingsInstantMixAppend" />
-                </ComboBox>
-            </controls:SettingsCard>
-            <controls:SettingsCard x:Uid="SettingsCrossfadeCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8AB;}">
-                <ComboBox
-                    MinWidth="{StaticResource SettingsChoiceMinWidth}"
-                    ItemsSource="{x:Bind ViewModel.CrossfadeOptions}"
-                    SelectedIndex="{x:Bind ViewModel.CrossfadeIndex, Mode=TwoWay}" />
-            </controls:SettingsCard>
-            <controls:SettingsCard x:Uid="SettingsResumeCard" HeaderIcon="{ui:FontIcon Glyph=&#xE81C;}">
-                <ToggleSwitch IsOn="{x:Bind ViewModel.ResumeSession, Mode=TwoWay}" />
-            </controls:SettingsCard>
-            <!--  Hidden in a build without the Discord application ID.  -->
-            <controls:SettingsCard
-                x:Uid="SettingsDiscordCard"
-                HeaderIcon="{ui:FontIcon Glyph=&#xE8BD;}"
-                Visibility="{x:Bind ViewModel.IsDiscordAvailable}">
-                <ToggleSwitch IsOn="{x:Bind ViewModel.DiscordPresence, Mode=TwoWay}" />
-            </controls:SettingsCard>
-            <!--  Hidden when the audio effect could not be loaded (the reason is in the log).  -->
-            <controls:SettingsExpander
-                x:Uid="SettingsEqualizerCard"
-                HeaderIcon="{ui:FontIcon Glyph=&#xE9E9;}"
-                Visibility="{x:Bind Equalizer.IsAvailable}">
-                <ToggleSwitch IsOn="{x:Bind Equalizer.IsEnabled, Mode=TwoWay}" />
-                <controls:SettingsExpander.Items>
-                    <controls:SettingsCard x:Uid="SettingsEqualizerPresetCard">
-                        <ComboBox
-                            MinWidth="{StaticResource SettingsChoiceMinWidth}"
-                            ItemsSource="{x:Bind Equalizer.PresetOptions}"
-                            SelectedIndex="{x:Bind Equalizer.PresetIndex, Mode=TwoWay}" />
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsEqualizerBandsCard" ContentAlignment="Vertical">
-                        <!--  Scrolls sideways in a narrow window instead of squeezing the sliders.  -->
-                        <ScrollViewer
-                            HorizontalScrollBarVisibility="Auto"
-                            HorizontalScrollMode="Auto"
-                            VerticalScrollBarVisibility="Disabled"
-                            VerticalScrollMode="Disabled">
-                            <ItemsControl ItemsSource="{x:Bind Equalizer.Bands}" IsTabStop="False">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="4" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:EqualizerBandViewModel">
-                                        <StackPanel Width="56" Spacing="4">
-                                            <TextBlock
-                                                HorizontalAlignment="Center"
-                                                Style="{StaticResource CaptionTextBlockStyle}"
-                                                Text="{x:Bind GainText, Mode=OneWay}" />
-                                            <!--  Stretched: centred, a vertical Slider in this fixed-width column draws nothing (#165). Its template centres the track.  -->
-                                            <Slider
-                                                x:Uid="EqualizerBandSlider"
-                                                Height="160"
-                                                AutomationProperties.Name="{x:Bind Name}"
-                                                Maximum="12"
-                                                Minimum="-12"
-                                                Orientation="Vertical"
-                                                StepFrequency="0.5"
-                                                TickFrequency="6"
-                                                TickPlacement="Outside"
-                                                Value="{x:Bind Gain, Mode=TwoWay}" />
-                                            <TextBlock
-                                                HorizontalAlignment="Center"
-                                                Style="{StaticResource CaptionTextBlockStyle}"
-                                                Text="{x:Bind Name}" />
+                <!--  Appearance  -->
+                <TextBlock
+                    x:Uid="SettingsAppearanceHeader"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource SettingsSectionHeaderStyle}" />
+                <controls:SettingsCard x:Uid="SettingsThemeCard" HeaderIcon="{ui:FontIcon Glyph=&#xE790;}">
+                    <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}">
+                        <ComboBoxItem x:Uid="SettingsThemeSystem" />
+                        <ComboBoxItem x:Uid="SettingsThemeLight" />
+                        <ComboBoxItem x:Uid="SettingsThemeDark" />
+                    </ComboBox>
+                </controls:SettingsCard>
+                <controls:SettingsCard x:Uid="SettingsAccentCard" HeaderIcon="{ui:FontIcon Glyph=&#xE771;}">
+                    <ToggleSwitch IsOn="{x:Bind ViewModel.UseAccentColor, Mode=TwoWay}" />
+                </controls:SettingsCard>
+                <controls:SettingsCard x:Uid="SettingsDensityCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8FD;}">
+                    <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.DensityIndex, Mode=TwoWay}">
+                        <ComboBoxItem x:Uid="SettingsDensityStandard" />
+                        <ComboBoxItem x:Uid="SettingsDensityCompact" />
+                    </ComboBox>
+                </controls:SettingsCard>
+                <controls:SettingsCard x:Uid="SettingsLanguageCard" HeaderIcon="{ui:FontIcon Glyph=&#xE774;}">
+                    <ComboBox
+                        MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                        ItemsSource="{x:Bind ViewModel.LanguageOptions}"
+                        SelectedIndex="{x:Bind ViewModel.LanguageIndex, Mode=TwoWay}" />
+                </controls:SettingsCard>
+                <controls:SettingsCard x:Uid="SettingsStartPageCard" HeaderIcon="{ui:FontIcon Glyph=&#xE80F;}">
+                    <ComboBox
+                        MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                        ItemsSource="{x:Bind ViewModel.StartPageOptions}"
+                        SelectedIndex="{x:Bind ViewModel.StartPageIndex, Mode=TwoWay}" />
+                </controls:SettingsCard>
+                <!--
+                    The navigation pane's sections (#255): each can be hidden and moved, with the arrows or by dragging
+                    its row. The last section shown cannot be hidden. A list view, as the expander's own items cannot
+                    be dragged.
+                -->
+                <controls:SettingsExpander x:Uid="SettingsNavigationCard" HeaderIcon="{ui:FontIcon Glyph=&#xE700;}">
+                    <Button x:Uid="SettingsNavigationResetButton" Command="{x:Bind ViewModel.ResetNavigationCommand}" />
+                    <controls:SettingsExpander.ItemsHeader>
+                        <ListView
+                            x:Uid="SettingsNavigationList"
+                            Padding="0,4"
+                            AllowDrop="True"
+                            AutomationProperties.AutomationId="SettingsNavigationList"
+                            CanDragItems="True"
+                            CanReorderItems="True"
+                            ItemsSource="{x:Bind ViewModel.NavigationItems}"
+                            SelectionMode="None">
+                            <ListView.ItemContainerStyle>
+                                <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Margin" Value="0,1" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:NavigationItemOption">
+                                    <controls:SettingsCard
+                                        MinHeight="48"
+                                        Padding="58,4,16,4"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Header="{x:Bind Name}"
+                                        HeaderIcon="{ui:FontIcon Glyph=&#xE76F;}">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <Button
+                                                AutomationProperties.Name="{x:Bind MoveUpName}"
+                                                Command="{x:Bind MoveUpCommand}"
+                                                Style="{StaticResource SubtleButtonStyle}"
+                                                ToolTipService.ToolTip="{x:Bind MoveUpName}">
+                                                <FontIcon FontSize="14" Glyph="&#xE70E;" />
+                                            </Button>
+                                            <Button
+                                                AutomationProperties.Name="{x:Bind MoveDownName}"
+                                                Command="{x:Bind MoveDownCommand}"
+                                                Style="{StaticResource SubtleButtonStyle}"
+                                                ToolTipService.ToolTip="{x:Bind MoveDownName}">
+                                                <FontIcon FontSize="14" Glyph="&#xE70D;" />
+                                            </Button>
+                                            <ToggleSwitch
+                                                MinWidth="0"
+                                                Margin="12,0,0,0"
+                                                AutomationProperties.Name="{x:Bind ShowName}"
+                                                IsEnabled="{x:Bind CanToggle, Mode=OneWay}"
+                                                IsOn="{x:Bind IsVisible, Mode=TwoWay}" />
                                         </StackPanel>
+                                    </controls:SettingsCard>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </controls:SettingsExpander.ItemsHeader>
+                </controls:SettingsExpander>
+                <controls:SettingsCard x:Uid="SettingsTaskbarProgressCard" HeaderIcon="{ui:FontIcon Glyph=&#xE7C4;}">
+                    <ToggleSwitch IsOn="{x:Bind ViewModel.ShowTaskbarProgress, Mode=TwoWay}" />
+                </controls:SettingsCard>
+                <controls:SettingsExpander x:Uid="SettingsTrayCard" HeaderIcon="{ui:FontIcon Glyph=&#xE7E7;}">
+                    <ToggleSwitch IsOn="{x:Bind ViewModel.ShowTrayIcon, Mode=TwoWay}" />
+                    <controls:SettingsExpander.Items>
+                        <controls:SettingsCard x:Uid="SettingsMinimizeToTrayCard" IsEnabled="{x:Bind ViewModel.ShowTrayIcon, Mode=OneWay}">
+                            <ToggleSwitch IsOn="{x:Bind ViewModel.MinimizeToTray, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+                    </controls:SettingsExpander.Items>
+                </controls:SettingsExpander>
+
+                <!--  Account and servers  -->
+                <TextBlock
+                    x:Uid="SettingsAccountHeader"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource SettingsSectionHeaderStyle}" />
+                <controls:SettingsCard
+                    Description="{x:Bind ViewModel.ServerName}"
+                    Header="{x:Bind ViewModel.UserName}"
+                    HeaderIcon="{ui:FontIcon Glyph=&#xE77B;}">
+                    <Button x:Uid="SettingsSignOutButton" Command="{x:Bind ViewModel.SignOutCommand}" />
+                </controls:SettingsCard>
+                <controls:SettingsCard
+                    x:Uid="SettingsServersCard"
+                    AutomationProperties.AutomationId="SettingsServersCard"
+                    Command="{x:Bind ViewModel.ManageServersCommand}"
+                    HeaderIcon="{ui:FontIcon Glyph=&#xE968;}"
+                    IsClickEnabled="True" />
+                <!--  Only shown when the server has more than one music library.  -->
+                <controls:SettingsCard
+                    x:Uid="SettingsLibraryCard"
+                    HeaderIcon="{ui:FontIcon Glyph=&#xE8F1;}"
+                    Visibility="{x:Bind ViewModel.HasLibraryChoice, Mode=OneWay}">
+                    <ComboBox
+                        MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                        ItemsSource="{x:Bind ViewModel.Libraries}"
+                        SelectedIndex="{x:Bind ViewModel.SelectedLibraryIndex, Mode=TwoWay}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:LibraryOption">
+                                <TextBlock Text="{x:Bind Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </controls:SettingsCard>
+
+                <!--  Streaming  -->
+                <TextBlock
+                    x:Uid="SettingsStreamingHeader"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource SettingsSectionHeaderStyle}" />
+                <controls:SettingsExpander
+                    x:Uid="SettingsStreamingCard"
+                    HeaderIcon="{ui:FontIcon Glyph=&#xE93E;}"
+                    IsExpanded="True">
+                    <controls:SettingsExpander.Items>
+                        <controls:SettingsCard x:Uid="SettingsLocalBitrateCard">
+                            <ComboBox
+                                MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                                ItemsSource="{x:Bind ViewModel.BitrateOptions}"
+                                SelectedIndex="{x:Bind ViewModel.LocalBitrateIndex, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:BitrateOption">
+                                        <TextBlock Text="{x:Bind Label}" />
                                     </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsEqualizerPreampCard">
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <TextBlock
-                                MinWidth="48"
-                                VerticalAlignment="Center"
-                                Text="{x:Bind Equalizer.PreampText, Mode=OneWay}"
-                                TextAlignment="Right" />
-                            <Slider
-                                x:Uid="SettingsEqualizerPreampSlider"
-                                Width="{StaticResource SettingsChoiceMinWidth}"
-                                Maximum="{x:Bind Equalizer.MaxGain}"
-                                Minimum="{x:Bind Equalizer.MinGain}"
-                                StepFrequency="0.5"
-                                Value="{x:Bind Equalizer.Preamp, Mode=TwoWay}" />
-                        </StackPanel>
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsEqualizerResetCard">
-                        <Button x:Uid="SettingsEqualizerResetButton" Command="{x:Bind Equalizer.ResetCommand}" />
-                    </controls:SettingsCard>
-                </controls:SettingsExpander.Items>
-            </controls:SettingsExpander>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsRemoteBitrateCard">
+                            <ComboBox
+                                MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                                ItemsSource="{x:Bind ViewModel.BitrateOptions}"
+                                SelectedIndex="{x:Bind ViewModel.RemoteBitrateIndex, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:BitrateOption">
+                                        <TextBlock Text="{x:Bind Label}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsCodecCard">
+                            <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.CodecIndex, Mode=TwoWay}">
+                                <ComboBoxItem x:Uid="SettingsCodecAac" />
+                                <ComboBoxItem x:Uid="SettingsCodecMp3" />
+                            </ComboBox>
+                        </controls:SettingsCard>
+                    </controls:SettingsExpander.Items>
+                </controls:SettingsExpander>
 
-            <!--  Storage  -->
-            <TextBlock
-                x:Uid="SettingsStorageHeader"
-                AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource SettingsSectionHeaderStyle}" />
-            <controls:SettingsExpander
-                x:Uid="SettingsImageCacheCard"
-                Description="{x:Bind ViewModel.CacheSizeText, Mode=OneWay}"
-                HeaderIcon="{ui:FontIcon Glyph=&#xE91B;}">
-                <Button x:Uid="SettingsClearCacheButton" Command="{x:Bind ViewModel.ClearCacheCommand}" />
-                <controls:SettingsExpander.Items>
-                    <controls:SettingsCard x:Uid="SettingsCacheLimitCard">
-                        <ComboBox
-                            MinWidth="{StaticResource SettingsChoiceMinWidth}"
-                            ItemsSource="{x:Bind ViewModel.CacheLimitOptions}"
-                            SelectedIndex="{x:Bind ViewModel.CacheLimitIndex, Mode=TwoWay}" />
-                    </controls:SettingsCard>
-                </controls:SettingsExpander.Items>
-            </controls:SettingsExpander>
-            <controls:SettingsCard x:Uid="SettingsLogsCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8A5;}">
-                <Button x:Uid="SettingsOpenLogsButton" Command="{x:Bind ViewModel.OpenLogFolderCommand}" />
-            </controls:SettingsCard>
+                <!--
+                    Downloads (#327): the collections kept offline, kept in sync on their own. The expander shows what
+                    is on disk; its header row what happens now, or why nothing does.
+                -->
+                <TextBlock
+                    x:Uid="SettingsDownloadsHeader"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource SettingsSectionHeaderStyle}" />
+                <controls:SettingsExpander
+                    x:Uid="SettingsDownloadsCard"
+                    Description="{x:Bind Downloads.StatusText, Mode=OneWay}"
+                    HeaderIcon="{ui:FontIcon Glyph=&#xE896;}"
+                    IsExpanded="True">
+                    <Button x:Uid="SettingsDownloadSyncButton" Command="{x:Bind Downloads.SyncNowCommand}" />
+                    <controls:SettingsExpander.Items>
+                        <controls:SettingsCard Header="{x:Bind Downloads.ActivityText, Mode=OneWay}" Visibility="{x:Bind Downloads.HasActivity, Mode=OneWay}" />
+                        <controls:SettingsCard x:Uid="SettingsDownloadFavouritesCard">
+                            <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteSongs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsDownloadAlbumsCard">
+                            <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteAlbums, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsDownloadArtistsCard">
+                            <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteArtists, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsDownloadPlaylistsCard">
+                            <ToggleSwitch AutomationProperties.AutomationId="DownloadPlaylistsSwitch" IsOn="{x:Bind Downloads.Playlists, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsDownloadFormatCard">
+                            <ComboBox
+                                MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                                ItemsSource="{x:Bind Downloads.FormatOptions}"
+                                SelectedIndex="{x:Bind Downloads.FormatIndex, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsDownloadMeteredCard">
+                            <ToggleSwitch IsOn="{x:Bind Downloads.AllowMetered, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsDownloadFailuresCard" Visibility="{x:Bind Downloads.HasFailures, Mode=OneWay}">
+                            <controls:SettingsCard.Description>
+                                <ItemsControl ItemsSource="{x:Bind Downloads.Failures}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="x:String">
+                                            <TextBlock Text="{x:Bind}" TextWrapping="Wrap" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </controls:SettingsCard.Description>
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsDownloadRemoveCard">
+                            <Button x:Uid="SettingsDownloadRemoveButton" Command="{x:Bind Downloads.RemoveAllCommand}" />
+                        </controls:SettingsCard>
+                    </controls:SettingsExpander.Items>
+                </controls:SettingsExpander>
 
-            <!--
-                The shortcuts work anywhere in the window, except while typing. Each can get other keys (#68):
-                Change opens a dialog that records them, Reset brings the default back.
-            -->
-            <TextBlock
-                x:Uid="SettingsShortcutsHeader"
-                AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource SettingsSectionHeaderStyle}" />
-            <controls:SettingsExpander
-                x:Uid="SettingsShortcutsCard"
-                HeaderIcon="{ui:FontIcon Glyph=&#xE765;}"
-                ItemsSource="{x:Bind Shortcuts.Items}">
-                <controls:SettingsExpander.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ShortcutItemViewModel">
-                        <controls:SettingsCard AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}" Header="{x:Bind Description}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
+                <!--  Playback  -->
+                <TextBlock
+                    x:Uid="SettingsPlaybackHeader"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource SettingsSectionHeaderStyle}" />
+                <controls:SettingsCard x:Uid="SettingsNormalizationCard" HeaderIcon="{ui:FontIcon Glyph=&#xE995;}">
+                    <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.NormalizationIndex, Mode=TwoWay}">
+                        <ComboBoxItem x:Uid="SettingsNormalizationOff" />
+                        <ComboBoxItem x:Uid="SettingsNormalizationTrack" />
+                        <ComboBoxItem x:Uid="SettingsNormalizationAlbum" />
+                    </ComboBox>
+                </controls:SettingsCard>
+                <controls:SettingsCard x:Uid="SettingsInstantMixCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8B1;}">
+                    <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.InstantMixIndex, Mode=TwoWay}">
+                        <ComboBoxItem x:Uid="SettingsInstantMixReplace" />
+                        <ComboBoxItem x:Uid="SettingsInstantMixAppend" />
+                    </ComboBox>
+                </controls:SettingsCard>
+                <controls:SettingsCard x:Uid="SettingsCrossfadeCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8AB;}">
+                    <ComboBox
+                        MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                        ItemsSource="{x:Bind ViewModel.CrossfadeOptions}"
+                        SelectedIndex="{x:Bind ViewModel.CrossfadeIndex, Mode=TwoWay}" />
+                </controls:SettingsCard>
+                <controls:SettingsCard x:Uid="SettingsResumeCard" HeaderIcon="{ui:FontIcon Glyph=&#xE81C;}">
+                    <ToggleSwitch IsOn="{x:Bind ViewModel.ResumeSession, Mode=TwoWay}" />
+                </controls:SettingsCard>
+                <!--  Hidden in a build without the Discord application ID.  -->
+                <controls:SettingsCard
+                    x:Uid="SettingsDiscordCard"
+                    HeaderIcon="{ui:FontIcon Glyph=&#xE8BD;}"
+                    Visibility="{x:Bind ViewModel.IsDiscordAvailable}">
+                    <ToggleSwitch IsOn="{x:Bind ViewModel.DiscordPresence, Mode=TwoWay}" />
+                </controls:SettingsCard>
+                <!--  Hidden when the audio effect could not be loaded (the reason is in the log).  -->
+                <controls:SettingsExpander
+                    x:Uid="SettingsEqualizerCard"
+                    HeaderIcon="{ui:FontIcon Glyph=&#xE9E9;}"
+                    Visibility="{x:Bind Equalizer.IsAvailable}">
+                    <ToggleSwitch IsOn="{x:Bind Equalizer.IsEnabled, Mode=TwoWay}" />
+                    <controls:SettingsExpander.Items>
+                        <controls:SettingsCard x:Uid="SettingsEqualizerPresetCard">
+                            <ComboBox
+                                MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                                ItemsSource="{x:Bind Equalizer.PresetOptions}"
+                                SelectedIndex="{x:Bind Equalizer.PresetIndex, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsEqualizerBandsCard" ContentAlignment="Vertical">
+                            <!--  Scrolls sideways in a narrow window instead of squeezing the sliders.  -->
+                            <ScrollViewer
+                                HorizontalScrollBarVisibility="Auto"
+                                HorizontalScrollMode="Auto"
+                                VerticalScrollBarVisibility="Disabled"
+                                VerticalScrollMode="Disabled">
+                                <ItemsControl ItemsSource="{x:Bind Equalizer.Bands}" IsTabStop="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="4" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:EqualizerBandViewModel">
+                                            <StackPanel Width="56" Spacing="4">
+                                                <TextBlock
+                                                    HorizontalAlignment="Center"
+                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                    Text="{x:Bind GainText, Mode=OneWay}" />
+                                                <!--  Stretched: centred, a vertical Slider in this fixed-width column draws nothing (#165). Its template centres the track.  -->
+                                                <Slider
+                                                    x:Uid="EqualizerBandSlider"
+                                                    Height="160"
+                                                    AutomationProperties.Name="{x:Bind Name}"
+                                                    Maximum="12"
+                                                    Minimum="-12"
+                                                    Orientation="Vertical"
+                                                    StepFrequency="0.5"
+                                                    TickFrequency="6"
+                                                    TickPlacement="Outside"
+                                                    Value="{x:Bind Gain, Mode=TwoWay}" />
+                                                <TextBlock
+                                                    HorizontalAlignment="Center"
+                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                    Text="{x:Bind Name}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsEqualizerPreampCard">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
                                 <TextBlock
+                                    MinWidth="48"
                                     VerticalAlignment="Center"
-                                    Style="{StaticResource BodyStrongTextBlockStyle}"
-                                    Text="{x:Bind Keys, Mode=OneWay}" />
-                                <Button
-                                    x:Uid="ShortcutChangeButton"
-                                    AutomationProperties.Name="{x:Bind ChangeName}"
-                                    Click="OnChangeShortcutClick"
-                                    Tag="{x:Bind}" />
-                                <Button
-                                    x:Uid="ShortcutResetButton"
-                                    AutomationProperties.Name="{x:Bind ResetName}"
-                                    Command="{x:Bind ResetCommand}"
-                                    Visibility="{x:Bind IsChanged, Mode=OneWay}" />
+                                    Text="{x:Bind Equalizer.PreampText, Mode=OneWay}"
+                                    TextAlignment="Right" />
+                                <Slider
+                                    x:Uid="SettingsEqualizerPreampSlider"
+                                    Width="{StaticResource SettingsChoiceMinWidth}"
+                                    Maximum="{x:Bind Equalizer.MaxGain}"
+                                    Minimum="{x:Bind Equalizer.MinGain}"
+                                    StepFrequency="0.5"
+                                    Value="{x:Bind Equalizer.Preamp, Mode=TwoWay}" />
                             </StackPanel>
                         </controls:SettingsCard>
-                    </DataTemplate>
-                </controls:SettingsExpander.ItemTemplate>
-                <controls:SettingsExpander.ItemsFooter>
-                    <controls:SettingsCard x:Uid="SettingsShortcutsResetAllCard">
-                        <Button x:Uid="SettingsShortcutsResetAllButton" Command="{x:Bind Shortcuts.ResetAllCommand}" />
-                    </controls:SettingsCard>
-                </controls:SettingsExpander.ItemsFooter>
-            </controls:SettingsExpander>
+                        <controls:SettingsCard x:Uid="SettingsEqualizerResetCard">
+                            <Button x:Uid="SettingsEqualizerResetButton" Command="{x:Bind Equalizer.ResetCommand}" />
+                        </controls:SettingsCard>
+                    </controls:SettingsExpander.Items>
+                </controls:SettingsExpander>
 
-            <!--  About  -->
-            <TextBlock
-                x:Uid="SettingsAboutHeader"
-                AutomationProperties.HeadingLevel="Level2"
-                Style="{StaticResource SettingsSectionHeaderStyle}" />
-            <controls:SettingsExpander
-                x:Uid="SettingsAboutCard"
-                Description="{x:Bind ViewModel.VersionText}"
-                HeaderIcon="{ui:FontIcon Glyph=&#xE946;}">
+                <!--  Storage  -->
                 <TextBlock
-                    VerticalAlignment="Center"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    IsTextSelectionEnabled="True"
-                    Text="{x:Bind ViewModel.Version.DisplayText}" />
-                <controls:SettingsExpander.Items>
-                    <controls:SettingsCard x:Uid="SettingsCommitCard" Visibility="{x:Bind ViewModel.HasCommit}">
-                        <HyperlinkButton Content="{x:Bind ViewModel.Version.Commit}" NavigateUri="{x:Bind ViewModel.CommitUri}" />
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsSourceCard">
-                        <HyperlinkButton x:Uid="SettingsSourceLink" NavigateUri="{x:Bind ViewModel.RepositoryUri}" />
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsIssuesCard">
-                        <HyperlinkButton x:Uid="SettingsIssuesLink" NavigateUri="{x:Bind ViewModel.IssuesUri}" />
-                    </controls:SettingsCard>
-                    <controls:SettingsCard x:Uid="SettingsLicenseCard" />
-                    <controls:SettingsCard x:Uid="SettingsThirdPartyCard" ContentAlignment="Vertical">
-                        <ItemsControl x:Uid="SettingsThirdPartyList" ItemsSource="{x:Bind ViewModel.Licenses}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="about:ThirdPartyComponent">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="320" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <HyperlinkButton
-                                            Padding="0,4"
-                                            Content="{x:Bind Name}"
-                                            NavigateUri="{x:Bind Project}" />
-                                        <TextBlock
-                                            Grid.Column="1"
-                                            VerticalAlignment="Center"
-                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                            Style="{StaticResource BodyTextBlockStyle}"
-                                            Text="{x:Bind License}" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </controls:SettingsCard>
-                </controls:SettingsExpander.Items>
-            </controls:SettingsExpander>
-        </StackPanel>
+                    x:Uid="SettingsStorageHeader"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource SettingsSectionHeaderStyle}" />
+                <controls:SettingsExpander
+                    x:Uid="SettingsImageCacheCard"
+                    Description="{x:Bind ViewModel.CacheSizeText, Mode=OneWay}"
+                    HeaderIcon="{ui:FontIcon Glyph=&#xE91B;}">
+                    <Button x:Uid="SettingsClearCacheButton" Command="{x:Bind ViewModel.ClearCacheCommand}" />
+                    <controls:SettingsExpander.Items>
+                        <controls:SettingsCard x:Uid="SettingsCacheLimitCard">
+                            <ComboBox
+                                MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                                ItemsSource="{x:Bind ViewModel.CacheLimitOptions}"
+                                SelectedIndex="{x:Bind ViewModel.CacheLimitIndex, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+                    </controls:SettingsExpander.Items>
+                </controls:SettingsExpander>
+                <controls:SettingsCard x:Uid="SettingsLogsCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8A5;}">
+                    <Button x:Uid="SettingsOpenLogsButton" Command="{x:Bind ViewModel.OpenLogFolderCommand}" />
+                </controls:SettingsCard>
+
+                <!--
+                    The shortcuts work anywhere in the window, except while typing. Each can get other keys (#68):
+                    Change opens a dialog that records them, Reset brings the default back.
+                -->
+                <TextBlock
+                    x:Uid="SettingsShortcutsHeader"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource SettingsSectionHeaderStyle}" />
+                <controls:SettingsExpander
+                    x:Uid="SettingsShortcutsCard"
+                    HeaderIcon="{ui:FontIcon Glyph=&#xE765;}"
+                    ItemsSource="{x:Bind Shortcuts.Items}">
+                    <controls:SettingsExpander.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ShortcutItemViewModel">
+                            <controls:SettingsCard AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}" Header="{x:Bind Description}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                                        Text="{x:Bind Keys, Mode=OneWay}" />
+                                    <Button
+                                        x:Uid="ShortcutChangeButton"
+                                        AutomationProperties.Name="{x:Bind ChangeName}"
+                                        Click="OnChangeShortcutClick"
+                                        Tag="{x:Bind}" />
+                                    <Button
+                                        x:Uid="ShortcutResetButton"
+                                        AutomationProperties.Name="{x:Bind ResetName}"
+                                        Command="{x:Bind ResetCommand}"
+                                        Visibility="{x:Bind IsChanged, Mode=OneWay}" />
+                                </StackPanel>
+                            </controls:SettingsCard>
+                        </DataTemplate>
+                    </controls:SettingsExpander.ItemTemplate>
+                    <controls:SettingsExpander.ItemsFooter>
+                        <controls:SettingsCard x:Uid="SettingsShortcutsResetAllCard">
+                            <Button x:Uid="SettingsShortcutsResetAllButton" Command="{x:Bind Shortcuts.ResetAllCommand}" />
+                        </controls:SettingsCard>
+                    </controls:SettingsExpander.ItemsFooter>
+                </controls:SettingsExpander>
+
+                <!--  About  -->
+                <TextBlock
+                    x:Uid="SettingsAboutHeader"
+                    AutomationProperties.HeadingLevel="Level2"
+                    Style="{StaticResource SettingsSectionHeaderStyle}" />
+                <controls:SettingsExpander
+                    x:Uid="SettingsAboutCard"
+                    Description="{x:Bind ViewModel.VersionText}"
+                    HeaderIcon="{ui:FontIcon Glyph=&#xE946;}">
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        IsTextSelectionEnabled="True"
+                        Text="{x:Bind ViewModel.Version.DisplayText}" />
+                    <controls:SettingsExpander.Items>
+                        <controls:SettingsCard x:Uid="SettingsCommitCard" Visibility="{x:Bind ViewModel.HasCommit}">
+                            <HyperlinkButton Content="{x:Bind ViewModel.Version.Commit}" NavigateUri="{x:Bind ViewModel.CommitUri}" />
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsSourceCard">
+                            <HyperlinkButton x:Uid="SettingsSourceLink" NavigateUri="{x:Bind ViewModel.RepositoryUri}" />
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsIssuesCard">
+                            <HyperlinkButton x:Uid="SettingsIssuesLink" NavigateUri="{x:Bind ViewModel.IssuesUri}" />
+                        </controls:SettingsCard>
+                        <controls:SettingsCard x:Uid="SettingsLicenseCard" />
+                        <controls:SettingsCard x:Uid="SettingsThirdPartyCard" ContentAlignment="Vertical">
+                            <ItemsControl x:Uid="SettingsThirdPartyList" ItemsSource="{x:Bind ViewModel.Licenses}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="about:ThirdPartyComponent">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="320" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <HyperlinkButton
+                                                Padding="0,4"
+                                                Content="{x:Bind Name}"
+                                                NavigateUri="{x:Bind Project}" />
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Style="{StaticResource BodyTextBlockStyle}"
+                                                Text="{x:Bind License}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </controls:SettingsCard>
+                    </controls:SettingsExpander.Items>
+                </controls:SettingsExpander>
+            </StackPanel>
+        </Grid>
     </ScrollViewer>
 </Page>
