@@ -8,10 +8,11 @@
     mc:Ignorable="d">
 
     <ScrollViewer>
+        <!--  Stretched up to the maximum width, so the form does not grow while a long password is typed (#345).  -->
         <StackPanel
             MaxWidth="440"
             Margin="{StaticResource PageContentMargin}"
-            HorizontalAlignment="Center"
+            HorizontalAlignment="Stretch"
             VerticalAlignment="Center"
             Spacing="16">
             <TextBlock

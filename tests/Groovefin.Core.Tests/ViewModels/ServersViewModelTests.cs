@@ -107,6 +107,21 @@ public sealed class ServersViewModelTests
     }
 
     [Fact]
+    public async Task A_server_already_in_the_list_is_named_in_the_error()
+    {
+        _strings.GetString("Servers_AlreadyAdded").Returns("{0} is already in the list.");
+        _servers.AddAsync("alpha", Arg.Any<CancellationToken>()).Returns<ServerProfile>(_ => throw new ServerAlreadyAddedException(Alpha));
+        using var sut = CreateSut();
+        sut.NewAddress = "alpha";
+
+        await sut.AddCommand.ExecuteAsync(null);
+
+        sut.FormError.Should().Be("Alpha is already in the list.");
+        sut.NewAddress.Should().Be("alpha");
+        _navigation.DidNotReceiveWithAnyArgs().NavigateTo(default!, default);
+    }
+
+    [Fact]
     public void Add_is_disabled_for_a_blank_address()
     {
         using var sut = CreateSut();

@@ -388,6 +388,10 @@
   <data name="Servers_DifferentServer" xml:space="preserve">
     <value>Diese Adresse gehört zu einem anderen Server. Füge ihn stattdessen als neuen Server hinzu.</value>
   </data>
+  <data name="Servers_AlreadyAdded" xml:space="preserve">
+    <value>{0} ist schon in der Liste. Für eine neue Adresse wähle daneben „Adresse ändern“.</value>
+    <comment>{0} = server name</comment>
+  </data>
   <data name="Dialog_Save" xml:space="preserve">
     <value>Speichern</value>
   </data>

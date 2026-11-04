@@ -25,16 +25,21 @@ public sealed partial class ServerManager(
     public async Task<ServerProfile> AddAsync(string address, CancellationToken cancellationToken = default)
     {
         var uri = Normalize(address);
+        if (Servers.FirstOrDefault(p => p.Address == uri) is { } sameAddress)
+        {
+            throw new ServerAlreadyAddedException(sameAddress);
+        }
+
         var info = await client.GetServerInfoAsync(uri, cancellationToken).ConfigureAwait(false);
+        if (Find(info.Id) is { } sameServer)
+        {
+            throw new ServerAlreadyAddedException(sameServer);
+        }
 
-        var existing = Find(info.Id);
-        var profile = existing is null
-            ? new ServerProfile { Id = info.Id, Name = info.Name, Address = uri, Version = info.Version }
-            : existing with { Name = info.Name, Address = uri, Version = info.Version, UnencryptedAccepted = existing.UnencryptedAccepted && existing.Address == uri };
-
+        var profile = new ServerProfile { Id = info.Id, Name = info.Name, Address = uri, Version = info.Version };
         settings.Update(s =>
         {
-            var known = s.Servers.Known.Where(p => p.Id != profile.Id).Append(profile).ToList();
+            var known = s.Servers.Known.Append(profile).ToList();
             return s with
             {
                 Servers = s.Servers with

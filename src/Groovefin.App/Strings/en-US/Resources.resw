@@ -396,6 +396,10 @@
   <data name="Servers_DifferentServer" xml:space="preserve">
     <value>This address belongs to a different server. Add it as a new server instead.</value>
   </data>
+  <data name="Servers_AlreadyAdded" xml:space="preserve">
+    <value>{0} is already in the list. To use a new address, choose Change address next to it.</value>
+    <comment>{0} = server name</comment>
+  </data>
   <data name="Dialog_Save" xml:space="preserve">
     <value>Save</value>
   </data>
