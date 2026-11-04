@@ -19,8 +19,8 @@ public sealed record DownloadedTrack
     public DateTimeOffset DownloadedAt { get; init; }
 
     /// <summary>
-    /// Gets the server's mark of the file it was downloaded from (<see cref="Api.ILibraryService.GetFileVersionsAsync"/>):
-    /// another one downloads the song again.
+    /// Gets the <see cref="TrackFile.Mark"/> of the server's file it was downloaded from: another one downloads the
+    /// song again.
     /// </summary>
     public string? FileVersion { get; init; }
 }
@@ -29,6 +29,22 @@ public sealed record DownloadedTrack
 public sealed record DownloadedPlaylist
 {
     public required Playlist Playlist { get; init; }
+
+    public IReadOnlyList<string> TrackIds { get; init; } = [];
+}
+
+/// <summary>A downloaded favourite album: what it is and its songs in order, for offline browsing later (#331).</summary>
+public sealed record DownloadedAlbum
+{
+    public required Album Album { get; init; }
+
+    public IReadOnlyList<string> TrackIds { get; init; } = [];
+}
+
+/// <summary>A downloaded favourite artist: who it is and its songs, for offline browsing later (#331).</summary>
+public sealed record DownloadedArtist
+{
+    public required Artist Artist { get; init; }
 
     public IReadOnlyList<string> TrackIds { get; init; } = [];
 }
@@ -48,6 +64,19 @@ public sealed record DownloadIndex
 
     /// <summary>Gets or sets the playlists at the last sync.</summary>
     public IReadOnlyList<DownloadedPlaylist> Playlists { get; set; } = [];
+
+    /// <summary>Gets or sets the favourite albums at the last sync.</summary>
+    public IReadOnlyList<DownloadedAlbum> Albums { get; set; } = [];
+
+    /// <summary>Gets or sets the favourite artists at the last sync.</summary>
+    public IReadOnlyList<DownloadedArtist> Artists { get; set; } = [];
+
+    /// <summary>Gets the IDs of every song a collection holds.</summary>
+    public IEnumerable<string> WantedTrackIds() =>
+        FavouriteSongs
+            .Concat(Playlists.SelectMany(p => p.TrackIds))
+            .Concat(Albums.SelectMany(a => a.TrackIds))
+            .Concat(Artists.SelectMany(a => a.TrackIds));
 
     /// <summary>Gets or sets when the wanted songs were last read from the server.</summary>
     public DateTimeOffset? LastSync { get; set; }

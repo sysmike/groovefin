@@ -2412,4 +2412,30 @@
   <data name="SettingsDownloadRemoveButton.Content" xml:space="preserve">
     <value>Remove all</value>
   </data>
+  <data name="Downloads_CheckingSize" xml:space="preserve">
+    <value>Checking how much this downloads…</value>
+  </data>
+  <data name="Downloads_LargeTitle" xml:space="preserve">
+    <value>Download {0} songs?</value>
+    <comment>{0} = number of songs</comment>
+  </data>
+  <data name="Downloads_LargeMessage" xml:space="preserve">
+    <value>That's about {0}. The songs download in the background, and this page shows how far they are.</value>
+    <comment>{0} = size, e.g. 12.3 GB</comment>
+  </data>
+  <data name="Downloads_LargeConfirm" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="SettingsDownloadAlbumsCard.Header" xml:space="preserve">
+    <value>Favourite albums</value>
+  </data>
+  <data name="SettingsDownloadAlbumsCard.Description" xml:space="preserve">
+    <value>Every song of each album with a heart.</value>
+  </data>
+  <data name="SettingsDownloadArtistsCard.Header" xml:space="preserve">
+    <value>Favourite artists</value>
+  </data>
+  <data name="SettingsDownloadArtistsCard.Description" xml:space="preserve">
+    <value>Every song of each artist with a heart. This can be a lot.</value>
+  </data>
 </root>

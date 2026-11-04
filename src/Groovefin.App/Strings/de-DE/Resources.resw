@@ -2391,4 +2391,30 @@
   <data name="SettingsDownloadRemoveButton.Content" xml:space="preserve">
     <value>Alle entfernen</value>
   </data>
+  <data name="Downloads_CheckingSize" xml:space="preserve">
+    <value>Prüft, wie viel heruntergeladen wird …</value>
+  </data>
+  <data name="Downloads_LargeTitle" xml:space="preserve">
+    <value>{0} Titel herunterladen?</value>
+    <comment>{0} = number of songs</comment>
+  </data>
+  <data name="Downloads_LargeMessage" xml:space="preserve">
+    <value>Das sind etwa {0}. Die Titel werden im Hintergrund heruntergeladen, und diese Seite zeigt, wie weit sie sind.</value>
+    <comment>{0} = size, e.g. 12.3 GB</comment>
+  </data>
+  <data name="Downloads_LargeConfirm" xml:space="preserve">
+    <value>Herunterladen</value>
+  </data>
+  <data name="SettingsDownloadAlbumsCard.Header" xml:space="preserve">
+    <value>Lieblingsalben</value>
+  </data>
+  <data name="SettingsDownloadAlbumsCard.Description" xml:space="preserve">
+    <value>Jeder Titel jedes Albums mit Herz.</value>
+  </data>
+  <data name="SettingsDownloadArtistsCard.Header" xml:space="preserve">
+    <value>Lieblingsinterpreten</value>
+  </data>
+  <data name="SettingsDownloadArtistsCard.Description" xml:space="preserve">
+    <value>Jeder Titel jedes Interpreten mit Herz. Das kann viel sein.</value>
+  </data>
 </root>

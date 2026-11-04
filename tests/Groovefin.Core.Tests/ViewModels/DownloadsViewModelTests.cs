@@ -32,6 +32,8 @@ public sealed class DownloadsViewModelTests : IDisposable
         _strings.GetString("Downloads_FormatAac").Returns("AAC {0}");
         _strings.GetString("Downloads_Failure").Returns("{0}: {1}");
         _strings.GetString("Size_Megabytes").Returns("{0} MB");
+        _strings.GetString("Downloads_LargeTitle").Returns("Download {0}?");
+        _strings.GetString("Size_Gigabytes").Returns("{0} GB");
         _client.Connection.Returns(new ServerConnection(new Uri("http://media:8096"), "user1", "token"));
         _library.GetFavouriteTracksAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns([new Track { Id = "a", Name = "Song a" }, new Track { Id = "b", Name = "Song b" }]);
         var store = new JsonDownloadStore(new DownloadStoreOptions(_directory) { FreeSpace = _ => long.MaxValue }, NullLogger<JsonDownloadStore>.Instance);
@@ -51,13 +53,23 @@ public sealed class DownloadsViewModelTests : IDisposable
         }
     }
 
+    private static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        var until = DateTime.UtcNow.AddSeconds(10);
+        while (!condition() && DateTime.UtcNow < until)
+        {
+            await Task.Delay(20, TestContext.Current.CancellationToken);
+        }
+    }
+
     [Fact]
-    public void The_switches_and_the_format_change_the_settings()
+    public async Task The_switches_and_the_format_change_the_settings()
     {
         _sut.FavouriteSongs = true;
         _sut.Playlists = true;
         _sut.AllowMetered = true;
         _sut.FormatIndex = 2;
+        await WaitUntilAsync(() => _settings.Current.Downloads is { FavouriteSongs: true, Playlists: true });
 
         _settings.Current.Downloads.Should().Be(new DownloadSettings
         {
@@ -107,6 +119,44 @@ public sealed class DownloadsViewModelTests : IDisposable
 
         await _sut.SyncNowCommand.ExecuteAsync(null);
         _source.Requests.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Turning_on_a_large_collection_asks_first_and_cancel_leaves_it_off()
+    {
+        _library.GetTrackFilesAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, TrackFile> { ["a"] = new("flac", 800L << 20), ["b"] = new("flac", 800L << 20) });
+        var asked = new TaskCompletionSource<bool>();
+        _dialogs.ConfirmAsync("Download 2?", Arg.Any<string>(), "Downloads_LargeConfirm", "Dialog_Cancel").Returns(asked.Task);
+
+        _sut.FavouriteSongs = true;
+
+        _sut.FavouriteSongs.Should().BeTrue("the switch stays on while the size is checked");
+        _settings.Current.Downloads.FavouriteSongs.Should().BeFalse();
+        asked.SetResult(false);
+        await WaitUntilAsync(() => !_sut.FavouriteSongs);
+        _sut.FavouriteSongs.Should().BeFalse();
+        _settings.Current.Downloads.FavouriteSongs.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Turning_on_a_small_collection_asks_nothing()
+    {
+        _sut.FavouriteSongs = true;
+        await WaitUntilAsync(() => _settings.Current.Downloads.FavouriteSongs);
+
+        _settings.Current.Downloads.FavouriteSongs.Should().BeTrue();
+        await _dialogs.DidNotReceiveWithAnyArgs().ConfirmAsync(default!, default!, default!, default!);
+    }
+
+    [Fact]
+    public void Turning_a_collection_off_asks_nothing()
+    {
+        _settings.Update(s => s with { Downloads = s.Downloads with { FavouriteArtists = true } });
+
+        _sut.FavouriteArtists = false;
+
+        _settings.Current.Downloads.FavouriteArtists.Should().BeFalse();
     }
 
     [Fact]

@@ -37,6 +37,9 @@ public enum DownloadStop
 /// <summary>A song that failed to download, why (not localized: an HTTP status or the error), and how often.</summary>
 public sealed record DownloadFailure(string TrackId, string TrackName, string Reason, int Attempts);
 
+/// <summary>What turning on a collection would download beyond the files on disk: songs, and about how many bytes (#331).</summary>
+public sealed record DownloadEstimate(int Songs, long Bytes);
+
 /// <summary>Where the downloads are: for the Settings page (#327).</summary>
 public sealed record DownloadStatus
 {
@@ -62,8 +65,8 @@ public sealed record DownloadStatus
 }
 
 /// <summary>
-/// Keeps the collections that are on in Settings → Downloads on disk (#58, #327): favourite songs and all
-/// playlists. A sync reads the wanted songs from the server, deletes the files no collection needs any more,
+/// Keeps the collections that are on in Settings → Downloads on disk (#58, #327, #331): favourite songs, every
+/// song of the favourite albums and artists, and all playlists. A sync reads the wanted songs from the server, deletes the files no collection needs any more,
 /// and downloads the missing ones, <see cref="Parallel"/> at a time, each to a <c>.part</c> file that is renamed
 /// when complete. An interrupted original resumes where it stopped. A song shared by several collections is
 /// kept once; one whose file changed on the server (another container or size) is downloaded again. The
@@ -80,6 +83,12 @@ public sealed partial class DownloadManager : IDisposable
 {
     /// <summary>The favourite songs read per sync, at most.</summary>
     public const int MaxFavouriteSongs = 10_000;
+
+    /// <summary>The favourite albums, and the favourite artists, read per sync, at most.</summary>
+    public const int MaxFavouriteItems = 2_000;
+
+    /// <summary>Turning on a collection that downloads more asks first (1 GB).</summary>
+    public const long LargeDownloadBytes = 1L << 30;
 
     /// <summary>Songs downloading at a time.</summary>
     public const int Parallel = 2;
@@ -101,6 +110,9 @@ public sealed partial class DownloadManager : IDisposable
     public static readonly TimeSpan IdleTimeout = TimeSpan.FromMinutes(1);
 
     private const string PartExtension = ".part";
+
+    /// <summary>A song's size per second without a size from the server: CD quality, 1,411 kbit/s.</summary>
+    private const double CdBytesPerSecond = 176_400;
 
     private readonly IJellyfinClient _client;
     private readonly ILibraryService _library;
@@ -219,6 +231,39 @@ public sealed partial class DownloadManager : IDisposable
         Publish(key, _stopped);
     }
 
+    /// <summary>
+    /// Reads what <paramref name="settings"/> would download beyond the files on disk now (#331): the songs, and
+    /// their size from the server's files (the original) or from their length at the bitrate (AAC).
+    /// </summary>
+    /// <exception cref="JellyfinException">The server could not list the songs.</exception>
+    public async Task<DownloadEstimate> EstimateAsync(DownloadSettings settings, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        if (_client.Connection?.UserDataKey is not { } key)
+        {
+            return new DownloadEstimate(0, 0);
+        }
+
+        var wanted = await LoadWantedAsync(settings, cancellationToken).ConfigureAwait(false);
+        var format = DownloadFormat.From(settings);
+        List<Track> missing;
+        await _indexGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var index = await LoadIndexAsync(key, cancellationToken).ConfigureAwait(false);
+            lock (_indexLock)
+            {
+                missing = [.. wanted.Tracks.Values.Where(track => NeedsDownload(index, wanted, track.Id, format))];
+            }
+        }
+        finally
+        {
+            _indexGate.Release();
+        }
+
+        return new DownloadEstimate(missing.Count, missing.Sum(track => EstimatedSize(track, wanted.Files.GetValueOrDefault(track.Id), format)));
+    }
+
     /// <summary>Stops the sync that runs and deletes all of the signed-in user's downloads.</summary>
     public async Task RemoveAllAsync()
     {
@@ -262,7 +307,7 @@ public sealed partial class DownloadManager : IDisposable
     private void OnCollectionChanged(bool favourites)
     {
         var downloads = _settings.Current.Downloads;
-        if (favourites ? downloads.FavouriteSongs : downloads.Playlists)
+        if (favourites ? downloads.AnyFavourites : downloads.Playlists)
         {
             SyncSoon();
         }
@@ -504,7 +549,7 @@ public sealed partial class DownloadManager : IDisposable
                 {
                     stop = DownloadStop.Offline;
                 }
-                else if (!await DownloadAsync(key, index, track, wanted.Versions.GetValueOrDefault(track.Id), format, cancellationToken).ConfigureAwait(false))
+                else if (!await DownloadAsync(key, index, track, wanted.Files.GetValueOrDefault(track.Id)?.Mark, format, cancellationToken).ConfigureAwait(false))
                 {
                     stop = DownloadStop.Unreachable;
                 }
@@ -520,6 +565,16 @@ public sealed partial class DownloadManager : IDisposable
         var tracks = new Dictionary<string, Track>(StringComparer.Ordinal);
         List<string> favourites = [];
         List<DownloadedPlaylist> playlists = [];
+        List<DownloadedAlbum> albums = [];
+        List<DownloadedArtist> artists = [];
+        void Add(IEnumerable<Track> songs)
+        {
+            foreach (var song in songs)
+            {
+                tracks.TryAdd(song.Id, song);
+            }
+        }
+
         if (settings.FavouriteSongs)
         {
             foreach (var track in await _library.GetFavouriteTracksAsync(MaxFavouriteSongs, cancellationToken).ConfigureAwait(false))
@@ -543,11 +598,36 @@ public sealed partial class DownloadManager : IDisposable
             }
         }
 
-        // The files' marks: a changed one downloads the song again.
-        var versions = tracks.Count > 0
-            ? await _library.GetFileVersionsAsync([.. tracks.Keys], cancellationToken).ConfigureAwait(false)
-            : new Dictionary<string, string>();
-        return new Wanted(tracks, favourites, playlists, versions);
+        if (settings.FavouriteAlbums)
+        {
+            var favourite = await _library.GetAlbumsAsync(new AlbumQuery { FavouritesOnly = true, Limit = MaxFavouriteItems }, cancellationToken).ConfigureAwait(false);
+            foreach (var album in favourite.Items)
+            {
+                var songs = await _library.GetAlbumTracksAsync(album.Id, cancellationToken).ConfigureAwait(false);
+                Add(songs);
+                albums.Add(new DownloadedAlbum { Album = album, TrackIds = [.. songs.Select(t => t.Id)] });
+            }
+        }
+
+        if (settings.FavouriteArtists)
+        {
+            // Every artist, not only album artists: a heart on a featured artist counts too.
+            var query = new ArtistQuery { FavouritesOnly = true, AlbumArtistsOnly = false, Limit = MaxFavouriteItems };
+            var favourite = await _library.GetArtistsAsync(query, cancellationToken).ConfigureAwait(false);
+            foreach (var artist in favourite.Items)
+            {
+                var songs = await _library.GetArtistTracksAsync(artist.Id, cancellationToken).ConfigureAwait(false);
+                Add(songs);
+                artists.Add(new DownloadedArtist { Artist = artist, TrackIds = [.. songs.Select(t => t.Id)] });
+            }
+        }
+
+        // The files on the server: a changed one downloads the song again, and their sizes tell how much a
+        // collection downloads.
+        var files = tracks.Count > 0
+            ? await _library.GetTrackFilesAsync([.. tracks.Keys], cancellationToken).ConfigureAwait(false)
+            : new Dictionary<string, TrackFile>();
+        return new Wanted(tracks, favourites, playlists, albums, artists, files);
     }
 
     /// <summary>Whether the song has no file yet, one in another format, or one the server has since replaced.</summary>
@@ -558,7 +638,16 @@ public sealed partial class DownloadManager : IDisposable
             return true;
         }
 
-        return downloaded.FileVersion is { } old && wanted.Versions.TryGetValue(trackId, out var now) && now != old;
+        return downloaded.FileVersion is { } old && wanted.Files.TryGetValue(trackId, out var now) && now.Mark != old;
+    }
+
+    /// <summary>A song's download size: its file's for the original, its length at the bitrate for AAC.</summary>
+    private static long EstimatedSize(Track track, TrackFile? file, DownloadFormat format)
+    {
+        var seconds = track.Duration?.TotalSeconds ?? 0;
+        return format.Kind == DownloadFormatKind.Aac
+            ? (long)(seconds * format.AacBitrateKbps * 125)
+            : file?.Size ?? (long)(seconds * CdBytesPerSecond);
     }
 
     /// <summary>Whether the song failed <see cref="MaxAttempts"/> times: it waits for <see cref="SyncNowAsync"/>.</summary>
@@ -582,7 +671,7 @@ public sealed partial class DownloadManager : IDisposable
                     // A download from before the marks takes the server's: its file is as good as any.
                     lock (_indexLock)
                     {
-                        index.Tracks[id] = downloaded with { Track = track, FileVersion = downloaded.FileVersion ?? wanted.Versions.GetValueOrDefault(id) };
+                        index.Tracks[id] = downloaded with { Track = track, FileVersion = downloaded.FileVersion ?? wanted.Files.GetValueOrDefault(id)?.Mark };
                     }
                 }
                 else
@@ -611,6 +700,8 @@ public sealed partial class DownloadManager : IDisposable
             {
                 index.FavouriteSongs = wanted.Favourites;
                 index.Playlists = wanted.Playlists;
+                index.Albums = wanted.Albums;
+                index.Artists = wanted.Artists;
                 index.LastSync = _time.GetUtcNow();
             }
             await _store.SaveAsync(key, index, cancellationToken).ConfigureAwait(false);
@@ -794,7 +885,7 @@ public sealed partial class DownloadManager : IDisposable
             if (loaded)
             {
                 var index = _index;
-                var ids = index.FavouriteSongs.Concat(index.Playlists.SelectMany(p => p.TrackIds)).ToHashSet(StringComparer.Ordinal);
+                var ids = index.WantedTrackIds().ToHashSet(StringComparer.Ordinal);
                 wanted = ids.Count;
                 downloaded = ids.Count(id => index.Tracks.TryGetValue(id, out var t) && t.Format == format);
                 bytes = index.Tracks.Values.Sum(t => t.Size);
@@ -844,7 +935,9 @@ public sealed partial class DownloadManager : IDisposable
         Dictionary<string, Track> Tracks,
         IReadOnlyList<string> Favourites,
         IReadOnlyList<DownloadedPlaylist> Playlists,
-        IReadOnlyDictionary<string, string> Versions);
+        IReadOnlyList<DownloadedAlbum> Albums,
+        IReadOnlyList<DownloadedArtist> Artists,
+        IReadOnlyDictionary<string, TrackFile> Files);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Downloading {Count} songs as {Format}")]
     private partial void LogDownloading(int count, string format);

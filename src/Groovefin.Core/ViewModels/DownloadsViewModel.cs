@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Groovefin.Core.Api;
 using Groovefin.Core.Downloads;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Services;
@@ -10,8 +11,10 @@ using Groovefin.Core.Settings;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>
-/// Settings → Downloads (#327): which collections are kept offline, in which format, on metered connections or
-/// not; the status of the downloads; Sync now and Remove all. Create it per visit and dispose it.
+/// Settings → Downloads (#327, #331): which collections are kept offline, in which format, on metered connections
+/// or not; the status of the downloads; Sync now and Remove all. Turning on a collection that downloads more
+/// than <see cref="DownloadManager.LargeDownloadBytes"/> asks first; the switch shows on meanwhile. Create it per
+/// visit and dispose it.
 /// </summary>
 public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
 {
@@ -24,6 +27,10 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
     private readonly IDialogService _dialogs;
     private readonly IStringResources _strings;
     private readonly IDispatcher _dispatcher;
+
+    // The switches turning on while their size is checked, by property name.
+    private readonly HashSet<string> _turningOn = [];
+    private bool _checkingSize;
 
     public DownloadsViewModel(
         DownloadManager downloads,
@@ -54,14 +61,26 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
 
     public bool FavouriteSongs
     {
-        get => Current.FavouriteSongs;
-        set => Change(value != FavouriteSongs, d => d with { FavouriteSongs = value });
+        get => IsOn(nameof(FavouriteSongs), Current.FavouriteSongs);
+        set => Switch(nameof(FavouriteSongs), value, (d, on) => d with { FavouriteSongs = on });
+    }
+
+    public bool FavouriteAlbums
+    {
+        get => IsOn(nameof(FavouriteAlbums), Current.FavouriteAlbums);
+        set => Switch(nameof(FavouriteAlbums), value, (d, on) => d with { FavouriteAlbums = on });
+    }
+
+    public bool FavouriteArtists
+    {
+        get => IsOn(nameof(FavouriteArtists), Current.FavouriteArtists);
+        set => Switch(nameof(FavouriteArtists), value, (d, on) => d with { FavouriteArtists = on });
     }
 
     public bool Playlists
     {
-        get => Current.Playlists;
-        set => Change(value != Playlists, d => d with { Playlists = value });
+        get => IsOn(nameof(Playlists), Current.Playlists);
+        set => Switch(nameof(Playlists), value, (d, on) => d with { Playlists = on });
     }
 
     public IReadOnlyList<string> FormatOptions { get; }
@@ -163,9 +182,71 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
             return;
         }
 
-        _settings.Update(s => s with { Downloads = s.Downloads with { FavouriteSongs = false, Playlists = false } });
+        _settings.Update(s => s with { Downloads = s.Downloads with { FavouriteSongs = false, FavouriteAlbums = false, FavouriteArtists = false, Playlists = false } });
         await _downloads.RemoveAllAsync();
     }
+
+    private bool IsOn(string name, bool saved) => saved || _turningOn.Contains(name);
+
+    /// <summary>Turns a collection off at once, or on after checking its size (see the class summary).</summary>
+    private void Switch(string name, bool on, Func<DownloadSettings, bool, DownloadSettings> change)
+    {
+        var saved = change(Current, true) == Current;
+        if (on == IsOn(name, saved))
+        {
+            return;
+        }
+
+        if (!on)
+        {
+            Change(true, d => change(d, false));
+            return;
+        }
+
+        _turningOn.Add(name);
+        _ = TurnOnAsync(name, change);
+    }
+
+    private async Task TurnOnAsync(string name, Func<DownloadSettings, bool, DownloadSettings> change)
+    {
+        _checkingSize = true;
+        Update(_downloads.Status);
+        try
+        {
+            // This collection alone: songs other collections download anyway do not count.
+            var alone = change(new DownloadSettings { Format = Current.Format, AacBitrateKbps = Current.AacBitrateKbps }, true);
+            DownloadEstimate? estimate = null;
+            try
+            {
+                estimate = await _downloads.EstimateAsync(alone);
+            }
+            catch (Exception ex) when (ex is JellyfinException or InvalidOperationException)
+            {
+                // Offline or signed out: no question, the downloads wait for the server anyway.
+            }
+
+            if (estimate is { Bytes: > DownloadManager.LargeDownloadBytes } large && !await ConfirmLargeAsync(large))
+            {
+                return;
+            }
+
+            Change(true, d => change(d, true));
+        }
+        finally
+        {
+            _turningOn.Remove(name);
+            _checkingSize = false;
+            OnPropertyChanged(name);
+            Update(_downloads.Status);
+        }
+    }
+
+    private Task<bool> ConfirmLargeAsync(DownloadEstimate estimate) =>
+        _dialogs.ConfirmAsync(
+            _strings.GetString("Downloads_LargeTitle").Replace("{0}", estimate.Songs.ToString("N0", CultureInfo.CurrentCulture), StringComparison.Ordinal),
+            _strings.GetString("Downloads_LargeMessage").Replace("{0}", ByteSizes.Format(estimate.Bytes, _strings), StringComparison.Ordinal),
+            _strings.GetString("Downloads_LargeConfirm"),
+            _strings.GetString("Dialog_Cancel"));
 
     private void Change(bool changed, Func<DownloadSettings, DownloadSettings> change)
     {
@@ -187,6 +268,8 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
         }
 
         OnPropertyChanged(nameof(FavouriteSongs));
+        OnPropertyChanged(nameof(FavouriteAlbums));
+        OnPropertyChanged(nameof(FavouriteArtists));
         OnPropertyChanged(nameof(Playlists));
         OnPropertyChanged(nameof(FormatIndex));
         OnPropertyChanged(nameof(AllowMetered));
@@ -205,6 +288,7 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
                 .Replace("{2}", ByteSizes.Format(status.Bytes, _strings), StringComparison.Ordinal);
         ActivityText = status switch
         {
+            _ when _checkingSize => _strings.GetString("Downloads_CheckingSize"),
             { Current: { } name } => _strings.GetString("Downloads_Current").Replace("{0}", name, StringComparison.Ordinal),
             { IsSyncing: true } => _strings.GetString("Downloads_Checking"),
             { Stopped: DownloadStop.None } => string.Empty,

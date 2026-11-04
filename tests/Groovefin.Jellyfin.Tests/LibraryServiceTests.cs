@@ -453,7 +453,7 @@ public sealed class LibraryServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetFileVersions_marks_each_file_by_container_and_size()
+    public async Task GetTrackFiles_gives_each_file_with_its_container_and_size()
     {
         StubItems(new
         {
@@ -465,10 +465,11 @@ public sealed class LibraryServiceTests : IDisposable
         });
         _host.ConnectAsTestUser();
 
-        var versions = await _host.Library.GetFileVersionsAsync(
+        var files = await _host.Library.GetTrackFilesAsync(
             ["aaaaaaaa000000000000000000000001", "aaaaaaaa000000000000000000000002"], TestContext.Current.CancellationToken);
 
-        versions.Should().Equal(new Dictionary<string, string> { ["aaaaaaaa000000000000000000000001"] = "flac:31457280" });
+        files.Should().Equal(new Dictionary<string, TrackFile> { ["aaaaaaaa000000000000000000000001"] = new("flac", 31457280) });
+        files.Values.Single().Mark.Should().Be("flac:31457280");
         var query = LastQuery();
         query["fields"].Should().Be("MediaSources");
         query["enableImages"].Should().Be("false");
