@@ -171,6 +171,13 @@ jobs:
           & $exe.FullName
           if ($LASTEXITCODE -ne 0) { throw "The equalizer effect tests failed ($LASTEXITCODE)" }
 
+      - name: Save crash dumps
+        # A native XAML error ends the app in the smoke test (#329); Windows Error Reporting then writes a full
+        # dump that keeps where the error came from.
+        if: matrix.platform == 'x64'
+        shell: pwsh
+        run: ./.github/scripts/Crash-Dumps.ps1 -Enable -Directory "${{ runner.temp }}\dumps"
+
       - name: Smoke test (unpackaged)
         # ARM64 builds cannot run on the x64 runner. It also scans each page with the Axe.Windows rules, the
         # automated checks of Accessibility Insights FastPass (#51).
@@ -184,6 +191,22 @@ jobs:
           if (-not $scanner) { throw 'Groovefin.AccessibilityScan.exe was not built' }
           ./.github/scripts/Test-AppStarts.ps1 -Path "${{ runner.temp }}\out\unpackaged\Groovefin.exe" -ScreenshotDir "${{ runner.temp }}\screenshots" `
             -AccessibilityScanner $scanner.FullName -AccessibilityDir "${{ runner.temp }}\a11y"
+
+      - name: Analyze crash dumps
+        # Prints !analyze -v of each dump (cdb, symbols from Microsoft's symbol server and the app's folder).
+        if: ${{ failure() && matrix.platform == 'x64' }}
+        timeout-minutes: 15
+        shell: pwsh
+        run: ./.github/scripts/Crash-Dumps.ps1 -Analyze -Directory "${{ runner.temp }}\dumps" -Symbols "${{ runner.temp }}\out\unpackaged"
+
+      - name: Upload crash dumps
+        if: ${{ failure() && matrix.platform == 'x64' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: crash-dumps
+          path: ${{ runner.temp }}/dumps/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload accessibility scans
         # .a11ytest files of the pages with errors; they open in Accessibility Insights for Windows.
