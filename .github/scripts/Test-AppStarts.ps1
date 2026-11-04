@@ -875,6 +875,24 @@ try {
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Hyperlink))) "genre link on the artist page"
     $genreLink.GetCurrentPattern($invoke).Invoke()
     $null = Find-Button 'Play the genre'
+    # The genre's songs are as wide as its albums (#351), like the artist page's top tracks (#266), and each
+    # row has its heart.
+    $genreSongs = Find-ById 'GenreSongs'
+    $songsBounds = Get-Bounds $genreSongs
+    $genreShelf = Get-Bounds (Find-ById 'GenreAlbums')
+    if ([Math]::Abs($songsBounds.Left - $genreShelf.Left) -gt 2 -or [Math]::Abs($songsBounds.Right - $genreShelf.Right) -gt 2) {
+        Stop-Test 'Genre page' ("The songs span {0:0}-{1:0} px, the albums above {2:0}-{3:0} px." -f $songsBounds.Left, $songsBounds.Right, $genreShelf.Left, $genreShelf.Right)
+    }
+    $songHeart = [System.Windows.Automation.AndCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Favourite'),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))
+    $until = (Get-Date).AddSeconds(5)
+    do {
+        $songHearts = $genreSongs.FindAll($scope::Descendants, $songHeart)
+        if ($songHearts.Count -lt 1) { Start-Sleep -Milliseconds 200 }
+    } while ($songHearts.Count -lt 1 -and (Get-Date) -lt $until)
+    if ($songHearts.Count -lt 1) { Stop-Test 'Genre page' 'The songs show no hearts.' }
+    Write-Output ("The genre's songs span the page like its albums ({0:0}-{1:0} px), {2} of them with a heart." -f $songsBounds.Left, $songsBounds.Right, $songHearts.Count)
     [System.Windows.Forms.SendKeys]::SendWait('%{LEFT}')
     $null = Find-ById 'ArtistPlayButton'
     Test-Running 'after following the genre link on the artist page'

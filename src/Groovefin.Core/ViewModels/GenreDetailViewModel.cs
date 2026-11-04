@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
 using Groovefin.Core.Models;
@@ -12,8 +14,11 @@ using Groovefin.Core.Services;
 
 namespace Groovefin.Core.ViewModels;
 
-/// <summary>A track row: cover, title, artists · album, length.</summary>
-public sealed partial class TrackRow(Track track, ImageRequest? cover) : ObservableObject, ICurrentTrackRow
+/// <summary>
+/// A track row: cover, title, artists · album, length. The genre page shows artists and album in columns of
+/// their own, with the heart (#351).
+/// </summary>
+public sealed partial class TrackRow(Track track, ImageRequest? cover, bool isFavourite = false) : ObservableObject, ICurrentTrackRow
 {
     public Track Track { get; } = track;
 
@@ -27,7 +32,15 @@ public sealed partial class TrackRow(Track track, ImageRequest? cover) : Observa
     [ObservableProperty]
     public partial bool IsDownloaded { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the track is a favourite.</summary>
+    [ObservableProperty]
+    public partial bool IsFavourite { get; set; } = isFavourite;
+
     public string Name => Track.Name;
+
+    public string Artists => string.Join(", ", Track.Artists.Select(a => a.Name));
+
+    public string Album => Track.AlbumName ?? string.Empty;
 
     public string Details => string.Join(" · ", new[] { string.Join(", ", Track.Artists.Select(a => a.Name)), Track.AlbumName ?? string.Empty }.Where(s => s.Length > 0));
 
@@ -45,6 +58,8 @@ public sealed partial class GenreDetailViewModel(
     IPlayer player,
     INavigationService navigation,
     IErrorReporter errors,
+    FavouritesService favourites,
+    IMessenger messenger,
     InstantMix instantMix,
     CurrentTrack currentTrack) : ObservableObject
 {
@@ -90,6 +105,12 @@ public sealed partial class GenreDetailViewModel(
 
     public async Task LoadAsync(string genreId, CancellationToken cancellationToken = default)
     {
+        // Weak: the page's view model needs no unregistering.
+        if (!messenger.IsRegistered<FavouriteChangedMessage>(this))
+        {
+            messenger.Register<GenreDetailViewModel, FavouriteChangedMessage>(this, static (r, m) => r.OnFavouriteChanged(m));
+        }
+
         IsLoading = true;
         LoadFailed = false;
         try
@@ -111,7 +132,7 @@ public sealed partial class GenreDetailViewModel(
             foreach (var track in _tracks.Take(TracksShown))
             {
                 var cover = track.AlbumId is { } albumId ? ImageRequest.Primary(albumId, track.AlbumImageTag, CoverWidth, DisplayScale) : null;
-                Tracks.Add(new TrackRow(track, cover));
+                Tracks.Add(new TrackRow(track, cover, favourites.IsFavourite(track.Id, track.IsFavorite)));
             }
 
             HasAlbums = Albums.Count > 0;
@@ -144,6 +165,27 @@ public sealed partial class GenreDetailViewModel(
     {
         var index = _tracks.ToList().IndexOf(row.Track);
         player.Play(_tracks, Math.Max(0, index));
+    }
+
+    /// <summary>Toggles a song's heart, optimistic like the album page's.</summary>
+    [RelayCommand]
+    private async Task ToggleTrackFavouriteAsync(TrackRow row)
+    {
+        var target = !row.IsFavourite;
+        row.IsFavourite = target;
+        if (!await favourites.SetAsync(row.Track.Id, target))
+        {
+            row.IsFavourite = !target;
+        }
+    }
+
+    /// <summary>A heart was toggled elsewhere (now playing bar, favourites page, a context menu).</summary>
+    private void OnFavouriteChanged(FavouriteChangedMessage message)
+    {
+        foreach (var row in Tracks.Where(t => t.Track.Id == message.ItemId))
+        {
+            row.IsFavourite = message.IsFavourite;
+        }
     }
 
     [RelayCommand(CanExecute = nameof(HasGenre))]
