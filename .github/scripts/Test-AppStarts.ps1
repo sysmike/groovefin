@@ -260,7 +260,7 @@ try {
     # A page's content is centred in the page area (#347): as far from its left edge as from its right, and
     # whole inside the window. The Servers page was once laid out wider than its area, so its content sat
     # to the right and ran past the window edge.
-    function Test-Centred([string] $page, [System.Windows.Automation.AutomationElement] $content) {
+    function Test-Centred([string] $page, [System.Windows.Automation.AutomationElement] $content, [switch] $Report) {
         # After the page's entrance animation.
         Start-Sleep -Seconds 1
         $area = Get-Bounds (Find-ById 'MainContent')
@@ -271,9 +271,25 @@ try {
         Write-Output ("{0}: the page area spans {1:0} to {2:0} (window {3:0} to {4:0}), the content {5:0} to {6:0}: {7:0} px on the left, {8:0} px on the right." -f $page, $area.Left, $area.Right, $windowBounds.Left, $windowBounds.Right, $r.Left, $r.Right, $left, $right)
         if ([Math]::Abs($left - $right) -gt 2 -or $r.Right -gt $windowBounds.Right + 1) {
             Save-Screenshot "not-centred-$page"
-            Stop-Test 'Centred pages' ("The {0} page is not centred: {1:0} px from the left of the page area, {2:0} px from the right." -f $page, $left, $right)
+            # Where it went wrong: the content's ancestors up to the page area, and how the page's scroll
+            # view sees its content.
+            $tree = [System.Windows.Automation.TreeWalker]::RawViewWalker
+            for ($node = $tree.GetParent($content); $node; $node = $tree.GetParent($node)) {
+                $b = $node.Current.BoundingRectangle
+                $line = "  {0} #{1} ({2}): {3:0} to {4:0}" -f $node.Current.ControlType.ProgrammaticName, $node.Current.AutomationId, $node.Current.ClassName, $b.Left, $b.Right
+                $scrollPattern = $null
+                if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $scrollPattern)) {
+                    $line += "; scrolls horizontally: {0}, view {1:0.0}% at {2:0.0}%" -f $scrollPattern.Current.HorizontallyScrollable, $scrollPattern.Current.HorizontalViewSize, $scrollPattern.Current.HorizontalScrollPercent
+                }
+                Write-Output $line
+                if ($node.Current.AutomationId -eq 'MainContent') { break }
+            }
+            $message = "The {0} page is not centred: {1:0} px from the left of the page area, {2:0} px from the right." -f $page, $left, $right
+            if ($Report) { $centringFailures.Add($message); Write-Output $message }
+            else { Stop-Test 'Centred pages' $message }
         }
     }
+    $centringFailures = [System.Collections.Generic.List[string]]::new()
 
     # The tiles of a grid fill its rows (#232): they grow until whole columns reach the right margin, so the
     # gap on the right is as wide as on the left (36 px each, the list's padding). The row need not be full:
@@ -1865,13 +1881,19 @@ try {
         Start-Sleep -Seconds 2
         $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized)
         Start-Sleep -Seconds 1
-        Test-Centred 'servers-wide' ($window.FindFirst($scope::Descendants, (& $byId 'ServerList')))
+        Test-Centred 'servers-wide' ($window.FindFirst($scope::Descendants, (& $byId 'ServerList'))) -Report
         Save-Screenshot 'servers-wide'
+        # Settings has the same layout: measured the same way, by a card that has a place on screen.
+        [System.Windows.Forms.SendKeys]::SendWait('^,')
+        Start-Sleep -Seconds 2
+        $settingsCard = @($window.FindAll($scope::Descendants, (& $byId 'SettingsServersCard'))) | Where-Object { $b = $_.Current.BoundingRectangle; -not $b.IsEmpty -and $b.Width -gt 0 } | Select-Object -First 1
+        if ($settingsCard) { Test-Centred 'settings-wide' $settingsCard -Report } else { Write-Output 'Settings-wide: no Servers card with a place on screen.' }
         Set-DisplayResolution -Width $screen.Width -Height $screen.Height -Force
         Start-Sleep -Seconds 2
         $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized)
         Start-Sleep -Seconds 1
     }
+    if ($centringFailures.Count -gt 0) { Stop-Test 'Centred pages' ($centringFailures -join ' ') }
     Select-Navigation 'Albums'
     Start-Sleep -Seconds 1
 
