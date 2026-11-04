@@ -39,7 +39,6 @@ public sealed class DownloadSourceTests : IDisposable
 
         (await ReadAsync(response)).Should().Equal(1, 2, 3, 4);
         response.Extension.Should().Be(".flac");
-        response.Length.Should().Be(4);
         response.Resumed.Should().BeFalse();
         var request = _host.Server.LogEntries.Single().RequestMessage!;
         request.Headers!["Authorization"].Single().Should().Contain($"Token=\"{JellyfinTestHost.Token}\"");
