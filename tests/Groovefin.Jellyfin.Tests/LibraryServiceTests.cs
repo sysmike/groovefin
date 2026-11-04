@@ -452,6 +452,28 @@ public sealed class LibraryServiceTests : IDisposable
         _host.Server.LogEntries.Count().Should().Be(before);
     }
 
+    [Fact]
+    public async Task GetFileVersions_marks_each_file_by_container_and_size()
+    {
+        StubItems(new
+        {
+            Items = new object[]
+            {
+                new { Id = "aaaaaaaa-0000-0000-0000-000000000001", Type = "Audio", MediaSources = new[] { new { Container = "flac", Size = 31457280L } } },
+                new { Id = "aaaaaaaa-0000-0000-0000-000000000002", Type = "Audio", MediaSources = Array.Empty<object>() },
+            },
+        });
+        _host.ConnectAsTestUser();
+
+        var versions = await _host.Library.GetFileVersionsAsync(
+            ["aaaaaaaa000000000000000000000001", "aaaaaaaa000000000000000000000002"], TestContext.Current.CancellationToken);
+
+        versions.Should().Equal(new Dictionary<string, string> { ["aaaaaaaa000000000000000000000001"] = "flac:31457280" });
+        var query = LastQuery();
+        query["fields"].Should().Be("MediaSources");
+        query["enableImages"].Should().Be("false");
+    }
+
     [Theory]
     [InlineData(true, "POST")]
     [InlineData(false, "DELETE")]

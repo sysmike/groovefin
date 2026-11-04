@@ -27,6 +27,9 @@ public interface IDownloadStore
 
     /// <summary>Deletes the user's folder with all files and the index.</summary>
     void DeleteAll(string key);
+
+    /// <summary>Gets the keys that have a folder: every server and user with downloads.</summary>
+    IReadOnlyList<string> Keys();
 }
 
 /// <summary>
@@ -115,6 +118,24 @@ public sealed partial class JsonDownloadStore(DownloadStoreOptions options, ILog
             throw;
         }
     }
+
+    public IReadOnlyList<string> Keys()
+    {
+        try
+        {
+            return Directory.Exists(options.Directory)
+                ? [.. Directory.EnumerateDirectories(options.Directory).Select(Path.GetFileName).OfType<string>()]
+                : [];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogListFailed(ex, options.Directory);
+            return [];
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Listing the downloads in {Folder} failed")]
+    private partial void LogListFailed(Exception exception, string folder);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Reading the download index {Path} failed")]
     private partial void LogReadFailed(Exception exception, string path);

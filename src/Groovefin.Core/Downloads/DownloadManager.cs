@@ -66,7 +66,8 @@ public sealed record DownloadStatus
 /// playlists. A sync reads the wanted songs from the server, deletes the files no collection needs any more,
 /// and downloads the missing ones, <see cref="Parallel"/> at a time, each to a <c>.part</c> file that is renamed
 /// when complete. An interrupted original resumes where it stopped. A song shared by several collections is
-/// kept once.
+/// kept once; one whose file changed on the server (another container or size) is downloaded again. The
+/// downloads of a server that left the list are deleted.
 /// <para>
 /// Syncs run one after another in the background: <see cref="FirstSyncDelay"/> after start-up, every
 /// <see cref="SyncInterval"/>, shortly after a change to favourites, playlists or the settings, when the network
@@ -288,7 +289,46 @@ public sealed partial class DownloadManager : IDisposable
     private void OnServersChanged(object? sender, EventArgs e)
     {
         _ = StopRunningAsync();
+        _ = RemoveOtherServersAsync();
         SyncSoon();
+    }
+
+    /// <summary>
+    /// Deletes the downloads of servers no longer in the list: removed, or at another address now (their songs then
+    /// download again under the new one).
+    /// </summary>
+    private async Task RemoveOtherServersAsync()
+    {
+        var known = _servers.Servers.Select(p => ServerConnection.ServerKeyOf(p.Address)).ToList();
+        await _indexGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            foreach (var key in _store.Keys().Where(k => !known.Any(server => k.EndsWith("-" + server, StringComparison.Ordinal))))
+            {
+                try
+                {
+                    _store.DeleteAll(key);
+                    LogServerRemoved(key);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Logged by the store; the next change tries again.
+                }
+
+                if (key == _key)
+                {
+                    lock (_indexLock)
+                    {
+                        _key = null;
+                        _index = new DownloadIndex();
+                    }
+                }
+            }
+        }
+        finally
+        {
+            _indexGate.Release();
+        }
     }
 
     private void SyncSoon()
@@ -437,7 +477,9 @@ public sealed partial class DownloadManager : IDisposable
         var format = DownloadFormat.From(settings);
         var index = await UpdateIndexAsync(key, wanted, cancellationToken).ConfigureAwait(false);
         var missing = new ConcurrentQueue<Track>(wanted.Tracks.Values.Where(track =>
-            (!index.Tracks.TryGetValue(track.Id, out var downloaded) || downloaded.Format != format.Key)
+            (!index.Tracks.TryGetValue(track.Id, out var downloaded)
+                || downloaded.Format != format.Key
+                || (downloaded.FileVersion is { } old && wanted.Versions.TryGetValue(track.Id, out var now) && now != old))
             && !(_failures.TryGetValue(track.Id, out var failure) && failure.Attempts >= MaxAttempts)));
         Publish(key, DownloadStop.None);
         if (missing.IsEmpty)
@@ -466,7 +508,7 @@ public sealed partial class DownloadManager : IDisposable
                 {
                     stop = DownloadStop.Offline;
                 }
-                else if (!await DownloadAsync(key, index, track, format, cancellationToken).ConfigureAwait(false))
+                else if (!await DownloadAsync(key, index, track, wanted.Versions.GetValueOrDefault(track.Id), format, cancellationToken).ConfigureAwait(false))
                 {
                     stop = DownloadStop.Unreachable;
                 }
@@ -505,7 +547,11 @@ public sealed partial class DownloadManager : IDisposable
             }
         }
 
-        return new Wanted(tracks, favourites, playlists);
+        // The files' marks: a changed one downloads the song again.
+        var versions = tracks.Count > 0
+            ? await _library.GetFileVersionsAsync([.. tracks.Keys], cancellationToken).ConfigureAwait(false)
+            : new Dictionary<string, string>();
+        return new Wanted(tracks, favourites, playlists, versions);
     }
 
     /// <summary>
@@ -523,9 +569,10 @@ public sealed partial class DownloadManager : IDisposable
             {
                 if (wanted.Tracks.TryGetValue(id, out var track))
                 {
+                    // A download from before the marks takes the server's: its file is as good as any.
                     lock (_indexLock)
                     {
-                        index.Tracks[id] = downloaded with { Track = track };
+                        index.Tracks[id] = downloaded with { Track = track, FileVersion = downloaded.FileVersion ?? wanted.Versions.GetValueOrDefault(id) };
                     }
                 }
                 else
@@ -566,7 +613,7 @@ public sealed partial class DownloadManager : IDisposable
     }
 
     /// <summary>Downloads one song; <see langword="false"/> when the server could not be reached, which stops the sync.</summary>
-    private async Task<bool> DownloadAsync(string key, DownloadIndex index, Track track, DownloadFormat format, CancellationToken cancellationToken)
+    private async Task<bool> DownloadAsync(string key, DownloadIndex index, Track track, string? version, DownloadFormat format, CancellationToken cancellationToken)
     {
         var folder = _store.FolderOf(key);
         var part = Path.Join(folder, track.Id + PartExtension);
@@ -609,6 +656,7 @@ public sealed partial class DownloadManager : IDisposable
                         Size = size,
                         Format = format.Key,
                         DownloadedAt = _time.GetUtcNow(),
+                        FileVersion = version,
                     };
                 }
 
@@ -782,7 +830,11 @@ public sealed partial class DownloadManager : IDisposable
         }
     }
 
-    private sealed record Wanted(Dictionary<string, Track> Tracks, IReadOnlyList<string> Favourites, IReadOnlyList<DownloadedPlaylist> Playlists);
+    private sealed record Wanted(
+        Dictionary<string, Track> Tracks,
+        IReadOnlyList<string> Favourites,
+        IReadOnlyList<DownloadedPlaylist> Playlists,
+        IReadOnlyDictionary<string, string> Versions);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Downloading {Count} songs as {Format}")]
     private partial void LogDownloading(int count, string format);
@@ -801,6 +853,9 @@ public sealed partial class DownloadManager : IDisposable
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "A download sync failed")]
     private partial void LogSyncFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Removed the downloads {Key} of a server no longer in the list")]
+    private partial void LogServerRemoved(string key);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "All downloads removed")]
     private partial void LogRemovedAll();

@@ -50,6 +50,13 @@ public interface ILibraryService
     Task<IReadOnlyList<Track>> GetTracksByIdAsync(IReadOnlyList<string> trackIds, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets a mark of each track's file on the server, its container and size, by track ID (#327): another mark
+    /// means another file. Tracks the server sends no size for are left out.
+    /// </summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyDictionary<string, string>> GetFileVersionsAsync(IReadOnlyList<string> trackIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets the subfolders and tracks directly in a folder. <see langword="null"/> is the top: the
     /// folders of the selected music library, or every music library when none is selected.
     /// </summary>

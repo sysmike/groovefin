@@ -17,6 +17,12 @@ public sealed record DownloadedTrack
     public required string Format { get; init; }
 
     public DateTimeOffset DownloadedAt { get; init; }
+
+    /// <summary>
+    /// Gets the server's mark of the file it was downloaded from (<see cref="Api.ILibraryService.GetFileVersionsAsync"/>):
+    /// another one downloads the song again.
+    /// </summary>
+    public string? FileVersion { get; init; }
 }
 
 /// <summary>A downloaded playlist: what it is and its songs in order, for offline browsing later (#58).</summary>

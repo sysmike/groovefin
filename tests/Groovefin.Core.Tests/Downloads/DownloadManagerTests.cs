@@ -25,6 +25,8 @@ public sealed class DownloadManagerTests : IDisposable
     private readonly FakeNetworkStatus _network = new();
     private readonly WeakReferenceMessenger _messenger = new();
     private readonly FakeTimeProvider _time = new();
+    private readonly IServerManager _servers = Substitute.For<IServerManager>();
+    private readonly Dictionary<string, string> _versions = [];
     private readonly JsonDownloadStore _store;
     private readonly DownloadManager _sut;
     private long _freeSpace = 50L << 30;
@@ -34,6 +36,9 @@ public sealed class DownloadManagerTests : IDisposable
         _client.Connection.Returns(new ServerConnection(new Uri("http://media:8096"), "user1", "token"));
         Favourites("a", "b");
         Playlist("b", "c");
+        _library.GetFileVersionsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(call => (IReadOnlyDictionary<string, string>)call.Arg<IReadOnlyList<string>>()
+                .Where(_versions.ContainsKey).ToDictionary(id => id, id => _versions[id]));
         _settings.Update(s => s with { Downloads = s.Downloads with { FavouriteSongs = true, Playlists = true } });
         _store = new JsonDownloadStore(new DownloadStoreOptions(_directory) { FreeSpace = _ => _freeSpace }, NullLogger<JsonDownloadStore>.Instance);
         _sut = new DownloadManager(
@@ -44,7 +49,7 @@ public sealed class DownloadManagerTests : IDisposable
             _store,
             _settings,
             _network,
-            Substitute.For<IServerManager>(),
+            _servers,
             _messenger,
             _time,
             NullLogger<DownloadManager>.Instance);
@@ -231,6 +236,53 @@ public sealed class DownloadManagerTests : IDisposable
         Files().Should().Equal("a.aac", "b.aac", "c.aac");
         _source.Requests.Where(r => r.Format == "aac192").Should().HaveCount(3);
         (await _store.LoadAsync(_client.Connection!.UserDataKey, Ct)).Tracks.Values.Should().OnlyContain(t => t.Format == "aac192");
+    }
+
+    [Fact]
+    public async Task A_song_whose_file_changed_on_the_server_is_downloaded_again()
+    {
+        _versions["a"] = "flac:4";
+        await _sut.SyncAsync();
+        _versions["a"] = "flac:5";
+
+        await _sut.SyncAsync();
+
+        _source.Count("a").Should().Be(2);
+        _source.Count("b").Should().Be(1);
+        (await _store.LoadAsync(_client.Connection!.UserDataKey, Ct)).Tracks["a"].FileVersion.Should().Be("flac:5");
+    }
+
+    [Fact]
+    public async Task A_download_from_before_the_marks_takes_the_servers_without_downloading_again()
+    {
+        await _sut.SyncAsync();
+        _versions["a"] = "flac:4";
+
+        await _sut.SyncAsync();
+        await _sut.SyncAsync();
+
+        _source.Count("a").Should().Be(1);
+        (await _store.LoadAsync(_client.Connection!.UserDataKey, Ct)).Tracks["a"].FileVersion.Should().Be("flac:4");
+    }
+
+    [Fact]
+    public async Task The_downloads_of_a_server_that_left_the_list_are_deleted()
+    {
+        await _sut.SyncAsync();
+        var other = $"user1-{ServerConnection.ServerKeyOf(new Uri("https://old.example.com/"))}";
+        Directory.CreateDirectory(_store.FolderOf(other));
+        _servers.Servers.Returns([new ServerProfile { Id = "s1", Name = "Media", Address = new Uri("http://media:8096") }]);
+
+        _servers.Changed += Raise.Event();
+
+        var until = DateTime.UtcNow.AddSeconds(10);
+        while (Directory.Exists(_store.FolderOf(other)) && DateTime.UtcNow < until)
+        {
+            await Task.Delay(50, Ct);
+        }
+
+        Directory.Exists(_store.FolderOf(other)).Should().BeFalse();
+        Files().Should().HaveCount(3, "the active server stays in the list");
     }
 
     [Fact]

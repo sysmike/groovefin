@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Groovefin.Core.Models;
 using Jellyfin.Sdk.Generated.Models;
@@ -102,6 +103,16 @@ internal static class ItemMapper
     }
 
     /// <summary>Formats a Jellyfin ID the way the server writes it in URLs (32 hex digits).</summary>
+    /// <summary>The file's container and size, e.g. <c>flac:31457280</c>, or <see langword="null"/> without a size (#327).</summary>
+    public static string? FileVersion(BaseItemDto dto)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+        var source = dto.MediaSources?.FirstOrDefault();
+        return source?.Size is { } size
+            ? $"{source.Container ?? dto.Container}:{size.ToString(CultureInfo.InvariantCulture)}"
+            : null;
+    }
+
     public static string? FormatId(Guid? id) => id is { } value && value != Guid.Empty ? value.ToString("N") : null;
 
     private static List<Genre> ToGenres(List<NameGuidPair>? pairs) =>
