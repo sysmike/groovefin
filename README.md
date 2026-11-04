@@ -26,8 +26,8 @@ WinUI 3.
 - Resume where you left off: the queue and position come back after a restart.
 - Downloads of your favourite songs, albums and artists and all playlists, kept in sync on their own, as the
   original files or AAC, with a question before a large download (Settings → Downloads). Downloaded songs play
-  from their files, also offline, where the songs that are not downloaded are skipped. Browsing them offline
-  follows (#58).
+  from their files. Offline, Favourites, Playlists and the pages of albums and artists show what is downloaded,
+  with its covers, and the songs that are not downloaded are skipped.
 
 **Windows integration**
 - Media keys and the Windows media flyout.

@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.App.Services;
 using Groovefin.Core;
+using Groovefin.Core.Api;
 using Groovefin.Core.Discord;
 using Groovefin.Core.Downloads;
 using Groovefin.Core.Equalizer;
@@ -63,6 +64,21 @@ internal static class AppHost
         builder.Services.AddSingleton(DeviceIdentity.Create(version));
         builder.Services.AddGroovefinJellyfin();
 
+        // Offline browsing (#335): the pages' library and playlist services answer from the downloads when the
+        // server cannot be reached. The download manager keeps the server's own (ServerServices).
+        var serverLibrary = Take<ILibraryService>(builder.Services);
+        var serverPlaylists = Take<IPlaylistService>(builder.Services);
+        builder.Services.AddSingleton(sp => new ServerServices(
+            (ILibraryService)ActivatorUtilities.CreateInstance(sp, serverLibrary),
+            (IPlaylistService)ActivatorUtilities.CreateInstance(sp, serverPlaylists)));
+        builder.Services.AddSingleton<OfflineCatalog>();
+        builder.Services.AddSingleton<OfflineMode>();
+        builder.Services.AddSingleton<OfflineAnswers>();
+        builder.Services.AddSingleton<ILibraryService>(sp =>
+            ActivatorUtilities.CreateInstance<OfflineLibraryService>(sp, sp.GetRequiredService<ServerServices>().Library));
+        builder.Services.AddSingleton<IPlaylistService>(sp =>
+            ActivatorUtilities.CreateInstance<OfflinePlaylistService>(sp, sp.GetRequiredService<ServerServices>().Playlists));
+
         // Settings: settings.json next to the logs (LocalFolder when packaged, %LOCALAPPDATA%\Groovefin otherwise).
         builder.Services.AddSingleton(new SettingsStoreOptions(Path.Join(AppPaths.LocalData, "settings.json")));
         builder.Services.AddSingleton<ISettingsService, JsonSettingsService>();
@@ -113,9 +129,15 @@ internal static class AppHost
         builder.Services.AddSingleton<IDownloadStore, JsonDownloadStore>();
         builder.Services.AddSingleton<NetworkStatus>();
         builder.Services.AddSingleton<INetworkStatus>(sp => sp.GetRequiredService<NetworkStatus>());
-        builder.Services.AddSingleton<DownloadManager>();
+        builder.Services.AddSingleton(sp =>
+        {
+            var server = sp.GetRequiredService<ServerServices>();
+            return ActivatorUtilities.CreateInstance<DownloadManager>(sp, server.Library, server.Playlists);
+        });
         // The player plays downloaded songs from their files (#333).
         builder.Services.AddSingleton<IOfflineLibrary>(sp => sp.GetRequiredService<DownloadManager>());
+        // Offline, the image cache shows the covers kept with the downloads (#335).
+        builder.Services.AddSingleton<IImageFallback>(sp => sp.GetRequiredService<DownloadManager>());
         builder.Services.AddSingleton<ISystemMediaControls, SystemMediaControls>();
         builder.Services.AddSingleton<SystemMediaControlsSync>();
         builder.Services.AddSingleton(new SessionStoreOptions(Path.Join(AppPaths.LocalData, "session.json")));
@@ -170,5 +192,14 @@ internal static class AppHost
         builder.Services.AddSingleton<MainWindow>();
 
         return builder.Build();
+    }
+
+    /// <summary>Removes the registration of <typeparamref name="TService"/> and gives its implementation type, to wrap it.</summary>
+    private static Type Take<TService>(IServiceCollection services)
+    {
+        var descriptor = services.Single(d => d.ServiceType == typeof(TService));
+        services.Remove(descriptor);
+        return descriptor.ImplementationType
+            ?? throw new InvalidOperationException($"{typeof(TService).Name} is not registered by its type.");
     }
 }

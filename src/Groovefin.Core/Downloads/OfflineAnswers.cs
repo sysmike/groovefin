@@ -1,0 +1,55 @@
+using System.Net;
+using System.Runtime.ExceptionServices;
+using Groovefin.Core.Api;
+using Groovefin.Core.Models;
+using Groovefin.Core.Services;
+
+namespace Groovefin.Core.Downloads;
+
+/// <summary>
+/// Asks the server, and answers from the downloads when it cannot be reached (#335): the shared part of
+/// <see cref="OfflineLibraryService"/> and <see cref="OfflinePlaylistService"/>. Without a network the server is
+/// not asked at all. Any other error, and a query the downloads cannot answer, fails as before.
+/// </summary>
+public sealed class OfflineAnswers(OfflineCatalog catalog, OfflineMode mode, INetworkStatus network)
+{
+    public async Task<T> AskAsync<T>(Func<Task<T>> server, Func<DownloadIndex, T?> fromDownloads, CancellationToken cancellationToken)
+        where T : class
+    {
+        ExceptionDispatchInfo unreachable;
+        if (network.IsOnline)
+        {
+            try
+            {
+                var answer = await server().ConfigureAwait(false);
+                mode.ReachedServer();
+                return answer;
+            }
+            catch (JellyfinException ex) when (ex.StatusCode is null)
+            {
+                unreachable = ExceptionDispatchInfo.Capture(ex);
+            }
+        }
+        else
+        {
+            unreachable = ExceptionDispatchInfo.Capture(new JellyfinException("The PC has no network connection.", (HttpStatusCode?)null));
+        }
+
+        if (await catalog.GetAsync(cancellationToken).ConfigureAwait(false) is { } index && fromDownloads(index) is { } downloaded)
+        {
+            mode.ServedFromDownloads();
+            return downloaded;
+        }
+
+        unreachable.Throw();
+        throw unreachable.SourceException;
+    }
+
+    /// <summary>The downloaded songs among <paramref name="ids"/>, in their order, each once.</summary>
+    public static IReadOnlyList<Track> Downloaded(DownloadIndex index, IEnumerable<string> ids) =>
+        [.. ids.Distinct(StringComparer.Ordinal).Where(index.Tracks.ContainsKey).Select(id => index.Tracks[id].Track)];
+
+    /// <summary>One page of <paramref name="items"/>, for a paged query.</summary>
+    public static PagedResult<T> Page<T>(IReadOnlyList<T> items, int startIndex, int limit) =>
+        new([.. items.Skip(startIndex).Take(limit)], items.Count, startIndex);
+}

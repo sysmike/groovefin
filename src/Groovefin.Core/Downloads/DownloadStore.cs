@@ -30,6 +30,12 @@ public interface IDownloadStore
 
     /// <summary>Gets the keys that have a folder: every server and user with downloads.</summary>
     IReadOnlyList<string> Keys();
+
+    /// <summary>Gets when the user's index was last saved, or <see langword="null"/> when there is none.</summary>
+    DateTime? IndexSavedAt(string key);
+
+    /// <summary>Gets the folder of the covers kept with the user's downloads (#335). It may not exist yet.</summary>
+    string CoversOf(string key);
 }
 
 /// <summary>
@@ -118,6 +124,14 @@ public sealed partial class JsonDownloadStore(DownloadStoreOptions options, ILog
             throw;
         }
     }
+
+    public DateTime? IndexSavedAt(string key)
+    {
+        var path = Path.Join(FolderOf(key), IndexFileName);
+        return File.Exists(path) ? File.GetLastWriteTimeUtc(path) : null;
+    }
+
+    public string CoversOf(string key) => Path.Join(FolderOf(key), "covers");
 
     public IReadOnlyList<string> Keys()
     {

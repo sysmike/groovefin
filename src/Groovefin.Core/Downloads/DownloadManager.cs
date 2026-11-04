@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
+using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
@@ -70,7 +71,9 @@ public sealed record DownloadStatus
 /// and downloads the missing ones, <see cref="Parallel"/> at a time, each to a <c>.part</c> file that is renamed
 /// when complete. An interrupted original resumes where it stopped. A song shared by several collections is
 /// kept once; one whose file changed on the server (another container or size) is downloaded again. The
-/// downloads of a server that left the list are deleted.
+/// downloads of a server that left the list are deleted. Each sync also keeps one cover per downloaded album,
+/// artist and playlist (<see cref="CoverWidth"/> wide), which the image cache shows when the server cannot be
+/// reached (#335).
 /// <para>
 /// Syncs run one after another in the background: <see cref="FirstSyncDelay"/> after start-up, every
 /// <see cref="SyncInterval"/>, shortly after a change to favourites, playlists or the settings, when the network
@@ -79,7 +82,7 @@ public sealed record DownloadStatus
 /// that failed <see cref="MaxAttempts"/> times waits for <see cref="SyncNowAsync"/>.
 /// </para>
 /// </summary>
-public sealed partial class DownloadManager : IOfflineLibrary, IDisposable
+public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, IDisposable
 {
     /// <summary>The favourite songs read per sync, at most.</summary>
     public const int MaxFavouriteSongs = 10_000;
@@ -109,10 +112,15 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDisposable
     /// <summary>How long the first song after start-up waits for the index (see <see cref="FileOf"/>).</summary>
     public static readonly TimeSpan IndexWait = TimeSpan.FromSeconds(2);
 
+    /// <summary>The width of the covers kept with the downloads (#335); the pages scale them to their size.</summary>
+    public const int CoverWidth = 512;
+
     /// <summary>A download that receives nothing for this long fails.</summary>
     public static readonly TimeSpan IdleTimeout = TimeSpan.FromMinutes(1);
 
     private const string PartExtension = ".part";
+
+    private const string CoverExtension = ".img";
 
     /// <summary>A song's size per second without a size from the server: CD quality, 1,411 kbit/s.</summary>
     private const double CdBytesPerSecond = 176_400;
@@ -128,6 +136,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDisposable
     private readonly IMessenger _messenger;
     private readonly TimeProvider _time;
     private readonly ILogger<DownloadManager> _logger;
+    private readonly IImageSource? _images;
     private readonly ITimer _interval;
     private readonly ITimer _soon;
 
@@ -164,7 +173,8 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDisposable
         IServerManager servers,
         IMessenger messenger,
         TimeProvider time,
-        ILogger<DownloadManager> logger)
+        ILogger<DownloadManager> logger,
+        IImageSource? images = null)
     {
         _client = client;
         _library = library;
@@ -177,6 +187,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDisposable
         _messenger = messenger;
         _time = time;
         _logger = logger;
+        _images = images;
         _interval = time.CreateTimer(_ => _ = RequestAsync(manual: false), null, FirstSyncDelay, SyncInterval);
         _soon = time.CreateTimer(_ => _ = RequestAsync(manual: false), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
@@ -231,6 +242,32 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDisposable
 
         var path = Path.Join(_store.FolderOf(key), fileName);
         return File.Exists(path) ? path : null;
+    }
+
+    /// <summary>The cover kept with the downloads (#335): the item's, or with its tag changed meanwhile its older one.</summary>
+    public string? Find(ImageRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Kind != ImageKind.Primary || _client.Connection?.UserDataKey is not { } key)
+        {
+            return null;
+        }
+
+        var folder = _store.CoversOf(key);
+        var exact = Path.Join(folder, CoverName(request.ItemId, request.Tag));
+        if (File.Exists(exact))
+        {
+            return exact;
+        }
+
+        try
+        {
+            return Directory.Exists(folder) ? Directory.EnumerateFiles(folder, request.ItemId + "_*" + CoverExtension).FirstOrDefault() : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Syncs at once, as the timer does: a song that failed <see cref="MaxAttempts"/> times waits.</summary>
@@ -590,6 +627,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDisposable
         Publish(key, DownloadStop.None);
         if (missing.IsEmpty)
         {
+            await KeepCoversAsync(key, index, cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -623,6 +661,10 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDisposable
 
         await Task.WhenAll(Enumerable.Range(0, Parallel).Select(_ => DownloadAllAsync())).ConfigureAwait(false);
         _stopped = stop;
+        if (stop == DownloadStop.None)
+        {
+            await KeepCoversAsync(key, index, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private async Task<Wanted> LoadWantedAsync(DownloadSettings settings, CancellationToken cancellationToken)
@@ -860,6 +902,107 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDisposable
         }
     }
 
+    /// <summary>
+    /// Downloads the covers the downloaded songs, albums, artists and playlists need and deletes the others (#335).
+    /// A cover that fails is left for the next sync; an unreachable server stops them.
+    /// </summary>
+    private async Task KeepCoversAsync(string key, DownloadIndex index, CancellationToken cancellationToken)
+    {
+        if (_images is null)
+        {
+            return;
+        }
+
+        Dictionary<string, string> wanted;
+        lock (_indexLock)
+        {
+            wanted = WantedCovers(index);
+        }
+
+        var folder = _store.CoversOf(key);
+        var names = wanted.Select(c => CoverName(c.Key, c.Value)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var have = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (Directory.Exists(folder))
+        {
+            foreach (var file in Directory.EnumerateFiles(folder))
+            {
+                if (names.Contains(Path.GetFileName(file)))
+                {
+                    have.Add(Path.GetFileName(file));
+                }
+                else
+                {
+                    TryDelete(file);
+                }
+            }
+        }
+
+        foreach (var (itemId, tag) in wanted.Where(c => !have.Contains(CoverName(c.Key, c.Value))))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var path = Path.Join(folder, CoverName(itemId, tag));
+            try
+            {
+                Directory.CreateDirectory(folder);
+                var temp = path + PartExtension;
+                await using (var image = await _images.OpenAsync(new ImageRequest(itemId, ImageKind.Primary, tag, CoverWidth), cancellationToken).ConfigureAwait(false))
+                await using (var file = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                {
+                    await image.CopyToAsync(file, cancellationToken).ConfigureAwait(false);
+                }
+
+                File.Move(temp, path, overwrite: true);
+            }
+            catch (JellyfinException ex) when (ex.StatusCode is null)
+            {
+                LogCoverFailed(ex, itemId);
+                return;
+            }
+            catch (Exception ex) when (ex is JellyfinException or IOException or UnauthorizedAccessException)
+            {
+                LogCoverFailed(ex, itemId);
+            }
+        }
+    }
+
+    /// <summary>The covers by item ID with their image tags: of each downloaded song's album, and of the collections.</summary>
+    private static Dictionary<string, string> WantedCovers(DownloadIndex index)
+    {
+        var covers = new Dictionary<string, string>(StringComparer.Ordinal);
+        void Add(string? itemId, string? tag)
+        {
+            // Both become a file name: Jellyfin's are hexadecimal.
+            if (itemId is not null && tag is not null && itemId.All(char.IsAsciiLetterOrDigit) && tag.All(char.IsAsciiLetterOrDigit))
+            {
+                covers.TryAdd(itemId, tag);
+            }
+        }
+
+        foreach (var downloaded in index.Tracks.Values)
+        {
+            Add(downloaded.Track.AlbumId, downloaded.Track.AlbumImageTag);
+        }
+
+        foreach (var album in index.Albums)
+        {
+            Add(album.Album.Id, album.Album.PrimaryImageTag);
+        }
+
+        foreach (var artist in index.Artists)
+        {
+            Add(artist.Artist.Id, artist.Artist.PrimaryImageTag);
+        }
+
+        foreach (var playlist in index.Playlists)
+        {
+            Add(playlist.Playlist.Id, playlist.Playlist.PrimaryImageTag);
+        }
+
+        return covers;
+    }
+
+    private static string CoverName(string itemId, string tag) => $"{itemId}_{tag}{CoverExtension}";
+
     /// <summary>Copies the download; one that receives nothing for <see cref="IdleTimeout"/> fails.</summary>
     private static async Task CopyAsync(Stream from, Stream to, CancellationToken cancellationToken)
     {
@@ -1024,6 +1167,9 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDisposable
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Removed the downloads {Key} of a server no longer in the list")]
     private partial void LogServerRemoved(string key);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Keeping the cover of {ItemId} failed")]
+    private partial void LogCoverFailed(Exception exception, string itemId);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "All downloads removed")]
     private partial void LogRemovedAll();
