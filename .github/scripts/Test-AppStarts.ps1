@@ -1856,12 +1856,12 @@ try {
         foreach ($card in $window.FindAll($scope::Descendants, (& $byId 'SettingsServersCard'))) {
             try { $card.SetFocus(); [System.Windows.Forms.SendKeys]::SendWait(' ') }
             catch { Write-Output "A Servers card could not take the focus: $($_.Exception.Message)" }
-            if ($serverList = $window.FindFirst($scope::Descendants, (& $byId 'ServerList'))) { break }
+            if ($serverList = $window.FindFirst($scope::Descendants, (& $byId 'ServersIntro'))) { break }
         }
         $wait = (Get-Date).AddSeconds(3)
         while (-not $serverList -and (Get-Date) -lt $wait) {
             Start-Sleep -Milliseconds 300
-            $serverList = $window.FindFirst($scope::Descendants, (& $byId 'ServerList'))
+            $serverList = $window.FindFirst($scope::Descendants, (& $byId 'ServersIntro'))
         }
         if (-not $serverList -and (Get-Date) -gt $until) { Stop-Test 'Centred pages' 'The Servers card in Settings did not open the Servers page.' }
     }
@@ -1881,7 +1881,7 @@ try {
         Start-Sleep -Seconds 2
         $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized)
         Start-Sleep -Seconds 1
-        Test-Centred 'servers-wide' ($window.FindFirst($scope::Descendants, (& $byId 'ServerList'))) -Report
+        Test-Centred 'servers-wide' ($window.FindFirst($scope::Descendants, (& $byId 'ServersIntro'))) -Report
         Save-Screenshot 'servers-wide'
         # Settings has the same layout: measured the same way, by a card that has a place on screen.
         [System.Windows.Forms.SendKeys]::SendWait('^,')

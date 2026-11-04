@@ -21,6 +21,7 @@
                 Style="{StaticResource TitleTextBlockStyle}" />
             <TextBlock
                 x:Uid="ServersIntro"
+                AutomationProperties.AutomationId="ServersIntro"
                 Style="{StaticResource BodyTextBlockStyle}"
                 TextWrapping="Wrap" />
 
@@ -66,6 +67,7 @@
             <ListView
                 x:Uid="ServerList"
                 AutomationProperties.AutomationId="ServerList"
+                Visibility="Collapsed"
                 ItemsSource="{x:Bind ViewModel.Servers}"
                 SelectionMode="None">
                 <ListView.ItemTemplate>
