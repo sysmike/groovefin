@@ -4,6 +4,7 @@ using Groovefin.Core.Api;
 using Groovefin.Core.Models;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Privacy;
+using Groovefin.Core.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Groovefin.Core.History;
@@ -19,6 +20,9 @@ namespace Groovefin.Core.History;
 /// read from the server. A track's gain in play count is its plays since then, less the starts Groovefin
 /// reported itself, timed at its last play. The first sync takes each track played in the last
 /// <see cref="Window"/> with its whole play count.</item>
+/// <item>Plays while offline (#339): a start the server could not be reached for is kept, and sent with its time
+/// (<see cref="IPlaybackReporter.MarkPlayedAsync"/>) once it can be: before each sync, when the network comes back,
+/// and after a start reached the server. Each sent play then counts as one Groovefin reported.</item>
 /// </list>
 /// Each server and user has its own file; plays older than <see cref="Window"/> are dropped. Engine events
 /// are handled on the UI thread; loading, saving and syncing run one after another in the background.
@@ -52,6 +56,8 @@ public sealed partial class PlayHistory : IDisposable
     private readonly PrivacyMode _privacy;
     private readonly TimeProvider _time;
     private readonly ILogger<PlayHistory> _logger;
+    private readonly IPlaybackReporter? _reporter;
+    private readonly INetworkStatus? _network;
     private readonly ITimer _timer;
     private readonly Lock _gate = new();
     private Task _queue = Task.CompletedTask;
@@ -73,7 +79,9 @@ public sealed partial class PlayHistory : IDisposable
         IPlayHistoryStore store,
         PrivacyMode privacy,
         TimeProvider time,
-        ILogger<PlayHistory> logger)
+        ILogger<PlayHistory> logger,
+        IPlaybackReporter? reporter = null,
+        INetworkStatus? network = null)
     {
         _engine = engine;
         _reporting = reporting;
@@ -83,13 +91,20 @@ public sealed partial class PlayHistory : IDisposable
         _privacy = privacy;
         _time = time;
         _logger = logger;
+        _reporter = reporter;
+        _network = network;
         _timer = time.CreateTimer(_ => _ = SyncAsync(), null, FirstSyncDelay, SyncInterval);
 
         _engine.CurrentChanged += OnCurrentChanged;
         _engine.StateChanged += OnStateChanged;
         _engine.PositionChanged += OnPositionChanged;
         _reporting.StartReported += OnStartReported;
+        _reporting.StartUnsent += OnStartUnsent;
         _privacy.PropertyChanged += OnPrivacyChanged;
+        if (_network is not null)
+        {
+            _network.Changed += OnNetworkChanged;
+        }
     }
 
     /// <summary>Gets the "On repeat" list of the signed-in user: empty when not signed in.</summary>
@@ -122,9 +137,16 @@ public sealed partial class PlayHistory : IDisposable
                 return;
             }
 
-            // The starts sent so far are in the server's play counts: they must be known before reading them.
+            // The starts sent so far are in the server's play counts: they must be known before reading them,
+            // and so must the plays from offline.
             await _reporting.FlushAsync().ConfigureAwait(false);
             var data = await LoadAsync(key).ConfigureAwait(false);
+            if (await SendPendingAsync(key, data).ConfigureAwait(false))
+            {
+                // Saved at once: a failed read below must not send them again.
+                await SaveAsync(key, data).ConfigureAwait(false);
+            }
+
             var now = _time.GetUtcNow();
             var since = data.LastSync ?? now - Window;
             IReadOnlyList<Track> played;
@@ -158,7 +180,13 @@ public sealed partial class PlayHistory : IDisposable
         _engine.StateChanged -= OnStateChanged;
         _engine.PositionChanged -= OnPositionChanged;
         _reporting.StartReported -= OnStartReported;
+        _reporting.StartUnsent -= OnStartUnsent;
         _privacy.PropertyChanged -= OnPrivacyChanged;
+        if (_network is not null)
+        {
+            _network.Changed -= OnNetworkChanged;
+        }
+
         _timer.Dispose();
     }
 
@@ -196,6 +224,7 @@ public sealed partial class PlayHistory : IDisposable
         var cutoff = now - Window;
         data.Plays.RemoveAll(p => p.PlayedAt < cutoff);
         data.ReportedStarts.RemoveAll(s => s.StartedAt < cutoff);
+        data.Pending.RemoveAll(p => p.PlayedAt < cutoff);
         foreach (var stale in data.Counts.Where(c => c.Value.LastPlayed < cutoff).Select(c => c.Key).ToList())
         {
             data.Counts.Remove(stale);
@@ -298,14 +327,82 @@ public sealed partial class PlayHistory : IDisposable
         Record(data => data.Plays.Add(play));
     }
 
-    /// <summary>The server counted a play for this start: the next sync must not count it again.</summary>
+    /// <summary>
+    /// The server counted a play for this start: the next sync must not count it again. It can be reached again,
+    /// so the plays from offline go now.
+    /// </summary>
     private void OnStartReported(object? sender, string trackId)
     {
         if (CurrentKey() is { } key)
         {
             _reportedStarts.Enqueue((key, new ReportedStart(trackId, _time.GetUtcNow())));
-            Record(_ => { });
+            _ = Enqueue(async () =>
+            {
+                var data = await LoadAsync(key).ConfigureAwait(false);
+                await SendPendingAsync(key, data).ConfigureAwait(false);
+
+                // Also without plays from offline: the reported start is saved.
+                await SaveAsync(key, data).ConfigureAwait(false);
+            });
         }
+    }
+
+    /// <summary>The server missed this start (offline): it is kept and sent later (#339).</summary>
+    private void OnStartUnsent(object? sender, UnsentStart start) =>
+        Record(data => data.Pending.Add(new PendingPlay(start.TrackId, start.StartedAt)));
+
+    /// <summary>The network is back: the plays from offline go now.</summary>
+    private void OnNetworkChanged(object? sender, EventArgs e)
+    {
+        if (_network is { IsOnline: true } && CurrentKey() is { } key)
+        {
+            _ = Enqueue(async () =>
+            {
+                var data = await LoadAsync(key).ConfigureAwait(false);
+                if (await SendPendingAsync(key, data).ConfigureAwait(false))
+                {
+                    await SaveAsync(key, data).ConfigureAwait(false);
+                }
+            });
+        }
+    }
+
+    /// <summary>
+    /// Sends the plays from offline, oldest first, and counts each as a start Groovefin reported. An unreachable server
+    /// stops them for now; a play the server refuses (a song it no longer has) is dropped. Run it in the queue.
+    /// Returns whether any left the list.
+    /// </summary>
+    private async Task<bool> SendPendingAsync(string key, PlayHistoryData data)
+    {
+        if (_reporter is null || data.Pending.Count == 0)
+        {
+            return false;
+        }
+
+        var before = data.Pending.Count;
+
+        foreach (var play in data.Pending.ToList())
+        {
+            try
+            {
+                await _reporter.MarkPlayedAsync(play.TrackId, play.PlayedAt).ConfigureAwait(false);
+                data.ReportedStarts.Add(new ReportedStart(play.TrackId, _time.GetUtcNow()));
+            }
+            catch (JellyfinException ex) when (ex.StatusCode is null)
+            {
+                LogPendingWaits(ex, data.Pending.Count);
+                return data.Pending.Count < before;
+            }
+            catch (Exception ex) when (ex is JellyfinException or ArgumentException or InvalidOperationException)
+            {
+                LogPendingDropped(ex, play.TrackId);
+            }
+
+            data.Pending.Remove(play);
+        }
+
+        LogPendingSent(key);
+        return true;
     }
 
     private static TimeSpan Threshold(TimeSpan duration) =>
@@ -378,6 +475,15 @@ public sealed partial class PlayHistory : IDisposable
             return result;
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "The server cannot be reached yet: {Count} plays from offline wait")]
+    private partial void LogPendingWaits(Exception exception, int count);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The server refused the play of {TrackId} from offline; it is dropped")]
+    private partial void LogPendingDropped(Exception exception, string trackId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Sent the plays from offline of {Key}")]
+    private partial void LogPendingSent(string key);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Reading the play counts from the server failed")]
     private partial void LogSyncFailed(Exception exception);

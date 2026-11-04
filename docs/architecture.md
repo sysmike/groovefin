@@ -114,7 +114,7 @@ flowchart TD
 | `IPlaylistService` | Core | Jellyfin | Playlist CRUD and track editing. |
 | `ISearchService` | Core | Jellyfin | Grouped search and suggestions. |
 | `ILyricsService` | Core | Jellyfin | Lyrics (synced LRC and plain text). |
-| `IPlaybackReporter` | Core | Jellyfin | `/Sessions/Playing`, `/Progress`, `/Stopped`. |
+| `IPlaybackReporter` | Core | Jellyfin | `/Sessions/Playing`, `/Progress`, `/Stopped`; `MarkPlayedAsync` (`/UserPlayedItems/{id}?datePlayed=`) for plays from offline (#339): `PlaybackReporting` raises `StartUnsent` for a start the server could not be reached for, and `PlayHistory` keeps it in the user's history file and sends it once the server can be reached again, as a start Groovefin reported. |
 | `IPlaybackEngine` | Core | Playback.Windows | Load, play, pause, seek, volume. Queues the next source (`SetNext`) and moves on to it without a gap (`MediaPlaybackList` with the current and the next item). Optional crossfade (`Crossfade`): `PlaybackEngineBase` starts the next source on a second player near the end and fades the two (equal power); tracks of the same album stay gapless. Events for position, state and track changes. |
 | `QueueManager` | Core | — (concrete, pure) | Queue order, shuffle with stable original order, repeat modes, history. |
 | `IPlayer` | Core | Core (`Player`) | Queue and engine together: play/shuffle/queue tracks, transport, auto-advance, skipping failed tracks, keeping the engine's next source on the queue's next entry (gapless). Stream URLs come from `IStreamUrlProvider` with the streaming settings for the active server. |

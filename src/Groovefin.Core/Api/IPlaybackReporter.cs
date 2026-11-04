@@ -26,4 +26,11 @@ public interface IPlaybackReporter
     /// <summary>Reports that a track stopped playing.</summary>
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task ReportStoppedAsync(PlaybackReport report, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Marks a track played at <paramref name="playedAt"/>, for a play the server missed (offline, #339): one more in
+    /// its play count, and its last played time.
+    /// </summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task MarkPlayedAsync(string itemId, DateTimeOffset playedAt, CancellationToken cancellationToken = default);
 }
