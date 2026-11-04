@@ -26,7 +26,7 @@ public sealed class DownloadManagerTests : IDisposable
     private readonly WeakReferenceMessenger _messenger = new();
     private readonly FakeTimeProvider _time = new();
     private readonly IServerManager _servers = Substitute.For<IServerManager>();
-    private readonly Dictionary<string, string> _versions = [];
+    private readonly Dictionary<string, TrackFile> _files = [];
     private readonly JsonDownloadStore _store;
     private readonly DownloadManager _sut;
     private long _freeSpace = 50L << 30;
@@ -36,9 +36,9 @@ public sealed class DownloadManagerTests : IDisposable
         _client.Connection.Returns(new ServerConnection(new Uri("http://media:8096"), "user1", "token"));
         Favourites("a", "b");
         Playlist("b", "c");
-        _library.GetFileVersionsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
-            .Returns(call => (IReadOnlyDictionary<string, string>)call.Arg<IReadOnlyList<string>>()
-                .Where(_versions.ContainsKey).ToDictionary(id => id, id => _versions[id]));
+        _library.GetTrackFilesAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(call => (IReadOnlyDictionary<string, TrackFile>)call.Arg<IReadOnlyList<string>>()
+                .Where(_files.ContainsKey).ToDictionary(id => id, id => _files[id]));
         _settings.Update(s => s with { Downloads = s.Downloads with { FavouriteSongs = true, Playlists = true } });
         _store = new JsonDownloadStore(new DownloadStoreOptions(_directory) { FreeSpace = _ => _freeSpace }, NullLogger<JsonDownloadStore>.Instance);
         _sut = new DownloadManager(
@@ -241,9 +241,9 @@ public sealed class DownloadManagerTests : IDisposable
     [Fact]
     public async Task A_song_whose_file_changed_on_the_server_is_downloaded_again()
     {
-        _versions["a"] = "flac:4";
+        _files["a"] = new TrackFile("flac", 4);
         await _sut.SyncAsync();
-        _versions["a"] = "flac:5";
+        _files["a"] = new TrackFile("flac", 5);
 
         await _sut.SyncAsync();
 
@@ -256,7 +256,7 @@ public sealed class DownloadManagerTests : IDisposable
     public async Task A_download_from_before_the_marks_takes_the_servers_without_downloading_again()
     {
         await _sut.SyncAsync();
-        _versions["a"] = "flac:4";
+        _files["a"] = new TrackFile("flac", 4);
 
         await _sut.SyncAsync();
         await _sut.SyncAsync();
@@ -283,6 +283,73 @@ public sealed class DownloadManagerTests : IDisposable
 
         Directory.Exists(_store.FolderOf(other)).Should().BeFalse();
         Files().Should().HaveCount(3, "the active server stays in the list");
+    }
+
+    [Fact]
+    public async Task Every_song_of_the_favourite_albums_and_artists_is_downloaded()
+    {
+        _settings.Update(s => s with { Downloads = new DownloadSettings { FavouriteAlbums = true, FavouriteArtists = true } });
+        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q.FavouritesOnly), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<Album>([new Album { Id = "al1", Name = "Discovery" }], 1, 0));
+        _library.GetAlbumTracksAsync("al1", Arg.Any<CancellationToken>()).Returns([Song("d1"), Song("d2")]);
+        _library.GetArtistsAsync(Arg.Is<ArtistQuery>(q => q.FavouritesOnly && !q.AlbumArtistsOnly), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<Artist>([new Artist { Id = "ar1", Name = "Daft Punk" }], 1, 0));
+        _library.GetArtistTracksAsync("ar1", Arg.Any<CancellationToken>()).Returns([Song("d2"), Song("h1")]);
+
+        await _sut.SyncAsync();
+
+        Files().Should().Equal("d1.flac", "d2.flac", "h1.flac");
+        var index = await _store.LoadAsync(_client.Connection!.UserDataKey, Ct);
+        index.Albums.Should().ContainSingle().Which.TrackIds.Should().Equal("d1", "d2");
+        index.Artists.Should().ContainSingle().Which.TrackIds.Should().Equal("d2", "h1");
+        _sut.Status.Wanted.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task A_heart_on_an_album_syncs_when_favourite_albums_are_on()
+    {
+        _settings.Update(s => s with { Downloads = new DownloadSettings { FavouriteAlbums = true } });
+        _library.GetAlbumsAsync(Arg.Any<AlbumQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<Album>([new Album { Id = "al1", Name = "Discovery" }], 1, 0));
+        _library.GetAlbumTracksAsync("al1", Arg.Any<CancellationToken>()).Returns([Song("d1")]);
+
+        _messenger.Send(new FavouriteChangedMessage("al1", true));
+        _time.Advance(DownloadManager.ChangeDelay);
+
+        var until = DateTime.UtcNow.AddSeconds(10);
+        while ((_sut.Status.Downloaded < 1 || _sut.Status.IsSyncing) && DateTime.UtcNow < until)
+        {
+            await Task.Delay(50, Ct);
+        }
+
+        Files().Should().Equal("d1.flac");
+    }
+
+    [Fact]
+    public async Task The_estimate_counts_only_the_songs_not_on_disk_with_their_file_sizes()
+    {
+        _settings.Update(s => s with { Downloads = new DownloadSettings { FavouriteSongs = true } });
+        await _sut.SyncAsync();
+        Playlist("b", "c", "x");
+        _files["c"] = new TrackFile("flac", 30_000_000);
+
+        var estimate = await _sut.EstimateAsync(new DownloadSettings { Playlists = true }, Ct);
+
+        // b is on disk already as a favourite; x has no size, so it counts nothing without a length.
+        estimate.Should().Be(new DownloadEstimate(2, 30_000_000));
+        _source.Requests.Should().HaveCount(2, "estimating downloads nothing");
+    }
+
+    [Fact]
+    public async Task The_estimate_for_aac_is_the_length_at_the_bitrate()
+    {
+        _settings.Update(s => s with { Downloads = new DownloadSettings() });
+        _playlists.GetEntriesAsync(PlaylistId, Arg.Any<CancellationToken>())
+            .Returns([new PlaylistEntry("e-a", Song("a") with { Duration = TimeSpan.FromMinutes(4) })]);
+
+        var estimate = await _sut.EstimateAsync(new DownloadSettings { Playlists = true, Format = DownloadFormatKind.Aac, AacBitrateKbps = 256 }, Ct);
+
+        estimate.Should().Be(new DownloadEstimate(1, 240 * 256 * 125));
     }
 
     [Fact]

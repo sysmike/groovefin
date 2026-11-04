@@ -275,10 +275,16 @@ public enum DownloadFormatKind
     Aac,
 }
 
-/// <summary>What is downloaded for offline playback, and how (#58, #327). Everything is off by default.</summary>
+/// <summary>What is downloaded for offline playback, and how (#58, #327, #331). Everything is off by default.</summary>
 public sealed record DownloadSettings
 {
     public bool FavouriteSongs { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether every song of each favourite album is downloaded.</summary>
+    public bool FavouriteAlbums { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether every song of each favourite artist is downloaded.</summary>
+    public bool FavouriteArtists { get; set; }
 
     /// <summary>Gets or sets a value indicating whether all the user's playlists are downloaded.</summary>
     public bool Playlists { get; set; }
@@ -292,7 +298,11 @@ public sealed record DownloadSettings
 
     /// <summary>Gets a value indicating whether any collection is downloaded.</summary>
     [JsonIgnore]
-    public bool AnyCollection => FavouriteSongs || Playlists;
+    public bool AnyCollection => FavouriteSongs || FavouriteAlbums || FavouriteArtists || Playlists;
+
+    /// <summary>Gets a value indicating whether any favourites are downloaded: a heart then syncs.</summary>
+    [JsonIgnore]
+    public bool AnyFavourites => FavouriteSongs || FavouriteAlbums || FavouriteArtists;
 }
 
 /// <summary>How lines are aligned in the lyrics pane.</summary>

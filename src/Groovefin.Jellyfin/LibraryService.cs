@@ -8,8 +8,8 @@ namespace Groovefin.Jellyfin;
 /// <summary><see cref="ILibraryService"/> for the active Jellyfin connection.</summary>
 internal sealed class LibraryService(JellyfinClient client) : ILibraryService
 {
-    /// <summary>Tracks per request of <see cref="GetFileVersionsAsync"/>.</summary>
-    internal const int FileVersionPageSize = 100;
+    /// <summary>Tracks per request of <see cref="GetTrackFilesAsync"/>.</summary>
+    internal const int TrackFilePageSize = 100;
 
     public async Task<PagedResult<Album>> GetAlbumsAsync(AlbumQuery query, CancellationToken cancellationToken = default)
     {
@@ -211,15 +211,15 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         return (result.Items ?? []).Select(ItemMapper.ToTrack).ToList();
     }
 
-    public async Task<IReadOnlyDictionary<string, string>> GetFileVersionsAsync(IReadOnlyList<string> trackIds, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyDictionary<string, TrackFile>> GetTrackFilesAsync(IReadOnlyList<string> trackIds, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(trackIds);
         var (api, connection) = client.Active;
         var userId = Guid.Parse(connection.UserId);
-        var versions = new Dictionary<string, string>(StringComparer.Ordinal);
+        var files = new Dictionary<string, TrackFile>(StringComparer.Ordinal);
 
         // A hundred IDs keep the URL short; only the media sources, without images or user data.
-        foreach (var chunk in trackIds.Chunk(FileVersionPageSize))
+        foreach (var chunk in trackIds.Chunk(TrackFilePageSize))
         {
             Guid?[] ids = [.. chunk.Select(id => (Guid?)ParseId(id))];
             var result = await JellyfinCall.RunAsync(
@@ -235,17 +235,17 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                         p.EnableTotalRecordCount = false;
                     },
                     cancellationToken),
-                "Loading file versions").ConfigureAwait(false);
-            var marked = (result.Items ?? [])
-                .Select(dto => (Id: ItemMapper.FormatId(dto.Id), Version: ItemMapper.FileVersion(dto)))
-                .Where(item => item.Id is not null && item.Version is not null);
-            foreach (var (id, version) in marked)
+                "Loading track files").ConfigureAwait(false);
+            var known = (result.Items ?? [])
+                .Select(dto => (Id: ItemMapper.FormatId(dto.Id), File: ItemMapper.ToTrackFile(dto)))
+                .Where(item => item.Id is not null && item.File is not null);
+            foreach (var (id, file) in known)
             {
-                versions[id!] = version!;
+                files[id!] = file!;
             }
         }
 
-        return versions;
+        return files;
     }
 
     public async Task<FolderContent> GetFolderAsync(string? folderId, CancellationToken cancellationToken = default)

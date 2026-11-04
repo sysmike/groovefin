@@ -235,6 +235,12 @@
                     <controls:SettingsCard x:Uid="SettingsDownloadFavouritesCard">
                         <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteSongs, Mode=TwoWay}" />
                     </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsDownloadAlbumsCard">
+                        <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteAlbums, Mode=TwoWay}" />
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsDownloadArtistsCard">
+                        <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteArtists, Mode=TwoWay}" />
+                    </controls:SettingsCard>
                     <controls:SettingsCard x:Uid="SettingsDownloadPlaylistsCard">
                         <ToggleSwitch AutomationProperties.AutomationId="DownloadPlaylistsSwitch" IsOn="{x:Bind Downloads.Playlists, Mode=TwoWay}" />
                     </controls:SettingsCard>
