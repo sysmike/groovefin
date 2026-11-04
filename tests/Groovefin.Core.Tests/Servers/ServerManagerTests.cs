@@ -66,17 +66,36 @@ public sealed class ServerManagerTests
     }
 
     [Fact]
-    public async Task Adding_the_same_server_under_another_address_updates_it()
+    public async Task A_known_address_is_rejected_without_contacting_the_server()
     {
         await _sut.AddAsync("alpha:8096", Ct);
+        _client.ClearReceivedCalls();
+        var raised = 0;
+        _sut.Changed += (_, _) => raised++;
+
+        var act = () => _sut.AddAsync("http://alpha:8096", Ct);
+
+        (await act.Should().ThrowAsync<ServerAlreadyAddedException>()).Which.Existing!.Id.Should().Be("id-a");
+        await _client.DidNotReceiveWithAnyArgs().GetServerInfoAsync(default!, Ct);
+        _sut.Servers.Should().ContainSingle();
+        raised.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task The_same_server_under_another_address_is_rejected_and_kept_as_it_was()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        _sut.AcceptUnencrypted("id-a");
         StubServer("https://alpha.example.com/", "id-a", "Alpha (renamed)");
 
-        await _sut.AddAsync("https://alpha.example.com", Ct);
+        var act = () => _sut.AddAsync("https://alpha.example.com", Ct);
 
+        (await act.Should().ThrowAsync<ServerAlreadyAddedException>()).Which.Existing!.Name.Should().Be("Alpha");
         _sut.Servers.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Name = "Alpha (renamed)",
-            Address = new Uri("https://alpha.example.com/"),
+            Name = "Alpha",
+            Address = new Uri("http://alpha:8096/"),
+            UnencryptedAccepted = true,
         });
     }
 
@@ -337,16 +356,5 @@ public sealed class ServerManagerTests
         await _sut.UpdateAddressAsync("id-a", "alpha.lan:8096", Ct);
 
         _sut.Servers.Should().ContainSingle().Which.UnencryptedAccepted.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task Adding_a_server_again_at_the_same_address_keeps_the_choice()
-    {
-        await _sut.AddAsync("alpha:8096", Ct);
-        _sut.AcceptUnencrypted("id-a");
-
-        await _sut.AddAsync("http://alpha:8096", Ct);
-
-        _sut.Servers.Should().ContainSingle().Which.UnencryptedAccepted.Should().BeTrue();
     }
 }
