@@ -877,9 +877,17 @@ try {
     $null = Find-Button 'Play the genre'
     # The genre's songs are as wide as its albums (#351), like the artist page's top tracks (#266), and each
     # row has its heart.
-    $genreSongs = Find-ById 'GenreSongs'
-    $songsBounds = Get-Bounds $genreSongs
+    # The songs are below the window's bottom on the runner: the albums are measured first, then the page
+    # is scrolled to its end (which moves the songs up, not sideways).
     $genreShelf = Get-Bounds (Find-ById 'GenreAlbums')
+    $genreSongs = Find-ById 'GenreSongs'
+    $genreScroll = $null
+    for ($node = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($genreSongs); $node -and -not $genreScroll; $node = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($node)) {
+        $pattern = $null
+        if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $pattern) -and $pattern.Current.VerticallyScrollable) { $genreScroll = $pattern }
+    }
+    if ($genreScroll) { $genreScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 100); Start-Sleep -Milliseconds 500 }
+    $songsBounds = Get-Bounds $genreSongs
     if ([Math]::Abs($songsBounds.Left - $genreShelf.Left) -gt 2 -or [Math]::Abs($songsBounds.Right - $genreShelf.Right) -gt 2) {
         Stop-Test 'Genre page' ("The songs span {0:0}-{1:0} px, the albums above {2:0}-{3:0} px." -f $songsBounds.Left, $songsBounds.Right, $genreShelf.Left, $genreShelf.Right)
     }
