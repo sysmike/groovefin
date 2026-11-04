@@ -2441,4 +2441,10 @@
   <data name="Error_NotDownloaded" xml:space="preserve">
     <value>You're offline, and none of the songs left in the queue is downloaded.</value>
   </data>
+  <data name="Offline_Title" xml:space="preserve">
+    <value>You're offline</value>
+  </data>
+  <data name="Offline_Message" xml:space="preserve">
+    <value>Downloaded music is in Favourites and Playlists.</value>
+  </data>
 </root>

@@ -11,13 +11,15 @@ namespace Groovefin.Core.Images;
 /// The file's last-write time is its last use; above <see cref="ImageCacheOptions.MaxBytes"/> the least
 /// recently used files are deleted. Concurrent requests for the same image share one download.
 /// Views ask for every visible cover on the UI thread, so even a hit (file check and timestamp) runs on
-/// the thread pool.
+/// the thread pool. An image the server cannot give comes from the <c>fallback</c> instead, such as a cover
+/// kept with the downloads (#335); it is not cached.
 /// </summary>
 public sealed partial class DiskImageCache(
     ImageCacheOptions options,
     IImageSource source,
     TimeProvider time,
-    ILogger<DiskImageCache> logger) : IImageCache
+    ILogger<DiskImageCache> logger,
+    IImageFallback? fallback = null) : IImageCache
 {
     /// <summary>A hit marks its file as used at most this often, so scrolling back and forth writes little.</summary>
     internal static readonly TimeSpan TouchInterval = TimeSpan.FromMinutes(1);
@@ -31,7 +33,7 @@ public sealed partial class DiskImageCache(
 
         if (source.ServerKey is not { } serverKey)
         {
-            return Task.FromResult<string?>(null);
+            return Task.FromResult(fallback?.Find(request));
         }
 
         var path = PathFor(serverKey, request);
@@ -103,7 +105,7 @@ public sealed partial class DiskImageCache(
         {
             // Missing artwork is shown as a placeholder; one InfoBar per image would flood the window.
             LogDownloadFailed(ex, request.ItemId, request.Kind);
-            return null;
+            return fallback?.Find(request);
         }
         finally
         {

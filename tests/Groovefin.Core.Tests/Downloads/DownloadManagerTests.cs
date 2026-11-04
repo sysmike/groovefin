@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
 using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
+using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Servers;
 using Groovefin.Core.Settings;
@@ -381,6 +382,29 @@ public sealed class DownloadManagerTests : IDisposable
         _client.Connection.ReturnsNull();
 
         _sut.FileOf("a").Should().BeNull();
+    }
+
+    [Fact]
+    public async Task The_covers_of_the_downloads_are_kept_and_found_while_offline()
+    {
+        var images = Substitute.For<IImageSource>();
+        images.OpenAsync(Arg.Any<ImageRequest>(), Arg.Any<CancellationToken>()).Returns(_ => (Stream)new MemoryStream([1, 2, 3]));
+        _library.GetFavouriteTracksAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns([Song("a") with { AlbumId = "al1", AlbumImageTag = "t1" }]);
+        using var sut = new DownloadManager(
+            _client, _library, _playlists, _source, _store, _settings, _network, Substitute.For<IServerManager>(), new WeakReferenceMessenger(), _time, NullLogger<DownloadManager>.Instance, images);
+
+        await sut.SyncAsync();
+
+        var cover = Path.Join(_store.CoversOf(_client.Connection!.UserDataKey), "al1_t1.img");
+        File.ReadAllBytes(cover).Should().Equal(1, 2, 3);
+        await images.Received(1).OpenAsync(Arg.Is<ImageRequest>(r => r.ItemId == "al1" && r.Width == DownloadManager.CoverWidth), Arg.Any<CancellationToken>());
+        sut.Find(new ImageRequest("al1", ImageKind.Primary, "t1", 200)).Should().Be(cover);
+        sut.Find(new ImageRequest("al1", ImageKind.Primary, "t2", 200)).Should().Be(cover, "a changed tag still finds the older cover");
+        sut.Find(new ImageRequest("other", ImageKind.Primary, "t1", 200)).Should().BeNull();
+
+        _library.GetFavouriteTracksAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns([]);
+        await sut.SyncAsync();
+        File.Exists(cover).Should().BeFalse("no download needs it any more");
     }
 
     [Fact]

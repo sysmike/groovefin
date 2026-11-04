@@ -2,6 +2,7 @@ using Groovefin.Core.Api;
 using Groovefin.Core.Images;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
+using NSubstitute.ReturnsExtensions;
 
 namespace Groovefin.Core.Tests.Images;
 
@@ -46,6 +47,32 @@ public sealed class DiskImageCacheTests : IDisposable
         path.Should().NotBeNull().And.StartWith(_directory);
         (await File.ReadAllBytesAsync(path!, Ct)).Should().HaveCount(100);
         await _source.Received(1).OpenAsync(Request("a"), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task An_image_the_server_cannot_give_comes_from_the_fallback_and_is_not_cached()
+    {
+        var fallback = Substitute.For<IImageFallback>();
+        fallback.Find(Arg.Any<ImageRequest>()).ReturnsNull();
+        fallback.Find(Request("a")).Returns("/downloads/covers/a_tag.img");
+        _source.OpenAsync(Arg.Any<ImageRequest>(), Arg.Any<CancellationToken>())
+            .Returns<Stream>(_ => throw new JellyfinException("Unreachable", (System.Net.HttpStatusCode?)null));
+        var sut = new DiskImageCache(new ImageCacheOptions(_directory, () => _maxBytes), _source, _time, NullLogger<DiskImageCache>.Instance, fallback);
+
+        (await sut.GetAsync(Request("a"), Ct)).Should().Be("/downloads/covers/a_tag.img");
+        (await sut.GetAsync(Request("b"), Ct)).Should().BeNull();
+        Directory.EnumerateFiles(_directory, "*.img", SearchOption.AllDirectories).Should().BeEmpty("nothing came from the server");
+    }
+
+    [Fact]
+    public async Task Not_connected_the_fallback_answers()
+    {
+        var fallback = Substitute.For<IImageFallback>();
+        fallback.Find(Request("a")).Returns("/downloads/covers/a_tag.img");
+        _source.ServerKey.ReturnsNull();
+        var sut = new DiskImageCache(new ImageCacheOptions(_directory, () => _maxBytes), _source, _time, NullLogger<DiskImageCache>.Instance, fallback);
+
+        (await sut.GetAsync(Request("a"), Ct)).Should().Be("/downloads/covers/a_tag.img");
     }
 
     [Fact]
