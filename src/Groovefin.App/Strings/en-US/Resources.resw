@@ -2447,4 +2447,7 @@
   <data name="Offline_Message" xml:space="preserve">
     <value>Downloaded music is in Favourites and Playlists.</value>
   </data>
+  <data name="DownloadedIcon.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Downloaded</value>
+  </data>
 </root>

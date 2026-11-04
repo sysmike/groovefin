@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
 using Groovefin.Core.Models;
@@ -18,6 +19,9 @@ public sealed record PlaylistItem(Playlist Playlist, ImageRequest? Image, string
     public string Name => Playlist.Name;
 
     public string AccessibleName => string.Join(", ", new[] { Name, Details }.Where(s => s.Length > 0));
+
+    /// <summary>Gets a value indicating whether the playlist is downloaded with every song (#337).</summary>
+    public bool IsDownloaded { get; init; }
 
     public static PlaylistItem Create(Playlist playlist, double imageWidth, double scale, IStringResources strings)
     {
@@ -47,7 +51,8 @@ public sealed partial class PlaylistsViewModel(
     INavigationService navigation,
     IDialogService dialogs,
     IErrorReporter errors,
-    IStringResources strings) : ObservableObject
+    IStringResources strings,
+    IOfflineLibrary? downloads = null) : ObservableObject
 {
     public const double TileWidth = 168;
 
@@ -76,7 +81,7 @@ public sealed partial class PlaylistsViewModel(
             Playlists.Clear();
             foreach (var playlist in found)
             {
-                Playlists.Add(PlaylistItem.Create(playlist, TileWidth, DisplayScale, strings));
+                Playlists.Add(PlaylistItem.Create(playlist, TileWidth, DisplayScale, strings) with { IsDownloaded = downloads?.IsComplete(playlist.Id) == true });
             }
         }
         catch (Exception ex) when (ex is JellyfinException or InvalidOperationException)

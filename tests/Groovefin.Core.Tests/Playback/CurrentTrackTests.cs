@@ -1,3 +1,4 @@
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Models;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Tests.TestDoubles;
@@ -16,10 +17,28 @@ public sealed class CurrentTrackTests
         public Track Track { get; } = new() { Id = trackId, Name = trackId };
 
         public bool IsCurrent { get; set; }
+
+        public bool IsDownloaded { get; set; }
     }
 
     private void Play(string trackId) =>
         _engine.Load(new PlaybackSource($"q-{trackId}", new Uri($"http://stream/{trackId}"), new Track { Id = trackId, Name = trackId }));
+
+    [Fact]
+    public void Downloaded_tracks_are_marked_and_follow_the_downloads()
+    {
+        var downloads = Substitute.For<IOfflineLibrary>();
+        downloads.IsDownloaded("b").Returns(true);
+        var sut = new CurrentTrack(_engine, downloads, new ImmediateDispatcher());
+        Row[] rows = [new("a"), new("b")];
+
+        sut.Watch(this, () => rows);
+        rows.Select(r => r.IsDownloaded).Should().Equal(false, true);
+
+        downloads.IsDownloaded("a").Returns(true);
+        downloads.Changed += Raise.Event();
+        rows.Select(r => r.IsDownloaded).Should().Equal(true, true);
+    }
 
     [Fact]
     public void Nothing_is_marked_while_nothing_plays()

@@ -32,11 +32,27 @@
                         <!--  Play, on hover (#191).  -->
                         <controls:CoverActions Tag="{x:Bind}" />
                     </Grid>
-                    <TextBlock
-                        MaxLines="1"
-                        Style="{StaticResource BodyStrongTextBlockStyle}"
-                        Text="{x:Bind Name}"
-                        TextTrimming="CharacterEllipsis" />
+                    <!--  A mark when it is downloaded with every song (#337).  -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            MaxLines="1"
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            Text="{x:Bind Name}"
+                            TextTrimming="CharacterEllipsis" />
+                        <FontIcon
+                            x:Uid="DownloadedIcon"
+                            Grid.Column="1"
+                            Margin="6,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Glyph="&#xE896;"
+                            Visibility="{x:Bind IsDownloaded}" />
+                    </Grid>
                     <TextBlock
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         MaxLines="1"

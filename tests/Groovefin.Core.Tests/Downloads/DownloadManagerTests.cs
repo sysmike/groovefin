@@ -408,6 +408,26 @@ public sealed class DownloadManagerTests : IDisposable
     }
 
     [Fact]
+    public async Task The_downloaded_songs_and_complete_collections_are_known_and_changes_raised()
+    {
+        var changes = 0;
+        _sut.Changed += (_, _) => Interlocked.Increment(ref changes);
+        _source.Failures["c"] = new JellyfinException("Forbidden", HttpStatusCode.Forbidden);
+
+        await _sut.SyncAsync();
+
+        _sut.IsDownloaded("a").Should().BeTrue();
+        _sut.IsDownloaded("c").Should().BeFalse();
+        _sut.IsComplete(PlaylistId).Should().BeFalse("c of the playlist failed");
+        changes.Should().BePositive();
+
+        _source.Failures.Remove("c");
+        await _sut.SyncNowAsync();
+        _sut.IsComplete(PlaylistId).Should().BeTrue();
+        _sut.IsComplete("unknown").Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Remove_all_deletes_every_download()
     {
         await _sut.SyncAsync();

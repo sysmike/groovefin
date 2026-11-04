@@ -21,6 +21,10 @@ public sealed partial class SongRow(Track track) : ObservableObject, ICurrentTra
     [ObservableProperty]
     public partial bool IsCurrent { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the track is downloaded (#337).</summary>
+    [ObservableProperty]
+    public partial bool IsDownloaded { get; set; }
+
     /// <summary>Gets the cell text of <paramref name="column"/>.</summary>
     public string Text(SongColumn column) => column switch
     {

@@ -2426,4 +2426,7 @@
   <data name="Offline_Message" xml:space="preserve">
     <value>Heruntergeladene Musik findest du in Favoriten und Playlists.</value>
   </data>
+  <data name="DownloadedIcon.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Heruntergeladen</value>
+  </data>
 </root>
