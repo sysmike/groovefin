@@ -22,15 +22,27 @@ var config = Config.Builder.ForProcessId(processId)
     .WithOutputDirectory(args[2])
     .Build();
 
-ScanOutput output;
-try
+// Axe.Windows reads the tree in parallel and crashes when an element goes away in the middle (#349), e.g.
+// while the full-screen player settles: a NullReferenceException, wrapped in an AggregateException. The
+// next try reads the tree as it is then.
+const int Tries = 3;
+ScanOutput? output = null;
+for (var attempt = 1; output is null; attempt++)
 {
-    output = ScannerFactory.CreateScanner(config).Scan(new ScanOptions(args[1]));
-}
-catch (AxeWindowsAutomationException ex)
-{
-    Console.Error.WriteLine($"The scan failed: {ex.Message}");
-    return 2;
+    try
+    {
+        output = ScannerFactory.CreateScanner(config).Scan(new ScanOptions(args[1]));
+    }
+    catch (AxeWindowsAutomationException ex)
+    {
+        Console.Error.WriteLine($"The scan failed: {ex.Message}");
+        return 2;
+    }
+    catch (Exception ex) when (attempt < Tries && IsElementGone(ex))
+    {
+        Console.WriteLine($"Try {attempt} of {Tries}: an element went away while the tree was read; scanning again.");
+        Thread.Sleep(TimeSpan.FromSeconds(1));
+    }
 }
 
 var all = output.WindowScanOutputs.SelectMany(w => w.Errors).ToList();
@@ -78,6 +90,11 @@ static bool IsFrameworkIssue(ScanResult error)
 // (#321): e.g. the queue panel's, which WinUI still takes down when the lyrics are scanned. Its errors, such
 // as a null BoundingRectangle, describe no element the app shows.
 static bool IsGone(ScanResult error) => Property(error.Element, "ControlType").Length == 0;
+
+// The crash of Axe.Windows' tree walk on an element that went away, alone or wrapped by its parallel query.
+static bool IsElementGone(Exception ex) =>
+    ex is NullReferenceException
+    || (ex is AggregateException aggregate && aggregate.Flatten().InnerExceptions.All(e => e is NullReferenceException));
 
 // Some elements come without properties.
 static string Property(ElementInfo element, string name) =>
