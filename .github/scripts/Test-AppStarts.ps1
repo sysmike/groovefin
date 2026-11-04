@@ -1829,8 +1829,8 @@ try {
     if ($settingsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Settings' 'Ctrl+, did not open Settings, or the title bar''s Settings button is not checked there.' }
     Write-Output 'Ctrl+, opened Settings from Albums; the title bar''s Settings button is unchecked on Albums and checked on Settings.'
 
-    # The Servers page from Settings, in the maximized window, is centred like Settings (#347).
-    Test-Centred 'settings' (Find-ById 'SettingsServersCard')
+    # The Servers page from Settings, in the maximized window, is centred like Settings (#347). The card
+    # may be scrolled out of view (Settings keeps its place): it is invoked, not measured.
     (Find-ById 'SettingsServersCard').GetCurrentPattern($invoke).Invoke()
     Test-Centred 'servers-from-settings' (Find-ById 'ServerList')
     Save-Screenshot 'servers'
