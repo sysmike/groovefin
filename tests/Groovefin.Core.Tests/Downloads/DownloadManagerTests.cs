@@ -125,7 +125,7 @@ public sealed class DownloadManagerTests : IDisposable
         await _sut.SyncAsync();
 
         Directory.Exists(_directory).Should().BeFalse();
-        await _library.DidNotReceiveWithAnyArgs().GetFavouriteTracksAsync(default, default);
+        await _library.DidNotReceiveWithAnyArgs().GetFavouriteTracksAsync(default, Ct);
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public sealed class DownloadManagerTests : IDisposable
 
         await _sut.SyncAsync();
 
-        await _library.DidNotReceiveWithAnyArgs().GetFavouriteTracksAsync(default, default);
+        await _library.DidNotReceiveWithAnyArgs().GetFavouriteTracksAsync(default, Ct);
         _source.Requests.Should().BeEmpty();
         _sut.Status.Stopped.Should().Be(DownloadStop.Offline);
     }
@@ -185,9 +185,9 @@ public sealed class DownloadManagerTests : IDisposable
     [Fact]
     public async Task An_unreachable_server_stops_the_sync_without_counting_a_failure()
     {
-        _source.Failures["a"] = new JellyfinException("Unreachable", null);
-        _source.Failures["b"] = new JellyfinException("Unreachable", null);
-        _source.Failures["c"] = new JellyfinException("Unreachable", null);
+        _source.Failures["a"] = new JellyfinException("Unreachable", (HttpStatusCode?)null);
+        _source.Failures["b"] = new JellyfinException("Unreachable", (HttpStatusCode?)null);
+        _source.Failures["c"] = new JellyfinException("Unreachable", (HttpStatusCode?)null);
 
         await _sut.SyncAsync();
 
