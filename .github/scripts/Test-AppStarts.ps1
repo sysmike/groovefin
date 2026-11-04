@@ -1851,6 +1851,27 @@ try {
     }
     Test-Centred 'servers-from-settings' $serverList
     Save-Screenshot 'servers'
+    # In the runner's screen (1024 px) the page area is narrower than the page's maximum width, so the content
+    # fills it. On a wide screen it does not: there the Servers page sat to the right (#347). Set-DisplayResolution
+    # is a Windows Server cmdlet; without it the wide check is skipped.
+    $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+    $wide = $false
+    if (Get-Command Set-DisplayResolution -ErrorAction SilentlyContinue) {
+        try { Set-DisplayResolution -Width 1920 -Height 1080 -Force; $wide = $true }
+        catch { Write-Output "::warning title=Wide screen::No wide screen for the Servers page: $($_.Exception.Message)" }
+    }
+    else { Write-Output '::warning title=Wide screen::No wide screen for the Servers page: Set-DisplayResolution is not available.' }
+    if ($wide) {
+        Start-Sleep -Seconds 2
+        $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized)
+        Start-Sleep -Seconds 1
+        Test-Centred 'servers-wide' $window.FindFirst($scope::Descendants, (& $byId 'ServerList'))
+        Save-Screenshot 'servers-wide'
+        Set-DisplayResolution -Width $screen.Width -Height $screen.Height -Force
+        Start-Sleep -Seconds 2
+        $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized)
+        Start-Sleep -Seconds 1
+    }
     Select-Navigation 'Albums'
     Start-Sleep -Seconds 1
 
