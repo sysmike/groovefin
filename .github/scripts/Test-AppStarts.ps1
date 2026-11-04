@@ -1831,7 +1831,15 @@ try {
 
     # The Servers page from Settings, in the maximized window, is centred like Settings (#347). The card
     # may be scrolled out of view (Settings keeps its place): it is invoked, not measured.
-    (Find-ById 'SettingsServersCard').GetCurrentPattern($invoke).Invoke()
+    # The card found first can be the one of a Settings page that is being taken down: try again.
+    $until = (Get-Date).AddSeconds(10)
+    while ($true) {
+        try { (Find-ById 'SettingsServersCard').GetCurrentPattern($invoke).Invoke(); break }
+        catch [System.Windows.Automation.ElementNotAvailableException] {
+            if ((Get-Date) -gt $until) { throw }
+            Start-Sleep -Milliseconds 500
+        }
+    }
     Test-Centred 'servers-from-settings' (Find-ById 'ServerList')
     Save-Screenshot 'servers'
     Select-Navigation 'Albums'
