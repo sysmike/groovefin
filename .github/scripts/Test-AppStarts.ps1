@@ -1829,36 +1829,27 @@ try {
     if ($settingsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Settings' 'Ctrl+, did not open Settings, or the title bar''s Settings button is not checked there.' }
     Write-Output 'Ctrl+, opened Settings from Albums; the title bar''s Settings button is unchecked on Albums and checked on Settings.'
 
-    # The Servers page from Settings, in the maximized window, is centred like Settings (#347). The card is
-    # clicked: UI Automation's Invoke on it failed with an invalid cast in the test. It is scrolled into view
-    # first (Settings keeps its place), and the card found first can be the one of a Settings page that is
-    # being taken down: then it is found again.
-    $until = (Get-Date).AddSeconds(15)
-    while ($true) {
-        try {
-            $card = Find-ById 'SettingsServersCard'
-            $settingsScroll = $null
-            for ($node = $walker.GetParent($card); $node -and -not $settingsScroll; $node = $walker.GetParent($node)) {
-                $pattern = $null
-                if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $pattern) -and $pattern.Current.VerticallyScrollable) { $settingsScroll = $pattern }
-            }
-            if ($settingsScroll) { $settingsScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 0) }
-            $windowBounds = $window.Current.BoundingRectangle
-            for ($i = 0; $i -lt 10 -and $settingsScroll; $i++) {
-                Start-Sleep -Milliseconds 300
-                $r = $card.Current.BoundingRectangle
-                if (-not $r.IsEmpty -and $r.Height -gt 0 -and $r.Bottom -lt $windowBounds.Bottom - 120) { break }
-                $settingsScroll.ScrollVertical([System.Windows.Automation.ScrollAmount]::SmallIncrement)
-            }
-            Send-Click $card
-            break
+    # The Servers page from Settings, in the maximized window, is centred like Settings (#347). UI Automation's
+    # Invoke on the card failed with an invalid cast, and the first card found can be a stale one without a
+    # place on screen: each card found gets the focus (which scrolls it into view) and Space, until the
+    # Servers page shows.
+    $byId = { param($id) [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, $id) }
+    $until = (Get-Date).AddSeconds(20)
+    $serverList = $null
+    while (-not $serverList) {
+        foreach ($card in $window.FindAll($scope::Descendants, (& $byId 'SettingsServersCard'))) {
+            try { $card.SetFocus(); [System.Windows.Forms.SendKeys]::SendWait(' ') }
+            catch { Write-Output "A Servers card could not take the focus: $($_.Exception.Message)" }
+            if ($serverList = $window.FindFirst($scope::Descendants, (& $byId 'ServerList'))) { break }
         }
-        catch [System.Windows.Automation.ElementNotAvailableException] {
-            if ((Get-Date) -gt $until) { throw }
-            Start-Sleep -Milliseconds 500
+        $wait = (Get-Date).AddSeconds(3)
+        while (-not $serverList -and (Get-Date) -lt $wait) {
+            Start-Sleep -Milliseconds 300
+            $serverList = $window.FindFirst($scope::Descendants, (& $byId 'ServerList'))
         }
+        if (-not $serverList -and (Get-Date) -gt $until) { Stop-Test 'Centred pages' 'The Servers card in Settings did not open the Servers page.' }
     }
-    Test-Centred 'servers-from-settings' (Find-ById 'ServerList')
+    Test-Centred 'servers-from-settings' $serverList
     Save-Screenshot 'servers'
     Select-Navigation 'Albums'
     Start-Sleep -Seconds 1
