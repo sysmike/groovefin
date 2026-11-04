@@ -250,8 +250,9 @@ public sealed class DownloadManagerTests : IDisposable
         _messenger.Send(new FavouriteChangedMessage("a", true));
         _time.Advance(DownloadManager.ChangeDelay);
 
+        // Until the sync has finished, after its last write: the files alone appear before the index is saved.
         var until = DateTime.UtcNow.AddSeconds(10);
-        while (Files().Length < 3 && DateTime.UtcNow < until)
+        while ((_sut.Status.Downloaded < 3 || _sut.Status.IsSyncing) && DateTime.UtcNow < until)
         {
             await Task.Delay(50, Ct);
         }
