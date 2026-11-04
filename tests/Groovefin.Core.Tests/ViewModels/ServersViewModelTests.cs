@@ -4,6 +4,7 @@ using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
+using NSubstitute.ReturnsExtensions;
 
 namespace Groovefin.Core.Tests.ViewModels;
 
@@ -156,7 +157,7 @@ public sealed class ServersViewModelTests
     [Fact]
     public async Task Cancelled_edit_does_nothing()
     {
-        _dialogs.PromptAsync(default!, default!, default!, default!, default!).ReturnsForAnyArgs((string?)null);
+        _dialogs.PromptAsync(default!, default!, default!, default!, default!).ReturnsNullForAnyArgs();
         using var sut = CreateSut();
 
         await sut.EditAddressCommand.ExecuteAsync(sut.Servers[0]);

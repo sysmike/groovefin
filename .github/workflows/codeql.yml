@@ -58,3 +58,17 @@ jobs:
         uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           category: /language:csharp
+          # Uploaded below, without the results in generated code.
+          upload: never
+          output: ${{ runner.temp }}/codeql
+
+      - name: Leave out generated code
+        # Source generators and the XAML compiler write code to obj\ that Groovefin cannot change (#343).
+        shell: pwsh
+        run: ./.github/scripts/Remove-GeneratedResults.ps1 -Path "${{ runner.temp }}\codeql"
+
+      - name: Upload results
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          sarif_file: ${{ runner.temp }}/codeql
+          category: /language:csharp

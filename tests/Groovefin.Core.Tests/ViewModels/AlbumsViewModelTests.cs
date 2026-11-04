@@ -142,7 +142,7 @@ public sealed class AlbumsViewModelTests
         sut.ClearFiltersCommand.Execute(null);
 
         sut.HasFilters.Should().BeFalse();
-        _queries[^1].Should().BeEquivalentTo(new { GenreIds = Array.Empty<string>(), MinYear = (int?)null, MaxYear = (int?)null, FavouritesOnly = false });
+        _queries[^1].Should().BeEquivalentTo(new { GenreIds = Array.Empty<string>(), MinYear = default(int?), MaxYear = default(int?), FavouritesOnly = false });
     }
 
     [Fact]
