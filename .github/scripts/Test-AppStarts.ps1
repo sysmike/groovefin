@@ -159,6 +159,9 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
 try {
     # The start-up error file then lists every exception thrown, also the ones XAML wraps in its own.
     $env:GROOVEFIN_TRACE_EXCEPTIONS = '1'
+    # A XAML error from native code, such as the random "Unspecified error", ends the app instead of being
+    # reported, so CI's crash dump keeps where it came from (#329, Crash-Dumps.ps1).
+    $env:GROOVEFIN_CRASH_ON_XAML_ERROR = '1'
     $process = Start-Process -FilePath $Path -PassThru
     # Keeps the process handle open, so ExitCode is still known after the process has exited.
     $null = $process.Handle
