@@ -279,6 +279,11 @@ internal sealed partial class MainWindow : Window
         // The full-screen player covers the title bar, but its row kept the height and pushed the queue and
         // lyrics panes down: in full screen it is collapsed. Also when Windows' own controls left full screen.
         AppTitleBar.Visibility = wanted == WindowMode.FullScreen ? Visibility.Collapsed : Visibility.Visible;
+
+        // The mini player covers the navigation view, which would otherwise shrink with the small window and
+        // change its display mode there: WinUI then sometimes fails inside NavigationView.OnSizeChanged with
+        // "Unspecified error" (#341). Collapsed, it sees no size change; back in the full window it is as it was.
+        NavView.Visibility = wanted == WindowMode.MiniPlayer ? Visibility.Collapsed : Visibility.Visible;
         var current = CurrentMode;
         if (wanted == current)
         {
