@@ -17,7 +17,7 @@ public sealed class DiskImageCacheTests : IDisposable
     {
         _source.ServerKey.Returns("server-1");
         _source.OpenAsync(Arg.Any<ImageRequest>(), Arg.Any<CancellationToken>())
-            .Returns(call => Task.FromResult<Stream>(new MemoryStream(Bytes(100))));
+            .Returns(call => Task.FromResult(Image(100)));
     }
 
     public void Dispose()
@@ -32,6 +32,9 @@ public sealed class DiskImageCacheTests : IDisposable
         new(new ImageCacheOptions(_directory, () => _maxBytes), _source, _time, NullLogger<DiskImageCache>.Instance);
 
     private static byte[] Bytes(int count) => Enumerable.Repeat((byte)7, count).ToArray();
+
+    /// <summary>A downloaded image of <paramref name="count"/> bytes; the cache disposes it.</summary>
+    private static Stream Image(int count) => new MemoryStream(Bytes(count));
 
     private static ImageRequest Request(string id, int width = 256) => new(id, ImageKind.Primary, "tag", width);
 
@@ -119,7 +122,7 @@ public sealed class DiskImageCacheTests : IDisposable
         var sut = CreateSut();
 
         var tasks = Enumerable.Range(0, 5).Select(_ => sut.GetAsync(Request("a"), Ct)).ToList();
-        gate.SetResult(new MemoryStream(Bytes(10)));
+        gate.SetResult(Image(10));
         var paths = await Task.WhenAll(tasks);
 
         paths.Distinct().Should().ContainSingle().Which.Should().NotBeNull();
@@ -132,7 +135,7 @@ public sealed class DiskImageCacheTests : IDisposable
         _source.OpenAsync(Arg.Any<ImageRequest>(), Arg.Any<CancellationToken>())
             .Returns(
                 _ => Task.FromException<Stream>(new JellyfinException("offline", statusCode: null)),
-                _ => Task.FromResult<Stream>(new MemoryStream(Bytes(10))));
+                _ => Task.FromResult(Image(10)));
         var sut = CreateSut();
 
         (await sut.GetAsync(Request("a"), Ct)).Should().BeNull();
@@ -142,7 +145,7 @@ public sealed class DiskImageCacheTests : IDisposable
     [Fact]
     public async Task Not_connected_returns_null_without_downloading()
     {
-        _source.ServerKey.Returns((string?)null);
+        _source.ServerKey.ReturnsNull();
         var sut = CreateSut();
 
         (await sut.GetAsync(Request("a"), Ct)).Should().BeNull();

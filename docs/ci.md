@@ -75,7 +75,9 @@ Triggers: `pull_request`, `push` to `main`, weekly (Monday 03:27 UTC), manual.
 
 CodeQL analyses C# with the `security-and-quality` query suite. It uses `build-mode: manual` and
 traces a Release x64 build of the full solution on the Windows runner, so the WinUI project is
-analysed too. Results appear under Security → Code scanning. A PR must not add new alerts.
+analysed too. Before the upload, `.github/scripts/Remove-GeneratedResults.ps1` removes the results located in
+`obj/`: code from source generators and the XAML compiler, which Groovefin cannot change (#343). Results appear
+under Security → Code scanning. A PR must not add new alerts.
 
 The job needs `security-events: write` to upload results; everything else is read-only.
 

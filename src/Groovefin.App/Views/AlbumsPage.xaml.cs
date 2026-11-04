@@ -161,12 +161,9 @@ internal sealed partial class AlbumsPage : Page
     {
         var wasSyncing = _syncingControls;
         _syncingControls = true;
-        foreach (var genre in ViewModel.Genres.OfType<Genre>())
+        foreach (var genre in ViewModel.Genres.OfType<Genre>().Where(g => !GenreBox.Items.Cast<ComboBoxItem>().Any(i => Equals(i.Tag, g))))
         {
-            if (!GenreBox.Items.Cast<ComboBoxItem>().Any(i => Equals(i.Tag, genre)))
-            {
-                GenreBox.Items.Add(new ComboBoxItem { Content = genre.Name, Tag = genre });
-            }
+            GenreBox.Items.Add(new ComboBoxItem { Content = genre.Name, Tag = genre });
         }
 
         GenreBox.SelectedItem = GenreBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => Equals(i.Tag, ViewModel.Genre));

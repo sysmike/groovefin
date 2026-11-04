@@ -219,9 +219,8 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         var files = new Dictionary<string, TrackFile>(StringComparer.Ordinal);
 
         // A hundred IDs keep the URL short; only the media sources, without images or user data.
-        foreach (var chunk in trackIds.Chunk(TrackFilePageSize))
+        foreach (var ids in trackIds.Chunk(TrackFilePageSize).Select(chunk => chunk.Select(id => (Guid?)ParseId(id)).ToArray()))
         {
-            Guid?[] ids = [.. chunk.Select(id => (Guid?)ParseId(id))];
             var result = await JellyfinCall.RunAsync(
                 () => api.Items.GetAsync(
                     request =>

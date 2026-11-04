@@ -20,13 +20,13 @@ internal static class AppPaths
     /// </summary>
     public static string LocalData { get; } = ResolveLocalData();
 
-    public static string Logs => Path.Combine(LocalData, "Logs");
+    public static string Logs => Path.Join(LocalData, "Logs");
 
     private static string ResolveLocalData()
     {
         var path = IsPackaged
             ? ApplicationData.Current.LocalFolder.Path
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Groovefin");
+            : Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Groovefin");
         Directory.CreateDirectory(path);
         return path;
     }
