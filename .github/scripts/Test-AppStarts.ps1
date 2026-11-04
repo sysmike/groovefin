@@ -257,6 +257,24 @@ try {
         Find-Element $condition "button '$name'"
     }
 
+    # A page's content is centred in the page area (#347): as far from its left edge as from its right, and
+    # whole inside the window. The Servers page was once laid out wider than its area, so its content sat
+    # to the right and ran past the window edge.
+    function Test-Centred([string] $page, [System.Windows.Automation.AutomationElement] $content) {
+        # After the page's entrance animation.
+        Start-Sleep -Seconds 1
+        $area = Get-Bounds (Find-ById 'MainContent')
+        $windowBounds = $window.Current.BoundingRectangle
+        $r = Get-Bounds $content
+        $left = $r.Left - $area.Left
+        $right = $area.Right - $r.Right
+        Write-Output ("{0}: the page area spans {1:0} to {2:0} (window {3:0} to {4:0}), the content {5:0} to {6:0}: {7:0} px on the left, {8:0} px on the right." -f $page, $area.Left, $area.Right, $windowBounds.Left, $windowBounds.Right, $r.Left, $r.Right, $left, $right)
+        if ([Math]::Abs($left - $right) -gt 2 -or $r.Right -gt $windowBounds.Right + 1) {
+            Save-Screenshot "not-centred-$page"
+            Stop-Test 'Centred pages' ("The {0} page is not centred: {1:0} px from the left of the page area, {2:0} px from the right." -f $page, $left, $right)
+        }
+    }
+
     # The tiles of a grid fill its rows (#232): they grow until whole columns reach the right margin, so the
     # gap on the right is as wide as on the left (36 px each, the list's padding). The row need not be full:
     # the width of one tile and the spacing give the columns.
@@ -1810,6 +1828,14 @@ try {
     Start-Sleep -Seconds 1
     if ($settingsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Settings' 'Ctrl+, did not open Settings, or the title bar''s Settings button is not checked there.' }
     Write-Output 'Ctrl+, opened Settings from Albums; the title bar''s Settings button is unchecked on Albums and checked on Settings.'
+
+    # The Servers page from Settings, in the maximized window, is centred like Settings (#347).
+    Test-Centred 'settings' (Find-ById 'SettingsServersCard')
+    (Find-ById 'SettingsServersCard').GetCurrentPattern($invoke).Invoke()
+    Test-Centred 'servers-from-settings' (Find-ById 'ServerList')
+    Save-Screenshot 'servers'
+    Select-Navigation 'Albums'
+    Start-Sleep -Seconds 1
 
     # Minimum size (#241): shrunk far below it, the window's client area stops at 860x600, and with the queue
     # open every button of the title bar, the now playing bar and the queue is whole inside the window; the

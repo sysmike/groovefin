@@ -153,6 +153,7 @@
             </controls:SettingsCard>
             <controls:SettingsCard
                 x:Uid="SettingsServersCard"
+                AutomationProperties.AutomationId="SettingsServersCard"
                 Command="{x:Bind ViewModel.ManageServersCommand}"
                 HeaderIcon="{ui:FontIcon Glyph=&#xE968;}"
                 IsClickEnabled="True" />

@@ -65,6 +65,7 @@
 
             <ListView
                 x:Uid="ServerList"
+                AutomationProperties.AutomationId="ServerList"
                 ItemsSource="{x:Bind ViewModel.Servers}"
                 SelectionMode="None">
                 <ListView.ItemTemplate>
