@@ -11,9 +11,9 @@ namespace Groovefin.Core.Downloads;
 public sealed class OfflinePlaylistService(IPlaylistService server, OfflineAnswers answers) : IPlaylistService
 {
     public Task<IReadOnlyList<Playlist>> GetPlaylistsAsync(CancellationToken cancellationToken = default) =>
-        answers.AskAsync(
+        answers.AskAsync<IReadOnlyList<Playlist>>(
             () => server.GetPlaylistsAsync(cancellationToken),
-            index => (IReadOnlyList<Playlist>)[.. index.Playlists.Select(p => Downloaded(index, p)).OfType<Playlist>()],
+            index => [.. index.Playlists.Select(p => Downloaded(index, p)).OfType<Playlist>()],
             cancellationToken);
 
     public Task<Playlist> GetPlaylistAsync(string playlistId, CancellationToken cancellationToken = default) =>
@@ -24,10 +24,10 @@ public sealed class OfflinePlaylistService(IPlaylistService server, OfflineAnswe
 
     /// <summary>Offline, the entries have made-up IDs: the server's are not kept, and editing needs the server anyway.</summary>
     public Task<IReadOnlyList<PlaylistEntry>> GetEntriesAsync(string playlistId, CancellationToken cancellationToken = default) =>
-        answers.AskAsync(
+        answers.AskAsync<IReadOnlyList<PlaylistEntry>>(
             () => server.GetEntriesAsync(playlistId, cancellationToken),
             index => index.Playlists.FirstOrDefault(p => p.Playlist.Id == playlistId) is { } playlist
-                ? (IReadOnlyList<PlaylistEntry>)[.. playlist.TrackIds
+                ? [.. playlist.TrackIds
                     .Where(index.Tracks.ContainsKey)
                     .Select((id, i) => new PlaylistEntry($"offline-{i}", index.Tracks[id].Track))]
                 : null,

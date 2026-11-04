@@ -38,9 +38,9 @@ public sealed class OfflineLibraryService(ILibraryService server, OfflineAnswers
         server.SetFavouriteAsync(itemId, isFavourite, cancellationToken);
 
     public Task<IReadOnlyList<Track>> GetFavouriteTracksAsync(int limit, CancellationToken cancellationToken = default) =>
-        answers.AskAsync(
+        answers.AskAsync<IReadOnlyList<Track>>(
             () => server.GetFavouriteTracksAsync(limit, cancellationToken),
-            index => (IReadOnlyList<Track>)[.. OfflineAnswers.Downloaded(index, index.FavouriteSongs).Take(limit)],
+            index => [.. OfflineAnswers.Downloaded(index, index.FavouriteSongs).Take(limit)],
             cancellationToken);
 
     public Task<IReadOnlyList<Track>> GetInstantMixAsync(string itemId, int limit, CancellationToken cancellationToken = default) =>
@@ -83,19 +83,19 @@ public sealed class OfflineLibraryService(ILibraryService server, OfflineAnswers
             cancellationToken);
 
     public Task<IReadOnlyList<Track>> GetArtistTopTracksAsync(string artistId, int limit, CancellationToken cancellationToken = default) =>
-        answers.AskAsync(
+        answers.AskAsync<IReadOnlyList<Track>>(
             () => server.GetArtistTopTracksAsync(artistId, limit, cancellationToken),
-            index => (IReadOnlyList<Track>)[.. SongsOf(index, artistId).OrderByDescending(t => t.PlayCount).Take(limit)],
+            index => [.. SongsOf(index, artistId).OrderByDescending(t => t.PlayCount).Take(limit)],
             cancellationToken);
 
     public Task<IReadOnlyList<Track>> GetArtistTracksAsync(string artistId, CancellationToken cancellationToken = default) =>
-        answers.AskAsync(
+        answers.AskAsync<IReadOnlyList<Track>>(
             () => server.GetArtistTracksAsync(artistId, cancellationToken),
-            index => (IReadOnlyList<Track>)[.. SongsOf(index, artistId)],
+            index => [.. SongsOf(index, artistId)],
             cancellationToken);
 
     public Task<IReadOnlyList<Artist>> GetSimilarArtistsAsync(string artistId, int limit, CancellationToken cancellationToken = default) =>
-        answers.AskAsync(() => server.GetSimilarArtistsAsync(artistId, limit, cancellationToken), _ => (IReadOnlyList<Artist>)[], cancellationToken);
+        answers.AskAsync<IReadOnlyList<Artist>>(() => server.GetSimilarArtistsAsync(artistId, limit, cancellationToken), _ => [], cancellationToken);
 
     public Task<IReadOnlyList<Genre>> GetAlbumGenresAsync(CancellationToken cancellationToken = default) =>
         server.GetAlbumGenresAsync(cancellationToken);
