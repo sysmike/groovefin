@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
 using System.ComponentModel;
-using System.Security.Cryptography;
-using System.Text;
 using Groovefin.Core.Api;
 using Groovefin.Core.Models;
 using Groovefin.Core.Playback;
@@ -205,16 +203,7 @@ public sealed partial class PlayHistory : IDisposable
     }
 
     /// <summary>A file name for the signed-in user on the server: their ID and a hash of the server's address.</summary>
-    private string? CurrentKey()
-    {
-        if (_client.Connection is not { } connection)
-        {
-            return null;
-        }
-
-        var server = SHA256.HashData(Encoding.UTF8.GetBytes(connection.ServerUrl.AbsoluteUri.ToUpperInvariant()));
-        return $"{connection.UserId}-{Convert.ToHexStringLower(server, 0, 8)}";
-    }
+    private string? CurrentKey() => _client.Connection?.UserDataKey;
 
     /// <summary>The tracks played since <paramref name="since"/>, newest first, from as many pages as that takes.</summary>
     private async Task<IReadOnlyList<Track>> ReadPlayedSinceAsync(DateTimeOffset since)

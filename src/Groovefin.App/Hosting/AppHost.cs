@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.App.Services;
 using Groovefin.Core;
 using Groovefin.Core.Discord;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Equalizer;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.History;
@@ -107,6 +108,12 @@ internal static class AppHost
         builder.Services.AddSingleton(new PlayHistoryStoreOptions(Path.Join(AppPaths.LocalData, "history")));
         builder.Services.AddSingleton<IPlayHistoryStore, JsonPlayHistoryStore>();
         builder.Services.AddSingleton<PlayHistory>();
+        // Offline downloads (#327): a folder per server and user, with its index.
+        builder.Services.AddSingleton(new DownloadStoreOptions(Path.Join(AppPaths.LocalData, "Downloads")));
+        builder.Services.AddSingleton<IDownloadStore, JsonDownloadStore>();
+        builder.Services.AddSingleton<NetworkStatus>();
+        builder.Services.AddSingleton<INetworkStatus>(sp => sp.GetRequiredService<NetworkStatus>());
+        builder.Services.AddSingleton<DownloadManager>();
         builder.Services.AddSingleton<ISystemMediaControls, SystemMediaControls>();
         builder.Services.AddSingleton<SystemMediaControlsSync>();
         builder.Services.AddSingleton(new SessionStoreOptions(Path.Join(AppPaths.LocalData, "session.json")));

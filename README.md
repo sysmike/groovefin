@@ -24,6 +24,8 @@ WinUI 3.
 - A queue panel with drag and drop, shuffle and repeat.
 - Synced lyrics that follow the song (LRC), with click-to-seek and an offset.
 - Resume where you left off: the queue and position come back after a restart.
+- Downloads of your favourite songs and all playlists, kept in sync on their own, as the original files or
+  AAC (Settings → Downloads). Playing them without the server follows (#58).
 
 **Windows integration**
 - Media keys and the Windows media flyout.

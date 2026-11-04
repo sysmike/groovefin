@@ -121,6 +121,9 @@ flowchart TD
 | `ISystemMediaControls` | Core | Playback.Windows | Media keys and the Windows media flyout (SMTC of the engine's `MediaPlayer`, its command manager off). `SystemMediaControlsSync` (Core) shows the playing track, status and timeline and sends the buttons to `IPlayer`. |
 | `IAudioEqualizer` | Core | Playback.Windows | The equalizer in the audio path: whether the effect could be added, and its parameters. `EqualizerSync` (Core) passes the settings on. |
 | `IStreamUrlProvider` | Core | Jellyfin | `/Audio/{id}/universal` URLs (direct play or transcode, bitrate limit). |
+| `IDownloadSource` | Core | Jellyfin | A song's file for offline downloads (#327): the original (`/Audio/{id}/stream?static=true`, else `/Items/{id}/Download`), resumed with `Range`, or AAC at a bitrate. Its own HTTP client without the 45-second limit. |
+| `DownloadManager` | Core | — (concrete) | Keeps the collections that are on in Settings → Downloads on disk: reads the wanted songs, downloads the missing ones (two at a time, to `.part` files), deletes the unneeded ones. A song whose file changed on the server (container and size, `ILibraryService.GetFileVersionsAsync`) downloads again. A folder per server and user with its index (`IDownloadStore`, `downloads.json`); the folders of a server no longer in the list are deleted. |
+| `INetworkStatus` | Core | App | Online and metered, from Windows' connection profiles. |
 | `INavigationService` | Core | App | Navigate by ViewModel type + parameter, back stack. |
 | `IDialogService` | Core | App | Content dialogs, confirmations, pickers. |
 | `IThemeService` | Core | App | Light / dark / system theme, density. |

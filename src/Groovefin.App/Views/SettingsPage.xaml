@@ -216,6 +216,54 @@
                 </controls:SettingsExpander.Items>
             </controls:SettingsExpander>
 
+            <!--
+                Downloads (#327): the collections kept offline, kept in sync on their own. The expander shows what
+                is on disk; its header row what happens now, or why nothing does.
+            -->
+            <TextBlock
+                x:Uid="SettingsDownloadsHeader"
+                AutomationProperties.HeadingLevel="Level2"
+                Style="{StaticResource SettingsSectionHeaderStyle}" />
+            <controls:SettingsExpander
+                x:Uid="SettingsDownloadsCard"
+                Description="{x:Bind Downloads.StatusText, Mode=OneWay}"
+                HeaderIcon="{ui:FontIcon Glyph=&#xE896;}"
+                IsExpanded="True">
+                <Button x:Uid="SettingsDownloadSyncButton" Command="{x:Bind Downloads.SyncNowCommand}" />
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard Header="{x:Bind Downloads.ActivityText, Mode=OneWay}" Visibility="{x:Bind Downloads.HasActivity, Mode=OneWay}" />
+                    <controls:SettingsCard x:Uid="SettingsDownloadFavouritesCard">
+                        <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteSongs, Mode=TwoWay}" />
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsDownloadPlaylistsCard">
+                        <ToggleSwitch AutomationProperties.AutomationId="DownloadPlaylistsSwitch" IsOn="{x:Bind Downloads.Playlists, Mode=TwoWay}" />
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsDownloadFormatCard">
+                        <ComboBox
+                            MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                            ItemsSource="{x:Bind Downloads.FormatOptions}"
+                            SelectedIndex="{x:Bind Downloads.FormatIndex, Mode=TwoWay}" />
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsDownloadMeteredCard">
+                        <ToggleSwitch IsOn="{x:Bind Downloads.AllowMetered, Mode=TwoWay}" />
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsDownloadFailuresCard" Visibility="{x:Bind Downloads.HasFailures, Mode=OneWay}">
+                        <controls:SettingsCard.Description>
+                            <ItemsControl ItemsSource="{x:Bind Downloads.Failures}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Text="{x:Bind}" TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </controls:SettingsCard.Description>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="SettingsDownloadRemoveCard">
+                        <Button x:Uid="SettingsDownloadRemoveButton" Command="{x:Bind Downloads.RemoveAllCommand}" />
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
+
             <!--  Playback  -->
             <TextBlock
                 x:Uid="SettingsPlaybackHeader"

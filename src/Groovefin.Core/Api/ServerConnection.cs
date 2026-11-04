@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+
 namespace Groovefin.Core.Api;
 
 /// <summary>An authenticated connection to a server: where it is, who is logged in, and the access token.</summary>
@@ -9,6 +12,20 @@ public sealed record ServerConnection(Uri ServerUrl, string UserId, string Acces
     /// libraries.
     /// </summary>
     public string? LibraryId { get; init; }
+
+    /// <summary>
+    /// Gets a file name for what Groovefin keeps of this user on this server: the play history (#251) and the
+    /// downloads (#327). The user ID and a hash of the server's address, so it reveals neither.
+    /// </summary>
+    public string UserDataKey => $"{UserId}-{ServerKeyOf(ServerUrl)}";
+
+    /// <summary>Gets the part of <see cref="UserDataKey"/> that names the server: a hash of its address.</summary>
+    public static string ServerKeyOf(Uri serverUrl)
+    {
+        ArgumentNullException.ThrowIfNull(serverUrl);
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(serverUrl.AbsoluteUri.ToUpperInvariant()));
+        return Convert.ToHexStringLower(hash, 0, 8);
+    }
 
     public override string ToString() => $"{ServerUrl} (user {UserId})";
 }

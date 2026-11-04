@@ -17,6 +17,7 @@ internal sealed partial class SettingsPage : Page
         ViewModel = App.Services.GetRequiredService<SettingsViewModel>();
         Equalizer = App.CreateViewModel<EqualizerViewModel>();
         Shortcuts = App.CreateViewModel<ShortcutsViewModel>();
+        Downloads = App.CreateViewModel<DownloadsViewModel>();
         InitializeComponent();
         Loaded += OnFirstLoaded;
         Loaded += OnLoaded;
@@ -28,11 +29,14 @@ internal sealed partial class SettingsPage : Page
 
     public ShortcutsViewModel Shortcuts { get; }
 
+    public DownloadsViewModel Downloads { get; }
+
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
         Equalizer.Dispose();
         Shortcuts.Dispose();
+        Downloads.Dispose();
     }
 
     /// <summary>Change on a shortcut: its Tag is the shortcut (<c>Tag="{x:Bind}"</c>, #172).</summary>
@@ -50,6 +54,10 @@ internal sealed partial class SettingsPage : Page
         await ViewModel.LoadLibrariesAsync();
     }
 
-    // The cache grows while browsing, so it is measured on every visit.
-    private async void OnLoaded(object sender, RoutedEventArgs e) => await ViewModel.RefreshCacheSizeAsync();
+    // The cache grows while browsing, so it is measured on every visit; the downloads show what is on disk.
+    private async void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.RefreshCacheSizeAsync();
+        await Downloads.LoadAsync();
+    }
 }
