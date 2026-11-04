@@ -1549,7 +1549,22 @@ try {
     # Downloads (#327): turning on Playlists downloads the playlist's two songs, as the original files, into the
     # user's folder with its index; turning it off again deletes them. Each change syncs a few seconds later.
     $downloads = Join-Path $data 'Downloads'
+    # The expander makes its cards only once they are near the screen: scroll it into view first.
+    # Its header text is named like the expander: try each, and their parents, until one scrolls.
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Offline downloads')) 'Downloads settings'
+    $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+    $scroll = $null
+    $scrolled = $false
+    foreach ($named in @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Offline downloads')))) {
+        for ($e = $named; $e -and -not $scrolled; $e = $walker.GetParent($e)) {
+            if ($e.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView(); $scrolled = $true }
+        }
+        if ($scrolled) { break }
+    }
+    Start-Sleep -Milliseconds 500
     $playlistsSwitch = Find-ById 'DownloadPlaylistsSwitch'
+    $scroll = $null
+    if ($playlistsSwitch.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
     $playlistsSwitch.GetCurrentPattern($toggle).Toggle()
     $until = (Get-Date).AddSeconds(30)
     while (@(Get-ChildItem $downloads -Recurse -Filter '*.wav' -ErrorAction SilentlyContinue).Count -lt 2 -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
