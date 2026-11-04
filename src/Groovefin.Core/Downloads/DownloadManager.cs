@@ -743,14 +743,8 @@ public sealed partial class DownloadManager : IDisposable
             }
         }
 
-        DownloadStatus status;
-        if (!loaded)
-        {
-            status = DownloadStatus.Empty with { IsSyncing = _syncing, Stopped = stopped };
-        }
-        else
-        {
-            status = new DownloadStatus
+        var status = loaded
+            ? new DownloadStatus
             {
                 IsSyncing = _syncing,
                 Wanted = wanted,
@@ -759,8 +753,8 @@ public sealed partial class DownloadManager : IDisposable
                 Current = _current.Values.FirstOrDefault(),
                 Failures = [.. _failures.Values.OrderBy(f => f.TrackName, StringComparer.CurrentCulture)],
                 Stopped = stopped,
-            };
-        }
+            }
+            : DownloadStatus.Empty with { IsSyncing = _syncing, Stopped = stopped };
 
         lock (_gate)
         {
