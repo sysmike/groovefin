@@ -1,4 +1,5 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Images;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
@@ -25,6 +26,10 @@ public static class ServiceCollectionExtensions
                 configureResilience?.Invoke(options);
             });
 
+        // Downloads (#327): a song can take longer than the pipeline's 45 seconds, and the download manager
+        // retries failed songs itself.
+        services.AddHttpClient(JellyfinDownloadSource.HttpClientName, http => http.Timeout = Timeout.InfiniteTimeSpan);
+
         services.AddSingleton<JellyfinApiFactory>();
         services.AddSingleton<JellyfinClient>();
         services.AddSingleton<IJellyfinClient>(sp => sp.GetRequiredService<JellyfinClient>());
@@ -32,6 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         services.AddSingleton<IImageSource, JellyfinImageSource>();
         services.AddSingleton<IStreamUrlProvider, StreamUrlBuilder>();
+        services.AddSingleton<IDownloadSource, JellyfinDownloadSource>();
         services.AddSingleton<IPlaybackReporter, PlaybackReporter>();
         services.AddSingleton<IPlaylistService, PlaylistService>();
         services.AddSingleton<ISearchService, SearchService>();

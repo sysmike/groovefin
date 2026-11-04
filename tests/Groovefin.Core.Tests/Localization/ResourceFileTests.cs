@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Equalizer;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
@@ -102,6 +103,7 @@ public sealed partial class ResourceFileTests
             .. PageKeys.MainSections.Select(k => $"StartPage_{k}"),
             .. Enum.GetValues<EqualizerPreset>().Select(p => $"EqualizerPreset_{p}"),
             .. Enum.GetValues<PersonRole>().Select(r => $"InfoRole_{r}"),
+            .. Enum.GetValues<DownloadStop>().Where(s => s != DownloadStop.None).Select(s => $"Downloads_Stop{s}"),
         ];
 
         built.Where(k => !English.ContainsKey(k)).Should().BeEmpty();

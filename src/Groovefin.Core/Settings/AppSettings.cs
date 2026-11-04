@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.Json.Serialization;
 using Groovefin.Core.Api;
 using Groovefin.Core.Equalizer;
 using Groovefin.Core.Navigation;
@@ -37,6 +38,8 @@ public sealed record AppSettings
     public PlaybackSettings Playback { get; set; } = new();
 
     public LyricsSettings Lyrics { get; set; } = new();
+
+    public DownloadSettings Downloads { get; set; } = new();
 
     /// <summary>Gets or sets the main window's placement from the last run (#272), or <see langword="null"/> before the first.</summary>
     public WindowSettings? Window { get; set; }
@@ -260,6 +263,36 @@ public sealed record PlaybackSettings
 
     /// <summary>Gets or sets a value indicating whether the sound was muted when the user left (#257).</summary>
     public bool IsMuted { get; set; }
+}
+
+/// <summary>The format downloaded songs are saved in (#327).</summary>
+public enum DownloadFormatKind
+{
+    /// <summary>The file as stored on the server.</summary>
+    Original,
+
+    /// <summary>AAC at <see cref="DownloadSettings.AacBitrateKbps"/>; a file already within it stays as it is.</summary>
+    Aac,
+}
+
+/// <summary>What is downloaded for offline playback, and how (#58, #327). Everything is off by default.</summary>
+public sealed record DownloadSettings
+{
+    public bool FavouriteSongs { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether all the user's playlists are downloaded.</summary>
+    public bool Playlists { get; set; }
+
+    public DownloadFormatKind Format { get; set; } = DownloadFormatKind.Original;
+
+    public int AacBitrateKbps { get; set; } = 256;
+
+    /// <summary>Gets or sets a value indicating whether songs download on a metered connection too.</summary>
+    public bool AllowMetered { get; set; }
+
+    /// <summary>Gets a value indicating whether any collection is downloaded.</summary>
+    [JsonIgnore]
+    public bool AnyCollection => FavouriteSongs || Playlists;
 }
 
 /// <summary>How lines are aligned in the lyrics pane.</summary>

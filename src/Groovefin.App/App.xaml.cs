@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Groovefin.App.Hosting;
 using Groovefin.Core;
 using Groovefin.Core.Discord;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Equalizer;
 using Groovefin.Core.History;
 using Groovefin.Core.Notifications;
@@ -128,6 +129,9 @@ public partial class App : Application
 
         // Lives as long as the app: media keys and the Windows media flyout.
         _host.Services.GetRequiredService<SystemMediaControlsSync>();
+
+        // Lives as long as the app: keeps the collections that are on in Settings → Downloads on disk (#327).
+        _host.Services.GetRequiredService<DownloadManager>();
 
         // Lives as long as the app: the taskbar thumbnail buttons and progress (needs the shown window).
         _host.Services.GetRequiredService<TaskbarSync>();

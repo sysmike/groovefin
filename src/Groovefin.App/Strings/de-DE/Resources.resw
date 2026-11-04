@@ -2280,4 +2280,115 @@
   <data name="Operation_LoadOnRepeat" xml:space="preserve">
     <value>„Auf Dauerschleife“ konnte nicht geladen werden</value>
   </data>
+  <data name="Downloads_FormatOriginal" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="Downloads_FormatAac" xml:space="preserve">
+    <value>AAC {0} kbit/s</value>
+    <comment>{0} = bitrate</comment>
+  </data>
+  <data name="Downloads_Status" xml:space="preserve">
+    <value>{0} von {1} Titeln heruntergeladen · {2}</value>
+    <comment>{0} = downloaded songs, {1} = wanted songs, {2} = size on disk</comment>
+  </data>
+  <data name="Downloads_StatusNone" xml:space="preserve">
+    <value>Nichts heruntergeladen</value>
+  </data>
+  <data name="Downloads_Current" xml:space="preserve">
+    <value>„{0}“ wird heruntergeladen</value>
+    <comment>{0} = song</comment>
+  </data>
+  <data name="Downloads_Checking" xml:space="preserve">
+    <value>Prüft, was heruntergeladen werden muss …</value>
+  </data>
+  <data name="Downloads_StopNotSignedIn" xml:space="preserve">
+    <value>Melde dich an, um Titel herunterzuladen.</value>
+  </data>
+  <data name="Downloads_StopOffline" xml:space="preserve">
+    <value>Wartet auf eine Netzwerkverbindung.</value>
+  </data>
+  <data name="Downloads_StopUnreachable" xml:space="preserve">
+    <value>Wartet: Der Server ist nicht erreichbar.</value>
+  </data>
+  <data name="Downloads_StopMetered" xml:space="preserve">
+    <value>Wartet: Downloads über getaktete Verbindungen sind aus.</value>
+  </data>
+  <data name="Downloads_StopLowDisk" xml:space="preserve">
+    <value>Angehalten: Auf dem Laufwerk ist weniger als 1 GB frei.</value>
+  </data>
+  <data name="Downloads_StopLoadFailed" xml:space="preserve">
+    <value>Der Server hat die Titel zum Herunterladen nicht geliefert. „Jetzt synchronisieren“ versucht es erneut.</value>
+  </data>
+  <data name="Downloads_Failure" xml:space="preserve">
+    <value>{0} fehlgeschlagen: {1}</value>
+    <comment>{0} = song, {1} = reason, e.g. HTTP 403</comment>
+  </data>
+  <data name="Downloads_FailureGivenUp" xml:space="preserve">
+    <value>{0} ist 3-mal fehlgeschlagen: {1}. „Jetzt synchronisieren“ versucht es erneut.</value>
+    <comment>{0} = song, {1} = reason, e.g. HTTP 403</comment>
+  </data>
+  <data name="Downloads_MeteredTitle" xml:space="preserve">
+    <value>Über eine getaktete Verbindung herunterladen?</value>
+  </data>
+  <data name="Downloads_MeteredMessage" xml:space="preserve">
+    <value>Diese Verbindung ist getaktet, und Downloads darüber sind aus. Die fehlenden Titel diesmal trotzdem herunterladen?</value>
+  </data>
+  <data name="Downloads_MeteredConfirm" xml:space="preserve">
+    <value>Herunterladen</value>
+  </data>
+  <data name="Downloads_RemoveTitle" xml:space="preserve">
+    <value>Alle Downloads entfernen?</value>
+  </data>
+  <data name="Downloads_RemoveMessage" xml:space="preserve">
+    <value>Die heruntergeladenen Titel ({0}) werden von diesem PC gelöscht, und die Download-Schalter werden ausgeschaltet. Die Titel bleiben auf dem Server.</value>
+    <comment>{0} = size on disk</comment>
+  </data>
+  <data name="Downloads_RemoveConfirm" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="SettingsDownloadsHeader.Text" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="SettingsDownloadsCard.Header" xml:space="preserve">
+    <value>Offline-Downloads</value>
+  </data>
+  <data name="SettingsDownloadFavouritesCard.Header" xml:space="preserve">
+    <value>Lieblingstitel</value>
+  </data>
+  <data name="SettingsDownloadFavouritesCard.Description" xml:space="preserve">
+    <value>Jeder Titel mit Herz.</value>
+  </data>
+  <data name="SettingsDownloadPlaylistsCard.Header" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="SettingsDownloadPlaylistsCard.Description" xml:space="preserve">
+    <value>Alle deine Playlists mit allen Titeln darin.</value>
+  </data>
+  <data name="SettingsDownloadFormatCard.Header" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="SettingsDownloadFormatCard.Description" xml:space="preserve">
+    <value>Original behält die Dateien so, wie sie auf dem Server liegen. AAC braucht weniger Platz. Eine Änderung lädt die Titel neu herunter.</value>
+  </data>
+  <data name="SettingsDownloadMeteredCard.Header" xml:space="preserve">
+    <value>Über getaktete Verbindungen herunterladen</value>
+  </data>
+  <data name="SettingsDownloadMeteredCard.Description" xml:space="preserve">
+    <value>Zum Beispiel mobile Daten. Wenn aus, warten Downloads auf eine andere Verbindung.</value>
+  </data>
+  <data name="SettingsDownloadFailuresCard.Header" xml:space="preserve">
+    <value>Fehlgeschlagene Titel</value>
+  </data>
+  <data name="SettingsDownloadSyncButton.Content" xml:space="preserve">
+    <value>Jetzt synchronisieren</value>
+  </data>
+  <data name="SettingsDownloadRemoveCard.Header" xml:space="preserve">
+    <value>Alle Downloads entfernen</value>
+  </data>
+  <data name="SettingsDownloadRemoveCard.Description" xml:space="preserve">
+    <value>Löscht die heruntergeladenen Titel von diesem PC und schaltet die Schalter aus.</value>
+  </data>
+  <data name="SettingsDownloadRemoveButton.Content" xml:space="preserve">
+    <value>Alle entfernen</value>
+  </data>
 </root>

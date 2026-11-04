@@ -135,6 +135,8 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
                 else { $albums[0] }
             }
             '^/audio/[0-9a-f-]{32,36}/universal$' { $raw = $wav; $null }
+            # A song's original file, for downloads (#327).
+            '^/audio/[0-9a-f-]{32,36}/stream$' { $raw = $wav; $null }
             '^/items$' { @{ Items = $albums; TotalRecordCount = $albums.Count; StartIndex = 0 } }
             '^/artists(/albumartists)?$' { @{ Items = @($artist); TotalRecordCount = 1; StartIndex = 0 } }
             '^/genres$' { @{ Items = @($genre); TotalRecordCount = 1; StartIndex = 0 } }
@@ -1543,6 +1545,27 @@ try {
     Write-Output 'The Discord setting is shown.'
     Test-Accessibility 'settings'
     Test-TabOrder 'settings'
+
+    # Downloads (#327): turning on Playlists downloads the playlist's two songs, as the original files, into the
+    # user's folder with its index; turning it off again deletes them. Each change syncs a few seconds later.
+    $downloads = Join-Path $data 'Downloads'
+    $playlistsSwitch = Find-ById 'DownloadPlaylistsSwitch'
+    $playlistsSwitch.GetCurrentPattern($toggle).Toggle()
+    $until = (Get-Date).AddSeconds(30)
+    while (@(Get-ChildItem $downloads -Recurse -Filter '*.wav' -ErrorAction SilentlyContinue).Count -lt 2 -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
+    $files = @(Get-ChildItem $downloads -Recurse -Filter '*.wav' -ErrorAction SilentlyContinue)
+    if ($files.Count -ne 2) {
+        $found = @(Get-ChildItem $downloads -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { $_.Name }) -join ', '
+        Stop-Test 'Downloads' "After the Playlists download was turned on, $($files.Count) song files are in $downloads, not 2 (files: $found)."
+    }
+    if ((Get-RequestCount '^GET /Audio/c{31}[12]/stream\?static=true') -lt 2) { Stop-Test 'Downloads' 'The playlist''s songs were not downloaded as their original files (/Audio/{id}/stream?static=true).' }
+    if (-not (Test-Path (Join-Path $files[0].DirectoryName 'downloads.json'))) { Stop-Test 'Downloads' 'The downloads have no index (downloads.json).' }
+    Test-Running 'after downloading a playlist'
+    $playlistsSwitch.GetCurrentPattern($toggle).Toggle()
+    $until = (Get-Date).AddSeconds(15)
+    while ((Test-Path $files[0].DirectoryName) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
+    if (Test-Path $files[0].DirectoryName) { Stop-Test 'Downloads' 'After the Playlists download was turned off, the downloaded songs are still on disk.' }
+    Write-Output 'Turning on the Playlists download saved both songs of the playlist, and turning it off deleted them.'
 
     # The band sliders: expanded and scrolled into view, each must have a visible size (#165).
     # The header text is named "Equalizer" too: expand the element that can be expanded.
