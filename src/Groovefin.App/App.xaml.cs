@@ -28,6 +28,13 @@ public partial class App : Application
     /// <summary>How long a shutdown step may take before closing goes on without it (#206).</summary>
     private static readonly TimeSpan ShutdownStepTimeout = TimeSpan.FromSeconds(3);
 
+    /// <summary>
+    /// Whether a XAML error from native code ends the app instead of being reported (#329):
+    /// <c>GROOVEFIN_CRASH_ON_XAML_ERROR=1</c>, which only the CI smoke test sets. WinUI then ends the process
+    /// with a stowed exception, and Windows Error Reporting's dump keeps where the error came from.
+    /// </summary>
+    private static readonly bool CrashOnNativeXamlError = Environment.GetEnvironmentVariable("GROOVEFIN_CRASH_ON_XAML_ERROR") == "1";
+
     private IHost? _host;
     private ILogger<App>? _logger;
     private bool _windowShown;
@@ -272,6 +279,13 @@ public partial class App : Application
         else
         {
             StartupCrashLog.Write(e.Exception, $"unhandled (XAML): {e.Message}");
+        }
+
+        // A COMException without a managed stack comes from WinUI itself, such as "Unspecified error" (#329).
+        if (CrashOnNativeXamlError && e.Exception is COMException && e.Exception.StackTrace is null)
+        {
+            e.Handled = false;
+            return;
         }
 
         // Keep the app running and tell the user; the details are in the log.
