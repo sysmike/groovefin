@@ -1829,12 +1829,30 @@ try {
     if ($settingsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Settings' 'Ctrl+, did not open Settings, or the title bar''s Settings button is not checked there.' }
     Write-Output 'Ctrl+, opened Settings from Albums; the title bar''s Settings button is unchecked on Albums and checked on Settings.'
 
-    # The Servers page from Settings, in the maximized window, is centred like Settings (#347). The card
-    # may be scrolled out of view (Settings keeps its place): it is invoked, not measured.
-    # The card found first can be the one of a Settings page that is being taken down: try again.
-    $until = (Get-Date).AddSeconds(10)
+    # The Servers page from Settings, in the maximized window, is centred like Settings (#347). The card is
+    # clicked: UI Automation's Invoke on it failed with an invalid cast in the test. It is scrolled into view
+    # first (Settings keeps its place), and the card found first can be the one of a Settings page that is
+    # being taken down: then it is found again.
+    $until = (Get-Date).AddSeconds(15)
     while ($true) {
-        try { (Find-ById 'SettingsServersCard').GetCurrentPattern($invoke).Invoke(); break }
+        try {
+            $card = Find-ById 'SettingsServersCard'
+            $settingsScroll = $null
+            for ($node = $walker.GetParent($card); $node -and -not $settingsScroll; $node = $walker.GetParent($node)) {
+                $pattern = $null
+                if ($node.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref] $pattern) -and $pattern.Current.VerticallyScrollable) { $settingsScroll = $pattern }
+            }
+            if ($settingsScroll) { $settingsScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 0) }
+            $windowBounds = $window.Current.BoundingRectangle
+            for ($i = 0; $i -lt 10 -and $settingsScroll; $i++) {
+                Start-Sleep -Milliseconds 300
+                $r = $card.Current.BoundingRectangle
+                if (-not $r.IsEmpty -and $r.Height -gt 0 -and $r.Bottom -lt $windowBounds.Bottom - 120) { break }
+                $settingsScroll.ScrollVertical([System.Windows.Automation.ScrollAmount]::SmallIncrement)
+            }
+            Send-Click $card
+            break
+        }
         catch [System.Windows.Automation.ElementNotAvailableException] {
             if ((Get-Date) -gt $until) { throw }
             Start-Sleep -Milliseconds 500
