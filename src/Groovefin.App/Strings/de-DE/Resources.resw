@@ -2417,4 +2417,7 @@
   <data name="SettingsDownloadArtistsCard.Description" xml:space="preserve">
     <value>Jeder Titel jedes Interpreten mit Herz. Das kann viel sein.</value>
   </data>
+  <data name="Error_NotDownloaded" xml:space="preserve">
+    <value>Du bist offline, und keiner der übrigen Titel in der Warteschlange ist heruntergeladen.</value>
+  </data>
 </root>
