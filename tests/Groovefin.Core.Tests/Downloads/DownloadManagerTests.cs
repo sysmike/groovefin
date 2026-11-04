@@ -9,6 +9,7 @@ using Groovefin.Core.Settings;
 using Groovefin.Core.Tests.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
+using NSubstitute.ReturnsExtensions;
 
 namespace Groovefin.Core.Tests.Downloads;
 
@@ -377,7 +378,7 @@ public sealed class DownloadManagerTests : IDisposable
     public async Task Signed_out_no_song_has_a_file()
     {
         await _sut.SyncAsync();
-        _client.Connection.Returns((ServerConnection?)null);
+        _client.Connection.ReturnsNull();
 
         _sut.FileOf("a").Should().BeNull();
     }
