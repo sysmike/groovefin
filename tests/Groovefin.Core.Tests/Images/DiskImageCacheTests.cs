@@ -53,6 +53,7 @@ public sealed class DiskImageCacheTests : IDisposable
     public async Task An_image_the_server_cannot_give_comes_from_the_fallback_and_is_not_cached()
     {
         var fallback = Substitute.For<IImageFallback>();
+        fallback.Find(Arg.Any<ImageRequest>()).ReturnsNull();
         fallback.Find(Request("a")).Returns("/downloads/covers/a_tag.img");
         _source.OpenAsync(Arg.Any<ImageRequest>(), Arg.Any<CancellationToken>())
             .Returns<Stream>(_ => throw new JellyfinException("Unreachable", (System.Net.HttpStatusCode?)null));
