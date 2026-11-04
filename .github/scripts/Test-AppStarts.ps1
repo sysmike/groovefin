@@ -1883,11 +1883,26 @@ try {
         Start-Sleep -Seconds 1
         Test-Centred 'servers-wide' ($window.FindFirst($scope::Descendants, (& $byId 'ServersIntro'))) -Report
         Save-Screenshot 'servers-wide'
-        # Settings has the same layout: measured the same way, by a card that has a place on screen.
+        # Settings has the same layout: measured by its Servers card, which the focus scrolls into view. Then
+        # the Servers page again, opened at this size, against the one that was open when the screen grew.
+        Select-Navigation 'Albums'
+        Start-Sleep -Seconds 1
         [System.Windows.Forms.SendKeys]::SendWait('^,')
         Start-Sleep -Seconds 2
-        $settingsCard = @($window.FindAll($scope::Descendants, (& $byId 'SettingsServersCard'))) | Where-Object { $b = $_.Current.BoundingRectangle; -not $b.IsEmpty -and $b.Width -gt 0 } | Select-Object -First 1
-        if ($settingsCard) { Test-Centred 'settings-wide' $settingsCard -Report } else { Write-Output 'Settings-wide: no Servers card with a place on screen.' }
+        $settingsCard = $null
+        foreach ($card in $window.FindAll($scope::Descendants, (& $byId 'SettingsServersCard'))) {
+            try { $card.SetFocus() } catch { continue }
+            Start-Sleep -Milliseconds 500
+            $b = $card.Current.BoundingRectangle
+            if (-not $b.IsEmpty -and $b.Width -gt 0) { $settingsCard = $card; break }
+        }
+        if ($settingsCard) {
+            Test-Centred 'settings-wide' $settingsCard -Report
+            [System.Windows.Forms.SendKeys]::SendWait(' ')
+            Start-Sleep -Seconds 2
+            Test-Centred 'servers-wide-opened' ($window.FindFirst($scope::Descendants, (& $byId 'ServersIntro'))) -Report
+        }
+        else { Write-Output 'settings-wide: no Servers card with a place on screen.' }
         Set-DisplayResolution -Width $screen.Width -Height $screen.Height -Force
         Start-Sleep -Seconds 2
         $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized)
