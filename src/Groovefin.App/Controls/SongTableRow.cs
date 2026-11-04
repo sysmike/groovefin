@@ -53,7 +53,7 @@ internal sealed partial class SongTableRow : Grid
 
     private void OnRowChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(SongRow.IsCurrent) && ReferenceEquals(sender, _row))
+        if (e.PropertyName is nameof(SongRow.IsCurrent) or nameof(SongRow.IsDownloaded) && ReferenceEquals(sender, _row))
         {
             Layout();
         }
@@ -105,6 +105,8 @@ internal sealed partial class SongTableRow : Grid
                 case TrackText track:
                     track.Text = text;
                     track.IsPlaying = _row.IsCurrent;
+                    // The download mark is the title's (#337).
+                    track.IsDownloaded = !track.IsSecondary && _row.IsDownloaded;
                     break;
                 case TrackNumber number:
                     number.Text = text;

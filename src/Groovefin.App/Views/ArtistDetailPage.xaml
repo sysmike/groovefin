@@ -323,6 +323,7 @@
                                     <controls:TrackText
                                         Grid.Column="1"
                                         VerticalAlignment="Center"
+                                        IsDownloaded="{x:Bind IsDownloaded, Mode=OneWay}"
                                         IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
                                         Text="{x:Bind Name}" />
                                     <controls:TrackText

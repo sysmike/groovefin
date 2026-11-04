@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
@@ -25,6 +26,10 @@ public sealed partial class FavouriteTrackItem(Track track, ImageRequest? cover)
     [ObservableProperty]
     public partial bool IsCurrent { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the track is downloaded (#337).</summary>
+    [ObservableProperty]
+    public partial bool IsDownloaded { get; set; }
+
     public string Name => Track.Name;
 
     public string Details => string.Join(" · ", new[] { string.Join(", ", Track.Artists.Select(a => a.Name)), Track.AlbumName ?? string.Empty }.Where(s => s.Length > 0));
@@ -45,7 +50,8 @@ public sealed partial class FavouritesViewModel(
     IErrorReporter errors,
     FavouritesService favourites,
     IMessenger messenger,
-    CurrentTrack currentTrack) : ObservableObject
+    CurrentTrack currentTrack,
+    IOfflineLibrary? downloads = null) : ObservableObject
 {
     /// <summary>Most favourites loaded per kind.</summary>
     public const int Limit = 500;
@@ -105,13 +111,19 @@ public sealed partial class FavouritesViewModel(
             Albums.Clear();
             foreach (var album in (await albums).Items)
             {
-                Albums.Add(new AlbumItem(album, ImageRequest.Primary(album.Id, album.PrimaryImageTag, TileWidth, DisplayScale)));
+                Albums.Add(new AlbumItem(album, ImageRequest.Primary(album.Id, album.PrimaryImageTag, TileWidth, DisplayScale))
+                {
+                    IsDownloaded = downloads?.IsComplete(album.Id) == true,
+                });
             }
 
             Artists.Clear();
             foreach (var artist in (await artists).Items)
             {
-                Artists.Add(new ArtistItem(artist, ImageRequest.Primary(artist.Id, artist.PrimaryImageTag, TileWidth, DisplayScale)));
+                Artists.Add(new ArtistItem(artist, ImageRequest.Primary(artist.Id, artist.PrimaryImageTag, TileWidth, DisplayScale))
+                {
+                    IsDownloaded = downloads?.IsComplete(artist.Id) == true,
+                });
             }
 
             UpdateFlags();

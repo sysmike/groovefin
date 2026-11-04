@@ -13,7 +13,8 @@
         colour (#247, #249), the title with a speaker before it on rows without a # column. The states take
         the colours from the theme, so they follow light, dark and high contrast. The speaker is decorative:
         the row's name says which track it is. Its gap is a margin, not column spacing, which would stay
-        while the speaker is collapsed and push the text off its column (#249).
+        while the speaker is collapsed and push the text off its column (#249). A downloaded track's title has
+        a small download mark at the end of its column (#337).
     -->
     <Grid>
         <VisualStateManager.VisualStateGroups>
@@ -40,6 +41,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <FontIcon
             x:Name="PlayingIcon"
@@ -57,5 +59,15 @@
             MaxLines="1"
             TextTrimming="CharacterEllipsis"
             TextWrapping="NoWrap" />
+        <FontIcon
+            x:Name="DownloadedIcon"
+            x:Uid="DownloadedIcon"
+            Grid.Column="2"
+            Margin="6,0,0,0"
+            VerticalAlignment="Center"
+            FontSize="12"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Glyph="&#xE896;"
+            Visibility="Collapsed" />
     </Grid>
 </UserControl>

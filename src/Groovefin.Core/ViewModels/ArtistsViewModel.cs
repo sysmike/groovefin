@@ -17,6 +17,9 @@ public sealed record ArtistItem(Artist Artist, ImageRequest? Image)
     public string Name => Artist.Name;
 
     public string AccessibleName => Artist.Name;
+
+    /// <summary>Gets a value indicating whether the artist is downloaded with every song (#337).</summary>
+    public bool IsDownloaded { get; init; }
 }
 
 /// <summary>

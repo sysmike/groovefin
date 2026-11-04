@@ -27,6 +27,10 @@ public sealed partial class ArtistTrackItem(Track track, int rank, bool isFavour
     [ObservableProperty]
     public partial bool IsCurrent { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the track is downloaded (#337).</summary>
+    [ObservableProperty]
+    public partial bool IsDownloaded { get; set; }
+
     /// <summary>Gets or sets whether the track is a favourite; the row's heart shows it (#266).</summary>
     [ObservableProperty]
     public partial bool IsFavourite { get; set; } = isFavourite;
