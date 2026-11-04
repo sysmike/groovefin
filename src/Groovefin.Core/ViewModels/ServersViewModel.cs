@@ -141,6 +141,12 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
         {
             FormError = _strings.GetString("Servers_InvalidAddress");
         }
+        catch (ServerAlreadyAddedException ex)
+        {
+            FormError = ex.Existing is { } existing
+                ? _strings.GetString("Servers_AlreadyAdded").Replace("{0}", existing.Name, StringComparison.Ordinal)
+                : _strings.GetString("Servers_AlreadyAdded");
+        }
         catch (InvalidOperationException)
         {
             FormError = _strings.GetString("Servers_DifferentServer");

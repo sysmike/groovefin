@@ -17,10 +17,13 @@ public interface IServerManager
     event EventHandler? Changed;
 
     /// <summary>
-    /// Validates <paramref name="address"/> against the server's public info and adds the server, or
-    /// updates name and address when a server with the same ID exists. The first server becomes active.
+    /// Validates <paramref name="address"/> against the server's public info and adds the server. The
+    /// first server becomes active.
     /// </summary>
     /// <exception cref="ArgumentException">The address is not a valid http(s) address.</exception>
+    /// <exception cref="ServerAlreadyAddedException">
+    /// The address, or the server that answers at it, is already in the list (#345). Nothing changes.
+    /// </exception>
     /// <exception cref="Api.JellyfinException">No Jellyfin server answered at the address.</exception>
     Task<ServerProfile> AddAsync(string address, CancellationToken cancellationToken = default);
 
