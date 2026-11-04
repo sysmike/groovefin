@@ -21,6 +21,9 @@ public sealed record PlayCountRecord(int PlayCount, DateTimeOffset LastPlayed);
 /// <summary>A start Groovefin reported to the server, which counted it as a play.</summary>
 public sealed record ReportedStart(string TrackId, DateTimeOffset StartedAt);
 
+/// <summary>A play the server could not be told of (offline): sent once it can be reached (#339).</summary>
+public sealed record PendingPlay(string TrackId, DateTimeOffset PlayedAt);
+
 /// <summary>The play history of one user on one server, as saved (#251).</summary>
 public sealed record PlayHistoryData
 {
@@ -38,6 +41,9 @@ public sealed record PlayHistoryData
 
     /// <summary>Gets the starts reported since the last sync that saw their track; the next sync subtracts them.</summary>
     public List<ReportedStart> ReportedStarts { get; init; } = [];
+
+    /// <summary>Gets the plays the server could not be told of yet, oldest first (#339).</summary>
+    public List<PendingPlay> Pending { get; init; } = [];
 }
 
 /// <summary>Source-generated JSON metadata for the play history files.</summary>

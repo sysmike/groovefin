@@ -50,6 +50,26 @@ internal sealed class PlaybackReporter(JellyfinClient client) : IPlaybackReporte
         return JellyfinCall.RunAsync(() => api.Sessions.Playing.Stopped.PostAsync(info, cancellationToken: cancellationToken), "Reporting playback stop");
     }
 
+    public Task MarkPlayedAsync(string itemId, DateTimeOffset playedAt, CancellationToken cancellationToken = default)
+    {
+        if (!Guid.TryParse(itemId, out var id))
+        {
+            throw new ArgumentException($"'{itemId}' is not a Jellyfin item ID.", nameof(itemId));
+        }
+
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+        return JellyfinCall.RunAsync(
+            () => api.UserPlayedItems[id].PostAsync(
+                request =>
+                {
+                    request.QueryParameters.UserId = userId;
+                    request.QueryParameters.DatePlayed = playedAt;
+                },
+                cancellationToken),
+            "Marking a play");
+    }
+
     private static Guid ParseId(PlaybackReport report) =>
         Guid.TryParse(report.ItemId, out var id) ? id : throw new ArgumentException($"'{report.ItemId}' is not a Jellyfin item ID.", nameof(report));
 }

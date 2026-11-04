@@ -51,6 +51,29 @@ public sealed class PlaybackReportingTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData(System.Net.HttpStatusCode.InternalServerError, false)]
+    public async Task Only_a_start_the_server_could_not_be_reached_for_is_kept(System.Net.HttpStatusCode? status, bool kept)
+    {
+        _reporter.ReportStartAsync(Arg.Any<PlaybackReport>(), Arg.Any<CancellationToken>()).Returns(Task.FromException(new JellyfinException("Failed", status)));
+        var unsent = new List<UnsentStart>();
+        var reported = new List<string>();
+        _sut.StartUnsent += (_, start) => unsent.Add(start);
+        _sut.StartReported += (_, id) => reported.Add(id);
+
+        _engine.Load(Source("a"));
+        await _sut.FlushAsync();
+
+        unsent.Should().HaveCount(kept ? 1 : 0);
+        if (kept)
+        {
+            unsent[0].Should().Be(new UnsentStart("a", _time.GetUtcNow()));
+        }
+
+        reported.Should().BeEmpty();
+    }
+
     [Fact]
     public async Task Loading_a_track_reports_start_with_a_new_play_session()
     {

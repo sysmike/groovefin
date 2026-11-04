@@ -27,7 +27,8 @@ WinUI 3.
 - Downloads of your favourite songs, albums and artists and all playlists, kept in sync on their own, as the
   original files or AAC, with a question before a large download (Settings → Downloads). Downloaded songs play
   from their files. Offline, Favourites, Playlists and the pages of albums and artists show what is downloaded,
-  with its covers, and the songs that are not downloaded are skipped.
+  with its covers, and the songs that are not downloaded are skipped. Plays while offline reach the server's play
+  counts once it is back.
 
 **Windows integration**
 - Media keys and the Windows media flyout.

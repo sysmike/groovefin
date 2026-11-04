@@ -7,6 +7,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Groovefin.Core.Playback;
 
+/// <summary>A start report the server could not be reached for: which track, and when it started (#339).</summary>
+public sealed record UnsentStart(string TrackId, DateTimeOffset StartedAt);
+
 /// <summary>
 /// Follows the engine and reports to the server: start when a track is loaded, progress every
 /// <see cref="ProgressInterval"/> while playing and at once on pause, resume and seek, stopped when the
@@ -64,6 +67,12 @@ public sealed partial class PlaybackReporting : IDisposable
     /// </summary>
     public event EventHandler<string>? StartReported;
 
+    /// <summary>
+    /// Raised when a start report could not reach the server, on a background thread: the play history keeps it and
+    /// sends it once the server can be reached again (#339).
+    /// </summary>
+    public event EventHandler<UnsentStart>? StartUnsent;
+
     /// <summary>Waits until all reports queued so far were sent (tests, shutdown).</summary>
     public Task FlushAsync()
     {
@@ -95,7 +104,8 @@ public sealed partial class PlaybackReporting : IDisposable
                 PositionAt = _time.GetTimestamp(),
                 WasPaused = _engine.State == PlaybackState.Paused,
             };
-            Send(ReportStartAsync, Report(_session));
+            var startedAt = _time.GetUtcNow();
+            Send((report, cancellationToken) => ReportStartAsync(report, startedAt, cancellationToken), Report(_session));
             UpdateTimer();
         }
     }
@@ -181,9 +191,18 @@ public sealed partial class PlaybackReporting : IDisposable
         }
     }
 
-    private async Task ReportStartAsync(PlaybackReport report, CancellationToken cancellationToken)
+    private async Task ReportStartAsync(PlaybackReport report, DateTimeOffset startedAt, CancellationToken cancellationToken)
     {
-        await _reporter.ReportStartAsync(report, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _reporter.ReportStartAsync(report, cancellationToken).ConfigureAwait(false);
+        }
+        catch (JellyfinException ex) when (ex.StatusCode is null)
+        {
+            StartUnsent?.Invoke(this, new UnsentStart(report.ItemId, startedAt));
+            throw;
+        }
+
         StartReported?.Invoke(this, report.ItemId);
     }
 
