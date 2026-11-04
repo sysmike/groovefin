@@ -1865,7 +1865,7 @@ try {
         Start-Sleep -Seconds 2
         $window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized)
         Start-Sleep -Seconds 1
-        Test-Centred 'servers-wide' $window.FindFirst($scope::Descendants, (& $byId 'ServerList'))
+        Test-Centred 'servers-wide' ($window.FindFirst($scope::Descendants, (& $byId 'ServerList')))
         Save-Screenshot 'servers-wide'
         Set-DisplayResolution -Width $screen.Width -Height $screen.Height -Force
         Start-Sleep -Seconds 2
