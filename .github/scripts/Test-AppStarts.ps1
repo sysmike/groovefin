@@ -519,6 +519,8 @@ try {
     Test-Running 'while adding a server'
     Write-Output 'Added the fake server.'
     Test-Accessibility 'sign-in'
+    # The sign-in form (at most 440 px, narrower than the page area here) is centred like the Servers page (#347).
+    Test-Centred 'sign-in' $userName
 
     # The fake server is plain HTTP (#293): the sign-in page says so, and the first sign-in asks whether
     # to send the password unencrypted. "Sign in anyway" goes ahead.
