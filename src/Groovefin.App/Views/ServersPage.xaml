@@ -29,7 +29,8 @@
                 IsClosable="False"
                 IsOpen="{x:Bind ViewModel.HasFormError, Mode=OneWay}"
                 Message="{x:Bind ViewModel.FormError, Mode=OneWay}"
-                Severity="Error" />
+                Severity="Error"
+                Visibility="{x:Bind ViewModel.HasFormError, Mode=OneWay}" />
 
             <Grid ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
