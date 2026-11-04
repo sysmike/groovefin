@@ -236,12 +236,12 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     },
                     cancellationToken),
                 "Loading file versions").ConfigureAwait(false);
-            foreach (var dto in result.Items ?? [])
+            var marked = (result.Items ?? [])
+                .Select(dto => (Id: ItemMapper.FormatId(dto.Id), Version: ItemMapper.FileVersion(dto)))
+                .Where(item => item.Id is not null && item.Version is not null);
+            foreach (var (id, version) in marked)
             {
-                if (ItemMapper.FormatId(dto.Id) is { } id && ItemMapper.FileVersion(dto) is { } version)
-                {
-                    versions[id] = version;
-                }
+                versions[id!] = version!;
             }
         }
 

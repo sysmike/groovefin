@@ -476,11 +476,7 @@ public sealed partial class DownloadManager : IDisposable
 
         var format = DownloadFormat.From(settings);
         var index = await UpdateIndexAsync(key, wanted, cancellationToken).ConfigureAwait(false);
-        var missing = new ConcurrentQueue<Track>(wanted.Tracks.Values.Where(track =>
-            (!index.Tracks.TryGetValue(track.Id, out var downloaded)
-                || downloaded.Format != format.Key
-                || (downloaded.FileVersion is { } old && wanted.Versions.TryGetValue(track.Id, out var now) && now != old))
-            && !(_failures.TryGetValue(track.Id, out var failure) && failure.Attempts >= MaxAttempts)));
+        var missing = new ConcurrentQueue<Track>(wanted.Tracks.Values.Where(track => NeedsDownload(index, wanted, track.Id, format) && !GaveUp(track.Id)));
         Publish(key, DownloadStop.None);
         if (missing.IsEmpty)
         {
@@ -553,6 +549,20 @@ public sealed partial class DownloadManager : IDisposable
             : new Dictionary<string, string>();
         return new Wanted(tracks, favourites, playlists, versions);
     }
+
+    /// <summary>Whether the song has no file yet, one in another format, or one the server has since replaced.</summary>
+    private static bool NeedsDownload(DownloadIndex index, Wanted wanted, string trackId, DownloadFormat format)
+    {
+        if (!index.Tracks.TryGetValue(trackId, out var downloaded) || downloaded.Format != format.Key)
+        {
+            return true;
+        }
+
+        return downloaded.FileVersion is { } old && wanted.Versions.TryGetValue(trackId, out var now) && now != old;
+    }
+
+    /// <summary>Whether the song failed <see cref="MaxAttempts"/> times: it waits for <see cref="SyncNowAsync"/>.</summary>
+    private bool GaveUp(string trackId) => _failures.TryGetValue(trackId, out var failure) && failure.Attempts >= MaxAttempts;
 
     /// <summary>
     /// Saves the wanted collections, gives the kept songs the server's metadata, and deletes the files nothing
