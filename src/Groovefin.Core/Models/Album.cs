@@ -1,6 +1,10 @@
 namespace Groovefin.Core.Models;
 
-/// <summary>A music album.</summary>
+/// <summary>
+/// A music album.
+/// Saved in the downloads index and the session: the properties with a default have setters, so a file without
+/// one keeps the default (#355).
+/// </summary>
 public sealed record Album
 {
     public required string Id { get; init; }
@@ -10,7 +14,7 @@ public sealed record Album
     /// <summary>Gets the display text for the album artists, e.g. "Daft Punk" or "Various Artists".</summary>
     public string? AlbumArtist { get; init; }
 
-    public IReadOnlyList<ArtistRef> AlbumArtists { get; init; } = [];
+    public IReadOnlyList<ArtistRef> AlbumArtists { get; set; } = [];
 
     public int? Year { get; init; }
 
@@ -26,7 +30,7 @@ public sealed record Album
     public DateTimeOffset? DateAdded { get; init; }
 
     /// <summary>Gets the genres; the album page links to their pages.</summary>
-    public IReadOnlyList<Genre> Genres { get; init; } = [];
+    public IReadOnlyList<Genre> Genres { get; set; } = [];
 
     /// <summary>Gets the MusicBrainz release group ID, if the server knows it.</summary>
     public string? MusicBrainzReleaseGroupId { get; init; }

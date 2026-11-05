@@ -72,6 +72,37 @@ public sealed class JsonSessionStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task A_file_without_the_defaulted_properties_keeps_their_defaults()
+    {
+        // A property a file does not have keeps its default, not null or 0 (#355): an empty file is version 1,
+        // and a song without artists has none.
+        Directory.CreateDirectory(_directory);
+        await File.WriteAllTextAsync(FilePath, """{"queue":{"tracks":[{"id":"t1","name":"Digital Love"}]}}""", Ct);
+
+        var loaded = await _sut.LoadAsync(Ct);
+
+        loaded.Should().NotBeNull();
+        loaded!.Version.Should().Be(SavedSession.CurrentVersion);
+        loaded.ServerId.Should().BeEmpty();
+        loaded.UserId.Should().BeEmpty();
+        loaded.Queue.PlayOrder.Should().NotBeNull().And.BeEmpty();
+        loaded.Queue.CurrentIndex.Should().Be(-1);
+        loaded.Queue.Tracks.Should().ContainSingle().Which.Artists.Should().NotBeNull().And.BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_file_without_the_queue_has_an_empty_one()
+    {
+        Directory.CreateDirectory(_directory);
+        await File.WriteAllTextAsync(FilePath, "{}", Ct);
+
+        var loaded = await _sut.LoadAsync(Ct);
+
+        loaded!.Queue.Should().NotBeNull();
+        loaded.Queue.Tracks.Should().NotBeNull().And.BeEmpty();
+    }
+
+    [Fact]
     public async Task Without_a_file_there_is_no_session() =>
         (await _sut.LoadAsync(Ct)).Should().BeNull();
 

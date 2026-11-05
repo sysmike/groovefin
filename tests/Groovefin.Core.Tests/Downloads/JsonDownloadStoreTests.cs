@@ -22,6 +22,33 @@ public sealed class JsonDownloadStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task An_index_without_the_defaulted_properties_keeps_their_defaults()
+    {
+        // A property a file does not have keeps its default, not null or 0 (#355): the index stays version 1,
+        // and lists the file leaves out are empty.
+        var folder = _sut.FolderOf("user-server");
+        Directory.CreateDirectory(folder);
+        await File.WriteAllTextAsync(Path.Join(folder, JsonDownloadStore.IndexFileName), """
+            {"playlists":[{"playlist":{"id":"p1","name":"Road trip"}}],
+             "albums":[{"album":{"id":"al1","name":"Discovery"}}],
+             "artists":[{"artist":{"id":"ar1","name":"Daft Punk"}}]}
+            """, Ct);
+
+        var loaded = await _sut.LoadAsync("user-server", Ct);
+
+        loaded.Version.Should().Be(DownloadIndex.CurrentVersion);
+        loaded.Tracks.Should().NotBeNull().And.BeEmpty();
+        loaded.Playlists.Should().ContainSingle().Which.TrackIds.Should().NotBeNull().And.BeEmpty();
+        var album = loaded.Albums.Should().ContainSingle().Subject;
+        album.TrackIds.Should().NotBeNull().And.BeEmpty();
+        album.Album.AlbumArtists.Should().NotBeNull().And.BeEmpty();
+        album.Album.Genres.Should().NotBeNull().And.BeEmpty();
+        var artist = loaded.Artists.Should().ContainSingle().Subject;
+        artist.TrackIds.Should().NotBeNull().And.BeEmpty();
+        artist.Artist.Genres.Should().NotBeNull().And.BeEmpty();
+    }
+
+    [Fact]
     public async Task A_saved_index_loads_back_per_key()
     {
         var at = new DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero);

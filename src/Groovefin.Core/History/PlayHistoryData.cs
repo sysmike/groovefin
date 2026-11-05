@@ -25,15 +25,15 @@ public sealed record ReportedStart(string TrackId, DateTimeOffset StartedAt);
 public sealed record PendingPlay(string TrackId, DateTimeOffset PlayedAt);
 
 /// <summary>
-/// The play history of one user on one server, as saved (#251). The lists have setters: for a list a file does
-/// not have (one from before the list was added), the source-generated reader then keeps the empty default,
-/// where it sets an init-only property to <see langword="null"/> (#353).
+/// The play history of one user on one server, as saved (#251). The properties with a default have setters: for
+/// one a file does not have (one from before it was added), the source-generated reader then keeps the default,
+/// where it sets an init-only property to <see langword="null"/> or 0 (#353).
 /// </summary>
 public sealed record PlayHistoryData
 {
     public const int CurrentVersion = 1;
 
-    public int Version { get; init; } = CurrentVersion;
+    public int Version { get; set; } = CurrentVersion;
 
     /// <summary>Gets or sets when the play counts were last read from the server, or <see langword="null"/> before the first time.</summary>
     public DateTimeOffset? LastSync { get; set; }
