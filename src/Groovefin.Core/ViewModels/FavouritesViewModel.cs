@@ -32,11 +32,13 @@ public sealed partial class FavouriteTrackItem(Track track, ImageRequest? cover)
 
     public string Name => Track.Name;
 
-    public string Details => string.Join(" · ", new[] { string.Join(", ", Track.Artists.Select(a => a.Name)), Track.AlbumName ?? string.Empty }.Where(s => s.Length > 0));
+    public string Artist => string.Join(", ", Track.Artists.Select(a => a.Name));
+
+    public string Album => Track.AlbumName ?? string.Empty;
 
     public string Duration => Durations.Track(Track.Duration);
 
-    public string AccessibleName => string.Join(", ", new[] { Name, Details, Duration }.Where(s => s.Length > 0));
+    public string AccessibleName => string.Join(", ", new[] { Name, Artist, Album, Duration }.Where(s => s.Length > 0));
 }
 
 /// <summary>

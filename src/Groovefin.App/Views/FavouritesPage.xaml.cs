@@ -64,7 +64,7 @@ internal sealed partial class FavouritesPage : Page
         var albums = ReferenceEquals(selected, AlbumsSection);
         var artists = ReferenceEquals(selected, ArtistsSection);
 
-        SongsList.Visibility = Show(songs && ViewModel.HasTracks);
+        SongsPanel.Visibility = Show(songs && ViewModel.HasTracks);
         AlbumsView.Visibility = Show(albums && ViewModel.HasAlbums);
         ArtistsView.Visibility = Show(artists && ViewModel.HasArtists);
 

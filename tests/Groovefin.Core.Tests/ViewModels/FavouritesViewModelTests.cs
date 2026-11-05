@@ -53,7 +53,7 @@ public sealed class FavouritesViewModelTests
         await _sut.LoadAsync(Ct);
 
         TrackIds.Should().Equal("t1", "t2");
-        _sut.Tracks[0].AccessibleName.Should().Be("Song t1, Daft Punk · Discovery, 1:01");
+        _sut.Tracks[0].AccessibleName.Should().Be("Song t1, Daft Punk, Discovery, 1:01");
         _sut.Albums.Single().Name.Should().Be("Discovery");
         _sut.Artists.Single().Name.Should().Be("Daft Punk");
         (_sut.HasTracks, _sut.HasAlbums, _sut.HasArtists).Should().Be((true, true, true));

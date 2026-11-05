@@ -1205,6 +1205,33 @@ try {
         }
     }
     Write-Output 'Each favourites tab shows its own list.'
+    # The Songs tab is a table like a playlist's (#359): Title, Artist and Album labels, each row's title after
+    # the cover and under the Title label, its album under the Album label. Searched in the list only: the now
+    # playing bar may show the same title.
+    Start-Sleep -Seconds 1
+    $favouriteSongs = Find-ById 'FavouritesSongs'
+    $favouriteLabels = [ordered] @{}
+    foreach ($column in 'Title', 'Artist', 'Album') {
+        $favouriteLabels[$column] = (Find-ById 'MainContent').FindFirst($scope::Descendants,
+            [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, "FavouritesColumn$column"))
+        if (-not $favouriteLabels[$column] -or $favouriteLabels[$column].Current.Name -cne $column) {
+            Stop-Test 'Favourites columns' "The favourite songs have no '$column' column header."
+        }
+    }
+    foreach ($cell in @(@{ Column = 'Title'; Text = 'Track 1' }, @{ Column = 'Album'; Text = 'Album 1' })) {
+        $text = $favouriteSongs.FindFirst($scope::Descendants, [System.Windows.Automation.AndCondition]::new(
+                [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $cell.Text),
+                [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text)))
+        $labelLeft = (Get-Bounds $favouriteLabels[$cell.Column]).Left
+        if (-not $text -or [Math]::Abs((Get-Bounds $text).Left - $labelLeft) -gt 2) {
+            Stop-Test 'Favourites columns' "The favourite songs don't show '$($cell.Text)' under the $($cell.Column) header (header at $labelLeft px, text at $(if ($text) { (Get-Bounds $text).Left } else { 'none' }))."
+        }
+    }
+    $favouriteTitleInset = (Get-Bounds $favouriteLabels.Title).Left - (Get-Bounds $favouriteSongs).Left
+    if ($favouriteTitleInset -lt 80) {
+        Stop-Test 'Favourites columns' "The favourite songs' titles start $favouriteTitleInset px into the list: no room for the cover before them."
+    }
+    Write-Output "The favourite songs are a table: titles and albums under their headers, the titles after the cover ($favouriteTitleInset px into the list)."
     Test-Accessibility 'favourites'
     Test-TabOrder 'favourites'
 

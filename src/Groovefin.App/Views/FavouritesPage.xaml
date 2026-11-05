@@ -173,73 +173,168 @@
         </SelectorBar>
 
         <Grid Grid.Row="2" Padding="0,8,0,0">
-            <!--  Songs: click plays from there; the heart removes the song from the favourites.  -->
-            <ListView
-                controls:ViewMemory.IsEnabled="True"
-                controls:TrackDragSource.IsEnabled="True"
-                controls:ItemMenu.IsEnabled="True"
-                controls:TrackSelection.IsEnabled="True"
-                x:Name="SongsList"
-                x:Uid="FavouritesSongs"
-                Padding="24,0,24,24"
-                IsItemClickEnabled="True"
-                ItemClick="OnTrackClick"
-                ItemsSource="{x:Bind ViewModel.Tracks}">
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="vm:FavouriteTrackItem">
-                        <Grid
-                            Padding="{ThemeResource ListRowPadding}"
-                            AutomationProperties.Name="{x:Bind AccessibleName}"
-                            ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
+            <!--
+                Songs: a table like a playlist's (#359), with the same column headers (#245) and the album's cover
+                before the title (#262). Click plays from there; the heart removes the song from the favourites.
+            -->
+            <Grid x:Name="SongsPanel">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid
+                    Height="36"
+                    Margin="52,0,48,0"
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                    BorderThickness="0,0,0,1"
+                    ColumnSpacing="16">
+                    <Grid.Resources>
+                        <Style x:Key="ColumnDividerStyle" TargetType="Rectangle">
+                            <Setter Property="Width" Value="1" />
+                            <Setter Property="Margin" Value="0,8,-8,8" />
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Fill" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                        </Style>
+                        <Style
+                            x:Key="ColumnLabelStyle"
+                            BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+                            TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                        </Style>
+                    </Grid.Resources>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*" />
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="32" />
+                        <ColumnDefinition Width="56" />
+                    </Grid.ColumnDefinitions>
+                    <Rectangle Grid.Column="0" Style="{StaticResource ColumnDividerStyle}" />
+                    <Rectangle Grid.Column="1" Style="{StaticResource ColumnDividerStyle}" />
+                    <Rectangle Grid.Column="2" Style="{StaticResource ColumnDividerStyle}" />
+                    <Rectangle Grid.Column="3" Style="{StaticResource ColumnDividerStyle}" />
+                    <!--  The rows show the album's cover before the title: the label starts where the title does.  -->
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Border Width="{ThemeResource ListThumbnailSize}" />
+                        <TextBlock
+                            x:Uid="AlbumColumnTitle"
+                            AutomationProperties.AutomationId="FavouritesColumnTitle"
+                            Style="{StaticResource ColumnLabelStyle}" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Uid="PlaylistColumnArtist"
+                        Grid.Column="1"
+                        AutomationProperties.AutomationId="FavouritesColumnArtist"
+                        Style="{StaticResource ColumnLabelStyle}" />
+                    <TextBlock
+                        x:Uid="PlaylistColumnAlbum"
+                        Grid.Column="2"
+                        AutomationProperties.AutomationId="FavouritesColumnAlbum"
+                        Style="{StaticResource ColumnLabelStyle}" />
+                    <FontIcon
+                        Grid.Column="3"
+                        FontSize="12"
+                        Glyph="&#xEB51;" />
+                    <FontIcon
+                        Grid.Column="4"
+                        HorizontalAlignment="Right"
+                        FontSize="12"
+                        Glyph="&#xE823;" />
+                </Grid>
+
+                <ListView
+                    controls:ViewMemory.IsEnabled="True"
+                    controls:TrackDragSource.IsEnabled="True"
+                    controls:ItemMenu.IsEnabled="True"
+                    controls:TrackSelection.IsEnabled="True"
+                    x:Name="SongsList"
+                    x:Uid="FavouritesSongs"
+                    Grid.Row="1"
+                    AutomationProperties.AutomationId="FavouritesSongs"
+                    Padding="36,0,36,24"
+                    IsItemClickEnabled="True"
+                    ItemClick="OnTrackClick"
+                    ItemsSource="{x:Bind ViewModel.Tracks}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FavouriteTrackItem">
                             <Grid
-                                Width="{ThemeResource ListThumbnailSize}"
-                                Height="{ThemeResource ListThumbnailSize}"
-                                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
-                                CornerRadius="{StaticResource ControlCornerRadius}">
-                                <Image
-                                    controls:Artwork.Request="{x:Bind Cover}"
-                                    AutomationProperties.AccessibilityView="Raw"
-                                    Stretch="UniformToFill" />
-                            </Grid>
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                Padding="{ThemeResource TrackRowPadding}"
+                                AutomationProperties.Name="{x:Bind AccessibleName}"
+                                ColumnSpacing="16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="3*" />
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="32" />
+                                    <ColumnDefinition Width="56" />
+                                </Grid.ColumnDefinitions>
+                                <!--  The album's cover, then the title. Decorative: the row's name says it all.  -->
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid
+                                        Width="{ThemeResource ListThumbnailSize}"
+                                        Height="{ThemeResource ListThumbnailSize}"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.AccessibilityView="Raw"
+                                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                        CornerRadius="{StaticResource ControlCornerRadius}">
+                                        <FontIcon
+                                            FontSize="16"
+                                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                            Glyph="&#xE93C;" />
+                                        <Image
+                                            controls:Artwork.Request="{x:Bind Cover}"
+                                            AutomationProperties.AccessibilityView="Raw"
+                                            Stretch="UniformToFill" />
+                                    </Grid>
+                                    <!--  No track number: the speaker shows before the title while it plays.  -->
+                                    <controls:TrackText
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        IsDownloaded="{x:Bind IsDownloaded, Mode=OneWay}"
+                                        IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                        ShowsIcon="True"
+                                        Text="{x:Bind Name}" />
+                                </Grid>
                                 <controls:TrackText
-                                    IsDownloaded="{x:Bind IsDownloaded, Mode=OneWay}"
-                                    IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
-                                    ShowsIcon="True"
-                                    Text="{x:Bind Name}" />
-                                <controls:TrackText
-                                    FontSize="12"
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
                                     IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
                                     IsSecondary="True"
-                                    Text="{x:Bind Details}" />
-                            </StackPanel>
-                            <Button
-                                x:Uid="FavouritesRemoveButton"
-                                Grid.Column="2"
-                                Width="32"
-                                Height="32"
-                                Padding="0"
-                                VerticalAlignment="Center"
-                                Background="{ThemeResource SubtleFillColorTransparentBrush}"
-                                BorderThickness="0"
-                                Click="OnUnfavouriteClick">
-                                <FontIcon FontSize="12" Glyph="&#xEB52;" />
-                            </Button>
-                            <TextBlock
-                                Grid.Column="3"
-                                VerticalAlignment="Center"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="{x:Bind Duration}" />
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                                    Text="{x:Bind Artist}" />
+                                <controls:TrackText
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                    IsSecondary="True"
+                                    Text="{x:Bind Album}" />
+                                <Button
+                                    x:Uid="FavouritesRemoveButton"
+                                    Grid.Column="3"
+                                    Width="32"
+                                    Height="32"
+                                    Padding="0"
+                                    VerticalAlignment="Center"
+                                    Background="{ThemeResource SubtleFillColorTransparentBrush}"
+                                    BorderThickness="0"
+                                    Click="OnUnfavouriteClick">
+                                    <FontIcon FontSize="12" Glyph="&#xEB52;" />
+                                </Button>
+                                <TextBlock
+                                    Grid.Column="4"
+                                    VerticalAlignment="Center"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    HorizontalTextAlignment="Right"
+                                    Text="{x:Bind Duration}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
 
             <ItemsView
                 controls:ViewMemory.IsEnabled="True"
