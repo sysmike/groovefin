@@ -130,6 +130,9 @@ public sealed record AlbumQuery
 
     /// <summary>Gets a value indicating whether only albums the user has played are included.</summary>
     public bool PlayedOnly { get; init; }
+
+    /// <summary>Gets album IDs; only these albums are included. Empty means all albums.</summary>
+    public IReadOnlyList<string> Ids { get; init; } = [];
 }
 
 /// <summary>Album sort orders. Ties are broken by name.</summary>

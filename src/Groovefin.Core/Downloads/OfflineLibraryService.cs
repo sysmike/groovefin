@@ -16,7 +16,7 @@ public sealed class OfflineLibraryService(ILibraryService server, OfflineAnswers
     public Task<PagedResult<Album>> GetAlbumsAsync(AlbumQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
-        var answerable = (query.FavouritesOnly || query.AlbumArtistId is not null) && query.GenreIds.Count == 0 && query.MinYear is null && query.MaxYear is null;
+        var answerable = (query.FavouritesOnly || query.AlbumArtistId is not null) && query.GenreIds.Count == 0 && query.Ids.Count == 0 && query.MinYear is null && query.MaxYear is null;
         return answerable
             ? answers.AskAsync(() => server.GetAlbumsAsync(query, cancellationToken), index => Albums(index, query), cancellationToken)
             : server.GetAlbumsAsync(query, cancellationToken);

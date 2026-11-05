@@ -94,6 +94,7 @@ internal static class AppHost
         });
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<IImageCache, DiskImageCache>();
+        builder.Services.AddSingleton<ICoverColours, CoverColourSource>();
 
         // Platform services
         builder.Services.AddSingleton<IDispatcher, DispatcherQueueDispatcher>();
