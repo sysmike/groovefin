@@ -84,6 +84,12 @@ public sealed record DownloadIndex
 
     /// <summary>Gets or sets when the wanted songs were last read from the server.</summary>
     public DateTimeOffset? LastSync { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the <c>.aac</c> files were checked for MP4 files, which get the <c>.m4a</c> they need
+    /// (#362). A download from then on gets its extension right away.
+    /// </summary>
+    public bool AacFilesChecked { get; set; }
 }
 
 /// <summary>Source-generated JSON metadata for the download index.</summary>
