@@ -303,34 +303,40 @@ public sealed class DownloadManagerTests : IDisposable
     }
 
     [Fact]
-    public async Task A_downloaded_flac_files_cover_becomes_padding()
+    public async Task A_downloaded_flac_file_whose_audio_starts_far_in_has_it_moved_to_the_front()
     {
-        _source.Files["a"] = FlacFile.WithCover();
+        _source.Files["a"] = FlacFile.WithCover((int)FlacMetadata.MaxAudioOffset);
+        _source.Files["b"] = FlacFile.WithCover(100);
 
         await _sut.SyncAsync();
 
         var file = File.ReadAllBytes(Path.Join(Folder, "a.flac"));
-        file.Should().HaveCount(_source.Files["a"].Length);
-        FlacFile.Blocks(file).Select(b => b.Type).Should().Equal(FlacFile.StreamInfo, FlacFile.Tags, FlacFile.Padding);
-        (await _store.LoadAsync(_client.Connection!.UserDataKey, Ct)).FlacCoversCleared.Should().BeTrue();
+        FlacFile.Blocks(file).Select(b => b.Type).Should().Equal(FlacFile.StreamInfo, FlacFile.Tags);
+        File.ReadAllBytes(Path.Join(Folder, "b.flac")).Should().Equal(_source.Files["b"], "its audio starts soon");
+        var index = await _store.LoadAsync(_client.Connection!.UserDataKey, Ct);
+        index.Tracks["a"].Size.Should().Be(file.Length);
+        index.FlacFilesCompacted.Should().BeTrue();
     }
 
     [Fact]
-    public async Task The_covers_of_flac_files_downloaded_before_are_turned_into_padding_once()
+    public async Task Flac_files_downloaded_before_have_their_audio_moved_to_the_front_once()
     {
         await _sut.SyncAsync();
-        File.WriteAllBytes(Path.Join(Folder, "a.flac"), FlacFile.WithCover());
+        File.WriteAllBytes(Path.Join(Folder, "a.flac"), FlacFile.WithCover((int)FlacMetadata.MaxAudioOffset));
         var index = await _store.LoadAsync(_client.Connection!.UserDataKey, Ct);
-        index.FlacCoversCleared = false;
+        index.FlacFilesCompacted = false;
         await _store.SaveAsync(_client.Connection!.UserDataKey, index, Ct);
         using var later = new DownloadManager(
             _client, _library, _playlists, _source, _store, _settings, _network, _servers, _messenger, _time, NullLogger<DownloadManager>.Instance);
 
         await later.SyncAsync();
 
-        FlacFile.Blocks(File.ReadAllBytes(Path.Join(Folder, "a.flac"))).Select(b => b.Type).Should().Equal(FlacFile.StreamInfo, FlacFile.Tags, FlacFile.Padding);
-        _source.Count("a").Should().Be(1, "the file is changed in place");
-        (await _store.LoadAsync(_client.Connection!.UserDataKey, Ct)).FlacCoversCleared.Should().BeTrue();
+        var file = File.ReadAllBytes(Path.Join(Folder, "a.flac"));
+        FlacFile.Blocks(file).Select(b => b.Type).Should().Equal(FlacFile.StreamInfo, FlacFile.Tags);
+        _source.Count("a").Should().Be(1, "the file is rewritten where it is");
+        index = await _store.LoadAsync(_client.Connection!.UserDataKey, Ct);
+        index.Tracks["a"].Size.Should().Be(file.Length);
+        index.FlacFilesCompacted.Should().BeTrue();
     }
 
     [Fact]

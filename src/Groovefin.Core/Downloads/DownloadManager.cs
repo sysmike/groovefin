@@ -825,14 +825,21 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             var index = await LoadIndexAsync(key, cancellationToken).ConfigureAwait(false);
             var folder = _store.FolderOf(key);
 
-            // Downloads from before #361 keep their covers: once, until every file could be changed.
-            var coversCleared = index.FlacCoversCleared;
-            if (!coversCleared)
+            // Downloads from before #365 may have their audio far in: once, until every file could be read.
+            var compacted = index.FlacFilesCompacted;
+            if (!compacted)
             {
-                coversCleared = true;
-                foreach (var song in index.Tracks.Values)
+                compacted = true;
+                foreach (var (id, song) in index.Tracks.ToList())
                 {
-                    coversCleared &= TryClearCovers(Path.Join(folder, song.FileName));
+                    compacted &= TryCompact(Path.Join(folder, song.FileName), out var size);
+                    if (size is { } newSize)
+                    {
+                        lock (_indexLock)
+                        {
+                            index.Tracks[id] = song with { Size = newSize };
+                        }
+                    }
                 }
             }
 
@@ -882,7 +889,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
                 index.Albums = wanted.Albums;
                 index.Artists = wanted.Artists;
                 index.LastSync = _time.GetUtcNow();
-                index.FlacCoversCleared = coversCleared;
+                index.FlacFilesCompacted = compacted;
                 index.AacFilesChecked = !renameFailed;
             }
             await _store.SaveAsync(key, index, cancellationToken).ConfigureAwait(false);
@@ -921,7 +928,11 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
                 throw new IOException($"The download ended after {size} bytes.");
             }
 
-            TryClearCovers(part);
+            if (TryCompact(part, out var compactedSize) && compactedSize is { } newSize)
+            {
+                size = newSize;
+            }
+
             var fileName = track.Id + (IsMp4Named(response.Extension, part) ? Mp4Extension : response.Extension);
             File.Move(part, Path.Join(folder, fileName), overwrite: true);
             await _indexGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
@@ -1215,15 +1226,18 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
     }
 
     /// <summary>
-    /// Turns the covers of a downloaded FLAC file into padding (<see cref="FlacCovers"/>, #361). A file that is gone
-    /// needs nothing; one in use is tried again at the next sync.
+    /// Moves the audio of a downloaded FLAC file to the front when it starts far in (<see cref="FlacMetadata"/>,
+    /// #365). A file that is gone needs nothing; one in use is tried again at the next sync.
     /// </summary>
+    /// <param name="path">The file.</param>
+    /// <param name="size">The file's new size when it was rewritten.</param>
     /// <returns>Whether the file is done.</returns>
-    private bool TryClearCovers(string path)
+    private bool TryCompact(string path, out long? size)
     {
+        size = null;
         try
         {
-            FlacCovers.Clear(path);
+            size = FlacMetadata.Compact(path);
             return true;
         }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
@@ -1232,7 +1246,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            LogClearCoversFailed(ex, Path.GetFileName(path));
+            LogCompactFailed(ex, Path.GetFileName(path));
             return false;
         }
     }
@@ -1299,8 +1313,8 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         IReadOnlyList<DownloadedArtist> Artists,
         IReadOnlyDictionary<string, TrackFile> Files);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Turning the covers of {FileName} into padding failed")]
-    private partial void LogClearCoversFailed(Exception exception, string fileName);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Moving the audio of {FileName} to the front failed")]
+    private partial void LogCompactFailed(Exception exception, string fileName);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Renaming {FileName} to .m4a failed")]
     private partial void LogRenameFailed(Exception exception, string fileName);
