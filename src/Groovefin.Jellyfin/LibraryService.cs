@@ -49,6 +49,11 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                         p.GenreIds = query.GenreIds.Select(id => (Guid?)Guid.Parse(id)).ToArray();
                     }
 
+                    if (query.Ids.Count > 0)
+                    {
+                        p.Ids = query.Ids.Select(id => (Guid?)ParseId(id)).ToArray();
+                    }
+
                     if (Years(query) is { } years)
                     {
                         p.Years = years;

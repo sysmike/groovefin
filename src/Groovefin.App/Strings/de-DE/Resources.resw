@@ -596,20 +596,36 @@
   <data name="HomeShelf_RecentlyPlayed" xml:space="preserve">
     <value>Zuletzt gespielt</value>
   </data>
-  <data name="HomeShelf_MostPlayed" xml:space="preserve">
-    <value>Meistgespielt</value>
-  </data>
-  <data name="HomeShelf_Random" xml:space="preserve">
-    <value>Zufällige Alben</value>
-  </data>
-  <data name="HomeShelf_Favourites" xml:space="preserve">
-    <value>Lieblingsalben</value>
-  </data>
   <data name="HomeShelfEmpty.Text" xml:space="preserve">
     <value>Hier ist noch nichts.</value>
   </data>
   <data name="HomeShelfFailed.Text" xml:space="preserve">
     <value>Diese Liste konnte nicht geladen werden.</value>
+  </data>
+  <data name="HomeHighlightKind.Text" xml:space="preserve">
+    <value>Zufälliges Album</value>
+  </data>
+  <data name="HomeHighlightCover.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Album öffnen</value>
+  </data>
+  <data name="HomeHighlightCover.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Album öffnen</value>
+  </data>
+  <data name="HomeHighlightGenres.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="HomeHighlight_Shuffle" xml:space="preserve">
+    <value>{0} zufällig wiedergeben</value>
+    <comment>{0} = album name</comment>
+  </data>
+  <data name="HomeHighlightFavouriteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
+  <data name="HomeHighlightFavouriteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Favorit</value>
+  </data>
+  <data name="HomeHighlightNextText.Text" xml:space="preserve">
+    <value>Anderes Album</value>
   </data>
   <data name="AlbumSort_DatePlayed" xml:space="preserve">
     <value>Zuletzt gespielt</value>

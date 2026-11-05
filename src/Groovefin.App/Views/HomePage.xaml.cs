@@ -1,4 +1,5 @@
 using Groovefin.App.Controls;
+using Groovefin.Core.Models;
 using Groovefin.Core.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -6,7 +7,7 @@ using Microsoft.UI.Xaml.Navigation;
 
 namespace Groovefin.App.Views;
 
-/// <summary>Landing page: horizontal album lists (recently added, recently played, …).</summary>
+/// <summary>Landing page: a random album, then horizontal album lists (recently played, recently added).</summary>
 internal sealed partial class HomePage : Page
 {
     public HomePage()
@@ -38,6 +39,14 @@ internal sealed partial class HomePage : Page
     }
 
     private void OnShelfLoaded(object sender, RoutedEventArgs e) => Shelf.ScrollHorizontally(sender as ItemsView);
+
+    private void OnGenreClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is Genre genre)
+        {
+            ViewModel.OpenGenreCommand.Execute(genre);
+        }
+    }
 
     private void OnAlbumInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
     {

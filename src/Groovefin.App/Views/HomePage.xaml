@@ -4,8 +4,10 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Groovefin.App.Controls"
+    xmlns:conv="using:Groovefin.App.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:Groovefin.Core.Models"
     xmlns:vm="using:Groovefin.Core.ViewModels"
     mc:Ignorable="d">
 
@@ -77,59 +79,202 @@
         </Grid>
 
         <ScrollViewer controls:ViewMemory.IsEnabled="True" Grid.Row="1">
-            <ItemsControl
-                Margin="0,0,0,24"
-                IsTabStop="False"
-                ItemsSource="{x:Bind ViewModel.Shelves}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:HomeShelf">
-                        <StackPanel Margin="0,0,0,20" Spacing="8">
+            <StackPanel Margin="0,0,0,24">
+                <!--
+                    A random album (#367) on a colour taken from its cover. The colour is dark enough for white
+                    text, so the card is always in the dark theme, also when the app is light.
+                -->
+                <Grid
+                    Margin="36,0,36,28"
+                    Padding="24"
+                    Background="{x:Bind conv:Covers.HighlightBackground(ViewModel.Highlight), Mode=OneWay}"
+                    ColumnSpacing="28"
+                    CornerRadius="{StaticResource OverlayCornerRadius}"
+                    RequestedTheme="Dark"
+                    Visibility="{x:Bind ViewModel.HasHighlight, Mode=OneWay}">
+                    <Grid.BackgroundTransition>
+                        <BrushTransition />
+                    </Grid.BackgroundTransition>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button
+                        x:Uid="HomeHighlightCover"
+                        Padding="0"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Command="{x:Bind ViewModel.OpenHighlightCommand}"
+                        CornerRadius="{StaticResource OverlayCornerRadius}">
+                        <Grid
+                            Width="200"
+                            Height="200"
+                            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                            CornerRadius="{StaticResource OverlayCornerRadius}">
+                            <FontIcon
+                                FontSize="56"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Glyph="&#xE93C;" />
+                            <Image
+                                controls:Artwork.Request="{x:Bind ViewModel.Highlight.Cover, Mode=OneWay}"
+                                AutomationProperties.AccessibilityView="Raw"
+                                Stretch="UniformToFill" />
+                        </Grid>
+                    </Button>
+
+                    <StackPanel
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE8B1;" />
                             <TextBlock
-                                Margin="36,0"
-                                AutomationProperties.HeadingLevel="Level2"
-                                Style="{StaticResource SubtitleTextBlockStyle}"
-                                Text="{x:Bind Title}" />
-                            <Grid Height="224">
-                                <!--  Horizontal list; arrow keys move between albums, Tab leaves the list.  -->
-                                <ItemsView
-                                    controls:ItemMenu.IsEnabled="True"
-                                    Padding="36,0"
-                                    AutomationProperties.Name="{x:Bind Title}"
-                                    IsItemInvokedEnabled="True"
-                                    ItemInvoked="OnAlbumInvoked"
-                                    ItemTemplate="{StaticResource HomeTileTemplate}"
-                                    ItemsSource="{x:Bind Albums}"
-                                    Loaded="OnShelfLoaded"
-                                    SelectionMode="None">
-                                    <ItemsView.Layout>
-                                        <StackLayout Orientation="Horizontal" Spacing="16" />
-                                    </ItemsView.Layout>
-                                </ItemsView>
-                                <ProgressRing
-                                    x:Uid="LoadingRing"
-                                    Margin="36,0"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    IsActive="{x:Bind ShowsProgress, Mode=OneWay}" />
-                                <TextBlock
-                                    x:Uid="HomeShelfEmpty"
-                                    Margin="36,0"
-                                    VerticalAlignment="Top"
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    Style="{StaticResource BodyTextBlockStyle}"
-                                    Visibility="{x:Bind IsEmpty, Mode=OneWay}" />
-                                <TextBlock
-                                    x:Uid="HomeShelfFailed"
-                                    Margin="36,0"
-                                    VerticalAlignment="Top"
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    Style="{StaticResource BodyTextBlockStyle}"
-                                    Visibility="{x:Bind LoadFailed, Mode=OneWay}" />
-                            </Grid>
+                                x:Uid="HomeHighlightKind"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}" />
                         </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                        <HyperlinkButton
+                            Padding="0"
+                            AutomationProperties.HeadingLevel="Level2"
+                            AutomationProperties.Name="{x:Bind ViewModel.Highlight.Name, Mode=OneWay}"
+                            Command="{x:Bind ViewModel.OpenHighlightCommand}"
+                            Foreground="{ThemeResource TextFillColorPrimaryBrush}">
+                            <TextBlock
+                                MaxLines="2"
+                                Style="{StaticResource TitleTextBlockStyle}"
+                                Text="{x:Bind ViewModel.Highlight.Name, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="Wrap" />
+                        </HyperlinkButton>
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            MaxLines="1"
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Highlight.Artist, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Highlight.Details, Mode=OneWay}" />
+                        <!--  Genres, each a link to its page, as on the album page.  -->
+                        <ItemsRepeater
+                            x:Uid="HomeHighlightGenres"
+                            ItemsSource="{x:Bind ViewModel.Highlight.Genres, Mode=OneWay}"
+                            Visibility="{x:Bind ViewModel.Highlight.HasGenres, Mode=OneWay}">
+                            <ItemsRepeater.Layout>
+                                <StackLayout Orientation="Horizontal" Spacing="4" />
+                            </ItemsRepeater.Layout>
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="models:Genre">
+                                    <HyperlinkButton
+                                        Padding="4,2"
+                                        Click="OnGenreClick"
+                                        Content="{x:Bind Name}"
+                                        Tag="{x:Bind}" />
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+
+                        <Grid Margin="0,10,0,0" ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button
+                                AutomationProperties.Name="{x:Bind ViewModel.Highlight.PlayName, Mode=OneWay}"
+                                Command="{x:Bind ViewModel.PlayHighlightCommand}"
+                                Style="{StaticResource AccentButtonStyle}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="14" Glyph="&#xE768;" />
+                                    <TextBlock x:Uid="AlbumPlayText" />
+                                </StackPanel>
+                            </Button>
+                            <Button
+                                Grid.Column="1"
+                                AutomationProperties.Name="{x:Bind ViewModel.Highlight.ShuffleName, Mode=OneWay}"
+                                Command="{x:Bind ViewModel.ShuffleHighlightCommand}"
+                                ToolTipService.ToolTip="{x:Bind ViewModel.Highlight.ShuffleName, Mode=OneWay}">
+                                <FontIcon FontSize="14" Glyph="&#xE8B1;" />
+                            </Button>
+                            <ToggleButton
+                                x:Uid="HomeHighlightFavouriteButton"
+                                Grid.Column="2"
+                                Command="{x:Bind ViewModel.ToggleHighlightFavouriteCommand}"
+                                IsChecked="{x:Bind ViewModel.Highlight.IsFavourite, Mode=OneWay}">
+                                <FontIcon FontSize="14" Glyph="{x:Bind conv:Glyphs.Heart(ViewModel.Highlight.IsFavourite), Mode=OneWay}" />
+                            </ToggleButton>
+                            <Button
+                                Grid.Column="4"
+                                Command="{x:Bind ViewModel.ShowAnotherAlbumCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="14" Glyph="&#xE72A;" />
+                                    <TextBlock x:Uid="HomeHighlightNextText" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+
+                <ItemsControl
+                    IsTabStop="False"
+                    ItemsSource="{x:Bind ViewModel.Shelves}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:HomeShelf">
+                            <StackPanel Margin="0,0,0,20" Spacing="8">
+                                <TextBlock
+                                    Margin="36,0"
+                                    AutomationProperties.HeadingLevel="Level2"
+                                    Style="{StaticResource SubtitleTextBlockStyle}"
+                                    Text="{x:Bind Title}" />
+                                <Grid Height="224">
+                                    <!--  Horizontal list; arrow keys move between albums, Tab leaves the list.  -->
+                                    <ItemsView
+                                        controls:ItemMenu.IsEnabled="True"
+                                        Padding="36,0"
+                                        AutomationProperties.Name="{x:Bind Title}"
+                                        IsItemInvokedEnabled="True"
+                                        ItemInvoked="OnAlbumInvoked"
+                                        ItemTemplate="{StaticResource HomeTileTemplate}"
+                                        ItemsSource="{x:Bind Albums}"
+                                        Loaded="OnShelfLoaded"
+                                        SelectionMode="None">
+                                        <ItemsView.Layout>
+                                            <StackLayout Orientation="Horizontal" Spacing="16" />
+                                        </ItemsView.Layout>
+                                    </ItemsView>
+                                    <ProgressRing
+                                        x:Uid="LoadingRing"
+                                        Margin="36,0"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"
+                                        IsActive="{x:Bind ShowsProgress, Mode=OneWay}" />
+                                    <TextBlock
+                                        x:Uid="HomeShelfEmpty"
+                                        Margin="36,0"
+                                        VerticalAlignment="Top"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource BodyTextBlockStyle}"
+                                        Visibility="{x:Bind IsEmpty, Mode=OneWay}" />
+                                    <TextBlock
+                                        x:Uid="HomeShelfFailed"
+                                        Margin="36,0"
+                                        VerticalAlignment="Top"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource BodyTextBlockStyle}"
+                                        Visibility="{x:Bind LoadFailed, Mode=OneWay}" />
+                                </Grid>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </ScrollViewer>
     </Grid>
 </Page>

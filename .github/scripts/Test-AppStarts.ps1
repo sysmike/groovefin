@@ -129,9 +129,12 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             '^/items/[0-9a-f-]{32,36}$' {
                 $id = $path.Substring(7) -replace '-', ''
                 $track = $tracks | Where-Object { $_.Id -eq $id } | Select-Object -First 1
+                $album = $albums | Where-Object { $_.Id -eq $id } | Select-Object -First 1
                 if ($id -eq $artist.Id) { $artist } elseif ($id -eq $playlist.Id) { $playlist } elseif ($id -eq $genre.Id) { $genre }
                 # A song loaded for its info dialog carries its file's details (#282).
                 elseif ($track) { $track + @{ MediaSources = @(@{ Container = 'flac'; Size = 31457280; MediaStreams = @(@{ Type = 'Audio'; Codec = 'flac'; BitDepth = 16; SampleRate = 44100; Channels = 2 }) }) } }
+                # The start page's random album changes to the next one (#367).
+                elseif ($album) { $album }
                 else { $albums[0] }
             }
             '^/audio/[0-9a-f-]{32,36}/universal$' { $raw = $wav; $null }
@@ -553,6 +556,23 @@ try {
     Write-Output 'Signed in; the home page shows its lists.'
     Test-Accessibility 'home'
     Test-TabOrder 'home'
+
+    # The home page's random album (#367): a card with the album's name as a link, play and shuffle for it,
+    # and "Another album", which shows the next one. The fake server's random albums come in order.
+    $hyperlink = [System.Windows.Automation.ControlType]::Hyperlink
+    function Find-Link([string] $name) {
+        Find-Element ([System.Windows.Automation.AndCondition]::new(
+                [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $name),
+                [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, $hyperlink))) "link '$name'"
+    }
+    $null = Find-Link 'Album 1'
+    $null = Find-Button 'Shuffle Album 1'
+    Save-Screenshot 'home'
+    (Find-Button 'Another album').GetCurrentPattern($invoke).Invoke()
+    $null = Find-Link 'Album 2'
+    $null = Find-Button 'Shuffle Album 2'
+    Test-Running 'after showing another album on the home page'
+    Write-Output "The home page's random album changed from 'Album 1' to 'Album 2'."
 
     # Folders: its breadcrumb once crashed the app (#144).
     $folders = Find-Element ([System.Windows.Automation.AndCondition]::new(

@@ -168,6 +168,21 @@ public sealed class LibraryServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetAlbums_asks_for_the_given_albums()
+    {
+        // The start page's recently played albums, found through their songs (#367).
+        StubItems(AlbumsResponse);
+        _host.ConnectAsTestUser();
+
+        await _host.Library.GetAlbumsAsync(
+            new AlbumQuery { Ids = ["aaaaaaaabbbbccccddddeeeeeeeeeee1", "aaaaaaaabbbbccccddddeeeeeeeeeee2"] },
+            TestContext.Current.CancellationToken);
+
+        LastQuery()["ids"].Split(',').Select(id => Guid.Parse(id).ToString("N"))
+            .Should().Equal("aaaaaaaabbbbccccddddeeeeeeeeeee1", "aaaaaaaabbbbccccddddeeeeeeeeeee2");
+    }
+
+    [Fact]
     public async Task GetAlbums_combines_favourite_and_played_filters()
     {
         StubItems(AlbumsResponse);
@@ -186,7 +201,7 @@ public sealed class LibraryServiceTests : IDisposable
 
         await _host.Library.GetAlbumsAsync(new AlbumQuery(), TestContext.Current.CancellationToken);
 
-        LastQuery().Keys.Should().NotContain(["genreIds", "years", "filters"]);
+        LastQuery().Keys.Should().NotContain(["genreIds", "years", "filters", "ids"]);
     }
 
     [Fact]
