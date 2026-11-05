@@ -211,6 +211,7 @@
                                 <FontIcon FontSize="14" Glyph="{x:Bind conv:Glyphs.Heart(ViewModel.Highlight.IsFavourite), Mode=OneWay}" />
                             </ToggleButton>
                             <Button
+                                x:Uid="HomeHighlightNextButton"
                                 Grid.Column="4"
                                 Command="{x:Bind ViewModel.ShowAnotherAlbumCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">

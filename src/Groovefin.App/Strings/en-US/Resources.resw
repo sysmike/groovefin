@@ -636,6 +636,9 @@
   <data name="HomeHighlightFavouriteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Favourite</value>
   </data>
+  <data name="HomeHighlightNextButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Another album</value>
+  </data>
   <data name="HomeHighlightNextText.Text" xml:space="preserve">
     <value>Another album</value>
   </data>
