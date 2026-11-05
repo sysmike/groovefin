@@ -84,6 +84,12 @@ public sealed record DownloadIndex
 
     /// <summary>Gets or sets when the wanted songs were last read from the server.</summary>
     public DateTimeOffset? LastSync { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the covers of the FLAC files downloaded before #361 were turned into padding
+    /// (<see cref="FlacCovers"/>). A download from then on gets it right away.
+    /// </summary>
+    public bool FlacCoversCleared { get; set; }
 }
 
 /// <summary>Source-generated JSON metadata for the download index.</summary>

@@ -810,6 +810,18 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         {
             var index = await LoadIndexAsync(key, cancellationToken).ConfigureAwait(false);
             var folder = _store.FolderOf(key);
+
+            // Downloads from before #361 keep their covers: once, until every file could be changed.
+            var coversCleared = index.FlacCoversCleared;
+            if (!coversCleared)
+            {
+                coversCleared = true;
+                foreach (var song in index.Tracks.Values)
+                {
+                    coversCleared &= TryClearCovers(Path.Join(folder, song.FileName));
+                }
+            }
+
             foreach (var (id, downloaded) in index.Tracks.ToList())
             {
                 if (wanted.Tracks.TryGetValue(id, out var track))
@@ -849,6 +861,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
                 index.Albums = wanted.Albums;
                 index.Artists = wanted.Artists;
                 index.LastSync = _time.GetUtcNow();
+                index.FlacCoversCleared = coversCleared;
             }
             await _store.SaveAsync(key, index, cancellationToken).ConfigureAwait(false);
             return index;
@@ -884,6 +897,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
                 throw new IOException($"The download ended after {size} bytes.");
             }
 
+            TryClearCovers(part);
             var fileName = track.Id + response.Extension;
             File.Move(part, Path.Join(folder, fileName), overwrite: true);
             await _indexGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
@@ -1176,6 +1190,29 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         }
     }
 
+    /// <summary>
+    /// Turns the covers of a downloaded FLAC file into padding (<see cref="FlacCovers"/>, #361). A file that is gone
+    /// needs nothing; one in use is tried again at the next sync.
+    /// </summary>
+    /// <returns>Whether the file is done.</returns>
+    private bool TryClearCovers(string path)
+    {
+        try
+        {
+            FlacCovers.Clear(path);
+            return true;
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogClearCoversFailed(ex, Path.GetFileName(path));
+            return false;
+        }
+    }
+
     private void TryDelete(string path)
     {
         try
@@ -1196,6 +1233,9 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         IReadOnlyList<DownloadedAlbum> Albums,
         IReadOnlyList<DownloadedArtist> Artists,
         IReadOnlyDictionary<string, TrackFile> Files);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Turning the covers of {FileName} into padding failed")]
+    private partial void LogClearCoversFailed(Exception exception, string fileName);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Downloading {Count} songs as {Format}")]
     private partial void LogDownloading(int count, string format);
