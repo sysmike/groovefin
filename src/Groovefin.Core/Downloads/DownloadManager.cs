@@ -122,6 +122,10 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
 
     private const string CoverExtension = ".img";
 
+    private const string AacExtension = ".aac";
+
+    private const string Mp4Extension = ".m4a";
+
     /// <summary>A song's size per second without a size from the server: CD quality, 1,411 kbit/s.</summary>
     private const double CdBytesPerSecond = 176_400;
 
@@ -691,7 +695,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
                 {
                     stop = DownloadStop.Offline;
                 }
-                else if (!await DownloadAsync(key, index, track, wanted.Files.GetValueOrDefault(track.Id)?.Mark, format, cancellationToken).ConfigureAwait(false))
+                else if (!await DownloadAsync(key, index, track, wanted.Files.GetValueOrDefault(track.Id), format, cancellationToken).ConfigureAwait(false))
                 {
                     stop = DownloadStop.Unreachable;
                 }
@@ -776,7 +780,10 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         return new Wanted(tracks, favourites, playlists, albums, artists, files);
     }
 
-    /// <summary>Whether the song has no file yet, one in another format, or one the server has since replaced.</summary>
+    /// <summary>
+    /// Whether the song has no file yet, one in another format, or one the server has since replaced. An original
+    /// Windows cannot play, kept as it was before #362, comes again as AAC.
+    /// </summary>
     private static bool NeedsDownload(DownloadIndex index, Wanted wanted, string trackId, DownloadFormat format)
     {
         if (!index.Tracks.TryGetValue(trackId, out var downloaded) || downloaded.Format != format.Key)
@@ -784,13 +791,20 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             return true;
         }
 
-        return downloaded.FileVersion is { } old && wanted.Files.TryGetValue(trackId, out var now) && now.Mark != old;
+        var file = wanted.Files.GetValueOrDefault(trackId);
+        if (format.For(file).Kind != format.Kind && !downloaded.FileName.EndsWith(AacExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return downloaded.FileVersion is { } old && file is not null && file.Mark != old;
     }
 
     /// <summary>A song's download size: its file's for the original, its length at the bitrate for AAC.</summary>
     private static long EstimatedSize(Track track, TrackFile? file, DownloadFormat format)
     {
         var seconds = track.Duration?.TotalSeconds ?? 0;
+        format = format.For(file);
         return format.Kind == DownloadFormatKind.Aac
             ? (long)(seconds * format.AacBitrateKbps * 125)
             : file?.Size ?? (long)(seconds * CdBytesPerSecond);
@@ -822,14 +836,21 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
                 }
             }
 
+            var renameFailed = false;
             foreach (var (id, downloaded) in index.Tracks.ToList())
             {
                 if (wanted.Tracks.TryGetValue(id, out var track))
                 {
                     // A download from before the marks takes the server's: its file is as good as any.
+                    var kept = downloaded with { Track = track, FileVersion = downloaded.FileVersion ?? wanted.Files.GetValueOrDefault(id)?.Mark };
+                    if (!index.AacFilesChecked && IsMp4Named(kept.FileName, Path.Join(folder, kept.FileName)))
+                    {
+                        kept = TryRename(folder, kept, ref renameFailed);
+                    }
+
                     lock (_indexLock)
                     {
-                        index.Tracks[id] = downloaded with { Track = track, FileVersion = downloaded.FileVersion ?? wanted.Files.GetValueOrDefault(id)?.Mark };
+                        index.Tracks[id] = kept;
                     }
                 }
                 else
@@ -862,6 +883,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
                 index.Artists = wanted.Artists;
                 index.LastSync = _time.GetUtcNow();
                 index.FlacCoversCleared = coversCleared;
+                index.AacFilesChecked = !renameFailed;
             }
             await _store.SaveAsync(key, index, cancellationToken).ConfigureAwait(false);
             return index;
@@ -873,8 +895,10 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
     }
 
     /// <summary>Downloads one song; <see langword="false"/> when the server could not be reached, which stops the sync.</summary>
-    private async Task<bool> DownloadAsync(string key, DownloadIndex index, Track track, string? version, DownloadFormat format, CancellationToken cancellationToken)
+    private async Task<bool> DownloadAsync(string key, DownloadIndex index, Track track, TrackFile? serverFile, DownloadFormat format, CancellationToken cancellationToken)
     {
+        // The index keeps the chosen format; an original Windows cannot play arrives as AAC (#362).
+        var source = format.For(serverFile);
         var folder = _store.FolderOf(key);
         var part = Path.Join(folder, track.Id + PartExtension);
         _current[track.Id] = track.Name;
@@ -882,8 +906,8 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         try
         {
             Directory.CreateDirectory(folder);
-            var offset = format.Kind == DownloadFormatKind.Original && File.Exists(part) ? new FileInfo(part).Length : 0;
-            using var response = await _source.OpenAsync(track.Id, format, offset, cancellationToken).ConfigureAwait(false);
+            var offset = source.Kind == DownloadFormatKind.Original && File.Exists(part) ? new FileInfo(part).Length : 0;
+            using var response = await _source.OpenAsync(track.Id, source, offset, cancellationToken).ConfigureAwait(false);
             var resumed = offset > 0 && response.Resumed;
             await using (var file = new FileStream(part, resumed ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
             {
@@ -898,7 +922,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             }
 
             TryClearCovers(part);
-            var fileName = track.Id + response.Extension;
+            var fileName = track.Id + (IsMp4Named(response.Extension, part) ? Mp4Extension : response.Extension);
             File.Move(part, Path.Join(folder, fileName), overwrite: true);
             await _indexGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
             try
@@ -917,7 +941,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
                         Size = size,
                         Format = format.Key,
                         DownloadedAt = _time.GetUtcNow(),
-                        FileVersion = version,
+                        FileVersion = serverFile?.Mark,
                     };
                 }
 
@@ -1213,6 +1237,47 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         }
     }
 
+    /// <summary>
+    /// Whether a file named <c>.aac</c> is an MP4 file (its first box is <c>ftyp</c>): the server sends an AAC file
+    /// within the bitrate as it is, often an <c>.m4a</c>. Windows reads a <c>.aac</c> as a raw AAC stream and
+    /// cannot play it (#362).
+    /// </summary>
+    private static bool IsMp4Named(string extensionOrName, string path)
+    {
+        if (!extensionOrName.EndsWith(AacExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        try
+        {
+            Span<byte> head = stackalloc byte[8];
+            using var stream = File.OpenRead(path);
+            return stream.ReadAtLeast(head, head.Length, throwOnEndOfStream: false) == head.Length && head[4..].SequenceEqual("ftyp"u8);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Gives an MP4 file named <c>.aac</c> the <c>.m4a</c> it needs (#362); in use, the next sync tries again.</summary>
+    private DownloadedTrack TryRename(string folder, DownloadedTrack downloaded, ref bool failed)
+    {
+        var fileName = Path.ChangeExtension(downloaded.FileName, Mp4Extension);
+        try
+        {
+            File.Move(Path.Join(folder, downloaded.FileName), Path.Join(folder, fileName), overwrite: true);
+            return downloaded with { FileName = fileName };
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogRenameFailed(ex, downloaded.FileName);
+            failed = true;
+            return downloaded;
+        }
+    }
+
     private void TryDelete(string path)
     {
         try
@@ -1236,6 +1301,9 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Turning the covers of {FileName} into padding failed")]
     private partial void LogClearCoversFailed(Exception exception, string fileName);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Renaming {FileName} to .m4a failed")]
+    private partial void LogRenameFailed(Exception exception, string fileName);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Downloading {Count} songs as {Format}")]
     private partial void LogDownloading(int count, string format);

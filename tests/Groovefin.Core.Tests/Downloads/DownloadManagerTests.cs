@@ -227,6 +227,81 @@ public sealed class DownloadManagerTests : IDisposable
         _sut.Status.Failures.Should().ContainSingle().Which.Attempts.Should().Be(1);
     }
 
+    /// <summary>An MP4 file's start: a box of 24 bytes, of type <c>ftyp</c>.</summary>
+    private static byte[] Mp4() => [0, 0, 0, 24, .. "ftypM4A "u8, 0, 0, 0, 0, .. "M4A mp42"u8];
+
+    [Fact]
+    public async Task An_aac_download_that_is_an_mp4_file_is_named_m4a()
+    {
+        _settings.Update(s => s with { Downloads = s.Downloads with { Format = DownloadFormatKind.Aac, AacBitrateKbps = 192 } });
+        _source.Files["a"] = Mp4();
+
+        await _sut.SyncAsync();
+
+        Files().Should().Equal("a.m4a", "b.aac", "c.aac");
+        _sut.FileOf("a").Should().Be(Path.Join(Folder, "a.m4a"));
+    }
+
+    [Fact]
+    public async Task An_mp4_file_named_aac_before_the_fix_is_renamed_without_downloading_it_again()
+    {
+        _settings.Update(s => s with { Downloads = s.Downloads with { Format = DownloadFormatKind.Aac, AacBitrateKbps = 192 } });
+        await _sut.SyncAsync();
+        File.WriteAllBytes(Path.Join(Folder, "a.aac"), Mp4());
+        var index = await _store.LoadAsync(_client.Connection!.UserDataKey, Ct);
+        index.AacFilesChecked = false;
+        await _store.SaveAsync(_client.Connection!.UserDataKey, index, Ct);
+        using var later = new DownloadManager(
+            _client, _library, _playlists, _source, _store, _settings, _network, _servers, _messenger, _time, NullLogger<DownloadManager>.Instance);
+
+        await later.SyncAsync();
+
+        Files().Should().Equal("a.m4a", "b.aac", "c.aac");
+        _source.Count("a").Should().Be(1);
+        (await _store.LoadAsync(_client.Connection!.UserDataKey, Ct)).AacFilesChecked.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("flac", true)]
+    [InlineData("mov,mp4,m4a,3gp,3g2,mj2", true)]
+    [InlineData("opus", false)]
+    [InlineData("ogg", false)]
+    [InlineData("ape", false)]
+    public void An_original_windows_cannot_play_comes_as_aac(string container, bool plays)
+    {
+        var format = new DownloadFormat(DownloadFormatKind.Original).For(new TrackFile(container, 1));
+
+        format.Should().Be(plays ? new DownloadFormat(DownloadFormatKind.Original) : new DownloadFormat(DownloadFormatKind.Aac, DownloadFormat.ConvertedBitrateKbps));
+    }
+
+    [Fact]
+    public async Task An_original_windows_cannot_play_is_downloaded_as_aac_once()
+    {
+        _files["a"] = new TrackFile("opus", 4);
+
+        await _sut.SyncAsync();
+        await _sut.SyncAsync();
+
+        Files().Should().Equal("a.aac", "b.flac", "c.flac");
+        _source.Requests.Where(r => r.TrackId == "a").Select(r => r.Format).Should().Equal($"aac{DownloadFormat.ConvertedBitrateKbps}");
+        (await _store.LoadAsync(_client.Connection!.UserDataKey, Ct)).Tracks["a"].Format.Should().Be("original", "the chosen format counts");
+    }
+
+    [Fact]
+    public async Task An_original_windows_cannot_play_kept_before_the_fix_is_downloaded_again()
+    {
+        _source.Extension = ".opus";
+        await _sut.SyncAsync();
+        _source.Extension = ".flac";
+        _files["a"] = new TrackFile("opus", 4);
+
+        await _sut.SyncAsync();
+
+        Files().Should().Equal("a.aac", "b.opus", "c.opus");
+        _source.Count("a").Should().Be(2);
+        _source.Count("b").Should().Be(1);
+    }
+
     [Fact]
     public async Task A_downloaded_flac_files_cover_becomes_padding()
     {
