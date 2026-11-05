@@ -824,6 +824,18 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         {
             var index = await LoadIndexAsync(key, cancellationToken).ConfigureAwait(false);
             var folder = _store.FolderOf(key);
+
+            // Downloads from before #361 keep their covers: once, until every file could be changed.
+            var coversCleared = index.FlacCoversCleared;
+            if (!coversCleared)
+            {
+                coversCleared = true;
+                foreach (var song in index.Tracks.Values)
+                {
+                    coversCleared &= TryClearCovers(Path.Join(folder, song.FileName));
+                }
+            }
+
             var renameFailed = false;
             foreach (var (id, downloaded) in index.Tracks.ToList())
             {
@@ -870,6 +882,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
                 index.Albums = wanted.Albums;
                 index.Artists = wanted.Artists;
                 index.LastSync = _time.GetUtcNow();
+                index.FlacCoversCleared = coversCleared;
                 index.AacFilesChecked = !renameFailed;
             }
             await _store.SaveAsync(key, index, cancellationToken).ConfigureAwait(false);
@@ -908,6 +921,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
                 throw new IOException($"The download ended after {size} bytes.");
             }
 
+            TryClearCovers(part);
             var fileName = track.Id + (IsMp4Named(response.Extension, part) ? Mp4Extension : response.Extension);
             File.Move(part, Path.Join(folder, fileName), overwrite: true);
             await _indexGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
@@ -1201,6 +1215,29 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
     }
 
     /// <summary>
+    /// Turns the covers of a downloaded FLAC file into padding (<see cref="FlacCovers"/>, #361). A file that is gone
+    /// needs nothing; one in use is tried again at the next sync.
+    /// </summary>
+    /// <returns>Whether the file is done.</returns>
+    private bool TryClearCovers(string path)
+    {
+        try
+        {
+            FlacCovers.Clear(path);
+            return true;
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogClearCoversFailed(ex, Path.GetFileName(path));
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Whether a file named <c>.aac</c> is an MP4 file (its first box is <c>ftyp</c>): the server sends an AAC file
     /// within the bitrate as it is, often an <c>.m4a</c>. Windows reads a <c>.aac</c> as a raw AAC stream and
     /// cannot play it (#362).
@@ -1261,6 +1298,9 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         IReadOnlyList<DownloadedAlbum> Albums,
         IReadOnlyList<DownloadedArtist> Artists,
         IReadOnlyDictionary<string, TrackFile> Files);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Turning the covers of {FileName} into padding failed")]
+    private partial void LogClearCoversFailed(Exception exception, string fileName);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Renaming {FileName} to .m4a failed")]
     private partial void LogRenameFailed(Exception exception, string fileName);
