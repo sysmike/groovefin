@@ -24,7 +24,11 @@ public sealed record ReportedStart(string TrackId, DateTimeOffset StartedAt);
 /// <summary>A play the server could not be told of (offline): sent once it can be reached (#339).</summary>
 public sealed record PendingPlay(string TrackId, DateTimeOffset PlayedAt);
 
-/// <summary>The play history of one user on one server, as saved (#251).</summary>
+/// <summary>
+/// The play history of one user on one server, as saved (#251). The lists have setters: for a list a file does
+/// not have (one from before the list was added), the source-generated reader then keeps the empty default,
+/// where it sets an init-only property to <see langword="null"/> (#353).
+/// </summary>
 public sealed record PlayHistoryData
 {
     public const int CurrentVersion = 1;
@@ -34,16 +38,16 @@ public sealed record PlayHistoryData
     /// <summary>Gets or sets when the play counts were last read from the server, or <see langword="null"/> before the first time.</summary>
     public DateTimeOffset? LastSync { get; set; }
 
-    public List<PlayRecord> Plays { get; init; } = [];
+    public List<PlayRecord> Plays { get; set; } = [];
 
     /// <summary>Gets the play counts at the last sync, by track ID.</summary>
-    public Dictionary<string, PlayCountRecord> Counts { get; init; } = [];
+    public Dictionary<string, PlayCountRecord> Counts { get; set; } = [];
 
     /// <summary>Gets the starts reported since the last sync that saw their track; the next sync subtracts them.</summary>
-    public List<ReportedStart> ReportedStarts { get; init; } = [];
+    public List<ReportedStart> ReportedStarts { get; set; } = [];
 
     /// <summary>Gets the plays the server could not be told of yet, oldest first (#339).</summary>
-    public List<PendingPlay> Pending { get; init; } = [];
+    public List<PendingPlay> Pending { get; set; } = [];
 }
 
 /// <summary>Source-generated JSON metadata for the play history files.</summary>

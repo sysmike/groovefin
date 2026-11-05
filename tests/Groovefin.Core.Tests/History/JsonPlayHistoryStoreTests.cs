@@ -40,6 +40,37 @@ public sealed class JsonPlayHistoryStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task A_history_from_before_the_offline_plays_loads_with_none_pending()
+    {
+        // Saved before #339 added "pending": the list must be empty, not null (#353).
+        Directory.CreateDirectory(_directory);
+        await File.WriteAllTextAsync(Path.Join(_directory, "user-server.json"), """
+            {"version":1,"lastSync":"2026-10-25T12:00:00+00:00","plays":[{"trackId":"t1","playedAt":"2026-10-25T12:00:00+00:00","source":"Server"}],"counts":{"t1":{"playCount":4,"lastPlayed":"2026-10-25T12:00:00+00:00"}},"reportedStarts":[]}
+            """, Ct);
+
+        var loaded = await _sut.LoadAsync("user-server", Ct);
+
+        loaded!.Plays.Should().ContainSingle().Which.TrackId.Should().Be("t1");
+        loaded.Counts.Should().ContainKey("t1");
+        loaded.Pending.Should().NotBeNull().And.BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_history_with_only_its_version_loads_with_empty_lists()
+    {
+        Directory.CreateDirectory(_directory);
+        await File.WriteAllTextAsync(Path.Join(_directory, "user-server.json"), """{"version":1}""", Ct);
+
+        var loaded = await _sut.LoadAsync("user-server", Ct);
+
+        loaded.Should().NotBeNull();
+        loaded!.Plays.Should().NotBeNull().And.BeEmpty();
+        loaded.Counts.Should().NotBeNull().And.BeEmpty();
+        loaded.ReportedStarts.Should().NotBeNull().And.BeEmpty();
+        loaded.Pending.Should().NotBeNull().And.BeEmpty();
+    }
+
+    [Fact]
     public async Task An_unreadable_file_is_no_history()
     {
         Directory.CreateDirectory(_directory);
