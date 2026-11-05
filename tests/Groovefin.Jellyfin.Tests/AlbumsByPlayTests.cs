@@ -59,7 +59,7 @@ public sealed class AlbumsByPlayTests : IDisposable
         var page = await _host.Library.GetAlbumsAsync(ByLastPlay(), TestContext.Current.CancellationToken);
 
         page.Items.Select(a => a.Name).Should().Equal("B", "A", "C");
-        page.TotalRecordCount.Should().Be(3);
+        page.TotalCount.Should().Be(3);
 
         // The played songs newest first, without what isn't read.
         var songs = Queries().First(q => q["includeItemTypes"] == "Audio");
@@ -95,7 +95,7 @@ public sealed class AlbumsByPlayTests : IDisposable
         var page = await _host.Library.GetAlbumsAsync(ByLastPlay(playedOnly: true) with { Limit = 20 }, TestContext.Current.CancellationToken);
 
         page.Items.Select(a => a.Name).Should().Equal("B", "A");
-        page.TotalRecordCount.Should().Be(2);
+        page.TotalCount.Should().Be(2);
         Queries().Where(q => q["includeItemTypes"] == "MusicAlbum").Should().OnlyContain(q => q.ContainsKey("ids"));
     }
 
