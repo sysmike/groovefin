@@ -25,10 +25,6 @@ public sealed class HomeViewModelTests
         _strings.GetString(Arg.Any<string>()).Returns(call => $"[{call.Arg<string>()}]");
         _library.GetAlbumsAsync(Arg.Any<AlbumQuery>(), Arg.Any<CancellationToken>())
             .Returns(call => Page(call.Arg<AlbumQuery>().SortBy.ToString(), 3));
-        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q.Ids.Count > 0), Arg.Any<CancellationToken>())
-            .Returns(call => ById(call.Arg<AlbumQuery>().Ids));
-        _library.GetTracksAsync(Arg.Any<TrackQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new PagedResult<Track>([Played("t1", "a"), Played("t2", "b")], 2, 0));
         _library.GetAlbumAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(call => new Album
             {
@@ -51,20 +47,9 @@ public sealed class HomeViewModelTests
         return new PagedResult<Album>(items, count, 0);
     }
 
-    /// <summary>The server sends albums asked for by ID in its own order: here, reversed.</summary>
-    private static PagedResult<Album> ById(IReadOnlyList<string> ids)
-    {
-        var items = ids.Reverse().Select(id => new Album { Id = id, Name = id }).ToList();
-        return new PagedResult<Album>(items, items.Count, 0);
-    }
-
-    private static Track Played(string id, string albumId, int minutesAgo = 0) => new()
-    {
-        Id = id,
-        Name = id,
-        AlbumId = albumId,
-        LastPlayed = DateTimeOffset.UnixEpoch.AddDays(1).AddMinutes(-minutesAgo),
-    };
+    private void FailFor(HomeShelfKind kind, Exception exception) =>
+        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q == HomeViewModel.QueryFor(kind)), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<PagedResult<Album>>(exception));
 
     private HomeViewModel CreateSut() =>
         new(_library, _navigation, _errors, _strings, _player, new FavouritesService(_library, new WeakReferenceMessenger(), _errors), _colours);
@@ -92,74 +77,33 @@ public sealed class HomeViewModelTests
         sut.Shelves.Should().OnlyContain(s => !s.IsLoaded && !s.IsEmpty);
     }
 
-    [Fact]
-    public void Recently_added_and_recent_songs_have_their_queries()
+    [Theory]
+    [InlineData(HomeShelfKind.RecentlyPlayed, AlbumSortField.DatePlayed, true)]
+    [InlineData(HomeShelfKind.RecentlyAdded, AlbumSortField.DateAdded, false)]
+    public void Each_shelf_has_its_query(HomeShelfKind kind, AlbumSortField sortBy, bool playedOnly)
     {
-        HomeViewModel.RecentlyAddedQuery.Should().BeEquivalentTo(new
+        // Played albums by their songs' plays: the library service works that out (#369).
+        HomeViewModel.QueryFor(kind).Should().BeEquivalentTo(new
         {
             StartIndex = 0,
             Limit = HomeViewModel.ShelfSize,
-            SortBy = AlbumSortField.DateAdded,
+            SortBy = sortBy,
             Descending = true,
-            PlayedOnly = false,
-        });
-        HomeViewModel.RecentTracksQuery.Should().BeEquivalentTo(new
-        {
-            Limit = HomeViewModel.RecentTrackCount,
-            SortBy = TrackSortField.DatePlayed,
-            Descending = true,
+            PlayedOnly = playedOnly,
+            FavouritesOnly = false,
         });
     }
 
     [Fact]
-    public void Recent_album_ids_follow_the_songs_and_skip_unplayed_ones()
+    public async Task Empty_shelf_reports_empty()
     {
-        // Songs the user never played come last in the server's order; they don't count.
-        Track[] songs =
-        [
-            Played("t1", "a"),
-            Played("t2", "b", 1),
-            Played("t3", "a", 2),
-            new() { Id = "t4", Name = "t4", AlbumId = "c" },
-            Played("t5", null!, 3),
-        ];
-
-        HomeViewModel.RecentAlbumIds(songs).Should().Equal("a", "b");
-    }
-
-    [Fact]
-    public void Recent_album_ids_stop_at_a_shelf()
-    {
-        var songs = Enumerable.Range(0, HomeViewModel.ShelfSize + 5).Select(i => Played($"t{i}", $"album{i}", i));
-
-        HomeViewModel.RecentAlbumIds(songs).Should().HaveCount(HomeViewModel.ShelfSize);
-    }
-
-    [Fact]
-    public async Task Recently_played_shows_the_albums_of_the_last_played_songs_in_that_order()
-    {
-        using var sut = CreateSut();
-
-        await sut.RefreshAsync();
-
-        // Not the albums sorted by their own play date: Jellyfin keeps that on songs (#367).
-        sut.Shelves[0].Albums.Select(a => a.Album.Id).Should().Equal("a", "b");
-        await _library.Received(1).GetAlbumsAsync(
-            Arg.Is<AlbumQuery>(q => q.Ids.SequenceEqual(new[] { "a", "b" }) && q.Limit == 2), Arg.Any<CancellationToken>());
-        await _library.DidNotReceive().GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q.SortBy == AlbumSortField.DatePlayed), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Recently_played_is_empty_without_played_songs()
-    {
-        _library.GetTracksAsync(Arg.Any<TrackQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new PagedResult<Track>([new Track { Id = "t1", Name = "t1", AlbumId = "a" }], 1, 0));
+        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q.PlayedOnly), Arg.Any<CancellationToken>()).Returns(Page("none", 0));
         using var sut = CreateSut();
 
         await sut.RefreshAsync();
 
         sut.Shelves[0].IsEmpty.Should().BeTrue();
-        await _library.DidNotReceive().GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q.Ids.Count > 0), Arg.Any<CancellationToken>());
+        sut.Shelves.Count(s => s.IsEmpty).Should().Be(1);
     }
 
     [Fact]
@@ -171,7 +115,8 @@ public sealed class HomeViewModelTests
         await sut.RefreshAsync();
 
         sut.IsLoading.Should().BeFalse();
-        sut.Shelves.Should().OnlyContain(s => s.IsLoaded && !s.IsLoading && !s.ShowsProgress && !s.LoadFailed && s.Albums.Count > 0);
+        sut.Shelves.Should().OnlyContain(s => s.IsLoaded && !s.IsLoading && !s.ShowsProgress && !s.LoadFailed && s.Albums.Count == 3);
+        sut.Shelves[0].Albums[0].Album.Id.Should().Be("DatePlayed-0");
         sut.Shelves[1].Albums[0].Album.Id.Should().Be("DateAdded-0");
         sut.Shelves[1].Albums[0].Cover!.Width.Should().Be((int)Math.Ceiling(HomeViewModel.TileWidth * 2));
         _errors.DidNotReceiveWithAnyArgs().Report(default!, default!);
@@ -181,9 +126,8 @@ public sealed class HomeViewModelTests
     public async Task Failed_shelves_show_an_error_and_are_reported_once()
     {
         var first = new JellyfinException("boom");
-        _library.GetTracksAsync(Arg.Any<TrackQuery>(), Arg.Any<CancellationToken>()).Returns(Task.FromException<PagedResult<Track>>(first));
-        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q == HomeViewModel.RecentlyAddedQuery), Arg.Any<CancellationToken>())
-            .Returns(Task.FromException<PagedResult<Album>>(new JellyfinException("boom again")));
+        FailFor(HomeShelfKind.RecentlyPlayed, first);
+        FailFor(HomeShelfKind.RecentlyAdded, new JellyfinException("boom again"));
         using var sut = CreateSut();
 
         await sut.RefreshAsync();
@@ -197,16 +141,15 @@ public sealed class HomeViewModelTests
     [Fact]
     public async Task Refresh_after_a_failure_clears_the_error()
     {
-        _library.GetTracksAsync(Arg.Any<TrackQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromException<PagedResult<Track>>(new JellyfinException("boom")));
+        FailFor(HomeShelfKind.RecentlyPlayed, new JellyfinException("boom"));
         using var sut = CreateSut();
         await sut.RefreshAsync();
 
-        _library.GetTracksAsync(Arg.Any<TrackQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new PagedResult<Track>([Played("t1", "a")], 1, 0));
+        _library.GetAlbumsAsync(Arg.Any<AlbumQuery>(), Arg.Any<CancellationToken>())
+            .Returns(call => Page(call.Arg<AlbumQuery>().SortBy.ToString(), 2));
         await sut.RefreshAsync();
 
-        sut.Shelves.Should().OnlyContain(s => !s.LoadFailed && s.Albums.Count > 0);
+        sut.Shelves.Should().OnlyContain(s => !s.LoadFailed && s.Albums.Count == 2);
     }
 
     [Fact]
@@ -233,9 +176,8 @@ public sealed class HomeViewModelTests
 
         firstToken.IsCancellationRequested.Should().BeTrue();
         sut.IsLoading.Should().BeFalse();
-        sut.Shelves[1].Albums.Select(a => a.Album.Id).Should().Equal("fresh-0");
+        sut.Shelves.Should().OnlyContain(s => s.Albums.Count == 1 && s.Albums[0].Album.Id == "fresh-0" && !s.IsLoading);
         sut.Highlight!.Album.Id.Should().Be("fresh-0");
-        sut.Shelves.Should().OnlyContain(s => !s.IsLoading);
     }
 
     [Fact]
@@ -243,8 +185,6 @@ public sealed class HomeViewModelTests
     {
         _library.GetAlbumsAsync(Arg.Any<AlbumQuery>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<PagedResult<Album>>(new InvalidOperationException("Not connected.")));
-        _library.GetTracksAsync(Arg.Any<TrackQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromException<PagedResult<Track>>(new InvalidOperationException("Not connected.")));
         using var sut = CreateSut();
 
         var act = () => sut.RefreshAsync();
