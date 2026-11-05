@@ -107,7 +107,6 @@ public sealed class LibraryServiceTests : IDisposable
     [InlineData(AlbumSortField.Year, true, "ProductionYear,SortName", "Descending")]
     [InlineData(AlbumSortField.AlbumArtist, false, "AlbumArtist,SortName", "Ascending")]
     [InlineData(AlbumSortField.DateAdded, true, "DateCreated,SortName", "Descending")]
-    [InlineData(AlbumSortField.PlayCount, true, "PlayCount,SortName", "Descending")]
     [InlineData(AlbumSortField.Random, false, "Random", "Ascending")]
     public async Task GetAlbums_maps_sort_order(AlbumSortField sortBy, bool descending, string expectedSortBy, string expectedOrder)
     {

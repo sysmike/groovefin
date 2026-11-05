@@ -30,7 +30,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
             throw new ArgumentException("MinYear must not be after MaxYear.", nameof(query));
         }
 
-        if (query.SortBy == AlbumSortField.DatePlayed || query.PlayedOnly)
+        if (query.SortBy is AlbumSortField.DatePlayed or AlbumSortField.PlayCount || query.PlayedOnly)
         {
             return await GetAlbumsByPlaysAsync(query, cancellationToken).ConfigureAwait(false);
         }
@@ -41,9 +41,10 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
     }
 
     /// <summary>
-    /// Albums by when one of their songs was last played, or only albums with a played song (#369). Jellyfin
-    /// keeps play dates on songs: an album's own date stays empty, and it counts as played only once every
-    /// song was. The order is worked out for the first page and kept for the next ones.
+    /// Albums by when one of their songs was last played (#369) or by how often their songs were played (#372),
+    /// or only albums with a played song. Jellyfin keeps play dates and counts on songs: an album's own stay
+    /// empty, and it counts as played only once every song was. The order is worked out for the first page and
+    /// kept for the next ones.
     /// </summary>
     private async Task<PagedResult<Album>> GetAlbumsByPlaysAsync(AlbumQuery query, CancellationToken cancellationToken)
     {
@@ -52,7 +53,8 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         {
             // Newest played albums without filters (the start page): enough songs for this page will do.
             var quick = query is { SortBy: AlbumSortField.DatePlayed, Descending: true, PlayedOnly: true } && !HasFilters(query);
-            var (played, complete) = await PlayedAlbumIdsAsync(quick ? query.StartIndex + query.Limit : int.MaxValue, cancellationToken).ConfigureAwait(false);
+            var byCount = query.SortBy == AlbumSortField.PlayCount;
+            var (played, plays, complete) = await PlayedAlbumsAsync(byCount, quick ? query.StartIndex + query.Limit : int.MaxValue, cancellationToken).ConfigureAwait(false);
             if (quick)
             {
                 order = new AlbumOrder(key, played, complete);
@@ -60,11 +62,11 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
             else
             {
                 var matching = await QueryAlbumsAsync(
-                    query with { SortBy = query.SortBy == AlbumSortField.DatePlayed ? AlbumSortField.Name : query.SortBy },
+                    query with { SortBy = query.SortBy is AlbumSortField.DatePlayed or AlbumSortField.PlayCount ? AlbumSortField.Name : query.SortBy },
                     idsOnly: true,
                     cancellationToken).ConfigureAwait(false);
                 var ids = (matching.Items ?? []).Select(item => ItemMapper.FormatId(item.Id)).OfType<string>().ToList();
-                order = new AlbumOrder(key, Order(ids, played, query), Complete: true);
+                order = new AlbumOrder(key, Order(ids, byCount ? MostPlayed(ids, plays) : played, query), Complete: true);
             }
 
             _albumOrder = order;
@@ -85,15 +87,15 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
     /// <summary>
     /// Puts the albums that match the query (<paramref name="matching"/>, by name or in the query's own order)
     /// in the order <paramref name="query"/> asks for, by <paramref name="played"/>: their IDs, most recently
-    /// played first. By last play, newest first, the played albums come first and the others follow by name;
-    /// oldest first is the reverse. Played only keeps the played ones.
+    /// or most often played first. By last play or play count, from the top, the played albums come first and
+    /// the others follow by name; from the bottom is the reverse. Played only keeps the played ones.
     /// </summary>
     internal static List<string> Order(IReadOnlyList<string> matching, IReadOnlyList<string> played, AlbumQuery query)
     {
         var matches = matching.ToHashSet(StringComparer.Ordinal);
         var playedMatching = played.Where(matches.Contains).Distinct(StringComparer.Ordinal).ToList();
         var wasPlayed = playedMatching.ToHashSet(StringComparer.Ordinal);
-        if (query.SortBy != AlbumSortField.DatePlayed)
+        if (query.SortBy is not (AlbumSortField.DatePlayed or AlbumSortField.PlayCount))
         {
             return [.. matching.Where(wasPlayed.Contains)];
         }
@@ -109,16 +111,25 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
     }
 
     /// <summary>
-    /// Gets the albums of the played songs, most recently played first, from at most
-    /// <see cref="MaxPlayedSongs"/> songs. Stops once it has <paramref name="wanted"/> albums;
-    /// <c>Complete</c> tells whether every played song was looked at.
+    /// Gets the played albums of <paramref name="matching"/> (by name), most played first: by the sum of
+    /// their songs' plays, ties by name.
     /// </summary>
-    private async Task<(List<string> Ids, bool Complete)> PlayedAlbumIdsAsync(int wanted, CancellationToken cancellationToken)
+    internal static List<string> MostPlayed(IReadOnlyList<string> matching, IReadOnlyDictionary<string, int> plays) =>
+        [.. matching.Where(plays.ContainsKey).OrderByDescending(id => plays[id])];
+
+    /// <summary>
+    /// Gets the albums of the played songs, most recently played first, or for <paramref name="byCount"/> in
+    /// the order of their most played song, with the sum of each album's song plays. Reads at most
+    /// <see cref="MaxPlayedSongs"/> songs, so the least played or longest ago drop out. Stops once it has
+    /// <paramref name="wanted"/> albums; <c>Complete</c> tells whether every played song was looked at.
+    /// </summary>
+    private async Task<(List<string> Ids, Dictionary<string, int> Plays, bool Complete)> PlayedAlbumsAsync(
+        bool byCount, int wanted, CancellationToken cancellationToken)
     {
         var (api, connection) = client.Active;
         var userId = Guid.Parse(connection.UserId);
         var ids = new List<string>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var plays = new Dictionary<string, int>(StringComparer.Ordinal);
         for (var start = 0; start < MaxPlayedSongs; start += PlayedSongPageSize)
         {
             var result = await JellyfinCall.RunAsync(
@@ -132,33 +143,45 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                         p.Recursive = true;
                         p.StartIndex = start;
                         p.Limit = PlayedSongPageSize;
-                        p.SortBy = [ItemSortBy.DatePlayed];
+                        p.SortBy = [byCount ? ItemSortBy.PlayCount : ItemSortBy.DatePlayed];
                         p.SortOrder = [SortOrder.Descending];
                         p.Filters = [ItemFilter.IsPlayed];
 
-                        // Only the album IDs are read.
+                        // Only the album IDs are read, and for the counts the songs' plays.
                         p.EnableImages = false;
-                        p.EnableUserData = false;
+                        p.EnableUserData = byCount;
                         p.EnableTotalRecordCount = false;
                     },
                     cancellationToken),
                 "Loading played songs").ConfigureAwait(false);
 
             var songs = result.Items ?? [];
-            ids.AddRange(songs.Select(song => ItemMapper.FormatId(song.AlbumId)).OfType<string>().Where(seen.Add));
+            foreach (var (albumId, count) in songs
+                .Select(song => (Album: ItemMapper.FormatId(song.AlbumId), Count: song.UserData?.PlayCount ?? 0))
+                .Where(song => song.Album is not null))
+            {
+                if (plays.TryAdd(albumId!, count))
+                {
+                    ids.Add(albumId!);
+                }
+                else
+                {
+                    plays[albumId!] += count;
+                }
+            }
 
             if (songs.Count < PlayedSongPageSize)
             {
-                return (ids, true);
+                return (ids, plays, true);
             }
 
             if (ids.Count >= wanted)
             {
-                return (ids, false);
+                return (ids, plays, false);
             }
         }
 
-        return (ids, false);
+        return (ids, plays, false);
     }
 
     /// <summary>
@@ -847,7 +870,8 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         AlbumSortField.AlbumArtist => [ItemSortBy.AlbumArtist, ItemSortBy.SortName],
         AlbumSortField.Year => [ItemSortBy.ProductionYear, ItemSortBy.SortName],
         AlbumSortField.DateAdded => [ItemSortBy.DateCreated, ItemSortBy.SortName],
-        AlbumSortField.PlayCount => [ItemSortBy.PlayCount, ItemSortBy.SortName],
+        // Ordered by the songs' plays in GetAlbumsByPlaysAsync, not by the server (#372).
+        AlbumSortField.PlayCount => [ItemSortBy.SortName],
         // Ordered by the songs' plays in GetAlbumsByPlaysAsync, not by the server (#369).
         AlbumSortField.DatePlayed => [ItemSortBy.SortName],
         AlbumSortField.Random => [ItemSortBy.Random],

@@ -142,6 +142,8 @@ public enum AlbumSortField
     AlbumArtist,
     Year,
     DateAdded,
+
+    /// <summary>How often the album's songs were played, together (#372); never played albums go by name.</summary>
     PlayCount,
 
     /// <summary>

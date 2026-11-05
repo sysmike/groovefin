@@ -13,6 +13,7 @@ public sealed class AlbumsByPlayTests : IDisposable
     private const string AlbumA = "aaaaaaaa000000000000000000000000";
     private const string AlbumB = "bbbbbbbb000000000000000000000000";
     private const string AlbumC = "cccccccc000000000000000000000000";
+    private const string AlbumD = "dddddddd000000000000000000000000";
 
     private readonly JellyfinTestHost _host = new();
 
@@ -23,8 +24,8 @@ public sealed class AlbumsByPlayTests : IDisposable
 
     private static object Album(string id, string name) => new { Id = Guid.ParseExact(id, "N"), Name = name, Type = "MusicAlbum" };
 
-    private static object Song(int number, string albumId) =>
-        new { Id = Guid.NewGuid(), Name = $"Song {number}", Type = "Audio", AlbumId = Guid.ParseExact(albumId, "N") };
+    private static object Song(int number, string albumId, int plays = 1) =>
+        new { Id = Guid.NewGuid(), Name = $"Song {number}", Type = "Audio", AlbumId = Guid.ParseExact(albumId, "N"), UserData = new { PlayCount = plays, Played = true } };
 
     private void Stub(IRequestBuilder request, object body, int priority) =>
         _host.Server.Given(request.UsingGet()).AtPriority(priority)
@@ -128,6 +129,45 @@ public sealed class AlbumsByPlayTests : IDisposable
         next.Items.Select(a => a.Name).Should().Equal("C");
         next.StartIndex.Should().Be(2);
         _host.Server.LogEntries.Count().Should().Be(requests + 1, "only the page's albums are loaded");
+    }
+
+    [Fact]
+    public async Task Most_played_sums_the_plays_of_each_album()
+    {
+        // A: 2 + 1 = 3 plays, B: 7, D: 4; C was never played. The server lists the songs most played first.
+        Stub(Request.Create().WithPath("/Items").WithParam("includeItemTypes", "Audio"),
+            new
+            {
+                Items = new[] { Song(1, AlbumB, plays: 7), Song(2, AlbumD, plays: 4), Song(3, AlbumA, plays: 2), Song(4, AlbumA, plays: 1) },
+                TotalRecordCount = 4,
+            },
+            1);
+        var albums = new[] { Album(AlbumA, "A"), Album(AlbumB, "B"), Album(AlbumC, "C"), Album(AlbumD, "D") };
+        Stub(Request.Create().WithPath("/Items").WithParam("ids"), new { Items = albums, TotalRecordCount = 4 }, 1);
+        Stub(Request.Create().WithPath("/Items").WithParam("includeItemTypes", "MusicAlbum"), new { Items = albums, TotalRecordCount = 4 }, 5);
+        _host.ConnectAsTestUser();
+
+        var most = await _host.Library.GetAlbumsAsync(new AlbumQuery { SortBy = AlbumSortField.PlayCount, Descending = true }, TestContext.Current.CancellationToken);
+        var least = await _host.Library.GetAlbumsAsync(new AlbumQuery { SortBy = AlbumSortField.PlayCount }, TestContext.Current.CancellationToken);
+
+        most.Items.Select(a => a.Name).Should().Equal("B", "D", "A", "C");
+        least.Items.Select(a => a.Name).Should().Equal("C", "A", "D", "B");
+
+        // The songs most played first, with their plays; no album by its own count.
+        var songs = Queries().First(q => q["includeItemTypes"] == "Audio");
+        songs["sortBy"].Should().Be("PlayCount");
+        songs["filters"].Should().Be("IsPlayed");
+        songs["enableUserData"].Should().BeEquivalentTo("true");
+        Queries().Where(q => q["includeItemTypes"] == "MusicAlbum").Should().OnlyContain(q => q["sortBy"] != "PlayCount");
+    }
+
+    [Fact]
+    public void Most_played_breaks_ties_by_name()
+    {
+        var plays = new Dictionary<string, int> { ["A"] = 2, ["B"] = 5, ["C"] = 2, ["X"] = 9 };
+
+        // X does not match the query; D was never played.
+        LibraryService.MostPlayed(["A", "B", "C", "D"], plays).Should().Equal("B", "A", "C");
     }
 
     [Theory]

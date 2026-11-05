@@ -110,7 +110,7 @@ flowchart TD
 | Interface | Lives in | Implemented in | Purpose |
 |---|---|---|---|
 | `IJellyfinClient` | Core | Jellyfin | Connection, authentication, server info. Entry point to the focused services below. |
-| `ILibraryService` | Core | Jellyfin | Albums, artists, tracks, genres, folders, favourites, instant mix. Jellyfin keeps play dates on songs, not albums, so albums by last play and "played only" are worked out from the played songs (newest first, up to 5,000): an album counts as played when one of its songs was (#369). |
+| `ILibraryService` | Core | Jellyfin | Albums, artists, tracks, genres, folders, favourites, instant mix. Jellyfin keeps play dates and counts on songs, not albums, so albums by last play, by play count and "played only" are worked out from the played songs (up to 5,000, newest or most played first): an album counts as played when one of its songs was (#369), and its play count is the sum of its songs' (#372). |
 | `IPlaylistService` | Core | Jellyfin | Playlist CRUD and track editing. |
 | `ISearchService` | Core | Jellyfin | Grouped search and suggestions. |
 | `ILyricsService` | Core | Jellyfin | Lyrics (synced LRC and plain text). |
