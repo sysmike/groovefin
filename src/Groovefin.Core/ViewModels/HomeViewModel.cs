@@ -101,9 +101,6 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     /// <summary>Cover width of the random album in device-independent pixels.</summary>
     public const double HighlightCoverWidth = 200;
 
-    /// <summary>Songs looked at for the recently played albums.</summary>
-    public const int RecentTrackCount = 200;
-
     private readonly ILibraryService _library;
     private readonly INavigationService _navigation;
     private readonly IErrorReporter _errors;
@@ -153,25 +150,16 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     /// <summary>Gets or sets the DPI scale of the view, used to request covers in physical pixels.</summary>
     public double DisplayScale { get; set; } = 1;
 
-    /// <summary>Gets the recently added albums, newest first.</summary>
-    public static AlbumQuery RecentlyAddedQuery { get; } = new() { Limit = ShelfSize, SortBy = AlbumSortField.DateAdded, Descending = true };
-
-    /// <summary>
-    /// Gets the last played songs, newest first. Jellyfin keeps play dates on songs, not on albums: an
-    /// album's own date stays empty, so sorting albums by it shows them by name (#367).
-    /// </summary>
-    public static TrackQuery RecentTracksQuery { get; } = new() { Limit = RecentTrackCount, SortBy = TrackSortField.DatePlayed, Descending = true };
+    /// <summary>Gets the query for a list.</summary>
+    public static AlbumQuery QueryFor(HomeShelfKind kind) => kind switch
+    {
+        HomeShelfKind.RecentlyPlayed => new() { Limit = ShelfSize, SortBy = AlbumSortField.DatePlayed, Descending = true, PlayedOnly = true },
+        HomeShelfKind.RecentlyAdded => new() { Limit = ShelfSize, SortBy = AlbumSortField.DateAdded, Descending = true },
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
+    };
 
     /// <summary>Gets two random albums: the second is shown when the first is the one shown already.</summary>
     public static AlbumQuery HighlightQuery { get; } = new() { Limit = 2, SortBy = AlbumSortField.Random };
-
-    /// <summary>Gets the albums of the played songs, in the order they were last played, at most <see cref="ShelfSize"/>.</summary>
-    public static IReadOnlyList<string> RecentAlbumIds(IEnumerable<Track> tracks) =>
-        tracks.Where(t => t.LastPlayed is not null && !string.IsNullOrEmpty(t.AlbumId))
-            .Select(t => t.AlbumId!)
-            .Distinct(StringComparer.Ordinal)
-            .Take(ShelfSize)
-            .ToList();
 
     /// <summary>Loads all lists and a new random album. A load that is still running is cancelled.</summary>
     [RelayCommand]
@@ -317,26 +305,6 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
         }
     }
 
-    private async Task<IReadOnlyList<Album>> GetShelfAlbumsAsync(HomeShelfKind kind, CancellationToken cancellation)
-    {
-        if (kind == HomeShelfKind.RecentlyAdded)
-        {
-            return (await _library.GetAlbumsAsync(RecentlyAddedQuery, cancellation)).Items;
-        }
-
-        var ids = RecentAlbumIds((await _library.GetTracksAsync(RecentTracksQuery, cancellation)).Items);
-        if (ids.Count == 0)
-        {
-            return [];
-        }
-
-        // The server sends them in its own order.
-        var albums = (await _library.GetAlbumsAsync(new AlbumQuery { Ids = ids, Limit = ids.Count }, cancellation)).Items
-            .DistinctBy(a => a.Id)
-            .ToDictionary(a => a.Id, StringComparer.Ordinal);
-        return ids.Where(albums.ContainsKey).Select(id => albums[id]).ToList();
-    }
-
     /// <summary>Loads one list; returns the failure, if any, so the page reports it once.</summary>
     private async Task<Exception?> LoadShelfAsync(HomeShelf shelf, CancellationToken cancellation)
     {
@@ -344,14 +312,14 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
         shelf.LoadFailed = false;
         try
         {
-            var albums = await GetShelfAlbumsAsync(shelf.Kind, cancellation);
+            var page = await _library.GetAlbumsAsync(QueryFor(shelf.Kind), cancellation);
             if (cancellation.IsCancellationRequested)
             {
                 return null;
             }
 
             shelf.Albums.Clear();
-            foreach (var album in albums)
+            foreach (var album in page.Items)
             {
                 shelf.Albums.Add(new AlbumItem(album, ImageRequest.Primary(album.Id, album.PrimaryImageTag, TileWidth, DisplayScale)));
             }

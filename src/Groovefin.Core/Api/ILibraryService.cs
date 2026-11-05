@@ -128,7 +128,7 @@ public sealed record AlbumQuery
     /// <summary>Gets an artist ID; only albums this artist appears on, but is not the album artist of, are included.</summary>
     public string? ContributingArtistId { get; init; }
 
-    /// <summary>Gets a value indicating whether only albums the user has played are included.</summary>
+    /// <summary>Gets a value indicating whether only albums with a song the user has played are included (#369).</summary>
     public bool PlayedOnly { get; init; }
 
     /// <summary>Gets album IDs; only these albums are included. Empty means all albums.</summary>
@@ -143,6 +143,10 @@ public enum AlbumSortField
     Year,
     DateAdded,
     PlayCount,
+
+    /// <summary>
+    /// When one of the album's songs was last played (#369); never played albums count as oldest and go by name.
+    /// </summary>
     DatePlayed,
     Random,
 }
