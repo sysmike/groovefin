@@ -175,6 +175,11 @@ public enum ArtistSortField
 {
     Name,
     DateAdded,
+
+    /// <summary>
+    /// How often the artist's songs were played, together (#374): an album artist's album songs, otherwise
+    /// the songs they are on. Never played artists go by name.
+    /// </summary>
     PlayCount,
     Random,
 }

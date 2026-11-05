@@ -18,7 +18,10 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
     internal const int MaxPlayedSongs = 5000;
 
     /// <summary>The last order of <see cref="GetAlbumsByPlaysAsync"/>, for the pages after its first.</summary>
-    private AlbumOrder? _albumOrder;
+    private PlayOrder? _albumOrder;
+
+    /// <summary>The last order of <see cref="GetArtistsByPlaysAsync"/>, for the pages after its first.</summary>
+    private PlayOrder? _artistOrder;
 
     public async Task<PagedResult<Album>> GetAlbumsAsync(AlbumQuery query, CancellationToken cancellationToken = default)
     {
@@ -54,10 +57,11 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
             // Newest played albums without filters (the start page): enough songs for this page will do.
             var quick = query is { SortBy: AlbumSortField.DatePlayed, Descending: true, PlayedOnly: true } && !HasFilters(query);
             var byCount = query.SortBy == AlbumSortField.PlayCount;
-            var (played, plays, complete) = await PlayedAlbumsAsync(byCount, quick ? query.StartIndex + query.Limit : int.MaxValue, cancellationToken).ConfigureAwait(false);
+            var (played, plays, complete) = await PlayedSongsAsync(
+                byCount, quick ? query.StartIndex + query.Limit : int.MaxValue, song => [song.AlbumId], cancellationToken).ConfigureAwait(false);
             if (quick)
             {
-                order = new AlbumOrder(key, played, complete);
+                order = new PlayOrder(key, played, complete);
             }
             else
             {
@@ -66,7 +70,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     idsOnly: true,
                     cancellationToken).ConfigureAwait(false);
                 var ids = (matching.Items ?? []).Select(item => ItemMapper.FormatId(item.Id)).OfType<string>().ToList();
-                order = new AlbumOrder(key, Order(ids, byCount ? MostPlayed(ids, plays) : played, query), Complete: true);
+                order = new PlayOrder(key, Order(ids, byCount ? MostPlayed(ids, plays) : played, query), Complete: true);
             }
 
             _albumOrder = order;
@@ -94,37 +98,43 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
     {
         var matches = matching.ToHashSet(StringComparer.Ordinal);
         var playedMatching = played.Where(matches.Contains).Distinct(StringComparer.Ordinal).ToList();
-        var wasPlayed = playedMatching.ToHashSet(StringComparer.Ordinal);
         if (query.SortBy is not (AlbumSortField.DatePlayed or AlbumSortField.PlayCount))
         {
+            var wasPlayed = playedMatching.ToHashSet(StringComparer.Ordinal);
             return [.. matching.Where(wasPlayed.Contains)];
         }
 
-        List<string> unplayed = query.PlayedOnly ? [] : [.. matching.Where(id => !wasPlayed.Contains(id))];
-        if (query.Descending)
-        {
-            return [.. playedMatching, .. unplayed];
-        }
-
-        playedMatching.Reverse();
-        return [.. unplayed, .. playedMatching];
+        return Ranked(matching, playedMatching, query.Descending, query.PlayedOnly);
     }
 
     /// <summary>
-    /// Gets the played albums of <paramref name="matching"/> (by name), most played first: by the sum of
-    /// their songs' plays, ties by name.
+    /// Puts <paramref name="played"/> (all in <paramref name="matching"/>, most recently or most often played
+    /// first) before the rest of <paramref name="matching"/> (by name), or for ascending order the rest first
+    /// and the played ones reversed. <paramref name="playedOnly"/> leaves the rest out.
+    /// </summary>
+    private static List<string> Ranked(IReadOnlyList<string> matching, IReadOnlyList<string> played, bool descending, bool playedOnly)
+    {
+        var wasPlayed = played.ToHashSet(StringComparer.Ordinal);
+        List<string> unplayed = playedOnly ? [] : [.. matching.Where(id => !wasPlayed.Contains(id))];
+        return descending ? [.. played, .. unplayed] : [.. unplayed, .. played.Reverse()];
+    }
+
+    /// <summary>
+    /// Gets the played albums or artists of <paramref name="matching"/> (by name), most played first: by the
+    /// sum of their songs' plays, ties by name.
     /// </summary>
     internal static List<string> MostPlayed(IReadOnlyList<string> matching, IReadOnlyDictionary<string, int> plays) =>
         [.. matching.Where(plays.ContainsKey).OrderByDescending(id => plays[id])];
 
     /// <summary>
-    /// Gets the albums of the played songs, most recently played first, or for <paramref name="byCount"/> in
-    /// the order of their most played song, with the sum of each album's song plays. Reads at most
-    /// <see cref="MaxPlayedSongs"/> songs, so the least played or longest ago drop out. Stops once it has
-    /// <paramref name="wanted"/> albums; <c>Complete</c> tells whether every played song was looked at.
+    /// Gets what the played songs are <paramref name="credited"/> to (their album, or their artists), most
+    /// recently played first, or for <paramref name="byCount"/> in the order of their most played song, with
+    /// the sum of each one's song plays. Reads at most <see cref="MaxPlayedSongs"/> songs, so the least played
+    /// or longest ago drop out. Stops once it has <paramref name="wanted"/> of them; <c>Complete</c> tells
+    /// whether every played song was looked at.
     /// </summary>
-    private async Task<(List<string> Ids, Dictionary<string, int> Plays, bool Complete)> PlayedAlbumsAsync(
-        bool byCount, int wanted, CancellationToken cancellationToken)
+    private async Task<(List<string> Ids, Dictionary<string, int> Plays, bool Complete)> PlayedSongsAsync(
+        bool byCount, int wanted, Func<BaseItemDto, IEnumerable<Guid?>> credited, CancellationToken cancellationToken)
     {
         var (api, connection) = client.Active;
         var userId = Guid.Parse(connection.UserId);
@@ -147,7 +157,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                         p.SortOrder = [SortOrder.Descending];
                         p.Filters = [ItemFilter.IsPlayed];
 
-                        // Only the album IDs are read, and for the counts the songs' plays.
+                        // Only the albums or artists are read, and for the counts the songs' plays.
                         p.EnableImages = false;
                         p.EnableUserData = byCount;
                         p.EnableTotalRecordCount = false;
@@ -156,17 +166,19 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                 "Loading played songs").ConfigureAwait(false);
 
             var songs = result.Items ?? [];
-            foreach (var (albumId, count) in songs
-                .Select(song => (Album: ItemMapper.FormatId(song.AlbumId), Count: song.UserData?.PlayCount ?? 0))
-                .Where(song => song.Album is not null))
+            foreach (var (id, count) in songs.SelectMany(song => credited(song)
+                .Select(ItemMapper.FormatId)
+                .OfType<string>()
+                .Distinct(StringComparer.Ordinal)
+                .Select(credit => (Id: credit, Count: song.UserData?.PlayCount ?? 0))))
             {
-                if (plays.TryAdd(albumId!, count))
+                if (plays.TryAdd(id, count))
                 {
-                    ids.Add(albumId!);
+                    ids.Add(id);
                 }
                 else
                 {
-                    plays[albumId!] += count;
+                    plays[id] += count;
                 }
             }
 
@@ -520,18 +532,85 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         ArgumentOutOfRangeException.ThrowIfNegative(query.StartIndex);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(query.Limit);
 
+        if (query.SortBy == ArtistSortField.PlayCount)
+        {
+            return await GetArtistsByPlaysAsync(query, cancellationToken).ConfigureAwait(false);
+        }
+
+        var result = await QueryArtistsAsync(query, idsOnly: false, cancellationToken).ConfigureAwait(false);
+        var items = (result.Items ?? []).Select(ItemMapper.ToArtist).ToList();
+        return new PagedResult<Artist>(items, result.TotalRecordCount ?? items.Count, result.StartIndex ?? query.StartIndex);
+    }
+
+    /// <summary>
+    /// Artists by how often their songs were played (#374). Jellyfin counts plays on songs: an artist's own
+    /// count stays 0. A song counts for its album artists, or when every artist is listed, for its track
+    /// artists. The order is worked out for the first page and kept for the next ones.
+    /// </summary>
+    private async Task<PagedResult<Artist>> GetArtistsByPlaysAsync(ArtistQuery query, CancellationToken cancellationToken)
+    {
+        var key = string.Join('|', client.Active.Connection.UserId, client.Active.Connection.LibraryId, query.AlbumArtistsOnly, query.Descending, query.FavouritesOnly);
+        if (query.StartIndex == 0 || _artistOrder is not { } order || order.Key != key)
+        {
+            var (_, plays, _) = await PlayedSongsAsync(
+                byCount: true,
+                int.MaxValue,
+                song => (query.AlbumArtistsOnly ? song.AlbumArtists : song.ArtistItems)?.Select(artist => artist.Id) ?? [],
+                cancellationToken).ConfigureAwait(false);
+            var matching = await QueryArtistsAsync(query with { SortBy = ArtistSortField.Name, Descending = false }, idsOnly: true, cancellationToken).ConfigureAwait(false);
+            var ids = (matching.Items ?? []).Select(item => ItemMapper.FormatId(item.Id)).OfType<string>().ToList();
+            order = new PlayOrder(key, Ranked(ids, MostPlayed(ids, plays), query.Descending, playedOnly: false), Complete: true);
+            _artistOrder = order;
+        }
+
+        var pageIds = order.Ids.Skip(query.StartIndex).Take(query.Limit).ToList();
+        List<Artist> artists = pageIds.Count == 0 ? [] : await GetArtistsByIdAsync(pageIds, cancellationToken).ConfigureAwait(false);
+        var byId = artists.DistinctBy(a => a.Id).ToDictionary(a => a.Id, StringComparer.Ordinal);
+        return new PagedResult<Artist>([.. pageIds.Where(byId.ContainsKey).Select(id => byId[id])], order.Ids.Count, query.StartIndex);
+    }
+
+    /// <summary>Gets artists by ID, in no particular order.</summary>
+    private async Task<List<Artist>> GetArtistsByIdAsync(IReadOnlyList<string> artistIds, CancellationToken cancellationToken)
+    {
+        var (api, connection) = client.Active;
+        var userId = Guid.Parse(connection.UserId);
+        var result = await JellyfinCall.RunAsync(
+            () => api.Items.GetAsync(
+                request =>
+                {
+                    var p = request.QueryParameters;
+                    p.UserId = userId;
+                    p.Ids = artistIds.Select(id => (Guid?)ParseId(id)).ToArray();
+                    p.EnableUserData = true;
+                    p.EnableTotalRecordCount = false;
+                    p.ImageTypeLimit = 1;
+                    p.EnableImageTypes = [ImageType.Primary];
+                },
+                cancellationToken),
+            "Loading artists").ConfigureAwait(false);
+        return [.. (result.Items ?? []).Select(ItemMapper.ToArtist)];
+    }
+
+    /// <summary>
+    /// Asks the server for artists or album artists. <paramref name="idsOnly"/> asks for every matching one at
+    /// once, without images or user data: only their IDs are read.
+    /// </summary>
+    private Task<BaseItemDtoQueryResult> QueryArtistsAsync(ArtistQuery query, bool idsOnly, CancellationToken cancellationToken)
+    {
         var (api, connection) = client.Active;
         var userId = Guid.Parse(connection.UserId);
         var order = query.Descending ? SortOrder.Descending : SortOrder.Ascending;
 
         var sortBy = ArtistSortFields(query.SortBy);
         bool? favourites = query.FavouritesOnly ? true : null;
+        int? startIndex = idsOnly ? null : query.StartIndex;
+        int? limit = idsOnly ? null : query.Limit;
 
         // /Artists/AlbumArtists and /Artists take the same parameters, in two generated types.
         // TODO(#95): the server marks both obsolete ("Use GetPersons"), but /Persons cannot sort or
         // tell album artists apart yet, and the official web client still uses these endpoints.
 #pragma warning disable CS0618
-        var result = await JellyfinCall.RunAsync(
+        return JellyfinCall.RunAsync(
             () => query.AlbumArtistsOnly
                 ? api.Artists.AlbumArtists.GetAsync(
                     request =>
@@ -539,13 +618,14 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                         var p = request.QueryParameters;
                         p.UserId = userId;
                         p.ParentId = LibraryFolder(connection);
-                        p.StartIndex = query.StartIndex;
-                        p.Limit = query.Limit;
+                        p.StartIndex = startIndex;
+                        p.Limit = limit;
                         p.SortBy = sortBy;
                         p.SortOrder = [order];
                         p.IsFavorite = favourites;
-                        p.EnableUserData = true;
-                        p.EnableTotalRecordCount = true;
+                        p.EnableUserData = !idsOnly;
+                        p.EnableTotalRecordCount = !idsOnly;
+                        p.EnableImages = !idsOnly;
                         p.ImageTypeLimit = 1;
                         p.EnableImageTypes = [ImageType.Primary];
                     },
@@ -556,22 +636,20 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                         var p = request.QueryParameters;
                         p.UserId = userId;
                         p.ParentId = LibraryFolder(connection);
-                        p.StartIndex = query.StartIndex;
-                        p.Limit = query.Limit;
+                        p.StartIndex = startIndex;
+                        p.Limit = limit;
                         p.SortBy = sortBy;
                         p.SortOrder = [order];
                         p.IsFavorite = favourites;
-                        p.EnableUserData = true;
-                        p.EnableTotalRecordCount = true;
+                        p.EnableUserData = !idsOnly;
+                        p.EnableTotalRecordCount = !idsOnly;
+                        p.EnableImages = !idsOnly;
                         p.ImageTypeLimit = 1;
                         p.EnableImageTypes = [ImageType.Primary];
                     },
                     cancellationToken),
-            "Loading artists").ConfigureAwait(false);
+            "Loading artists");
 #pragma warning restore CS0618
-
-        var items = (result.Items ?? []).Select(ItemMapper.ToArtist).ToList();
-        return new PagedResult<Artist>(items, result.TotalRecordCount ?? items.Count, result.StartIndex ?? query.StartIndex);
     }
 
     public async Task<Artist> GetArtistAsync(string artistId, CancellationToken cancellationToken = default)
@@ -833,7 +911,8 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
     {
         ArtistSortField.Name => [ItemSortBy.SortName],
         ArtistSortField.DateAdded => [ItemSortBy.DateCreated, ItemSortBy.SortName],
-        ArtistSortField.PlayCount => [ItemSortBy.PlayCount, ItemSortBy.SortName],
+        // Ordered by the songs' plays in GetArtistsByPlaysAsync, not by the server (#374).
+        ArtistSortField.PlayCount => [ItemSortBy.SortName],
         ArtistSortField.Random => [ItemSortBy.Random],
         _ => throw new ArgumentOutOfRangeException(nameof(sortBy), sortBy, null),
     };
@@ -878,5 +957,6 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         _ => throw new ArgumentOutOfRangeException(nameof(sortBy), sortBy, null),
     };
 
-    private sealed record AlbumOrder(string Key, List<string> Ids, bool Complete);
+    /// <summary>Albums or artists in the order of their songs' plays, for the query <c>Key</c> names.</summary>
+    private sealed record PlayOrder(string Key, List<string> Ids, bool Complete);
 }
