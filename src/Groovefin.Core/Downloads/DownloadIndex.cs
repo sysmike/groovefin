@@ -86,10 +86,10 @@ public sealed record DownloadIndex
     public DateTimeOffset? LastSync { get; set; }
 
     /// <summary>
-    /// Gets or sets whether the covers of the FLAC files downloaded before #361 were turned into padding
-    /// (<see cref="FlacCovers"/>). A download from then on gets it right away.
+    /// Gets or sets whether the FLAC files downloaded before #365 had their audio moved to the front
+    /// (<see cref="FlacMetadata"/>). A download from then on gets it right away.
     /// </summary>
-    public bool FlacCoversCleared { get; set; }
+    public bool FlacFilesCompacted { get; set; }
 
     /// <summary>
     /// Gets or sets whether the <c>.aac</c> files were checked for MP4 files, which get the <c>.m4a</c> they need
