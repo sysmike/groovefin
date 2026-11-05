@@ -145,13 +145,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                 "Loading played songs").ConfigureAwait(false);
 
             var songs = result.Items ?? [];
-            foreach (var song in songs)
-            {
-                if (ItemMapper.FormatId(song.AlbumId) is { } albumId && seen.Add(albumId))
-                {
-                    ids.Add(albumId);
-                }
-            }
+            ids.AddRange(songs.Select(song => ItemMapper.FormatId(song.AlbumId)).OfType<string>().Where(seen.Add));
 
             if (songs.Count < PlayedSongPageSize)
             {
