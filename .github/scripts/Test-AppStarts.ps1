@@ -1232,6 +1232,7 @@ try {
         Stop-Test 'Favourites columns' "The favourite songs' titles start $favouriteTitleInset px into the list: no room for the cover before them."
     }
     Write-Output "The favourite songs are a table: titles and albums under their headers, the titles after the cover ($favouriteTitleInset px into the list)."
+    Save-Screenshot 'favourites'
     Test-Accessibility 'favourites'
     Test-TabOrder 'favourites'
 
