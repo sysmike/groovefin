@@ -36,7 +36,7 @@ public sealed class HomeViewModelTests
                 Name = $"{call.Arg<string>()} in full",
                 PrimaryImageTag = "tag",
                 Year = 2001,
-                Genres = [new Genre { Id = "g1", Name = "House" }],
+                Genres = [new Genre("g1", "House")],
             });
         _library.GetAlbumTracksAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns([new Track { Id = "song", Name = "Song", Duration = TimeSpan.FromMinutes(3) }]);
@@ -313,7 +313,7 @@ public sealed class HomeViewModelTests
 
         sut.Highlight!.Cover.Should().BeNull();
         sut.Highlight.Colour.Should().BeNull();
-        await _colours.DidNotReceiveWithAnyArgs().GetAsync(default!, default);
+        await _colours.DidNotReceiveWithAnyArgs().GetAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
