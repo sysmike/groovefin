@@ -323,6 +323,19 @@ try {
         else { $item.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
     }
 
+    # After the checked Settings button was clicked (#357): Albums is shown again and the button is unchecked.
+    function Test-SettingsLeft([string] $from) {
+        $toggle = (Find-ById 'SettingsButton').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+        $albums = Find-Element ([System.Windows.Automation.AndCondition]::new(
+                [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Albums'),
+                [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) "navigation item 'Albums'"
+        $selected = $albums.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected
+        if (-not $selected -or $toggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::Off) {
+            Stop-Test 'Settings' "The checked Settings button on the $from page did not return to Albums (Albums selected: $selected, button: $($toggle.Current.ToggleState))."
+        }
+        Write-Output "The checked Settings button on the $from page returned to Albums and is unchecked."
+    }
+
     # GitHub's Windows runners have no sound card: Media Foundation then fails at the audio output
     # (0xC00D36FA, "failed to create mediasink"), after the equalizer effect has been negotiated.
     $hasAudio = [bool] (Get-CimInstance Win32_SoundDevice -ErrorAction SilentlyContinue)
@@ -1872,6 +1885,13 @@ try {
     Start-Sleep -Seconds 1
     if ($settingsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Settings' 'Ctrl+, did not open Settings, or the title bar''s Settings button is not checked there.' }
     Write-Output 'Ctrl+, opened Settings from Albums; the title bar''s Settings button is unchecked on Albums and checked on Settings.'
+    # The checked Settings button closes Settings again: back to Albums, unchecked (#357). Then Ctrl+, once more.
+    $settingsToggle.Toggle()
+    Start-Sleep -Seconds 1
+    Test-SettingsLeft 'settings'
+    [System.Windows.Forms.SendKeys]::SendWait('^,')
+    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) 'settings page after Ctrl+, again'
+    Start-Sleep -Seconds 1
 
     # The Servers page from Settings, in the maximized window, is centred like Settings (#347). UI Automation's
     # Invoke on the card failed with an invalid cast, and the first card found can be a stale one without a
@@ -1937,8 +1957,10 @@ try {
         Start-Sleep -Seconds 1
     }
     if ($centringFailures.Count -gt 0) { Stop-Test 'Centred pages' ($centringFailures -join ' ') }
-    Select-Navigation 'Albums'
+    # On the Servers page, the Settings button leaves Settings too: back past Settings to Albums (#357).
+    (Find-ById 'SettingsButton').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
     Start-Sleep -Seconds 1
+    Test-SettingsLeft 'servers'
 
     # Minimum size (#241): shrunk far below it, the window's client area stops at 860x600, and with the queue
     # open every button of the title bar, the now playing bar and the queue is whole inside the window; the

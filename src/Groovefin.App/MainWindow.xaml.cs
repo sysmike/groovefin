@@ -570,10 +570,13 @@ internal sealed partial class MainWindow : Window
         }
     }
 
-    /// <summary>A click toggles the button: it shows whether Settings is shown, also when it already was.</summary>
+    /// <summary>
+    /// Opens Settings, or closes it again when it is shown (#357). A click toggles the button: afterwards it
+    /// shows whether Settings is shown, also when nothing changed.
+    /// </summary>
     private void OnSettingsButtonClick(object sender, RoutedEventArgs e)
     {
-        ViewModel.NavigateCommand.Execute(PageKeys.Settings);
+        ViewModel.ToggleSettingsCommand.Execute(null);
         SyncSelection(ViewModel.SelectedSection);
     }
 

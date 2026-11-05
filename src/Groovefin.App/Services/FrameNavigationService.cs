@@ -85,6 +85,32 @@ internal sealed partial class FrameNavigationService(ILogger<FrameNavigationServ
         return true;
     }
 
+    public bool GoBackTo(Func<string, bool> match)
+    {
+        if (_frame is null)
+        {
+            return false;
+        }
+
+        var stack = _frame.BackStack;
+        for (var i = stack.Count - 1; i >= 0; i--)
+        {
+            if (stack[i].Parameter is PageNavigationArgs args && match(args.PageKey))
+            {
+                // One step back, with one transition: the pages in between leave the history.
+                while (stack.Count > i + 1)
+                {
+                    stack.RemoveAt(stack.Count - 1);
+                }
+
+                _frame.GoBack();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public bool GoForward()
     {
         if (_frame is not { CanGoForward: true })

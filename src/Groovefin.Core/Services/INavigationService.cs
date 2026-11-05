@@ -25,6 +25,13 @@ public interface INavigationService
     /// <returns><see langword="true"/> when navigation happened.</returns>
     bool GoBack();
 
+    /// <summary>
+    /// Goes back to the most recent earlier page whose key matches <paramref name="match"/>. The pages after it
+    /// leave the history, except the page shown now, which Forward returns to.
+    /// </summary>
+    /// <returns><see langword="true"/> when navigation happened; <see langword="false"/> when no earlier page matches.</returns>
+    bool GoBackTo(Func<string, bool> match);
+
     /// <summary>Navigates to the page the user went back from.</summary>
     /// <returns><see langword="true"/> when navigation happened.</returns>
     bool GoForward();

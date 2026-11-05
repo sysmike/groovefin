@@ -94,6 +94,22 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         _navigation.NavigateTo(pageKey);
     }
 
+    /// <summary>
+    /// The title bar's Settings button (#357): opens Settings, or, while Settings or the Servers page is shown,
+    /// returns to the page shown before Settings was opened. Without one (the first run) nothing happens.
+    /// </summary>
+    [RelayCommand]
+    private void ToggleSettings()
+    {
+        if (SelectedSection != PageKeys.Settings)
+        {
+            Navigate(PageKeys.Settings);
+            return;
+        }
+
+        _navigation.GoBackTo(key => key is not (PageKeys.Settings or PageKeys.Servers));
+    }
+
     [RelayCommand]
     private void DismissNotification(AppNotification notification) => _notifications.Dismiss(notification);
 
