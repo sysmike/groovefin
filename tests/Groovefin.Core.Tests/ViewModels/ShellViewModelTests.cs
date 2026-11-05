@@ -152,6 +152,54 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
+    public void ToggleSettings_opens_settings_from_another_page()
+    {
+        using var sut = CreateSut();
+        _navigation.CurrentPageKey.Returns(PageKeys.Albums);
+        RaiseNavigated(PageKeys.Albums);
+
+        sut.ToggleSettingsCommand.Execute(null);
+
+        _navigation.Received(1).NavigateTo(PageKeys.Settings);
+        _navigation.DidNotReceiveWithAnyArgs().GoBackTo(default!);
+    }
+
+    [Theory]
+    [InlineData(PageKeys.Settings)]
+    [InlineData(PageKeys.Servers)]
+    public void ToggleSettings_on_a_settings_page_returns_to_the_page_before_settings(string pageKey)
+    {
+        using var sut = CreateSut();
+        _navigation.CurrentPageKey.Returns(pageKey);
+        Func<string, bool>? match = null;
+        _navigation.GoBackTo(Arg.Do<Func<string, bool>>(m => match = m)).Returns(true);
+        RaiseNavigated(pageKey);
+
+        sut.ToggleSettingsCommand.Execute(null);
+
+        _navigation.DidNotReceiveWithAnyArgs().NavigateTo(default!);
+        match.Should().NotBeNull();
+        match!(PageKeys.Settings).Should().BeFalse("Settings is what the button leaves");
+        match(PageKeys.Servers).Should().BeFalse("the Servers page is part of Settings");
+        match(PageKeys.Albums).Should().BeTrue();
+        match(PageKeys.Album).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ToggleSettings_without_an_earlier_page_stays()
+    {
+        using var sut = CreateSut();
+        _navigation.CurrentPageKey.Returns(PageKeys.Servers);
+        _navigation.GoBackTo(Arg.Any<Func<string, bool>>()).Returns(false);
+        RaiseNavigated(PageKeys.Servers);
+
+        sut.ToggleSettingsCommand.Execute(null);
+
+        _navigation.DidNotReceiveWithAnyArgs().NavigateTo(default!);
+        sut.SelectedSection.Should().Be(PageKeys.Settings);
+    }
+
+    [Fact]
     public void GoBack_is_disabled_until_navigation_reports_a_back_stack()
     {
         using var sut = CreateSut();
