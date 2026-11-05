@@ -48,7 +48,8 @@ public readonly record struct CoverColour(byte R, byte G, byte B)
                 continue;
             }
 
-            double b = bgra[i], g = bgra[i + 1], r = bgra[i + 2];
+            // Whole channel values: the comparisons below are exact.
+            int b = bgra[i], g = bgra[i + 1], r = bgra[i + 2];
             count++;
             sumR += r;
             sumG += g;
@@ -56,8 +57,8 @@ public readonly record struct CoverColour(byte R, byte G, byte B)
 
             var max = Math.Max(r, Math.Max(g, b));
             var min = Math.Min(r, Math.Min(g, b));
-            var brightness = max / 255;
-            var saturation = max == 0 ? 0 : (max - min) / max;
+            var brightness = max / 255.0;
+            var saturation = max == 0 ? 0 : (max - min) / (double)max;
             if (saturation < MinSaturation || brightness < MinBrightness)
             {
                 continue;
@@ -141,9 +142,9 @@ public readonly record struct CoverColour(byte R, byte G, byte B)
 
     private CoverColour Scaled(double factor) => new(Round(R * factor), Round(G * factor), Round(B * factor));
 
-    private static double Hue(double r, double g, double b, double max, double min)
+    private static double Hue(int r, int g, int b, int max, int min)
     {
-        var range = max - min;
+        double range = max - min;
         var hue = max == r ? (g - b) / range
             : max == g ? 2 + ((b - r) / range)
             : 4 + ((r - g) / range);
