@@ -1,6 +1,10 @@
 namespace Groovefin.Core.Models;
 
-/// <summary>A playable audio track.</summary>
+/// <summary>
+/// A playable audio track.
+/// Saved in the downloads index and the session: the properties with a default have setters, so a file without
+/// one keeps the default (#355).
+/// </summary>
 public sealed record Track
 {
     public required string Id { get; init; }
@@ -18,7 +22,7 @@ public sealed record Track
     public string? AlbumArtist { get; init; }
 
     /// <summary>Gets the track's artists (may differ from the album artist on compilations).</summary>
-    public IReadOnlyList<ArtistRef> Artists { get; init; } = [];
+    public IReadOnlyList<ArtistRef> Artists { get; set; } = [];
 
     public TimeSpan? Duration { get; init; }
 

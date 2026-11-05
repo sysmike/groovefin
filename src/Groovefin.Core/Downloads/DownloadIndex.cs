@@ -30,7 +30,7 @@ public sealed record DownloadedPlaylist
 {
     public required Playlist Playlist { get; init; }
 
-    public IReadOnlyList<string> TrackIds { get; init; } = [];
+    public IReadOnlyList<string> TrackIds { get; set; } = [];
 }
 
 /// <summary>A downloaded favourite album: what it is and its songs in order, for offline browsing later (#331).</summary>
@@ -38,7 +38,7 @@ public sealed record DownloadedAlbum
 {
     public required Album Album { get; init; }
 
-    public IReadOnlyList<string> TrackIds { get; init; } = [];
+    public IReadOnlyList<string> TrackIds { get; set; } = [];
 }
 
 /// <summary>A downloaded favourite artist: who it is and its songs, for offline browsing later (#331).</summary>
@@ -46,18 +46,22 @@ public sealed record DownloadedArtist
 {
     public required Artist Artist { get; init; }
 
-    public IReadOnlyList<string> TrackIds { get; init; } = [];
+    public IReadOnlyList<string> TrackIds { get; set; } = [];
 }
 
-/// <summary>What one user downloaded from one server, as saved next to the files (#327).</summary>
+/// <summary>
+/// What one user downloaded from one server, as saved next to the files (#327).
+/// The properties with a default have setters: for one a file does not have, the source-generated JSON reader
+/// then keeps the default, where it sets an init-only property to <see langword="null"/> or 0 (#353, #355).
+/// </summary>
 public sealed record DownloadIndex
 {
     public const int CurrentVersion = 1;
 
-    public int Version { get; init; } = CurrentVersion;
+    public int Version { get; set; } = CurrentVersion;
 
     /// <summary>Gets the downloaded songs by ID.</summary>
-    public Dictionary<string, DownloadedTrack> Tracks { get; init; } = [];
+    public Dictionary<string, DownloadedTrack> Tracks { get; set; } = [];
 
     /// <summary>Gets or sets the favourite songs at the last sync, by name.</summary>
     public IReadOnlyList<string> FavouriteSongs { get; set; } = [];
