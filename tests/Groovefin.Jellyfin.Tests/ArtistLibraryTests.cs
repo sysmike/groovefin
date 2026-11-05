@@ -72,12 +72,12 @@ public sealed class ArtistLibraryTests : IDisposable
         Stub("/Artists", ArtistsResponse);
 
         await _host.Library.GetArtistsAsync(
-            new ArtistQuery { AlbumArtistsOnly = false, SortBy = ArtistSortField.PlayCount, Descending = true, FavouritesOnly = true },
+            new ArtistQuery { AlbumArtistsOnly = false, SortBy = ArtistSortField.DateAdded, Descending = true, FavouritesOnly = true },
             Ct);
 
         LastPath().Should().Be("/Artists");
         var query = LastQuery();
-        query["sortBy"].Should().Be("PlayCount,SortName");
+        query["sortBy"].Should().Be("DateCreated,SortName");
         query["sortOrder"].Should().Be("Descending");
         query["isFavorite"].Should().BeEquivalentTo("true");
     }
