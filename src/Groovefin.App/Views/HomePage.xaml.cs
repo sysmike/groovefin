@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Navigation;
 
 namespace Groovefin.App.Views;
 
-/// <summary>Landing page: a random album, then horizontal album lists (recently played, recently added).</summary>
+/// <summary>Landing page: a random album, then rows of albums that fit the window (recently played, recently added).</summary>
 internal sealed partial class HomePage : Page
 {
     public HomePage()
@@ -38,7 +38,24 @@ internal sealed partial class HomePage : Page
         await ViewModel.RefreshAsync();
     }
 
-    private void OnShelfLoaded(object sender, RoutedEventArgs e) => Shelf.ScrollHorizontally(sender as ItemsView);
+    private void OnShelfLoaded(object sender, RoutedEventArgs e) => Shelf.ScrollNever(sender as ItemsView);
+
+    /// <summary>A row shows as many albums as fit in its width (#376).</summary>
+    private void OnShelfSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is ItemsView { Tag: HomeShelf shelf } view)
+        {
+            shelf.Fit(HomeShelf.TilesThatFit(e.NewSize.Width - view.Padding.Left - view.Padding.Right));
+        }
+    }
+
+    private void OnShowAllClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is HomeShelf shelf)
+        {
+            ViewModel.ShowAllCommand.Execute(shelf);
+        }
+    }
 
     private void OnGenreClick(object sender, RoutedEventArgs e)
     {

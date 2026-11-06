@@ -608,6 +608,13 @@
     <value>Recently played</value>
     <comment>Home page list heading</comment>
   </data>
+  <data name="HomeShelfShowAll" xml:space="preserve">
+    <value>Show all: {0}</value>
+    <comment>Home page: name of a list's "Show all" link; {0} is the list's heading</comment>
+  </data>
+  <data name="HomeShelfShowAllButton.Content" xml:space="preserve">
+    <value>Show all</value>
+  </data>
   <data name="HomeShelfEmpty.Text" xml:space="preserve">
     <value>Nothing here yet.</value>
   </data>

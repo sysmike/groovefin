@@ -28,6 +28,9 @@ public sealed record AlbumItem(Album Album, ImageRequest? Cover)
     public bool IsDownloaded { get; init; }
 }
 
+/// <summary>The order to open the Albums page in, e.g. from "Show all" on the home page (#376).</summary>
+public sealed record AlbumsOrder(AlbumSortField SortBy, bool Descending);
+
 /// <summary>
 /// Albums page: pages through all albums of the active server with sorting and filters. Loads the next
 /// page when the view scrolls near the end (<see cref="LoadMoreCommand"/>). Sort and view mode are
@@ -48,6 +51,7 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private int _generation;
     private bool _initialized;
+    private bool _holdReload;
 
     public AlbumsViewModel(ILibraryService library, ISettingsService settings, INavigationService navigation, IErrorReporter errors)
     {
@@ -129,6 +133,28 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
         await reload;
     }
 
+    /// <summary>
+    /// Shows every album in <paramref name="order"/>: filters are cleared and the list reloads once. Before
+    /// <see cref="InitializeAsync"/> it only sets the order, which the first load uses.
+    /// </summary>
+    public Task ShowAsync(AlbumsOrder order)
+    {
+        ArgumentNullException.ThrowIfNull(order);
+        _holdReload = true;
+        try
+        {
+            SortBy = order.SortBy;
+            Descending = order.Descending;
+            ClearFilters();
+        }
+        finally
+        {
+            _holdReload = false;
+        }
+
+        return ReloadAsync();
+    }
+
     private bool CanLoadMore() => !IsLoading && Albums.Count < TotalCount;
 
     [RelayCommand(CanExecute = nameof(CanLoadMore))]
@@ -191,7 +217,7 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     /// <summary>Starts over: cancels a running load, clears the list and loads the first page.</summary>
     public Task ReloadAsync()
     {
-        if (!_initialized)
+        if (!_initialized || _holdReload)
         {
             return Task.CompletedTask;
         }

@@ -232,4 +232,41 @@ public sealed class AlbumsViewModelTests
 
         _queries.Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task Show_all_from_the_home_page_clears_the_filters_and_reloads_once()
+    {
+        using var sut = CreateSut();
+        await sut.InitializeAsync();
+        sut.Genre = sut.Genres[1];
+        sut.FavouritesOnly = true;
+        await Task.Yield();
+        var before = _queries.Count;
+
+        await sut.ShowAsync(new AlbumsOrder(AlbumSortField.DatePlayed, Descending: true));
+
+        sut.HasFilters.Should().BeFalse();
+        _queries.Should().HaveCount(before + 1);
+        _queries[^1].Should().BeEquivalentTo(new
+        {
+            StartIndex = 0,
+            SortBy = AlbumSortField.DatePlayed,
+            Descending = true,
+            GenreIds = Array.Empty<string>(),
+            FavouritesOnly = false,
+        });
+        _settings.Current.Browse.AlbumSort.Should().Be(AlbumSortField.DatePlayed);
+    }
+
+    [Fact]
+    public async Task Show_all_before_the_page_is_shown_sets_the_order_of_the_first_load()
+    {
+        using var sut = CreateSut();
+
+        await sut.ShowAsync(new AlbumsOrder(AlbumSortField.DateAdded, Descending: true));
+        _queries.Should().BeEmpty();
+        await sut.InitializeAsync();
+
+        _queries.Should().ContainSingle().Which.Should().BeEquivalentTo(new { SortBy = AlbumSortField.DateAdded, Descending = true });
+    }
 }

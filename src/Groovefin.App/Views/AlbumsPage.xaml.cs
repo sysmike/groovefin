@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Groovefin.App.Controls;
+using Groovefin.App.Services;
 using Groovefin.Core.Api;
 using Groovefin.Core.Models;
 using Groovefin.Core.Services;
@@ -58,6 +59,15 @@ internal sealed partial class AlbumsPage : Page
         base.OnNavigatedTo(e);
         Loaded -= OnFirstLoaded;
         Loaded -= OnReturnLoaded;
+
+        // "Show all" on the home page opens the page in its row's order (#376).
+        var order = (e.Parameter as PageNavigationArgs)?.Parameter as AlbumsOrder;
+        if (e.NavigationMode != NavigationMode.Back && order is not null)
+        {
+            _ = ViewModel.ShowAsync(order);
+            SyncControls();
+        }
+
         if (!_initialized)
         {
             Loaded += OnFirstLoaded;
@@ -70,7 +80,10 @@ internal sealed partial class AlbumsPage : Page
         {
             // From the navigation pane: start fresh, the server or music library may have changed.
             _openedAlbum = null;
-            _ = ViewModel.ReloadAsync();
+            if (order is null)
+            {
+                _ = ViewModel.ReloadAsync();
+            }
         }
     }
 
