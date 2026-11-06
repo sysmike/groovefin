@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Images;
+using Groovefin.Core.Layout;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -19,14 +20,28 @@ public enum HomeShelfKind
     RecentlyAdded,
 }
 
-/// <summary>One horizontal album list on the home page with its own loading, empty and error state.</summary>
-public sealed partial class HomeShelf(HomeShelfKind kind, string title) : ObservableObject
+/// <summary>
+/// One row of albums on the home page with its own loading, empty and error state. It shows only as
+/// many of its albums as fit in the window (#376); "Show all" opens the Albums page in the same order.
+/// </summary>
+public sealed partial class HomeShelf(HomeShelfKind kind, string title, string showAllName) : ObservableObject
 {
+    private List<AlbumItem> _loaded = [];
+    private int _tiles = int.MaxValue;
+
     public HomeShelfKind Kind { get; } = kind;
 
     public string Title { get; } = title;
 
+    /// <summary>Gets the "Show all" link's name, e.g. "Show all: Recently played".</summary>
+    public string ShowAllName { get; } = showAllName;
+
+    /// <summary>Gets the albums shown: the first of the loaded ones, as many as fit.</summary>
     public ObservableCollection<AlbumItem> Albums { get; } = [];
+
+    /// <summary>Gets a value indicating whether the row has albums, so "Show all" has something to show.</summary>
+    [ObservableProperty]
+    public partial bool HasAlbums { get; private set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(ShowsProgress))]
@@ -45,6 +60,43 @@ public sealed partial class HomeShelf(HomeShelfKind kind, string title) : Observ
 
     /// <summary>Gets a value indicating whether the first load is running (a refresh keeps the old albums).</summary>
     public bool ShowsProgress => IsLoading && !IsLoaded;
+
+    /// <summary>
+    /// Gets how many tiles fit side by side in a row this wide (without its padding): the columns of a tile
+    /// grid, whose tiles then grow to fill the row. At least one.
+    /// </summary>
+    public static int TilesThatFit(double width) => TileGrid.Columns(width, HomeViewModel.TileWidth, HomeViewModel.TileSpacing);
+
+    /// <summary>Shows as many albums as <paramref name="tiles"/>, or all when fewer are loaded.</summary>
+    public void Fit(int tiles)
+    {
+        _tiles = Math.Max(1, tiles);
+        Show();
+    }
+
+    /// <summary>Puts in the albums of a load; the row shows the first of them.</summary>
+    internal void Replace(IEnumerable<AlbumItem> albums)
+    {
+        _loaded = [.. albums];
+        Albums.Clear();
+        Show();
+        HasAlbums = _loaded.Count > 0;
+    }
+
+    /// <summary>Adds or removes albums at the end only, so a resize does not rebuild the row.</summary>
+    private void Show()
+    {
+        var count = Math.Min(_tiles, _loaded.Count);
+        while (Albums.Count > count)
+        {
+            Albums.RemoveAt(Albums.Count - 1);
+        }
+
+        while (Albums.Count < count)
+        {
+            Albums.Add(_loaded[Albums.Count]);
+        }
+    }
 }
 
 /// <summary>
@@ -95,8 +147,11 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     /// <summary>Number of albums per list.</summary>
     public const int ShelfSize = 20;
 
-    /// <summary>Tile width in device-independent pixels; covers are requested for this width.</summary>
+    /// <summary>Least tile width in device-independent pixels; covers are requested for this width.</summary>
     public const double TileWidth = 152;
+
+    /// <summary>Space between two tiles in device-independent pixels.</summary>
+    public const double TileSpacing = 16;
 
     /// <summary>Cover width of the random album in device-independent pixels.</summary>
     public const double HighlightCoverWidth = 200;
@@ -128,9 +183,7 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
         _player = player;
         _favourites = favourites;
         _colours = colours;
-        Shelves = Enum.GetValues<HomeShelfKind>()
-            .Select(kind => new HomeShelf(kind, strings.GetString($"HomeShelf_{kind}")))
-            .ToList();
+        Shelves = Enum.GetValues<HomeShelfKind>().Select(kind => CreateShelf(kind, strings)).ToList();
     }
 
     public IReadOnlyList<HomeShelf> Shelves { get; }
@@ -198,6 +251,14 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenGenre(Genre genre) => _navigation.NavigateTo(PageKeys.Genre, genre.Id);
 
+    /// <summary>Opens the Albums page in the row's order, with every album (#376).</summary>
+    [RelayCommand]
+    private void ShowAll(HomeShelf shelf)
+    {
+        var query = QueryFor(shelf.Kind);
+        _navigation.NavigateTo(PageKeys.Albums, new AlbumsOrder(query.SortBy, query.Descending));
+    }
+
     [RelayCommand(CanExecute = nameof(CanPlayHighlight))]
     private void PlayHighlight() => _player.Play(Highlight!.Tracks);
 
@@ -243,6 +304,12 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
         _cancellation.Dispose();
         _highlightCancellation.Cancel();
         _highlightCancellation.Dispose();
+    }
+
+    private static HomeShelf CreateShelf(HomeShelfKind kind, IStringResources strings)
+    {
+        var title = strings.GetString($"HomeShelf_{kind}");
+        return new HomeShelf(kind, title, strings.GetString("HomeShelfShowAll").Replace("{0}", title, StringComparison.Ordinal));
     }
 
     private CancellationToken RestartHighlight()
@@ -318,11 +385,7 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
                 return null;
             }
 
-            shelf.Albums.Clear();
-            foreach (var album in page.Items)
-            {
-                shelf.Albums.Add(new AlbumItem(album, ImageRequest.Primary(album.Id, album.PrimaryImageTag, TileWidth, DisplayScale)));
-            }
+            shelf.Replace(page.Items.Select(album => new AlbumItem(album, ImageRequest.Primary(album.Id, album.PrimaryImageTag, TileWidth, DisplayScale))));
 
             shelf.IsLoaded = true;
             return null;

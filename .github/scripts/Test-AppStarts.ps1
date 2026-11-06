@@ -574,6 +574,24 @@ try {
     Test-Running 'after showing another album on the home page'
     Write-Output "The home page's random album changed from 'Album 1' to 'Album 2'."
 
+    # The home page's rows (#376): one row each of as many albums as fit, grown to fill the page's width, no
+    # sideways scrolling. "Show all" opens the Albums page in the row's order.
+    Test-TilesFillRows 'Recently played' 16
+    Test-TilesFillRows 'Recently added' 16
+    $null = Find-Link 'Show all: Recently played'
+    (Find-Link 'Show all: Recently added').GetCurrentPattern($invoke).Invoke()
+    $null = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Sort by'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ComboBox))) "the Albums page's 'Sort by'"
+    $albumsItem = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Albums'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) "navigation item 'Albums'"
+    if (-not $albumsItem.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected) {
+        Stop-Test 'Home page' "'Show all: Recently added' opened a page, but Albums is not selected in the navigation pane."
+    }
+    Test-Running "after 'Show all' on the home page"
+    Write-Output "The home page's rows fill its width, and 'Show all' opened the Albums page."
+
     # Folders: its breadcrumb once crashed the app (#144).
     $folders = Find-Element ([System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Folders'),

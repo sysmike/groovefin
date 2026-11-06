@@ -10,7 +10,7 @@ WinUI 3.
 ## Features
 
 **Library**
-- Home with a random album on a colour taken from its cover, then shelves of recently played and recently added albums.
+- Home with a random album on a colour taken from its cover, then rows of recently played and recently added albums, as many as fit the window, each with "Show all".
 - Albums, artists, genres, playlists and folders, in a grid or a list, with sorting and filters.
 - A songs table with sortable, resizable and movable columns.
 - Global search with live suggestions, grouped by artists, albums, tracks and playlists.

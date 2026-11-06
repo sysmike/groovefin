@@ -123,6 +123,74 @@ public sealed class HomeViewModelTests
     }
 
     [Fact]
+    public async Task A_shelf_shows_as_many_albums_as_fit()
+    {
+        // A row of as many tiles as fit in the window, no sideways scrolling (#376).
+        using var sut = CreateSut();
+        await sut.RefreshAsync();
+        var shelf = sut.Shelves[1];
+
+        shelf.Fit(2);
+        shelf.Albums.Select(a => a.Album.Id).Should().Equal("DateAdded-0", "DateAdded-1");
+
+        shelf.Fit(5);
+        shelf.Albums.Should().HaveCount(3, "only three were loaded");
+
+        shelf.Fit(0);
+        shelf.Albums.Should().ContainSingle();
+        shelf.HasAlbums.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_refresh_keeps_the_number_that_fits()
+    {
+        using var sut = CreateSut();
+        sut.Shelves[0].Fit(2);
+
+        await sut.RefreshAsync();
+
+        sut.Shelves[0].Albums.Should().HaveCount(2);
+    }
+
+    [Theory]
+    [InlineData(100, 1)]
+    [InlineData(152, 1)]
+    [InlineData(320, 1)]
+    [InlineData(321, 2)]
+    [InlineData(1000, 6)]
+    public void Tiles_that_fit_count_the_space_between_them(double width, int tiles)
+    {
+        HomeShelf.TilesThatFit(width).Should().Be(tiles);
+    }
+
+    [Theory]
+    [InlineData(HomeShelfKind.RecentlyPlayed, AlbumSortField.DatePlayed)]
+    [InlineData(HomeShelfKind.RecentlyAdded, AlbumSortField.DateAdded)]
+    public void Show_all_opens_the_albums_page_in_the_shelfs_order(HomeShelfKind kind, AlbumSortField sortBy)
+    {
+        using var sut = CreateSut();
+
+        sut.ShowAllCommand.Execute(sut.Shelves.Single(s => s.Kind == kind));
+
+        _navigation.Received(1).NavigateTo(PageKeys.Albums, new AlbumsOrder(sortBy, Descending: true));
+    }
+
+    [Fact]
+    public async Task Show_all_is_named_after_its_shelf()
+    {
+        _strings.GetString("HomeShelfShowAll").Returns("Show all: {0}");
+        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q.PlayedOnly), Arg.Any<CancellationToken>()).Returns(Page("none", 0));
+        using var sut = CreateSut();
+
+        await sut.RefreshAsync();
+
+        sut.Shelves.Select(s => s.ShowAllName).Should().Equal("Show all: [HomeShelf_RecentlyPlayed]", "Show all: [HomeShelf_RecentlyAdded]");
+
+        // Nothing played yet: the empty row has no link.
+        sut.Shelves.Select(s => s.HasAlbums).Should().Equal(false, true);
+    }
+
+    [Fact]
     public async Task Failed_shelves_show_an_error_and_are_reported_once()
     {
         var first = new JellyfinException("boom");

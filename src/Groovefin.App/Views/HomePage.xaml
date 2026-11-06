@@ -12,12 +12,15 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+        <!--  Both rows are as wide, so their tiles are too.  -->
+        <controls:TileSize x:Key="HomeTile" MinWidth="152" />
+
         <!--  Square cover, name, artist.  -->
         <DataTemplate x:Key="HomeTileTemplate" x:DataType="vm:AlbumItem">
             <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
-                <StackPanel Width="152" Padding="0,0,0,8" Spacing="6">
+                <StackPanel Width="{Binding Width, Source={StaticResource HomeTile}}" Padding="0,0,0,8" Spacing="6">
                     <Grid
-                        Height="152"
+                        Height="{Binding Width, Source={StaticResource HomeTile}}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                         CornerRadius="{StaticResource OverlayCornerRadius}">
                         <FontIcon
@@ -229,15 +232,35 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:HomeShelf">
                             <StackPanel Margin="0,0,0,20" Spacing="8">
-                                <TextBlock
-                                    Margin="36,0"
-                                    AutomationProperties.HeadingLevel="Level2"
-                                    Style="{StaticResource SubtitleTextBlockStyle}"
-                                    Text="{x:Bind Title}" />
-                                <Grid Height="224">
-                                    <!--  Horizontal list; arrow keys move between albums, Tab leaves the list.  -->
+                                <Grid Margin="36,0" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.HeadingLevel="Level2"
+                                        Style="{StaticResource SubtitleTextBlockStyle}"
+                                        Text="{x:Bind Title}" />
+                                    <!--  The Albums page in the row's order (#376).  -->
+                                    <HyperlinkButton
+                                        x:Uid="HomeShelfShowAllButton"
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.Name="{x:Bind ShowAllName}"
+                                        Click="OnShowAllClick"
+                                        Tag="{x:Bind}"
+                                        Visibility="{x:Bind HasAlbums, Mode=OneWay}" />
+                                </Grid>
+                                <Grid MinHeight="224">
+                                    <!--
+                                        One row of as many albums as fit (#376), grown to fill the page's width like
+                                        the Albums page's grid; it never scrolls. Arrow keys move between albums, Tab
+                                        leaves the list.
+                                    -->
                                     <ItemsView
                                         controls:ItemMenu.IsEnabled="True"
+                                        controls:TileSize.Source="{StaticResource HomeTile}"
                                         Padding="36,0"
                                         AutomationProperties.Name="{x:Bind Title}"
                                         IsItemInvokedEnabled="True"
@@ -245,9 +268,14 @@
                                         ItemTemplate="{StaticResource HomeTileTemplate}"
                                         ItemsSource="{x:Bind Albums}"
                                         Loaded="OnShelfLoaded"
-                                        SelectionMode="None">
+                                        SelectionMode="None"
+                                        SizeChanged="OnShelfSizeChanged"
+                                        Tag="{x:Bind}">
                                         <ItemsView.Layout>
-                                            <StackLayout Orientation="Horizontal" Spacing="16" />
+                                            <controls:WrapGridLayout
+                                                MinColumnSpacing="16"
+                                                MinItemWidth="152"
+                                                MinRowSpacing="8" />
                                         </ItemsView.Layout>
                                     </ItemsView>
                                     <ProgressRing

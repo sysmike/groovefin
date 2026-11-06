@@ -596,6 +596,12 @@
   <data name="HomeShelf_RecentlyPlayed" xml:space="preserve">
     <value>Zuletzt gespielt</value>
   </data>
+  <data name="HomeShelfShowAll" xml:space="preserve">
+    <value>Alle anzeigen: {0}</value>
+  </data>
+  <data name="HomeShelfShowAllButton.Content" xml:space="preserve">
+    <value>Alle anzeigen</value>
+  </data>
   <data name="HomeShelfEmpty.Text" xml:space="preserve">
     <value>Hier ist noch nichts.</value>
   </data>
