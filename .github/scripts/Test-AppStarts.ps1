@@ -1748,6 +1748,30 @@ try {
     Test-Accessibility 'settings'
     Test-TabOrder 'settings'
 
+    # Section links (#404): the "Keyboard shortcuts" link at the top scrolls the page down to its section and
+    # moves the focus into it, onto a setting on screen. Then the page goes back to its top for the steps below.
+    $settingsScroll = (Find-ById 'SettingsScroller').GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
+    $settingsScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 0)
+    Start-Sleep -Milliseconds 500
+    $sectionLink = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Keyboard shortcuts'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Hyperlink))) 'Keyboard shortcuts section link'
+    $sectionLink.GetCurrentPattern($invoke).Invoke()
+    Start-Sleep -Milliseconds 1000
+    $sectionScroll = $settingsScroll.Current.VerticalScrollPercent
+    $settingsPage = Get-Bounds (Find-ById 'MainContent')
+    $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+    $focusedBounds = $focused.Current.BoundingRectangle
+    Write-Output ("After the Keyboard shortcuts link the page is scrolled to {0:0}% and '{1}' ({2}) has the focus at {3:0} px below the page's top." -f $sectionScroll, $focused.Current.Name, $focused.Current.ControlType.ProgrammaticName, ($focusedBounds.Top - $settingsPage.Top))
+    if ($sectionScroll -lt 50) { Stop-Test 'Settings' ("After its section link the page is scrolled to {0:0}%, not down to the Keyboard shortcuts near its end." -f $sectionScroll) }
+    if ($focused.Current.ControlType -eq [System.Windows.Automation.ControlType]::Hyperlink -or $focusedBounds.IsEmpty -or
+        $focusedBounds.Top -lt $settingsPage.Top -or $focusedBounds.Bottom -gt $settingsPage.Bottom) {
+        Stop-Test 'Settings' "After its section link the focus is not on a setting on screen (focused: '$($focused.Current.Name)')."
+    }
+    $settingsScroll = (Find-ById 'SettingsScroller').GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
+    $settingsScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 0)
+    Start-Sleep -Milliseconds 500
+
     # Downloads (#327): turning on Playlists downloads the playlist's two songs, as the original files, into the
     # user's folder with its index; turning it off again deletes them. Each change syncs a few seconds later.
     $downloads = Join-Path $data 'Downloads'
