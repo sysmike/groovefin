@@ -2872,4 +2872,22 @@
   <data name="MixEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Songs</value>
   </data>
+  <data name="SettingsNormalizationAutomatic.Content" xml:space="preserve">
+    <value>Automatic: albums as albums, mixes track by track</value>
+  </data>
+  <data name="SettingsNormalizationTargetCard.Header" xml:space="preserve">
+    <value>Loudness</value>
+  </data>
+  <data name="SettingsNormalizationTargetCard.Description" xml:space="preserve">
+    <value>Louder targets turn loud tracks down less. Tracks quieter than the target can't be turned up, so they may stay a little quieter. Nothing is amplified, so nothing clips.</value>
+  </data>
+  <data name="SettingsNormalizationTargetServer.Content" xml:space="preserve">
+    <value>Jellyfin's target (quietest)</value>
+  </data>
+  <data name="SettingsNormalizationTargetLouder.Content" xml:space="preserve">
+    <value>Louder (+4 dB)</value>
+  </data>
+  <data name="SettingsNormalizationTargetLoudest.Content" xml:space="preserve">
+    <value>Loudest (+7 dB)</value>
+  </data>
 </root>

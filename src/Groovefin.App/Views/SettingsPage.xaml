@@ -297,13 +297,24 @@
                     x:Uid="SettingsPlaybackHeader"
                     AutomationProperties.HeadingLevel="Level2"
                     Style="{StaticResource SettingsSectionHeaderStyle}" />
-                <controls:SettingsCard x:Uid="SettingsNormalizationCard" HeaderIcon="{ui:FontIcon Glyph=&#xE995;}">
+                <controls:SettingsExpander x:Uid="SettingsNormalizationCard" HeaderIcon="{ui:FontIcon Glyph=&#xE995;}">
                     <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.NormalizationIndex, Mode=TwoWay}">
                         <ComboBoxItem x:Uid="SettingsNormalizationOff" />
+                        <ComboBoxItem x:Uid="SettingsNormalizationAutomatic" />
                         <ComboBoxItem x:Uid="SettingsNormalizationTrack" />
                         <ComboBoxItem x:Uid="SettingsNormalizationAlbum" />
                     </ComboBox>
-                </controls:SettingsCard>
+                    <!--  How loud normalized music plays (#393).  -->
+                    <controls:SettingsExpander.Items>
+                        <controls:SettingsCard x:Uid="SettingsNormalizationTargetCard" IsEnabled="{x:Bind ViewModel.HasNormalization, Mode=OneWay}">
+                            <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.NormalizationTargetIndex, Mode=TwoWay}">
+                                <ComboBoxItem x:Uid="SettingsNormalizationTargetServer" />
+                                <ComboBoxItem x:Uid="SettingsNormalizationTargetLouder" />
+                                <ComboBoxItem x:Uid="SettingsNormalizationTargetLoudest" />
+                            </ComboBox>
+                        </controls:SettingsCard>
+                    </controls:SettingsExpander.Items>
+                </controls:SettingsExpander>
                 <controls:SettingsCard x:Uid="SettingsInstantMixCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8B1;}">
                     <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.InstantMixIndex, Mode=TwoWay}">
                         <ComboBoxItem x:Uid="SettingsInstantMixReplace" />

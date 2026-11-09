@@ -249,6 +249,9 @@ public sealed record PlaybackSettings
 {
     public NormalizationMode Normalization { get; set; } = NormalizationMode.Off;
 
+    /// <summary>Gets or sets how loud normalized music plays (#393).</summary>
+    public NormalizationTarget NormalizationTarget { get; set; } = NormalizationTarget.Server;
+
     public InstantMixMode InstantMix { get; set; } = InstantMixMode.Replace;
 
     /// <summary>Gets or sets a value indicating whether the queue and position are restored (paused) on the next start.</summary>

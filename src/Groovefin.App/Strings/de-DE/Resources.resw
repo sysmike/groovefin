@@ -2845,4 +2845,22 @@
   <data name="MixEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Titel</value>
   </data>
+  <data name="SettingsNormalizationAutomatic.Content" xml:space="preserve">
+    <value>Automatisch: Alben als Ganzes, Mixe Titel für Titel</value>
+  </data>
+  <data name="SettingsNormalizationTargetCard.Header" xml:space="preserve">
+    <value>Lautstärke</value>
+  </data>
+  <data name="SettingsNormalizationTargetCard.Description" xml:space="preserve">
+    <value>Lautere Ziele regeln laute Titel weniger herunter. Titel, die leiser als das Ziel sind, können nicht lauter werden und bleiben dann etwas leiser. Nichts wird verstärkt, daher übersteuert nichts.</value>
+  </data>
+  <data name="SettingsNormalizationTargetServer.Content" xml:space="preserve">
+    <value>Jellyfin-Ziel (am leisesten)</value>
+  </data>
+  <data name="SettingsNormalizationTargetLouder.Content" xml:space="preserve">
+    <value>Lauter (+4 dB)</value>
+  </data>
+  <data name="SettingsNormalizationTargetLoudest.Content" xml:space="preserve">
+    <value>Am lautesten (+7 dB)</value>
+  </data>
 </root>
