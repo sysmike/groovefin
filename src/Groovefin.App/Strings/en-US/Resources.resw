@@ -2875,6 +2875,21 @@
   <data name="NowPlayingReconnecting.Text" xml:space="preserve">
     <value>Reconnecting…</value>
   </data>
+  <data name="SettingsOutputDeviceCard.Header" xml:space="preserve">
+    <value>Output device</value>
+  </data>
+  <data name="SettingsOutputDeviceCard.Description" xml:space="preserve">
+    <value>Where the music plays. While the chosen device isn't connected, it plays on the Windows default.</value>
+  </data>
+  <data name="Settings_OutputDefault" xml:space="preserve">
+    <value>Windows default</value>
+  </data>
+  <data name="Settings_OutputMissing" xml:space="preserve">
+    <value>{0} (not connected)</value>
+  </data>
+  <data name="Settings_OutputUnknown" xml:space="preserve">
+    <value>Chosen device</value>
+  </data>
   <data name="SearchGenresHeader.Text" xml:space="preserve">
     <value>Genres</value>
   </data>
