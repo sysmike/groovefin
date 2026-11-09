@@ -91,7 +91,8 @@ internal sealed class ContentDialogService : IDialogService
         return grid;
     }
 
-    private ContentDialog Create(string title, string primaryButtonText, string closeButtonText) => new()
+    /// <summary>A dialog in the main window with the app's style, for dialogs of their own such as the mix editor (#401).</summary>
+    internal ContentDialog Create(string title, string primaryButtonText, string closeButtonText) => new()
     {
         XamlRoot = _root ?? throw new InvalidOperationException("Dialogs are not available before the main window is loaded."),
         Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],

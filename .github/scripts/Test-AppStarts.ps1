@@ -1359,6 +1359,34 @@ try {
     if ($statisticsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Statistics' 'Ctrl+I did not open the statistics, or their button is not checked.' }
     Write-Output 'The checked Statistics button returned to On repeat, unchecked, and Ctrl+I opened the statistics again.'
 
+    # Mixes (#401): the runner has none at first. New mix opens the editor, where a name is enough; Save opens
+    # the mix, whose rules (every song, random) pick the fake server's two songs. Back on Mixes it is listed.
+    Select-Navigation 'Mixes'
+    $null = Find-ById 'MixesEmpty'
+    Test-Accessibility 'mixes'
+    (Find-ById 'MixesNewButton').GetCurrentPattern($invoke).Invoke()
+    $mixName = Find-ById 'MixNameBox'
+    Start-Sleep -Milliseconds 500
+    Test-Accessibility 'mix-editor'
+    Set-Text $mixName 'Smoke mix'
+    Start-Sleep -Milliseconds 300
+    (Find-Button 'Save').GetCurrentPattern($invoke).Invoke()
+    $mixEntries = Find-ById 'MixEntries'
+    $listItem = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        $mixRows = @($mixEntries.FindAll($scope::Descendants, $listItem))
+        if ($mixRows.Count -lt 2) { Start-Sleep -Milliseconds 300 }
+    } while ($mixRows.Count -lt 2 -and (Get-Date) -lt $until)
+    if ($mixRows.Count -ne 2) { Stop-Test 'Mixes' "The new mix shows $($mixRows.Count) songs, not the fake server's 2." }
+    $mixSummary = (Find-ById 'MixSummary').Current.Name
+    Test-Running 'after making a mix'
+    Write-Output "A new mix picked the fake server's 2 songs ($mixSummary)."
+    Test-Accessibility 'mix'
+    Select-Navigation 'Mixes'
+    $null = Find-Button 'Play Smoke mix'
+    Write-Output 'The Mixes page lists the new mix.'
+
     # A playlist's tracks are a table like the album's (#245): a header with the Title, Artist and Album
     # labels, each row's album under the Album label, and a divider between the Title and Artist columns,
     # read from the screen as for the album (#220).
@@ -1605,9 +1633,9 @@ try {
     if ($navPlaylist.Current.Name -cne 'Road trip') { Stop-Test 'Favourite playlist' "The navigation pane names the favourite playlist '$($navPlaylist.Current.Name)', not 'Road trip'." }
     # Its details below the name, beside the cover (#299): the fake playlist has 2 tracks.
     if ($navPlaylist.Current.HelpText -notlike '2 tracks*') { Stop-Test 'Favourite playlist' "The favourite playlist's details read '$($navPlaylist.Current.HelpText)', not '2 tracks'." }
-    $lastSection = Find-ById 'NavItem_onrepeat'
+    $lastSection = Find-ById 'NavItem_mixes'
     if ((Get-Bounds $navPlaylist).Top -lt (Get-Bounds $lastSection).Bottom) {
-        Stop-Test 'Favourite playlist' "The favourite playlist is not after the sections (at $((Get-Bounds $navPlaylist).Top) px, On repeat ends at $((Get-Bounds $lastSection).Bottom) px)."
+        Stop-Test 'Favourite playlist' "The favourite playlist is not after the sections (at $((Get-Bounds $navPlaylist).Top) px, Mixes, the last section, ends at $((Get-Bounds $lastSection).Bottom) px)."
     }
     $playlistsItem = Find-ById 'NavItem_playlists'
     $expand = $null

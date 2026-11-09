@@ -10,6 +10,7 @@ using Groovefin.Core.History;
 using Groovefin.Core.Images;
 using Groovefin.Core.JumpLists;
 using Groovefin.Core.Menus;
+using Groovefin.Core.Mixes;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Privacy;
@@ -171,6 +172,10 @@ internal static class AppHost
         builder.Services.AddSingleton<CurrentTrack>();
         builder.Services.AddSingleton<ContextMenus>();
         builder.Services.AddSingleton<QuickPlay>();
+        builder.Services.AddSingleton<MixStore>();
+        builder.Services.AddSingleton<MixBuilder>();
+        builder.Services.AddSingleton<MixEditing>();
+        builder.Services.AddSingleton<IMixEditor, MixEditorDialog>();
         builder.Services.AddSingleton<IJumpList, WindowsJumpList>();
         builder.Services.AddSingleton<JumpListSync>();
         builder.Services.AddSingleton<JumpListActions>();
@@ -190,6 +195,7 @@ internal static class AppHost
         builder.Services.AddTransient<PlaylistDetailViewModel>();
         builder.Services.AddTransient<FavouritesViewModel>();
         builder.Services.AddTransient<OnRepeatViewModel>();
+        builder.Services.AddTransient<MixViewModel>();
         builder.Services.AddTransient<StatisticsViewModel>();
         builder.Services.AddTransient<ListeningHistoryViewModel>();
         builder.Services.AddTransient<GenresViewModel>();

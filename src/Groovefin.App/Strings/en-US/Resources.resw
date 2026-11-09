@@ -2695,4 +2695,181 @@
   <data name="History_ClearConfirm" xml:space="preserve">
     <value>Clear</value>
   </data>
+  <data name="Operation_LoadMix" xml:space="preserve">
+    <value>Couldn't load the mix</value>
+  </data>
+  <data name="MixEditor_NewTitle" xml:space="preserve">
+    <value>New mix</value>
+  </data>
+  <data name="MixEditor_EditTitle" xml:space="preserve">
+    <value>Change mix</value>
+  </data>
+  <data name="MixEditor_AnyGenre" xml:space="preserve">
+    <value>Any genre</value>
+  </data>
+  <data name="MixEditor_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="MixEditor_Genre" xml:space="preserve">
+    <value>Genre</value>
+  </data>
+  <data name="MixEditor_FromYear" xml:space="preserve">
+    <value>From year</value>
+  </data>
+  <data name="MixEditor_ToYear" xml:space="preserve">
+    <value>To year</value>
+  </data>
+  <data name="MixEditor_FavouritesOnly" xml:space="preserve">
+    <value>Favourite songs only</value>
+  </data>
+  <data name="MixEditor_Plays" xml:space="preserve">
+    <value>Plays</value>
+  </data>
+  <data name="MixEditor_NotPlayed" xml:space="preserve">
+    <value>Last played</value>
+  </data>
+  <data name="MixEditor_Added" xml:space="preserve">
+    <value>Added</value>
+  </data>
+  <data name="MixEditor_Order" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="MixEditor_Size" xml:space="preserve">
+    <value>Number of songs</value>
+  </data>
+  <data name="MixPlays_Any" xml:space="preserve">
+    <value>Any number of plays</value>
+  </data>
+  <data name="MixPlays_Never" xml:space="preserve">
+    <value>Never played</value>
+  </data>
+  <data name="MixPlays_AtLeast1" xml:space="preserve">
+    <value>Played at least once</value>
+  </data>
+  <data name="MixPlays_AtLeast5" xml:space="preserve">
+    <value>Played 5 times or more</value>
+  </data>
+  <data name="MixPlays_AtLeast10" xml:space="preserve">
+    <value>Played 10 times or more</value>
+  </data>
+  <data name="MixPlays_AtLeast25" xml:space="preserve">
+    <value>Played 25 times or more</value>
+  </data>
+  <data name="MixNotPlayed_Any" xml:space="preserve">
+    <value>Any time</value>
+  </data>
+  <data name="MixNotPlayed_Month" xml:space="preserve">
+    <value>Not played for a month</value>
+  </data>
+  <data name="MixNotPlayed_ThreeMonths" xml:space="preserve">
+    <value>Not played for 3 months</value>
+  </data>
+  <data name="MixNotPlayed_SixMonths" xml:space="preserve">
+    <value>Not played for 6 months</value>
+  </data>
+  <data name="MixNotPlayed_Year" xml:space="preserve">
+    <value>Not played for a year</value>
+  </data>
+  <data name="MixAdded_Any" xml:space="preserve">
+    <value>Added any time</value>
+  </data>
+  <data name="MixAdded_Week" xml:space="preserve">
+    <value>Added in the last week</value>
+  </data>
+  <data name="MixAdded_Month" xml:space="preserve">
+    <value>Added in the last month</value>
+  </data>
+  <data name="MixAdded_ThreeMonths" xml:space="preserve">
+    <value>Added in the last 3 months</value>
+  </data>
+  <data name="MixAdded_Year" xml:space="preserve">
+    <value>Added in the last year</value>
+  </data>
+  <data name="MixOrder_Random" xml:space="preserve">
+    <value>Random</value>
+  </data>
+  <data name="MixOrder_MostPlayed" xml:space="preserve">
+    <value>Most played first</value>
+  </data>
+  <data name="MixOrder_RecentlyAdded" xml:space="preserve">
+    <value>Newest first</value>
+  </data>
+  <data name="MixOrder_LeastRecentlyPlayed" xml:space="preserve">
+    <value>Longest unplayed first</value>
+  </data>
+  <data name="Mix_Size" xml:space="preserve">
+    <value>{0} songs</value>
+  </data>
+  <data name="Mix_Favourites" xml:space="preserve">
+    <value>Favourites</value>
+  </data>
+  <data name="Mix_DeleteTitle" xml:space="preserve">
+    <value>Delete mix?</value>
+  </data>
+  <data name="Mix_DeleteMessage" xml:space="preserve">
+    <value>“{0}” will be deleted. Its songs stay in your library, and so do playlists saved from it.</value>
+  </data>
+  <data name="Mix_DeleteConfirm" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Mixes_PlayName" xml:space="preserve">
+    <value>Play {0}</value>
+  </data>
+  <data name="StartPage_mixes" xml:space="preserve">
+    <value>Mixes</value>
+  </data>
+  <data name="NavMixes.Content" xml:space="preserve">
+    <value>Mixes</value>
+  </data>
+  <data name="NavMixes.AccessKey" xml:space="preserve">
+    <value>X</value>
+  </data>
+  <data name="MixesHeader.Text" xml:space="preserve">
+    <value>Mixes</value>
+  </data>
+  <data name="MixesSubtitle.Text" xml:space="preserve">
+    <value>Lists made from rules, such as a genre, years or songs you haven't played in a while. They pick their songs again each time they open.</value>
+  </data>
+  <data name="MixesNewButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>New mix</value>
+  </data>
+  <data name="MixesNewText.Text" xml:space="preserve">
+    <value>New mix</value>
+  </data>
+  <data name="MixesEmpty.Text" xml:space="preserve">
+    <value>No mixes yet. Choose New mix to make one.</value>
+  </data>
+  <data name="MixesList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mixes</value>
+  </data>
+  <data name="MixEditButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Change mix</value>
+  </data>
+  <data name="MixEditButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Change mix</value>
+  </data>
+  <data name="MixDeleteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Delete mix</value>
+  </data>
+  <data name="MixDeleteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Delete mix</value>
+  </data>
+  <data name="MixRefreshButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Pick again</value>
+  </data>
+  <data name="MixRefreshButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Pick again</value>
+  </data>
+  <data name="MixLoadFailed.Text" xml:space="preserve">
+    <value>The mix couldn't be loaded.</value>
+  </data>
+  <data name="MixMissing.Text" xml:space="preserve">
+    <value>This mix no longer exists.</value>
+  </data>
+  <data name="MixEmpty.Text" xml:space="preserve">
+    <value>No songs match these rules right now.</value>
+  </data>
+  <data name="MixEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Songs</value>
+  </data>
 </root>

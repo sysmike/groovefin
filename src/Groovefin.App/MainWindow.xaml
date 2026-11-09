@@ -180,6 +180,12 @@
                         <FontIcon Glyph="&#xE8EE;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <!--  Rule-based mixes (#401).  -->
+                <NavigationViewItem x:Uid="NavMixes" AutomationProperties.AutomationId="NavItem_mixes" Tag="mixes">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE71C;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <!--  The page: the main landmark (#51), so Narrator can jump to it.  -->

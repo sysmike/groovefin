@@ -39,7 +39,7 @@ public sealed class NavigationLayoutTests
     {
         var saved = PageKeys.MainSections.Reverse().Select(k => Item(k, isVisible: false)).ToList();
 
-        NavigationLayout.VisibleSections(saved).Should().Equal(PageKeys.OnRepeat);
+        NavigationLayout.VisibleSections(saved).Should().Equal(PageKeys.MainSections[^1]);
         saved.Should().OnlyContain(i => !i.IsVisible, "the saved layout is not changed");
     }
 

@@ -412,6 +412,34 @@ public sealed class LibraryServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetTracks_sends_a_mixs_genre_years_and_favourites()
+    {
+        StubItems(new { Items = Array.Empty<object>(), TotalRecordCount = 0 });
+        _host.ConnectAsTestUser();
+
+        await _host.Library.GetTracksAsync(
+            new TrackQuery { GenreIds = ["eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"], MinYear = 1990, MaxYear = 1992, FavouritesOnly = true },
+            TestContext.Current.CancellationToken);
+
+        var query = LastQuery();
+        Guid.Parse(query["genreIds"]).ToString("N").Should().Be("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+        query["years"].Should().Be("1990,1991,1992");
+        query["filters"].Should().Be("IsFavorite");
+    }
+
+    [Fact]
+    public async Task GetTracks_without_filters_sends_none()
+    {
+        StubItems(new { Items = Array.Empty<object>(), TotalRecordCount = 0 });
+        _host.ConnectAsTestUser();
+
+        await _host.Library.GetTracksAsync(new TrackQuery(), TestContext.Current.CancellationToken);
+
+        var query = LastQuery();
+        query.Keys.Should().NotContain(["genreIds", "years", "filters"]);
+    }
+
+    [Fact]
     public async Task GetTracksById_asks_for_those_ids_with_the_last_played_date()
     {
         StubItems(new
