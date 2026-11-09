@@ -23,7 +23,10 @@
         <x:Double x:Key="SettingsChoiceMinWidth">220</x:Double>
     </Page.Resources>
 
-    <ScrollViewer app:ViewMemory.IsEnabled="True">
+    <ScrollViewer
+        x:Name="PageScroller"
+        app:ViewMemory.IsEnabled="True"
+        AutomationProperties.AutomationId="SettingsScroller">
         <!--
             A Grid between the ScrollViewer and the content of limited width: the ScrollViewer places
             content smaller than its view by the width the content asks for, not the width it gets, so a
@@ -32,6 +35,7 @@
         -->
         <Grid>
             <StackPanel
+                x:Name="Sections"
                 MaxWidth="{StaticResource PageContentMaxWidth}"
                 Margin="{StaticResource PageContentMargin}"
                 HorizontalAlignment="Stretch"
@@ -40,6 +44,16 @@
                     x:Uid="SettingsHeader"
                     AutomationProperties.HeadingLevel="Level1"
                     Style="{StaticResource TitleTextBlockStyle}" />
+
+                <!--
+                    A link to each section (#404), made from the section headings in code: each scrolls its
+                    section to the top and moves the focus to its first setting.
+                -->
+                <app:FlowPanel
+                    x:Name="SectionLinks"
+                    Margin="-12,4,0,0"
+                    HorizontalSpacing="0"
+                    VerticalSpacing="0" />
 
                 <!--  Appearance  -->
                 <TextBlock
