@@ -102,6 +102,7 @@ internal sealed partial class MainWindow : Window
         SearchSuggestionsViewModel suggestions,
         LyricsViewModel lyrics,
         NowPlayingViewModel nowPlaying,
+        StreamQualityMonitor streamQuality,
         PrivacyMode privacy,
         FavouritePlaylists favouritePlaylists,
         TrackDrag trackDrag,
@@ -120,6 +121,7 @@ internal sealed partial class MainWindow : Window
         Queue = queue;
         Lyrics = lyrics;
         Player = nowPlaying;
+        StreamQuality = streamQuality;
         Privacy = privacy;
         Suggestions = suggestions;
         InitializeComponent();
@@ -234,6 +236,9 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>Gets the now playing state, also shown by the full-screen player. (The bar itself is named NowPlaying.)</summary>
     public NowPlayingViewModel Player { get; }
+
+    /// <summary>Gets what plays, for the full-screen player (#397).</summary>
+    public StreamQualityMonitor StreamQuality { get; }
 
     /// <summary>Gets privacy mode, which the title bar button next to the search box turns on and off (#234).</summary>
     public PrivacyMode Privacy { get; }

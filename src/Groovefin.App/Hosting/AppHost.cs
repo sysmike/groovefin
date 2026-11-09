@@ -175,6 +175,7 @@ internal static class AppHost
         builder.Services.AddSingleton<CurrentTrack>();
         builder.Services.AddSingleton<ContextMenus>();
         builder.Services.AddSingleton<QuickPlay>();
+        builder.Services.AddSingleton<StreamQualityMonitor>();
         builder.Services.AddSingleton<MixStore>();
         builder.Services.AddSingleton<MixBuilder>();
         builder.Services.AddSingleton<MixEditing>();

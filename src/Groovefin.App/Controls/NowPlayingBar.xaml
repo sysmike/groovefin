@@ -102,6 +102,16 @@
                         </DataTemplate>
                     </ItemsRepeater.ItemTemplate>
                 </ItemsRepeater>
+                <!--  What plays (#397): the original file, a conversion or a download; the tooltip says why.  -->
+                <TextBlock
+                    AutomationProperties.AutomationId="NowPlayingStreamQuality"
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    MaxLines="1"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind StreamQuality.Label, Mode=OneWay}"
+                    TextTrimming="CharacterEllipsis"
+                    ToolTipService.ToolTip="{x:Bind StreamQuality.Explanation, Mode=OneWay}"
+                    Visibility="{x:Bind StreamQuality.HasLabel, Mode=OneWay}" />
                 <!--  The network broke the stream; it is tried again where it stopped (#385). Narrator says it once.  -->
                 <StackPanel
                     AutomationProperties.AutomationId="NowPlayingReconnecting"

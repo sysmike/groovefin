@@ -308,6 +308,14 @@
                     Style="{StaticResource BodyTextBlockStyle}"
                     Text="{x:Bind Player.AlbumName, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis" />
+                <!--  What plays (#397), as in the now playing bar.  -->
+                <TextBlock
+                    Margin="0,4,0,0"
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    Text="{x:Bind StreamQuality.Label, Mode=OneWay}"
+                    ToolTipService.ToolTip="{x:Bind StreamQuality.Explanation, Mode=OneWay}"
+                    Visibility="{x:Bind StreamQuality.HasLabel, Mode=OneWay}" />
             </StackPanel>
         </Grid>
 

@@ -1,4 +1,5 @@
 using Groovefin.Core.Models;
+using Groovefin.Core.Playback;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -21,6 +22,7 @@ internal sealed partial class NowPlayingBar : UserControl
         ViewModel = App.Services.GetRequiredService<NowPlayingViewModel>();
         Queue = App.Services.GetRequiredService<QueueViewModel>();
         Lyrics = App.Services.GetRequiredService<LyricsViewModel>();
+        StreamQuality = App.Services.GetRequiredService<StreamQualityMonitor>();
         InitializeComponent();
         Loaded += (_, _) => ViewModel.DisplayScale = XamlRoot?.RasterizationScale ?? 1;
     }
@@ -30,6 +32,9 @@ internal sealed partial class NowPlayingBar : UserControl
     public QueueViewModel Queue { get; }
 
     public LyricsViewModel Lyrics { get; }
+
+    /// <summary>Gets what plays: the original file, a conversion or a download (#397).</summary>
+    public StreamQualityMonitor StreamQuality { get; }
 
     /// <summary>
     /// The slider follows the playing position (one-way binding). A value that differs from it comes
