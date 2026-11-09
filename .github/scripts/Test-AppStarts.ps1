@@ -50,6 +50,7 @@ function Write-Diagnostics {
     if ($log = Get-AppLog) { Get-Content $log.FullName -Tail 100 }
     Write-Output '--- Fake server requests ---'
     $server | Receive-Job -ErrorAction SilentlyContinue
+    if ($discoveryJob) { $discoveryJob | Receive-Job -ErrorAction SilentlyContinue }
     Write-Output '--- Application event log (errors) ---'
     Get-WinEvent -FilterHashtable @{ LogName = 'Application'; Level = 2; StartTime = $started } -ErrorAction SilentlyContinue |
         Select-Object -First 5 |
@@ -158,6 +159,22 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
         }
         $context.Response.Close()
+    }
+}
+
+# Jellyfin's discovery (#405): the fake server also answers "who is JellyfinServer?" on this PC's port 7359,
+# which the Servers page asks besides the networks' broadcast addresses.
+$discovery = [System.Net.Sockets.UdpClient]::new([System.Net.IPEndPoint]::new([System.Net.IPAddress]::Loopback, 7359))
+$discoveryJob = Start-ThreadJob -ArgumentList $discovery, $Port -ScriptBlock {
+    param($udp, $port)
+    $answer = [System.Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -Compress @{ Address = "http://127.0.0.1:$port"; Id = '0123456789abcdef0123456789abcdef'; Name = 'Smoke test' }))
+    while ($true) {
+        $from = [System.Net.IPEndPoint]::new([System.Net.IPAddress]::Any, 0)
+        try { $question = $udp.Receive([ref] $from) } catch { break }
+        if ([System.Text.Encoding]::UTF8.GetString($question) -eq 'who is JellyfinServer?') {
+            $null = $udp.Send($answer, $answer.Length, $from)
+            "Discovery question from $from"
+        }
     }
 }
 
@@ -526,8 +543,11 @@ try {
         }
     }
 
-    # First run: add the server, which opens the sign-in page.
+    # First run: the page finds the fake server on this PC (#405) and offers to add it. The test still types
+    # the address, which opens the sign-in page.
     $null = Find-ById 'AddressBox'
+    $null = Find-Button 'Add Smoke test'
+    Write-Output 'The Servers page found the fake server on the network.'
     Test-Accessibility 'servers'
     Set-Text (Find-ById 'AddressBox') "http://127.0.0.1:$Port"
     (Find-Button 'Add server').GetCurrentPattern($invoke).Invoke()
@@ -2068,6 +2088,14 @@ try {
         if (-not $serverList -and (Get-Date) -gt $until) { Stop-Test 'Centred pages' 'The Servers card in Settings did not open the Servers page.' }
     }
     Test-Centred 'servers-from-settings' $serverList
+    # The fake server is added now: the page's search no longer offers it (#405).
+    $until = (Get-Date).AddSeconds(10)
+    while (-not $window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'No new servers found on your network.')) -and (Get-Date) -lt $until) {
+        Start-Sleep -Milliseconds 300
+    }
+    $offered = $window.FindFirst($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Add Smoke test'))
+    if ($offered) { Stop-Test 'Server discovery' 'The Servers page still offers to add the fake server after it was added.' }
+    Write-Output 'The Servers page no longer offers the added server.'
     Save-Screenshot 'servers'
     # In the runner's screen (1024 px) the page area is narrower than the page's maximum width, so the content
     # fills it. On a wide screen it does not: there the Servers page sat to the right (#347). Set-DisplayResolution
@@ -2210,4 +2238,7 @@ finally {
     $listener.Stop()
     $server | Wait-Job -Timeout 10 | Out-Null
     $server | Remove-Job -Force
+    $discovery.Close()
+    $discoveryJob | Wait-Job -Timeout 10 | Out-Null
+    $discoveryJob | Remove-Job -Force
 }

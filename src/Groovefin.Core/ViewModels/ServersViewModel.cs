@@ -21,8 +21,22 @@ public sealed record ServerItem(ServerProfile Profile, bool IsActive)
     public bool IsUnencrypted => ServerAddress.IsUnencrypted(Profile.Address);
 }
 
+/// <summary>A Jellyfin server found on the local network that is not added yet (#405).</summary>
+public sealed record DiscoveredServerItem(DiscoveredServer Server, string AddName)
+{
+    public string Name => Server.Name;
+
+    public string Address => Server.Address.ToString().TrimEnd('/');
+
+    /// <summary>Gets a value indicating whether the server is reached over plain HTTP, without encryption (#293).</summary>
+    public bool IsUnencrypted => ServerAddress.IsUnencrypted(Server.Address);
+
+    /// <summary>Gets the row's name for Narrator: the server's name and address.</summary>
+    public string AccessibleName => $"{Name}, {Address}";
+}
+
 /// <summary>
-/// Servers page: add, edit address, remove and switch servers. Problems with what the user typed are
+/// Servers page: add, edit address, remove and switch servers, and add a server found on the local network. Problems with what the user typed are
 /// shown inline on the page (<see cref="FormError"/>), not as global notifications.
 /// </summary>
 public sealed partial class ServersViewModel : ObservableObject, IDisposable
@@ -32,19 +46,23 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
     private readonly INavigationService _navigation;
     private readonly IStringResources _strings;
     private readonly IDispatcher _dispatcher;
+    private readonly IServerDiscovery _discovery;
+    private IReadOnlyList<DiscoveredServer> _discovered = [];
 
     public ServersViewModel(
         IServerManager servers,
         IDialogService dialogs,
         INavigationService navigation,
         IStringResources strings,
-        IDispatcher dispatcher)
+        IDispatcher dispatcher,
+        IServerDiscovery discovery)
     {
         _servers = servers;
         _dialogs = dialogs;
         _navigation = navigation;
         _strings = strings;
         _dispatcher = dispatcher;
+        _discovery = discovery;
         _servers.Changed += OnServersChanged;
         Refresh();
     }
@@ -52,6 +70,15 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
     public ObservableCollection<ServerItem> Servers { get; } = [];
 
     public bool HasServers => Servers.Count > 0;
+
+    /// <summary>Gets the servers found on the local network that are not in <see cref="Servers"/> (#405).</summary>
+    public ObservableCollection<DiscoveredServerItem> Discovered { get; } = [];
+
+    public bool HasDiscovered => Discovered.Count > 0;
+
+    /// <summary>Gets a value indicating whether a search has ended without a server to add.</summary>
+    [ObservableProperty]
+    public partial bool NoneDiscovered { get; private set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddCommand))]
@@ -69,19 +96,34 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanAdd))]
     private async Task AddAsync(CancellationToken cancellationToken)
     {
-        FormError = null;
-        ServerProfile? added = null;
-        if (await TryAsync(async () => added = await _servers.AddAsync(NewAddress, cancellationToken)))
+        if (await AddAddressAsync(NewAddress, cancellationToken))
         {
             NewAddress = string.Empty;
-
-            // First-run flow: sign in to the first server right away.
-            if (Servers.Count == 1)
-            {
-                _navigation.NavigateTo(PageKeys.SignIn, added!.Id);
-            }
         }
     }
+
+    /// <summary>Looks for servers on the local network; the page starts it when it opens (#405).</summary>
+    [RelayCommand]
+    private async Task DiscoverAsync(CancellationToken cancellationToken)
+    {
+        NoneDiscovered = false;
+        try
+        {
+            _discovered = await _discovery.DiscoverAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        RefreshDiscovered();
+        NoneDiscovered = !HasDiscovered;
+    }
+
+    /// <summary>Adds a server found on the network at the address it gave, like a typed one.</summary>
+    [RelayCommand]
+    private Task AddDiscoveredAsync(DiscoveredServerItem item, CancellationToken cancellationToken) =>
+        AddAddressAsync(item.Address, cancellationToken);
 
     [RelayCommand]
     private async Task EditAddressAsync(ServerItem item)
@@ -129,6 +171,24 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
     }
 
     public void Dispose() => _servers.Changed -= OnServersChanged;
+
+    private async Task<bool> AddAddressAsync(string address, CancellationToken cancellationToken)
+    {
+        FormError = null;
+        ServerProfile? added = null;
+        if (!await TryAsync(async () => added = await _servers.AddAsync(address, cancellationToken)))
+        {
+            return false;
+        }
+
+        // First-run flow: sign in to the first server right away.
+        if (Servers.Count == 1)
+        {
+            _navigation.NavigateTo(PageKeys.SignIn, added!.Id);
+        }
+
+        return true;
+    }
 
     private async Task<bool> TryAsync(Func<Task> action)
     {
@@ -182,5 +242,25 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
         }
 
         OnPropertyChanged(nameof(HasServers));
+        RefreshDiscovered();
+    }
+
+    /// <summary>Lists the found servers that are not added yet, by ID or by address.</summary>
+    private void RefreshDiscovered()
+    {
+        Discovered.Clear();
+        foreach (var server in _discovered)
+        {
+            var added = _servers.Servers.Any(p =>
+                string.Equals(p.Id, server.Id, StringComparison.OrdinalIgnoreCase)
+                || Uri.Compare(p.Address, server.Address, UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.Unescaped, StringComparison.OrdinalIgnoreCase) == 0);
+            if (!added)
+            {
+                var addName = _strings.GetString("Servers_AddFound").Replace("{0}", server.Name, StringComparison.Ordinal);
+                Discovered.Add(new DiscoveredServerItem(server, addName));
+            }
+        }
+
+        OnPropertyChanged(nameof(HasDiscovered));
     }
 }
