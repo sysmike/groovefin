@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 using Groovefin.Core.Api;
 using Groovefin.Core.Equalizer;
+using Groovefin.Core.Mixes;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Servers;
@@ -194,6 +195,9 @@ public sealed record BrowseSettings
 
     /// <summary>Gets or sets the IDs of the playlists shown (and played) last entry first (#267).</summary>
     public IReadOnlyList<string> ReversedPlaylists { get; set; } = [];
+
+    /// <summary>Gets or sets the rule-based mixes (#401) per <c>serverId/userId</c>.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<Mix>> Mixes { get; set; } = ReadOnlyDictionary<string, IReadOnlyList<Mix>>.Empty;
 }
 
 /// <summary>A column of the songs table.</summary>

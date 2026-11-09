@@ -170,6 +170,9 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
             // Server management is part of Settings.
             PageKeys.Settings or PageKeys.Servers => PageKeys.Settings,
             PageKeys.Statistics => PageKeys.Statistics,
+
+            // A mix is part of Mixes (#401).
+            PageKeys.Mix => PageKeys.Mixes,
             _ when PageKeys.MainSections.Contains(e.PageKey) => e.PageKey,
             _ => null,
         };

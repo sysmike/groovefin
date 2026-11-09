@@ -188,7 +188,7 @@ public enum ArtistSortField
     Random,
 }
 
-/// <summary>Paging and sorting for <see cref="ILibraryService.GetTracksAsync"/>.</summary>
+/// <summary>Paging, sorting and filters for <see cref="ILibraryService.GetTracksAsync"/>.</summary>
 public sealed record TrackQuery
 {
     public int StartIndex { get; init; }
@@ -198,6 +198,18 @@ public sealed record TrackQuery
     public TrackSortField SortBy { get; init; } = TrackSortField.Name;
 
     public bool Descending { get; init; }
+
+    /// <summary>Gets the genre IDs; a song matches when it has any of them (#401). Empty means all genres.</summary>
+    public IReadOnlyList<string> GenreIds { get; init; } = [];
+
+    /// <summary>Gets the first production year to include, or <see langword="null"/> for no lower bound (#401).</summary>
+    public int? MinYear { get; init; }
+
+    /// <summary>Gets the last production year to include, or <see langword="null"/> for no upper bound (#401).</summary>
+    public int? MaxYear { get; init; }
+
+    /// <summary>Gets a value indicating whether only the user's favourite songs are included (#401).</summary>
+    public bool FavouritesOnly { get; init; }
 }
 
 /// <summary>Track sort orders. Ties are broken by album and track order, then by name.</summary>

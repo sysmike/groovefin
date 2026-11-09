@@ -387,6 +387,22 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     p.ImageTypeLimit = 1;
                     p.EnableImageTypes = [ImageType.Primary];
                     p.Fields = [ItemFields.DateCreated];
+
+                    // The filters of a mix (#401).
+                    if (query.GenreIds.Count > 0)
+                    {
+                        p.GenreIds = query.GenreIds.Select(id => (Guid?)Guid.Parse(id)).ToArray();
+                    }
+
+                    if (Years(query.MinYear, query.MaxYear) is { } years)
+                    {
+                        p.Years = years;
+                    }
+
+                    if (query.FavouritesOnly)
+                    {
+                        p.Filters = [ItemFilter.IsFavorite];
+                    }
                 },
                 cancellationToken),
             "Loading tracks").ConfigureAwait(false);
@@ -901,15 +917,18 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
     /// <summary>
     /// Jellyfin filters by a list of years; an open-ended range is limited to 1900 … next year.
     /// </summary>
-    internal static int?[]? Years(AlbumQuery query)
+    internal static int?[]? Years(AlbumQuery query) => Years(query.MinYear, query.MaxYear);
+
+    /// <summary>The years from <paramref name="minYear"/> to <paramref name="maxYear"/>, or <see langword="null"/> for any year.</summary>
+    internal static int?[]? Years(int? minYear, int? maxYear)
     {
-        if (query.MinYear is null && query.MaxYear is null)
+        if (minYear is null && maxYear is null)
         {
             return null;
         }
 
-        var first = query.MinYear ?? 1900;
-        var last = query.MaxYear ?? DateTime.UtcNow.Year + 1;
+        var first = minYear ?? 1900;
+        var last = maxYear ?? DateTime.UtcNow.Year + 1;
         return Enumerable.Range(first, last - first + 1).Select(y => (int?)y).ToArray();
     }
 
