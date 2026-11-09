@@ -22,6 +22,7 @@ internal sealed partial class SettingsPage : Page
         Equalizer = App.CreateViewModel<EqualizerViewModel>();
         Shortcuts = App.CreateViewModel<ShortcutsViewModel>();
         Downloads = App.CreateViewModel<DownloadsViewModel>();
+        OutputDevice = App.CreateViewModel<OutputDeviceViewModel>();
         History = App.Services.GetRequiredService<ListeningHistoryViewModel>();
         InitializeComponent();
         AddSectionLinks();
@@ -37,6 +38,9 @@ internal sealed partial class SettingsPage : Page
 
     public DownloadsViewModel Downloads { get; }
 
+    /// <summary>Gets the output device's card (#389).</summary>
+    public OutputDeviceViewModel OutputDevice { get; }
+
     /// <summary>Gets the listening history's card: clears the plays kept for On repeat and the statistics (#382).</summary>
     public ListeningHistoryViewModel History { get; }
 
@@ -46,6 +50,7 @@ internal sealed partial class SettingsPage : Page
         Equalizer.Dispose();
         Shortcuts.Dispose();
         Downloads.Dispose();
+        OutputDevice.Dispose();
     }
 
     /// <summary>Change on a shortcut: its Tag is the shortcut (<c>Tag="{x:Bind}"</c>, #172).</summary>
@@ -143,5 +148,8 @@ internal sealed partial class SettingsPage : Page
     {
         await ViewModel.RefreshCacheSizeAsync();
         await Downloads.LoadAsync();
+
+        // Devices come and go between visits.
+        await OutputDevice.LoadAsync();
     }
 }

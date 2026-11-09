@@ -1820,6 +1820,9 @@ try {
     # Shown only in a build with the Discord application ID (#160).
     Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, "Show what I'm playing in Discord")) 'Discord setting' | Out-Null
     Write-Output 'The Discord setting is shown.'
+    # The output device (#389): offered in Playback, on the Windows default unless the user chose another.
+    $outputDevice = Find-ById 'SettingsOutputDevice'
+    Write-Output "The output device setting is shown ('$($outputDevice.Current.Name)')."
     Test-Accessibility 'settings'
     Test-TabOrder 'settings'
 
