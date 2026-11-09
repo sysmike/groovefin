@@ -311,4 +311,46 @@ public sealed class ServersViewModelTests
         sut.HasDiscovered.Should().BeFalse();
         sut.NoneDiscovered.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task A_slow_connection_says_which_attempt_it_is_on()
+    {
+        using var sut = CreateSut();
+        var seen = new List<string?>();
+        _servers.AddAsync("slow", Arg.Any<CancellationToken>()).Returns(_ =>
+        {
+            seen.Add(sut.AttemptText);
+            RequestAttempts.Retrying(2);
+            seen.Add(sut.AttemptText);
+            return Beta;
+        });
+        sut.NewAddress = "slow";
+
+        await sut.AddCommand.ExecuteAsync(null);
+
+        seen.Should().Equal("Servers_Connecting", "Servers_Retrying");
+        sut.AttemptText.Should().BeNull("the connection is over");
+    }
+
+    [Fact]
+    public async Task Cancel_stops_a_slow_connection_and_keeps_the_address()
+    {
+        using var sut = CreateSut();
+        _servers.AddAsync("slow", Arg.Any<CancellationToken>()).Returns(async call =>
+        {
+            await Task.Delay(Timeout.Infinite, call.Arg<CancellationToken>());
+            return Beta;
+        });
+        sut.NewAddress = "slow";
+
+        var adding = sut.AddCommand.ExecuteAsync(null);
+        sut.IsConnecting.Should().BeTrue();
+        sut.CancelConnectCommand.Execute(null);
+        await adding;
+
+        sut.IsConnecting.Should().BeFalse();
+        sut.NewAddress.Should().Be("slow");
+        sut.HasFormError.Should().BeFalse();
+        sut.AttemptText.Should().BeNull();
+    }
 }

@@ -404,7 +404,7 @@
     <value>Gib eine gültige Adresse ein, zum Beispiel https://192.168.1.10:8920.</value>
   </data>
   <data name="Servers_Unreachable" xml:space="preserve">
-    <value>Unter dieser Adresse antwortet kein Server. Prüfe Adresse, Port und Netzwerkverbindung.</value>
+    <value>Unter dieser Adresse antwortet kein Server. Prüfe Adresse und Port (Jellyfin nutzt 8096 für http und 8920 für https), ob der Server http oder https verwendet, und deine Netzwerkverbindung.</value>
   </data>
   <data name="Servers_NotJellyfin" xml:space="preserve">
     <value>Der Server unter dieser Adresse scheint kein Jellyfin-Server zu sein.</value>
@@ -2862,6 +2862,15 @@
   </data>
   <data name="Settings_OutputUnknown" xml:space="preserve">
     <value>Gewähltes Gerät</value>
+  </data>
+  <data name="Servers_Retrying" xml:space="preserve">
+    <value>Noch keine Antwort. Neuer Versuch ({0}. Versuch) …</value>
+  </data>
+  <data name="ServerCancelButton.Content" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="Servers_Connecting" xml:space="preserve">
+    <value>Verbindung wird hergestellt …</value>
   </data>
   <data name="SettingsNormalizationAutomatic.Content" xml:space="preserve">
     <value>Automatisch: Alben als Ganzes, Mixe Titel für Titel</value>
