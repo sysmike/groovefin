@@ -41,7 +41,7 @@
       </uap:VisualElements>
       <Extensions>
         <!-- Start with Windows (#395): off until turned on in Settings (WindowsStartupRegistration.TaskId). -->
-        <uap5:Extension Category="windows.startupTask" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
+        <uap5:Extension Category="windows.startupTask">
           <uap5:StartupTask TaskId="GroovefinStartup" Enabled="false" DisplayName="ms-resource:AppDisplayName" />
         </uap5:Extension>
       </Extensions>
