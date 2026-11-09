@@ -2848,4 +2848,19 @@
   <data name="NowPlayingReconnecting.Text" xml:space="preserve">
     <value>Verbindung wird wiederhergestellt …</value>
   </data>
+  <data name="SettingsOutputDeviceCard.Header" xml:space="preserve">
+    <value>Ausgabegerät</value>
+  </data>
+  <data name="SettingsOutputDeviceCard.Description" xml:space="preserve">
+    <value>Wo die Musik spielt. Solange das gewählte Gerät nicht verbunden ist, spielt sie auf dem Windows-Standardgerät.</value>
+  </data>
+  <data name="Settings_OutputDefault" xml:space="preserve">
+    <value>Windows-Standard</value>
+  </data>
+  <data name="Settings_OutputMissing" xml:space="preserve">
+    <value>{0} (nicht verbunden)</value>
+  </data>
+  <data name="Settings_OutputUnknown" xml:space="preserve">
+    <value>Gewähltes Gerät</value>
+  </data>
 </root>

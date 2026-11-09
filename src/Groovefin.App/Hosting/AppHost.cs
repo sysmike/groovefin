@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.App.Services;
 using Groovefin.Core;
 using Groovefin.Core.Api;
+using Groovefin.Core.AudioOutput;
 using Groovefin.Core.Discord;
 using Groovefin.Core.Downloads;
 using Groovefin.Core.Equalizer;
@@ -118,6 +119,8 @@ internal static class AppHost
         builder.Services.AddSingleton<IPlaybackEngine>(sp => sp.GetRequiredService<MediaPlayerEngine>());
         builder.Services.AddSingleton<IAudioEqualizer>(sp => sp.GetRequiredService<MediaPlayerEngine>());
         builder.Services.AddSingleton<EqualizerSync>();
+        builder.Services.AddSingleton<IAudioOutput>(sp => sp.GetRequiredService<MediaPlayerEngine>());
+        builder.Services.AddSingleton<AudioOutputSync>();
         builder.Services.AddSingleton(_ => new QueueManager());
         builder.Services.AddSingleton<Player>();
         builder.Services.AddSingleton<IPlayer>(sp => sp.GetRequiredService<Player>());
