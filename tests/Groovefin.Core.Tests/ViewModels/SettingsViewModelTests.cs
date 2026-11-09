@@ -604,6 +604,16 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void Keep_playing_when_closed_is_saved()
+    {
+        var sut = CreateSut();
+
+        sut.CloseToTray = true;
+
+        _settings.Current.Appearance.CloseToTray.Should().BeTrue();
+    }
+
+    [Fact]
     public void See_each_download_opens_the_downloads_page()
     {
         var sut = CreateNavigationSut();

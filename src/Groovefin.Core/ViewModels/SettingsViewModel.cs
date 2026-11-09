@@ -298,6 +298,23 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether closing the window keeps Groovefin playing in the notification area
+    /// (with the icon on, #395).
+    /// </summary>
+    public bool CloseToTray
+    {
+        get => _settings.Current.Appearance.CloseToTray;
+        set
+        {
+            if (value != CloseToTray)
+            {
+                _settings.Update(s => s with { Appearance = s.Appearance with { CloseToTray = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
     /// <summary>Gets or sets a value indicating whether highlights use the Windows accent colour (otherwise neutral grey).</summary>
     public bool UseAccentColor
     {

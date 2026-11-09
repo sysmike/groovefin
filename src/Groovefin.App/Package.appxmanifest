@@ -2,8 +2,9 @@
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap rescap">
+  IgnorableNamespaces="uap uap5 rescap">
 
   <!-- Publisher must match the subject of the signing certificate used by release.yml. -->
   <Identity
@@ -38,6 +39,12 @@
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
+      <Extensions>
+        <!-- Start with Windows (#395): off until turned on in Settings (WindowsStartupRegistration.TaskId). -->
+        <uap5:Extension Category="windows.startupTask" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
+          <uap5:StartupTask TaskId="GroovefinStartup" Enabled="false" DisplayName="ms-resource:AppDisplayName" />
+        </uap5:Extension>
+      </Extensions>
     </Application>
   </Applications>
 

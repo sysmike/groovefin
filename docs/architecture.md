@@ -135,6 +135,7 @@ flowchart TD
 | `INavigationService` | Core | App | Navigate by ViewModel type + parameter, back stack. |
 | `IDialogService` | Core | App | Content dialogs, confirmations, pickers. |
 | `IFolderPicker` | Core | App (`WindowsFolderPicker`) | The Windows folder picker, for the download folder (#399). |
+| `IStartupRegistration` | Core | App (`WindowsStartupRegistration`) | Start with Windows (#395): the MSIX's startup task (`GroovefinStartup` in Package.appxmanifest), the unpackaged build's value in the user's Run key, which starts it with `--startup`. Such a start opens minimized when chosen (`MainWindow.ShowAtStart`): hidden to the notification area with its icon, on the taskbar without. With the icon and "Keep playing when the window is closed", closing the window hides it (`AppWindow.Closing`); Exit in the icon's menu quits. |
 | `IThemeService` | Core | App | Light / dark / system theme, density. |
 | `ISettingsService` | Core | Core + App storage location | Strongly typed settings persisted as JSON. |
 | `IDispatcher` | Core | App | Marshal work to the UI thread. The only way code outside views touches the UI thread. |

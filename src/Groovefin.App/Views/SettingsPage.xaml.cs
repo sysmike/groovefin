@@ -23,6 +23,7 @@ internal sealed partial class SettingsPage : Page
         Shortcuts = App.CreateViewModel<ShortcutsViewModel>();
         Downloads = App.CreateViewModel<DownloadsViewModel>();
         OutputDevice = App.CreateViewModel<OutputDeviceViewModel>();
+        Startup = App.CreateViewModel<StartupViewModel>();
         History = App.Services.GetRequiredService<ListeningHistoryViewModel>();
         InitializeComponent();
         AddSectionLinks();
@@ -41,6 +42,9 @@ internal sealed partial class SettingsPage : Page
     /// <summary>Gets the output device's card (#389).</summary>
     public OutputDeviceViewModel OutputDevice { get; }
 
+    /// <summary>Gets the Start with Windows card (#395).</summary>
+    public StartupViewModel Startup { get; }
+
     /// <summary>Gets the listening history's card: clears the plays kept for On repeat and the statistics (#382).</summary>
     public ListeningHistoryViewModel History { get; }
 
@@ -51,6 +55,7 @@ internal sealed partial class SettingsPage : Page
         Shortcuts.Dispose();
         Downloads.Dispose();
         OutputDevice.Dispose();
+        Startup.Dispose();
     }
 
     /// <summary>Change on a shortcut: its Tag is the shortcut (<c>Tag="{x:Bind}"</c>, #172).</summary>
@@ -140,7 +145,9 @@ internal sealed partial class SettingsPage : Page
     private async void OnFirstLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnFirstLoaded;
+        var startup = Startup.LoadAsync();
         await ViewModel.LoadLibrariesAsync();
+        await startup;
     }
 
     // The cache grows while browsing, so it is measured on every visit; the downloads show what is on disk.

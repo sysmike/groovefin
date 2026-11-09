@@ -74,6 +74,9 @@ internal sealed partial class MainWindow : Window
     private readonly ISettingsService _settings;
     private readonly ShortcutService _shortcuts;
     private readonly NotificationAreaIcon _tray;
+
+    // Quit in the notification area icon's menu: closing then quits, also with "keep playing" on (#395).
+    private bool _quitting;
     /// <summary>The navigation pane's section items by page key, and the separator after Home (#255).</summary>
     private readonly Dictionary<string, NavigationViewItem> _sectionItems;
     private readonly NavigationViewItemSeparator _homeSeparator;
@@ -190,8 +193,11 @@ internal sealed partial class MainWindow : Window
             }
         };
 
+        // Closing with "keep playing" on (#395): the window hides to the notification area and the music goes on.
+        AppWindow.Closing += OnAppWindowClosing;
+
         // The optional notification area icon follows its setting.
-        _tray = new NotificationAreaIcon(Player, Privacy, strings, Title, ShowFromTray, Close);
+        _tray = new NotificationAreaIcon(Player, Privacy, strings, Title, ShowFromTray, Quit);
         _tray.SetVisible(settings.Current.Appearance.ShowTrayIcon);
         settings.Changed += OnSettingsChanged;
         Closed += (_, _) =>
@@ -260,6 +266,51 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>Brings the window to the front, also from the notification area or minimized (#406).</summary>
     public void BringToFront() => ShowFromTray();
+
+    /// <summary>
+    /// Shows the window for the first time. <paramref name="minimized"/> (a start with Windows, #395) opens it
+    /// minimized: in the notification area when its icon shows, otherwise on the taskbar.
+    /// </summary>
+    public void ShowAtStart(bool minimized)
+    {
+        if (!minimized || _windowPresenter is null)
+        {
+            Activate();
+            return;
+        }
+
+        // Minimized before it is first shown, so it does not flash; once more in case showing restored it.
+        _windowPresenter.Minimize();
+        Activate();
+        if (_windowPresenter.State != OverlappedPresenterState.Minimized)
+        {
+            _windowPresenter.Minimize();
+        }
+
+        if (_tray.IsVisible)
+        {
+            AppWindow.Hide();
+        }
+    }
+
+    /// <summary>Quit in the notification area icon's menu: closes the window, which quits.</summary>
+    private void Quit()
+    {
+        _quitting = true;
+        Close();
+    }
+
+    /// <summary>With "keep playing" on and the icon shown, closing hides the window instead of quitting (#395).</summary>
+    private void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (_quitting || !_settings.Current.Appearance.CloseToTray || !_tray.IsVisible)
+        {
+            return;
+        }
+
+        args.Cancel = true;
+        AppWindow.Hide();
+    }
 
     /// <summary>Brings the window back from the notification area (or from minimized) and to the front.</summary>
     private void ShowFromTray()
