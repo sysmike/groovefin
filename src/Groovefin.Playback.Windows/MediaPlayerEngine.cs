@@ -188,7 +188,7 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
         {
             var watcher = DeviceInformation.CreateWatcher(MediaDevice.GetAudioRenderSelector());
             watcher.Added += (_, device) => OnOutputSeen(device.Id, device);
-            watcher.Updated += (_, update) => _ = OnOutputUpdatedAsync(update.Id);
+            watcher.Updated += (sender, update) => _ = OnOutputUpdatedAsync(update.Id);
             watcher.Removed += (_, update) => OnOutputSeen(update.Id, null);
             lock (_gate)
             {
