@@ -1,8 +1,6 @@
 # Groovefin
 
-A music player for Windows 11 that plays the music on your [Jellyfin](https://jellyfin.org) server.
-It looks and works like a Windows app, plays without gaps and can keep your favourites on your PC
-for when you are offline.
+A native Jellyfin music player for Windows 11, built with C#, .NET 10 and WinUI 3.
 
 [![CI](https://github.com/sysmike/groovefin/actions/workflows/ci.yml/badge.svg)](https://github.com/sysmike/groovefin/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/sysmike/groovefin/actions/workflows/codeql.yml/badge.svg)](https://github.com/sysmike/groovefin/actions/workflows/codeql.yml)
@@ -12,34 +10,26 @@ for when you are offline.
 
 ## Features
 
-**Your library**
-- A start page with a random album and your recently played and recently added albums.
-- Albums, artists, genres, playlists and folders, with sorting and filters.
-- All your songs in one table, with the columns you choose.
-- Search with suggestions as you type.
-- Favourites, playlists and instant mixes.
+**Library**
+- Start page with recommendations
+- Albums, artists, genres, playlists and folders, with sorting and filters
+- Search
+- Favourites, playlists and instant mixes
 
 **Playback**
-- Gapless playback, or a crossfade between songs if you like.
-- Even volume across songs and albums.
-- Lower stream quality for slow connections.
-- A 10-band equalizer with presets.
-- A queue you can reorder, shuffle and repeat.
-- Synced lyrics: click a line to jump to it.
-- Your queue and position come back after a restart.
-- Downloads for offline listening, kept in sync with your favourites and playlists.
+- Gapless playback and crossfade
+- Even volume across songs and albums
+- Stream quality setting for slow connections
+- A 10-band equalizer with presets
+- Synced lyrics
+- Offline mode
 
 **Windows integration**
-- Media keys, the Windows media controls and taskbar buttons.
-- A full-screen player and an always-on-top mini player.
-- Keyboard shortcuts for everything you do often, which you can change.
-- Optional: an icon in the notification area, and your music as your Discord status.
-- A privacy mode that stops reporting what you play.
-
-**Look and feel**
-- Light, dark and high contrast, in your Windows accent colour.
-- Works with the keyboard and Narrator.
-- In English and German.
+- Media keys, Windows media controls and taskbar buttons
+- Full-screen player and mini player
+- Keyboard shortcuts
+- Notification icon
+- A privacy mode that stops reporting what you play
 
 ## Install
 
@@ -47,15 +37,6 @@ You need Windows 11 (21H2 or later) and a [Jellyfin](https://jellyfin.org) serve
 Jellyfin 10.9 or later.
 
 Download the latest release from the [Releases page](https://github.com/sysmike/groovefin/releases):
-
-| File | Choose it if |
-|---|---|
-| `Groovefin_<version>.msixbundle` | You are not sure. It installs the right version for your PC. |
-| `Groovefin_<version>_x64.msix`, `…_ARM64.msix` | You want the version for one kind of PC only. |
-| `Groovefin_<version>_<arch>_unpackaged.zip` | You do not want to install anything. Extract it anywhere and run `Groovefin.exe`. |
-
-If the installer says the Windows App Runtime is missing, use the ZIP instead: it brings everything
-it needs.
 
 <details>
 <summary>Unsigned releases and checking a download</summary>
@@ -71,12 +52,6 @@ it needs.
 
 1. Enter your server's address, for example `https://192.168.1.10:8920`.
 2. Sign in with your Jellyfin user, or with Quick Connect.
-
-Use your server's `https://` address if it has one. Over plain `http://`, your password is sent
-unencrypted, and Groovefin asks you first.
-
-Settings is the gear button in the title bar (or Ctrl+,). There you can turn on downloads, the
-equalizer and Discord, and change keyboard shortcuts.
 
 ## Build from source
 
