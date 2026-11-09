@@ -117,7 +117,7 @@ public sealed partial class ArtistDetailViewModel(
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasArtist), nameof(Name), nameof(Genres), nameof(HasGenres), nameof(Biography), nameof(HasBiography))]
     [NotifyPropertyChangedFor(nameof(MusicBrainzUrl), nameof(HasMusicBrainz), nameof(LastFmUrl), nameof(HasLastFm))]
-    [NotifyCanExecuteChangedFor(nameof(ToggleFavouriteCommand), nameof(PlayCommand), nameof(ShuffleCommand), nameof(InstantMixCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ToggleFavouriteCommand), nameof(PlayCommand), nameof(ShuffleCommand), nameof(ShuffleAlbumsCommand), nameof(InstantMixCommand))]
     public partial Artist? Artist { get; private set; }
 
     public bool HasArtist => Artist is not null;
@@ -267,6 +267,10 @@ public sealed partial class ArtistDetailViewModel(
     [RelayCommand(CanExecute = nameof(HasArtist))]
     private Task ShuffleAsync() => PlayAllAsync(shuffle: true);
 
+    /// <summary>Plays the artist's albums in a random order, each album's songs in order (#403).</summary>
+    [RelayCommand(CanExecute = nameof(HasArtist))]
+    private Task ShuffleAlbumsAsync() => PlayAllAsync(shuffle: true, albums: true);
+
     [RelayCommand(CanExecute = nameof(HasArtist))]
     private Task InstantMixAsync() => instantMix.StartAsync(Artist!.Id);
 
@@ -287,12 +291,16 @@ public sealed partial class ArtistDetailViewModel(
     [RelayCommand]
     private void OpenGenre(Genre genre) => navigation.NavigateTo(PageKeys.Genre, genre.Id);
 
-    private async Task PlayAllAsync(bool shuffle)
+    private async Task PlayAllAsync(bool shuffle, bool albums = false)
     {
         try
         {
             var tracks = await library.GetArtistTracksAsync(Artist!.Id);
-            if (shuffle)
+            if (albums)
+            {
+                player.ShuffleAlbums(tracks);
+            }
+            else if (shuffle)
             {
                 player.Shuffle(tracks);
             }
