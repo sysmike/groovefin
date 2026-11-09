@@ -2845,6 +2845,9 @@
   <data name="MixEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Titel</value>
   </data>
+  <data name="NowPlayingReconnecting.Text" xml:space="preserve">
+    <value>Verbindung wird wiederhergestellt …</value>
+  </data>
   <data name="Servers_Retrying" xml:space="preserve">
     <value>Noch keine Antwort. Neuer Versuch ({0}. Versuch) …</value>
   </data>
@@ -2853,7 +2856,5 @@
   </data>
   <data name="Servers_Connecting" xml:space="preserve">
     <value>Verbindung wird hergestellt …</value>
-  <data name="NowPlayingReconnecting.Text" xml:space="preserve">
-    <value>Verbindung wird wiederhergestellt …</value>
   </data>
 </root>
