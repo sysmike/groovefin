@@ -19,6 +19,9 @@ public sealed class ForgivingSearch(ISearchService inner) : ISearchService
     /// <summary>Candidates asked for per word: more than shown, as only some match every word.</summary>
     public const int CandidatesPerWord = 20;
 
+    /// <summary>What separates the words of a name.</summary>
+    private static readonly char[] Separators = [' ', '\t', ',', '.', '-', '(', ')', '/', '&', '\'', '"', ':', ';', '!', '?'];
+
     public async Task<SearchResults> SearchAsync(string query, int limit, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -89,7 +92,7 @@ public sealed class ForgivingSearch(ISearchService inner) : ISearchService
 
     /// <summary>The words of a text, lower case and without accents.</summary>
     internal static List<string> Words(string text) =>
-        [.. Fold(text).Split((char[])[' ', '\t', ',', '.', '-', '(', ')', '/', '&', '\'', '"', ':', ';', '!', '?'], StringSplitOptions.RemoveEmptyEntries)];
+        [.. Fold(text).Split(Separators, StringSplitOptions.RemoveEmptyEntries)];
 
     /// <summary>The optimal string alignment distance: insertions, deletions, substitutions and swapped neighbours.</summary>
     internal static int Distance(string a, string b)
@@ -138,12 +141,9 @@ public sealed class ForgivingSearch(ISearchService inner) : ISearchService
     {
         var decomposed = text.ToLower(CultureInfo.CurrentCulture).Normalize(NormalizationForm.FormD);
         var folded = new StringBuilder(decomposed.Length);
-        foreach (var c in decomposed)
+        foreach (var c in decomposed.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark))
         {
-            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-            {
-                folded.Append(c);
-            }
+            folded.Append(c);
         }
 
         return folded.ToString().Normalize(NormalizationForm.FormC);
