@@ -279,13 +279,10 @@ internal sealed partial class MainWindow : Window
             return;
         }
 
-        // Minimized before it is first shown, so it does not flash; once more in case showing restored it.
-        _windowPresenter.Minimize();
+        // Shown first, then minimized: minimized before its first showing, the window stays invisible, not on
+        // the taskbar.
         Activate();
-        if (_windowPresenter.State != OverlappedPresenterState.Minimized)
-        {
-            _windowPresenter.Minimize();
-        }
+        _windowPresenter.Minimize();
 
         if (_tray.IsVisible)
         {
