@@ -16,10 +16,14 @@ public sealed record ArtistItem(Artist Artist, ImageRequest? Image)
 {
     public string Name => Artist.Name;
 
-    public string AccessibleName => Artist.Name;
+    /// <summary>Gets the text Narrator reads for the item: the name, with the plays on the statistics page.</summary>
+    public string AccessibleName => PlaysText.Length > 0 ? $"{Artist.Name}, {PlaysText}" : Artist.Name;
 
     /// <summary>Gets a value indicating whether the artist is downloaded with every song (#337).</summary>
     public bool IsDownloaded { get; init; }
+
+    /// <summary>Gets how often the artist's songs were played, e.g. "48 plays", on the statistics page (#382); empty elsewhere.</summary>
+    public string PlaysText { get; init; } = string.Empty;
 }
 
 /// <summary>

@@ -545,12 +545,13 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>
     /// Selects the section's item; on another page nothing, except a favourite playlist's own item on its page.
-    /// Only section items have a page key: a favourite playlist's tag is the playlist (#301). Settings is the
-    /// title bar's button (#254).
+    /// Only section items have a page key: a favourite playlist's tag is the playlist (#301). Settings and the
+    /// statistics are the title bar's buttons (#254, #382).
     /// </summary>
     private void SyncSelection(string? pageKey)
     {
         SettingsButton.IsChecked = pageKey == PageKeys.Settings;
+        StatisticsButton.IsChecked = pageKey == PageKeys.Statistics;
         NavView.SelectedItem = pageKey is not null
             ? NavView.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(item => item.Tag is string key && key == pageKey)
             : ViewModel.SelectedPlaylistId is { } playlistId && _playlistItems.TryGetValue(playlistId, out var playlist) ? playlist : null;
@@ -577,6 +578,16 @@ internal sealed partial class MainWindow : Window
     private void OnSettingsButtonClick(object sender, RoutedEventArgs e)
     {
         ViewModel.ToggleSettingsCommand.Execute(null);
+        SyncSelection(ViewModel.SelectedSection);
+    }
+
+    /// <summary>
+    /// Opens the statistics, or closes them again when they are shown (#382), like the Settings button. Afterwards
+    /// the button shows whether they are shown.
+    /// </summary>
+    private void OnStatisticsButtonClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ToggleStatisticsCommand.Execute(null);
         SyncSelection(ViewModel.SelectedSection);
     }
 
@@ -965,6 +976,9 @@ internal sealed partial class MainWindow : Window
                 break;
             case ShortcutAction.Settings:
                 ViewModel.NavigateCommand.Execute(PageKeys.Settings);
+                break;
+            case ShortcutAction.Statistics:
+                ViewModel.NavigateCommand.Execute(PageKeys.Statistics);
                 break;
             case ShortcutAction.GoBack:
                 Execute(ViewModel.GoBackCommand);

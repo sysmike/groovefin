@@ -71,6 +71,10 @@ public interface ILibraryService
     /// <exception cref="JellyfinException">The request failed.</exception>
     Task<PagedResult<Artist>> GetArtistsAsync(ArtistQuery query, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets the artists with these IDs, in no particular order; IDs the server no longer knows are left out (#382).</summary>
+    /// <exception cref="JellyfinException">The request failed.</exception>
+    Task<IReadOnlyList<Artist>> GetArtistsByIdAsync(IReadOnlyList<string> artistIds, CancellationToken cancellationToken = default);
+
     /// <summary>Gets one artist with biography and genres.</summary>
     /// <exception cref="JellyfinException">The artist does not exist (HTTP 404) or the request failed.</exception>
     Task<Artist> GetArtistAsync(string artistId, CancellationToken cancellationToken = default);

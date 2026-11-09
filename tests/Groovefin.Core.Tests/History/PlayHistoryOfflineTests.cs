@@ -144,7 +144,7 @@ public sealed class PlayHistoryOfflineTests : IDisposable
 
         await _sut.SyncAsync();
 
-        Saved.Plays.Should().NotContain(p => p.Source == PlaySource.Server, "the server's new play is the one Groovefin sent");
+        Saved.Plays.Should().NotContain(p => p.Source != PlaySource.Groovefin, "the server's new play is the one Groovefin sent");
     }
 
     [Fact]

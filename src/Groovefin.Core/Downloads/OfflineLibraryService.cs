@@ -75,6 +75,9 @@ public sealed class OfflineLibraryService(ILibraryService server, OfflineAnswers
             : server.GetArtistsAsync(query, cancellationToken);
     }
 
+    public Task<IReadOnlyList<Artist>> GetArtistsByIdAsync(IReadOnlyList<string> artistIds, CancellationToken cancellationToken = default) =>
+        server.GetArtistsByIdAsync(artistIds, cancellationToken);
+
     public Task<Artist> GetArtistAsync(string artistId, CancellationToken cancellationToken = default) =>
         answers.AskAsync(
             () => server.GetArtistAsync(artistId, cancellationToken),

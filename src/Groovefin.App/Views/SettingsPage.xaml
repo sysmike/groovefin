@@ -411,6 +411,13 @@
                 <controls:SettingsCard x:Uid="SettingsLogsCard" HeaderIcon="{ui:FontIcon Glyph=&#xE8A5;}">
                     <Button x:Uid="SettingsOpenLogsButton" Command="{x:Bind ViewModel.OpenLogFolderCommand}" />
                 </controls:SettingsCard>
+                <!--  The plays kept on this PC for On repeat and the statistics (#382); the server's play counts stay.  -->
+                <controls:SettingsCard x:Uid="SettingsHistoryCard" HeaderIcon="{ui:FontIcon Glyph=&#xE81C;}">
+                    <Button
+                        x:Uid="SettingsClearHistoryButton"
+                        AutomationProperties.AutomationId="SettingsClearHistoryButton"
+                        Command="{x:Bind History.ClearCommand}" />
+                </controls:SettingsCard>
 
                 <!--
                     The shortcuts work anywhere in the window, except while typing. Each can get other keys (#68):

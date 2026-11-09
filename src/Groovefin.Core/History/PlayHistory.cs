@@ -10,8 +10,8 @@ using Microsoft.Extensions.Logging;
 namespace Groovefin.Core.History;
 
 /// <summary>
-/// The play history behind "On repeat" (#251), kept by Groovefin because Jellyfin keeps only a play count and
-/// a last-played date per track:
+/// The play history behind "On repeat" (#251) and the statistics (#382), kept by Groovefin because Jellyfin keeps
+/// only a play count and a last-played date per track:
 /// <list type="bullet">
 /// <item>Groovefin's own plays: a track counts once it was listened to for half its length or
 /// <see cref="MaxListenTime"/>, whichever is less. Listened time counts, not the position, so seeking does
@@ -19,19 +19,23 @@ namespace Groovefin.Core.History;
 /// <item>Other devices' plays: every <see cref="SyncInterval"/> the tracks played since the last sync are
 /// read from the server. A track's gain in play count is its plays since then, less the starts Groovefin
 /// reported itself, timed at its last play. The first sync takes each track played in the last
-/// <see cref="Window"/> with its whole play count.</item>
+/// <see cref="Window"/> with its whole play count, as <see cref="PlaySource.Seeded"/> plays.</item>
 /// <item>Plays while offline (#339): a start the server could not be reached for is kept, and sent with its time
 /// (<see cref="IPlaybackReporter.MarkPlayedAsync"/>) once it can be: before each sync, when the network comes back,
 /// and after a start reached the server. Each sent play then counts as one Groovefin reported.</item>
 /// </list>
-/// Each server and user has its own file; plays older than <see cref="Window"/> are dropped. Engine events
+/// With each play the song's album, artists and length are kept (<see cref="PlayedTrack"/>), for the statistics.
+/// Each server and user has its own file; plays older than <see cref="Retention"/> are dropped. Engine events
 /// are handled on the UI thread; loading, saving and syncing run one after another in the background.
 /// Create it once at startup and keep it alive.
 /// </summary>
 public sealed partial class PlayHistory : IDisposable
 {
-    /// <summary>How far back "On repeat" looks, and how long plays are kept.</summary>
+    /// <summary>How far back "On repeat" looks, and how far back the first sync takes plays.</summary>
     public static readonly TimeSpan Window = TimeSpan.FromDays(30);
+
+    /// <summary>How long plays are kept: a year, for the statistics (#382).</summary>
+    public static readonly TimeSpan Retention = TimeSpan.FromDays(365);
 
     /// <summary>A track counts once listened to for half its length, or this long.</summary>
     public static readonly TimeSpan MaxListenTime = TimeSpan.FromMinutes(4);
@@ -124,6 +128,77 @@ public sealed partial class PlayHistory : IDisposable
     }
 
     /// <summary>
+    /// Gets a copy of the signed-in user's plays, with what is known of their songs, for the statistics (#382).
+    /// Not signed in, it is empty and starts now.
+    /// </summary>
+    public Task<PlayLog> GetLogAsync()
+    {
+        var key = CurrentKey();
+        return Enqueue(async () =>
+        {
+            if (key is null)
+            {
+                return new PlayLog(_time.GetUtcNow(), [], new Dictionary<string, PlayedTrack>(StringComparer.Ordinal));
+            }
+
+            var data = await LoadAsync(key).ConfigureAwait(false);
+            return new PlayLog(
+                data.Started ?? _time.GetUtcNow(),
+                [.. data.Plays],
+                new Dictionary<string, PlayedTrack>(data.Tracks, StringComparer.Ordinal));
+        });
+    }
+
+    /// <summary>
+    /// Keeps the album, artists and length of <paramref name="tracks"/> for their plays (#382): the statistics read
+    /// them from the server for plays recorded without them, from before #382.
+    /// </summary>
+    public Task RememberTracksAsync(IReadOnlyList<Track> tracks)
+    {
+        ArgumentNullException.ThrowIfNull(tracks);
+        var known = tracks.Select(t => (t.Id, Track: PlayedTrack.Of(t))).ToList();
+        var key = CurrentKey();
+        return Enqueue(async () =>
+        {
+            if (key is null || known.Count == 0)
+            {
+                return;
+            }
+
+            var data = await LoadAsync(key).ConfigureAwait(false);
+            var played = data.Plays.Select(p => p.TrackId).ToHashSet(StringComparer.Ordinal);
+            foreach (var (id, track) in known.Where(k => played.Contains(k.Id)))
+            {
+                data.Tracks[id] = track;
+            }
+
+            await SaveAsync(key, data).ConfigureAwait(false);
+        });
+    }
+
+    /// <summary>
+    /// Clears the signed-in user's plays (#382): On repeat and the statistics start again from now. The server's play
+    /// counts stay, and so does what the next sync needs, so it does not count the old plays again.
+    /// </summary>
+    public Task ClearAsync()
+    {
+        var key = CurrentKey();
+        return Enqueue(async () =>
+        {
+            if (key is null)
+            {
+                return;
+            }
+
+            var data = await LoadAsync(key).ConfigureAwait(false);
+            data.Plays.Clear();
+            data.Tracks.Clear();
+            data.Started = _time.GetUtcNow();
+            await SaveAsync(key, data).ConfigureAwait(false);
+        });
+    }
+
+    /// <summary>
     /// Reads the plays since the last sync from the server (see the class summary). A failed request is logged
     /// and changes nothing; the next sync tries again.
     /// </summary>
@@ -205,9 +280,10 @@ public sealed partial class PlayHistory : IDisposable
 
             for (var i = own; i < gained; i++)
             {
-                data.Plays.Add(new PlayRecord(track.Id, lastPlayed, PlaySource.Server));
+                data.Plays.Add(new PlayRecord(track.Id, lastPlayed, first ? PlaySource.Seeded : PlaySource.Server));
             }
 
+            data.Tracks[track.Id] = PlayedTrack.Of(track);
             data.Counts[track.Id] = new PlayCountRecord(track.PlayCount, lastPlayed);
             data.ReportedStarts.RemoveAll(s => s.TrackId == track.Id && reported.Contains(s));
         }
@@ -221,13 +297,22 @@ public sealed partial class PlayHistory : IDisposable
 
     private static void Prune(PlayHistoryData data, DateTimeOffset now)
     {
-        var cutoff = now - Window;
+        var cutoff = now - Retention;
         data.Plays.RemoveAll(p => p.PlayedAt < cutoff);
         data.ReportedStarts.RemoveAll(s => s.StartedAt < cutoff);
         data.Pending.RemoveAll(p => p.PlayedAt < cutoff);
         foreach (var stale in data.Counts.Where(c => c.Value.LastPlayed < cutoff).Select(c => c.Key).ToList())
         {
             data.Counts.Remove(stale);
+        }
+
+        if (data.Tracks.Count > 0)
+        {
+            var played = data.Plays.Select(p => p.TrackId).ToHashSet(StringComparer.Ordinal);
+            foreach (var gone in data.Tracks.Keys.Where(id => !played.Contains(id)).ToList())
+            {
+                data.Tracks.Remove(gone);
+            }
         }
     }
 
@@ -271,7 +356,7 @@ public sealed partial class PlayHistory : IDisposable
     {
         Count();
         _listen = _engine.Current is { } source
-            ? new Listen(source.Track.Id, Threshold(source.Track.Duration ?? _engine.Duration)) { IsPrivate = _privacy.IsOn }
+            ? new Listen(source.Track, Threshold(source.Track.Duration ?? _engine.Duration)) { IsPrivate = _privacy.IsOn }
             : null;
         OnStateChanged(sender, e);
     }
@@ -324,7 +409,12 @@ public sealed partial class PlayHistory : IDisposable
 
         listen.IsCounted = true;
         var play = new PlayRecord(listen.TrackId, _time.GetUtcNow(), PlaySource.Groovefin);
-        Record(data => data.Plays.Add(play));
+        var facts = listen.Facts;
+        Record(data =>
+        {
+            data.Plays.Add(play);
+            data.Tracks[play.TrackId] = facts;
+        });
     }
 
     /// <summary>
@@ -434,6 +524,9 @@ public sealed partial class PlayHistory : IDisposable
             _key = key;
         }
 
+        // A new history, or one from before the statistics (#382): their history begins now.
+        _data.Started ??= _time.GetUtcNow();
+
         // A start reported just before signing in to another server or user is dropped.
         while (_reportedStarts.TryDequeue(out var reported))
         {
@@ -492,9 +585,12 @@ public sealed partial class PlayHistory : IDisposable
     private partial void LogWorkFailed(Exception exception);
 
     /// <summary>One load of a track: how long it has been listened to.</summary>
-    private sealed class Listen(string trackId, TimeSpan threshold)
+    private sealed class Listen(Track track, TimeSpan threshold)
     {
-        public string TrackId { get; } = trackId;
+        public string TrackId { get; } = track.Id;
+
+        /// <summary>Gets the song's album, artists and length, kept with its play (#382).</summary>
+        public PlayedTrack Facts { get; } = PlayedTrack.Of(track);
 
         public TimeSpan Threshold { get; } = threshold;
 

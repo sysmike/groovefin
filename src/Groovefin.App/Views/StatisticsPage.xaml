@@ -1,0 +1,676 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="Groovefin.App.Views.StatisticsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Groovefin.App.Controls"
+    xmlns:conv="using:Groovefin.App.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Groovefin.Core.ViewModels"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <!--  Both rows are as wide, so their tiles are too; they grow to fill the row, like the start page's (#376).  -->
+        <controls:TileSize x:Key="StatisticsTile" MinWidth="152" />
+
+        <!--  The height of the charts' bars at the most plays: StatisticsViewModel.ChartHeight.  -->
+        <x:Double x:Key="StatisticsChartHeight">96</x:Double>
+
+        <!--  Square cover, name, artist, plays.  -->
+        <DataTemplate x:Key="AlbumTileTemplate" x:DataType="vm:AlbumItem">
+            <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
+                <StackPanel Width="{Binding Width, Source={StaticResource StatisticsTile}}" Padding="0,0,0,8" Spacing="6">
+                    <Grid
+                        Height="{Binding Width, Source={StaticResource StatisticsTile}}"
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                        CornerRadius="{StaticResource OverlayCornerRadius}">
+                        <FontIcon
+                            FontSize="44"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Glyph="&#xE93C;" />
+                        <Image
+                            controls:Artwork.Request="{x:Bind Cover}"
+                            AutomationProperties.AccessibilityView="Raw"
+                            Stretch="UniformToFill" />
+                        <controls:CoverActions Tag="{x:Bind}" />
+                    </Grid>
+                    <TextBlock
+                        MaxLines="1"
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        Text="{x:Bind Name}"
+                        TextTrimming="CharacterEllipsis" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        MaxLines="1"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Artist}"
+                        TextTrimming="CharacterEllipsis" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        MaxLines="1"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind PlaysText}" />
+                </StackPanel>
+            </ItemContainer>
+        </DataTemplate>
+
+        <!--  Round image, name, plays.  -->
+        <DataTemplate x:Key="ArtistTileTemplate" x:DataType="vm:ArtistItem">
+            <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
+                <StackPanel Width="{Binding Width, Source={StaticResource StatisticsTile}}" Padding="0,0,0,8" Spacing="6">
+                    <Grid
+                        Width="{Binding Width, Source={StaticResource StatisticsTile}}"
+                        Height="{Binding Width, Source={StaticResource StatisticsTile}}"
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                        CornerRadius="{Binding Round, Source={StaticResource StatisticsTile}}">
+                        <FontIcon
+                            FontSize="44"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Glyph="&#xE77B;" />
+                        <Image
+                            controls:Artwork.Request="{x:Bind Image}"
+                            AutomationProperties.AccessibilityView="Raw"
+                            Stretch="UniformToFill" />
+                        <controls:CoverActions Tag="{x:Bind}" />
+                    </Grid>
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        MaxLines="1"
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        Text="{x:Bind Name}"
+                        TextTrimming="CharacterEllipsis" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        MaxLines="1"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind PlaysText}" />
+                </StackPanel>
+            </ItemContainer>
+        </DataTemplate>
+
+        <!--
+            A bar of a chart: as high as its plays, in the accent colour, with its day, month or hour and plays as the
+            tooltip. Narrator reads the chart's summary line instead of each bar.
+        -->
+        <DataTemplate x:Key="ChartBarTemplate" x:DataType="vm:ChartBar">
+            <Grid
+                Height="{StaticResource StatisticsChartHeight}"
+                AutomationProperties.AccessibilityView="Raw"
+                Background="Transparent"
+                ToolTipService.ToolTip="{x:Bind ToolTip}">
+                <Rectangle
+                    Height="{x:Bind Height}"
+                    VerticalAlignment="Bottom"
+                    Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                    RadiusX="2"
+                    RadiusY="2" />
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="StatisticsCardStyle" TargetType="Border">
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}" />
+        </Style>
+        <Style
+            x:Key="StatisticsCardLabelStyle"
+            BasedOn="{StaticResource CaptionTextBlockStyle}"
+            TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
+        <Style
+            x:Key="StatisticsCardValueStyle"
+            BasedOn="{StaticResource SubtitleTextBlockStyle}"
+            TargetType="TextBlock">
+            <Setter Property="MaxLines" Value="1" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style
+            x:Key="StatisticsCardChangeStyle"
+            BasedOn="{StaticResource CaptionTextBlockStyle}"
+            TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style
+            x:Key="StatisticsHeadingStyle"
+            BasedOn="{StaticResource SubtitleTextBlockStyle}"
+            TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Header: name, the kind of period, and the period with arrows to the ones before and after (#382).  -->
+        <Grid
+            Margin="36,24,36,12"
+            ColumnSpacing="12"
+            RowSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <TextBlock
+                    x:Uid="StatisticsHeader"
+                    AutomationProperties.HeadingLevel="Level1"
+                    Style="{StaticResource TitleTextBlockStyle}" />
+                <ProgressRing
+                    x:Uid="LoadingRing"
+                    Width="16"
+                    Height="16"
+                    VerticalAlignment="Center"
+                    IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+            </StackPanel>
+            <SelectorBar
+                x:Name="Ranges"
+                x:Uid="StatisticsRanges"
+                Grid.Column="1"
+                AutomationProperties.AutomationId="StatisticsRanges"
+                SelectionChanged="OnRangeChanged">
+                <SelectorBarItem
+                    x:Name="WeekRange"
+                    x:Uid="StatisticsWeekRange"
+                    AutomationProperties.AutomationId="StatisticsWeekRange" />
+                <SelectorBarItem
+                    x:Name="MonthRange"
+                    x:Uid="StatisticsMonthRange"
+                    AutomationProperties.AutomationId="StatisticsMonthRange"
+                    IsSelected="True" />
+                <SelectorBarItem
+                    x:Name="YearRange"
+                    x:Uid="StatisticsYearRange"
+                    AutomationProperties.AutomationId="StatisticsYearRange" />
+                <SelectorBarItem
+                    x:Name="AllTimeRange"
+                    x:Uid="StatisticsAllTimeRange"
+                    AutomationProperties.AutomationId="StatisticsAllTimeRange" />
+            </SelectorBar>
+
+            <StackPanel
+                Grid.Row="1"
+                Grid.ColumnSpan="2"
+                Orientation="Horizontal"
+                Spacing="8">
+                <Button
+                    x:Uid="StatisticsPreviousButton"
+                    Command="{x:Bind ViewModel.PreviousPeriodCommand}"
+                    Visibility="{x:Bind conv:Visible.Unless(ViewModel.IsAllTime), Mode=OneWay}">
+                    <FontIcon FontSize="12" Glyph="&#xE76B;" />
+                </Button>
+                <TextBlock
+                    VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="StatisticsPeriod"
+                    AutomationProperties.HeadingLevel="Level2"
+                    AutomationProperties.LiveSetting="Polite"
+                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                    Text="{x:Bind ViewModel.PeriodName, Mode=OneWay}" />
+                <Button
+                    x:Uid="StatisticsNextButton"
+                    Command="{x:Bind ViewModel.NextPeriodCommand}"
+                    Visibility="{x:Bind conv:Visible.Unless(ViewModel.IsAllTime), Mode=OneWay}">
+                    <FontIcon FontSize="12" Glyph="&#xE76C;" />
+                </Button>
+                <TextBlock
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.Coverage, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.HasCoverage, Mode=OneWay}" />
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer controls:ViewMemory.IsEnabled="True" Grid.Row="1">
+            <StackPanel Margin="0,0,0,24" Spacing="28">
+                <TextBlock
+                    x:Uid="StatisticsLoadFailed"
+                    Margin="36,0"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    TextWrapping="Wrap"
+                    Visibility="{x:Bind ViewModel.LoadFailed, Mode=OneWay}" />
+                <TextBlock
+                    x:Uid="StatisticsEmpty"
+                    Margin="36,0"
+                    AutomationProperties.AutomationId="StatisticsEmpty"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    TextWrapping="Wrap"
+                    Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
+
+                <StackPanel Spacing="28" Visibility="{x:Bind ViewModel.HasPlays, Mode=OneWay}">
+                    <!--  The four numbers, each with its change from the period before when the history covers it.  -->
+                    <Grid Margin="36,0" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource StatisticsCardStyle}">
+                            <StackPanel Spacing="2">
+                                <TextBlock x:Uid="StatisticsTimeLabel" Style="{StaticResource StatisticsCardLabelStyle}" />
+                                <TextBlock
+                                    AutomationProperties.AutomationId="StatisticsTime"
+                                    Style="{StaticResource StatisticsCardValueStyle}"
+                                    Text="{x:Bind ViewModel.ListeningTime, Mode=OneWay}" />
+                                <TextBlock Style="{StaticResource StatisticsCardChangeStyle}" Text="{x:Bind ViewModel.ListeningTimeChange, Mode=OneWay}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Style="{StaticResource StatisticsCardStyle}">
+                            <StackPanel Spacing="2">
+                                <TextBlock x:Uid="StatisticsPlaysLabel" Style="{StaticResource StatisticsCardLabelStyle}" />
+                                <TextBlock Style="{StaticResource StatisticsCardValueStyle}" Text="{x:Bind ViewModel.Plays, Mode=OneWay}" />
+                                <TextBlock Style="{StaticResource StatisticsCardChangeStyle}" Text="{x:Bind ViewModel.PlaysChange, Mode=OneWay}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Style="{StaticResource StatisticsCardStyle}">
+                            <StackPanel Spacing="2">
+                                <TextBlock x:Uid="StatisticsSongsLabel" Style="{StaticResource StatisticsCardLabelStyle}" />
+                                <TextBlock Style="{StaticResource StatisticsCardValueStyle}" Text="{x:Bind ViewModel.Songs, Mode=OneWay}" />
+                                <TextBlock Style="{StaticResource StatisticsCardChangeStyle}" Text="{x:Bind ViewModel.SongsChange, Mode=OneWay}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="3" Style="{StaticResource StatisticsCardStyle}">
+                            <StackPanel Spacing="2">
+                                <TextBlock x:Uid="StatisticsArtistsLabel" Style="{StaticResource StatisticsCardLabelStyle}" />
+                                <TextBlock Style="{StaticResource StatisticsCardValueStyle}" Text="{x:Bind ViewModel.Artists, Mode=OneWay}" />
+                                <TextBlock Style="{StaticResource StatisticsCardChangeStyle}" Text="{x:Bind ViewModel.ArtistsChange, Mode=OneWay}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!--  When: plays per day or month, and per hour of the day (the listening clock).  -->
+                    <Grid Margin="36,0" ColumnSpacing="32">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*" />
+                            <ColumnDefinition Width="2*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="8">
+                            <TextBlock
+                                x:Uid="StatisticsActivityHeader"
+                                AutomationProperties.HeadingLevel="Level2"
+                                Style="{StaticResource StatisticsHeadingStyle}" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ViewModel.ActivitySummary, Mode=OneWay}" />
+                            <ItemsControl
+                                AutomationProperties.AccessibilityView="Raw"
+                                IsTabStop="False"
+                                ItemTemplate="{StaticResource ChartBarTemplate}"
+                                ItemsSource="{x:Bind ViewModel.Activity}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <controls:BarPanel Spacing="2" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                            <Grid>
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind ViewModel.ActivityStart, Mode=OneWay}" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind ViewModel.ActivityEnd, Mode=OneWay}" />
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="8">
+                            <TextBlock
+                                x:Uid="StatisticsClockHeader"
+                                AutomationProperties.HeadingLevel="Level2"
+                                Style="{StaticResource StatisticsHeadingStyle}" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ViewModel.HoursSummary, Mode=OneWay}" />
+                            <ItemsControl
+                                AutomationProperties.AccessibilityView="Raw"
+                                IsTabStop="False"
+                                ItemTemplate="{StaticResource ChartBarTemplate}"
+                                ItemsSource="{x:Bind ViewModel.Hours}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <controls:BarPanel Spacing="2" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                            <!--  The hours under the 1st, 7th, 13th and 19th bar, and the last.  -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="0" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="6" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="12" />
+                                <TextBlock
+                                    Grid.Column="3"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="18" />
+                                <TextBlock
+                                    Grid.Column="3"
+                                    HorizontalAlignment="Right"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="23" />
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+
+                    <!--  Top artists: one row of as many as fit, or all of them after Show all.  -->
+                    <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.TopArtists.HasItems, Mode=OneWay}">
+                        <Grid Margin="36,0" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                x:Uid="StatisticsTopArtistsHeader"
+                                AutomationProperties.HeadingLevel="Level2"
+                                Style="{StaticResource StatisticsHeadingStyle}" />
+                            <HyperlinkButton
+                                Grid.Column="1"
+                                AutomationProperties.AutomationId="StatisticsTopArtistsToggle"
+                                Command="{x:Bind ViewModel.TopArtists.ToggleCommand}"
+                                Content="{x:Bind ViewModel.TopArtists.ToggleText, Mode=OneWay}"
+                                Visibility="{x:Bind ViewModel.TopArtists.HasMore, Mode=OneWay}" />
+                        </Grid>
+                        <ItemsView
+                            controls:ItemMenu.IsEnabled="True"
+                            x:Uid="StatisticsTopArtists"
+                            controls:TileSize.Source="{StaticResource StatisticsTile}"
+                            AutomationProperties.AutomationId="StatisticsTopArtists"
+                            Padding="36,0"
+                            IsItemInvokedEnabled="True"
+                            ItemInvoked="OnArtistInvoked"
+                            ItemTemplate="{StaticResource ArtistTileTemplate}"
+                            ItemsSource="{x:Bind ViewModel.TopArtists.Items}"
+                            Loaded="OnRowLoaded"
+                            SelectionMode="None"
+                            SizeChanged="OnRowSizeChanged"
+                            Tag="{x:Bind ViewModel.TopArtists}">
+                            <ItemsView.Layout>
+                                <controls:WrapGridLayout
+                                    MinColumnSpacing="16"
+                                    MinItemWidth="152"
+                                    MinRowSpacing="8" />
+                            </ItemsView.Layout>
+                        </ItemsView>
+                    </StackPanel>
+
+                    <!--  Top albums, the same way.  -->
+                    <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.TopAlbums.HasItems, Mode=OneWay}">
+                        <Grid Margin="36,0" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                x:Uid="StatisticsTopAlbumsHeader"
+                                AutomationProperties.HeadingLevel="Level2"
+                                Style="{StaticResource StatisticsHeadingStyle}" />
+                            <HyperlinkButton
+                                Grid.Column="1"
+                                AutomationProperties.AutomationId="StatisticsTopAlbumsToggle"
+                                Command="{x:Bind ViewModel.TopAlbums.ToggleCommand}"
+                                Content="{x:Bind ViewModel.TopAlbums.ToggleText, Mode=OneWay}"
+                                Visibility="{x:Bind ViewModel.TopAlbums.HasMore, Mode=OneWay}" />
+                        </Grid>
+                        <ItemsView
+                            controls:ItemMenu.IsEnabled="True"
+                            x:Uid="StatisticsTopAlbums"
+                            controls:TileSize.Source="{StaticResource StatisticsTile}"
+                            AutomationProperties.AutomationId="StatisticsTopAlbums"
+                            Padding="36,0"
+                            IsItemInvokedEnabled="True"
+                            ItemInvoked="OnAlbumInvoked"
+                            ItemTemplate="{StaticResource AlbumTileTemplate}"
+                            ItemsSource="{x:Bind ViewModel.TopAlbums.Items}"
+                            Loaded="OnRowLoaded"
+                            SelectionMode="None"
+                            SizeChanged="OnRowSizeChanged"
+                            Tag="{x:Bind ViewModel.TopAlbums}">
+                            <ItemsView.Layout>
+                                <controls:WrapGridLayout
+                                    MinColumnSpacing="16"
+                                    MinItemWidth="152"
+                                    MinRowSpacing="8" />
+                            </ItemsView.Layout>
+                        </ItemsView>
+                    </StackPanel>
+
+                    <!--  Top songs: On repeat's table, the first five or all after Show all; they play like On repeat's.  -->
+                    <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.HasSongs, Mode=OneWay}">
+                        <Grid Margin="36,0" ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                x:Uid="StatisticsTopSongsHeader"
+                                AutomationProperties.HeadingLevel="Level2"
+                                Style="{StaticResource StatisticsHeadingStyle}" />
+                            <Button
+                                x:Uid="StatisticsPlayButton"
+                                Grid.Column="1"
+                                Command="{x:Bind ViewModel.PlaySongsCommand}"
+                                Style="{StaticResource AccentButtonStyle}">
+                                <FontIcon FontSize="14" Glyph="&#xE768;" />
+                            </Button>
+                            <Button
+                                x:Uid="StatisticsShuffleButton"
+                                Grid.Column="2"
+                                Command="{x:Bind ViewModel.ShuffleSongsCommand}">
+                                <FontIcon FontSize="14" Glyph="&#xE8B1;" />
+                            </Button>
+                            <Button
+                                x:Uid="StatisticsSaveButton"
+                                Grid.Column="3"
+                                Command="{x:Bind ViewModel.SaveSongsAsPlaylistCommand}">
+                                <FontIcon FontSize="14" Glyph="&#xE8FD;" />
+                            </Button>
+                            <HyperlinkButton
+                                Grid.Column="4"
+                                AutomationProperties.AutomationId="StatisticsTopSongsToggle"
+                                Command="{x:Bind ViewModel.ToggleSongsCommand}"
+                                Content="{x:Bind ViewModel.SongsToggleText, Mode=OneWay}"
+                                Visibility="{x:Bind ViewModel.HasMoreSongs, Mode=OneWay}" />
+                        </Grid>
+
+                        <!--  Column headers like On repeat's (#251).  -->
+                        <Grid
+                            Height="36"
+                            Margin="52,0,48,0"
+                            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                            BorderThickness="0,0,0,1"
+                            ColumnSpacing="16">
+                            <Grid.Resources>
+                                <Style x:Key="ColumnDividerStyle" TargetType="Rectangle">
+                                    <Setter Property="Width" Value="1" />
+                                    <Setter Property="Margin" Value="0,8,-8,8" />
+                                    <Setter Property="HorizontalAlignment" Value="Right" />
+                                    <Setter Property="Fill" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                                </Style>
+                                <Style
+                                    x:Key="ColumnLabelStyle"
+                                    BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+                                    TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                </Style>
+                            </Grid.Resources>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="32" />
+                                <ColumnDefinition Width="3*" />
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="56" />
+                                <ColumnDefinition Width="32" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <Rectangle Grid.Column="0" Style="{StaticResource ColumnDividerStyle}" />
+                            <Rectangle Grid.Column="1" Style="{StaticResource ColumnDividerStyle}" />
+                            <Rectangle Grid.Column="2" Style="{StaticResource ColumnDividerStyle}" />
+                            <Rectangle Grid.Column="3" Style="{StaticResource ColumnDividerStyle}" />
+                            <Rectangle Grid.Column="4" Style="{StaticResource ColumnDividerStyle}" />
+                            <Rectangle Grid.Column="5" Style="{StaticResource ColumnDividerStyle}" />
+                            <Rectangle Grid.Column="6" Style="{StaticResource ColumnDividerStyle}" />
+                            <TextBlock
+                                x:Uid="AlbumColumnNumber"
+                                Grid.Column="0"
+                                HorizontalTextAlignment="Right"
+                                Style="{StaticResource ColumnLabelStyle}" />
+                            <TextBlock
+                                x:Uid="AlbumColumnTitle"
+                                Grid.Column="1"
+                                Style="{StaticResource ColumnLabelStyle}" />
+                            <TextBlock
+                                x:Uid="PlaylistColumnArtist"
+                                Grid.Column="2"
+                                Style="{StaticResource ColumnLabelStyle}" />
+                            <TextBlock
+                                x:Uid="PlaylistColumnAlbum"
+                                Grid.Column="3"
+                                Style="{StaticResource ColumnLabelStyle}" />
+                            <TextBlock
+                                x:Uid="OnRepeatColumnPlays"
+                                Grid.Column="4"
+                                HorizontalTextAlignment="Right"
+                                Style="{StaticResource ColumnLabelStyle}" />
+                            <FontIcon
+                                Grid.Column="5"
+                                FontSize="12"
+                                Glyph="&#xEB51;" />
+                            <FontIcon
+                                Grid.Column="6"
+                                HorizontalAlignment="Right"
+                                FontSize="12"
+                                Glyph="&#xE823;" />
+                        </Grid>
+
+                        <ListView
+                            controls:ItemMenu.IsEnabled="True"
+                            controls:TrackDragSource.IsEnabled="True"
+                            controls:TrackSelection.IsEnabled="True"
+                            x:Uid="StatisticsTopSongs"
+                            AutomationProperties.AutomationId="StatisticsTopSongs"
+                            Padding="36,0"
+                            IsItemClickEnabled="True"
+                            ItemClick="OnSongClick"
+                            ItemsSource="{x:Bind ViewModel.TopSongs}"
+                            ScrollViewer.VerticalScrollMode="Disabled">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:OnRepeatItem">
+                                    <Grid
+                                        Padding="{ThemeResource TrackRowPadding}"
+                                        AutomationProperties.Name="{x:Bind AccessibleName}"
+                                        ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="32" />
+                                            <ColumnDefinition Width="3*" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="56" />
+                                            <ColumnDefinition Width="32" />
+                                            <ColumnDefinition Width="56" />
+                                        </Grid.ColumnDefinitions>
+                                        <controls:TrackNumber
+                                            VerticalAlignment="Center"
+                                            IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                            Text="{x:Bind Number}" />
+                                        <controls:TrackText
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            IsDownloaded="{x:Bind IsDownloaded, Mode=OneWay}"
+                                            IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                            Text="{x:Bind Name}" />
+                                        <controls:TrackText
+                                            Grid.Column="2"
+                                            VerticalAlignment="Center"
+                                            IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                            IsSecondary="True"
+                                            Text="{x:Bind Artist}" />
+                                        <controls:TrackText
+                                            Grid.Column="3"
+                                            VerticalAlignment="Center"
+                                            IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                            IsSecondary="True"
+                                            Text="{x:Bind Album}" />
+                                        <TextBlock
+                                            Grid.Column="4"
+                                            VerticalAlignment="Center"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            HorizontalTextAlignment="Right"
+                                            Text="{x:Bind PlaysCount}" />
+                                        <ToggleButton
+                                            x:Uid="AlbumTrackFavouriteButton"
+                                            Grid.Column="5"
+                                            Width="32"
+                                            Height="32"
+                                            Padding="0"
+                                            VerticalAlignment="Center"
+                                            Background="{ThemeResource SubtleFillColorTransparentBrush}"
+                                            BorderThickness="0"
+                                            Click="OnSongFavouriteClick"
+                                            IsChecked="{x:Bind IsFavourite, Mode=OneWay}">
+                                            <FontIcon FontSize="12" Glyph="{x:Bind conv:Glyphs.Heart(IsFavourite), Mode=OneWay}" />
+                                        </ToggleButton>
+                                        <TextBlock
+                                            Grid.Column="6"
+                                            VerticalAlignment="Center"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            HorizontalTextAlignment="Right"
+                                            Text="{x:Bind Duration}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
+                </StackPanel>
+
+                <!--  Where the numbers come from.  -->
+                <TextBlock
+                    x:Uid="StatisticsFootnote"
+                    Margin="36,0"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

@@ -16,6 +16,9 @@ public static class PageKeys
     public const string OnRepeat = "onrepeat";
     public const string Search = "search";
     public const string Settings = "settings";
+
+    /// <summary>The statistics (#382), opened from the title bar like Settings.</summary>
+    public const string Statistics = "statistics";
     public const string Album = "album";
     public const string Artist = "artist";
     public const string Playlist = "playlist";

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Groovefin.Core.Models;
 
 namespace Groovefin.Core.History;
 
@@ -10,13 +11,39 @@ public enum PlaySource
 
     /// <summary>A play count the server gained without Groovefin: another device.</summary>
     Server,
+
+    /// <summary>
+    /// A play the first sync found (#382): a song's whole play count, all timed at its last play. On repeat counts
+    /// these; the statistics of a period leave them out, as they did not happen then.
+    /// </summary>
+    Seeded,
 }
 
 /// <summary>One play of a track.</summary>
 public sealed record PlayRecord(string TrackId, DateTimeOffset PlayedAt, PlaySource Source);
 
+/// <summary>
+/// What the statistics group a played song by (#382): its album, its artists and its length. Kept with the history,
+/// so a year of statistics needs no request per song, and a song gone from the server still counts.
+/// </summary>
+public sealed record PlayedTrack(string? AlbumId, IReadOnlyList<string> ArtistIds, TimeSpan Duration)
+{
+    /// <summary>Gets what the statistics need of <paramref name="track"/>.</summary>
+    public static PlayedTrack Of(Track track)
+    {
+        ArgumentNullException.ThrowIfNull(track);
+        return new PlayedTrack(track.AlbumId, [.. track.Artists.Select(a => a.Id).Distinct(StringComparer.Ordinal)], track.Duration ?? TimeSpan.Zero);
+    }
+}
+
 /// <summary>A track's play count on the server at the last sync, and when it was last played then.</summary>
 public sealed record PlayCountRecord(int PlayCount, DateTimeOffset LastPlayed);
+
+/// <summary>
+/// A copy of a user's plays for the statistics (#382): when the history began, the plays, and what is known of
+/// their songs by track ID (not every played song: plays from before #382 may lack theirs).
+/// </summary>
+public sealed record PlayLog(DateTimeOffset Started, IReadOnlyList<PlayRecord> Plays, IReadOnlyDictionary<string, PlayedTrack> Tracks);
 
 /// <summary>A start Groovefin reported to the server, which counted it as a play.</summary>
 public sealed record ReportedStart(string TrackId, DateTimeOffset StartedAt);
@@ -48,6 +75,15 @@ public sealed record PlayHistoryData
 
     /// <summary>Gets the plays the server could not be told of yet, oldest first (#339).</summary>
     public List<PendingPlay> Pending { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets when the statistics' history began (#382): the first use, or for a file from before it, the
+    /// first use after the update, whose plays include the first sync's. Clearing the history starts it again.
+    /// </summary>
+    public DateTimeOffset? Started { get; set; }
+
+    /// <summary>Gets the album, artists and length of the played songs, by track ID (#382).</summary>
+    public Dictionary<string, PlayedTrack> Tracks { get; set; } = [];
 }
 
 /// <summary>Source-generated JSON metadata for the play history files.</summary>
