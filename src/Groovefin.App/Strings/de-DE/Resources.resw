@@ -2859,5 +2859,7 @@
   </data>
   <data name="Settings_OutputUnknown" xml:space="preserve">
     <value>Gewähltes Gerät</value>
+  <data name="NowPlayingReconnecting.Text" xml:space="preserve">
+    <value>Verbindung wird wiederhergestellt …</value>
   </data>
 </root>

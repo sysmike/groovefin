@@ -727,7 +727,8 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
                 var result = args.Error.ExtendedError?.HResult;
                 if (!_engine.RetryWithoutEffect(this, result, $"{args.Error.ErrorCode} (0x{result:X8})"))
                 {
-                    _engine.ReportFailed(failedCurrent, args.Error.ErrorCode.ToString(), args.Error.ExtendedError);
+                    var error = args.Error.ErrorCode.ToString();
+                    _engine.ReportFailed(failedCurrent, error, args.Error.ExtendedError, StreamFailures.IsNetwork(error, result));
                 }
             }
             else if (failedNext is not null)
@@ -766,7 +767,11 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
             if (ReportedSource is { } source
                 && !_engine.RetryWithoutEffect(this, args.ExtendedErrorCode?.HResult, $"{args.Error} (0x{args.ExtendedErrorCode?.HResult:X8})"))
             {
-                _engine.ReportFailed(source, $"{args.Error}: {args.ErrorMessage}", args.ExtendedErrorCode);
+                _engine.ReportFailed(
+                    source,
+                    $"{args.Error}: {args.ErrorMessage}",
+                    args.ExtendedErrorCode,
+                    StreamFailures.IsNetwork(args.Error.ToString(), args.ExtendedErrorCode?.HResult));
             }
         }
     }

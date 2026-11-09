@@ -31,6 +31,9 @@ internal sealed class FakePlaybackEngine(IDispatcher? dispatcher = null, TimePro
 
     public void SimulateFailure(PlaybackSource source) => ReportFailed(source, "boom", null);
 
+    /// <summary>The stream of the current source failed because of the network (#385).</summary>
+    public void SimulateNetworkFailure() => ReportFailed(Current!, "NetworkError", null, isNetworkError: true);
+
     protected override void LoadCore(PlaybackSource source, bool autoPlay) => Calls.Add($"load {source.Id} autoPlay={autoPlay}");
 
     /// <summary>Gets how often the queued next source was set or cleared (not recorded in <see cref="Calls"/>).</summary>
