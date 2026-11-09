@@ -135,6 +135,12 @@ public sealed record AlbumQuery
     /// <summary>Gets a value indicating whether only albums with a song the user has played are included (#369).</summary>
     public bool PlayedOnly { get; init; }
 
+    /// <summary>
+    /// Gets a time: only played albums none of whose songs was played since are included, e.g. not played in a
+    /// year (#394). <see langword="null"/> includes every album.
+    /// </summary>
+    public DateTimeOffset? PlayedBefore { get; init; }
+
     /// <summary>Gets album IDs; only these albums are included. Empty means all albums.</summary>
     public IReadOnlyList<string> Ids { get; init; } = [];
 

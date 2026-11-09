@@ -97,6 +97,7 @@ public sealed partial class ResourceFileTests
             .. KeyboardShortcuts.NamedKeys.Select(k => $"Key_{k}"),
             .. Enum.GetValues<SongColumn>().Select(c => $"SongColumn_{c}"),
             .. Enum.GetValues<HomeShelfKind>().Select(k => $"HomeShelf_{k}"),
+            .. Enum.GetValues<HomeShelfKind>().Select(k => $"HomeShelfEmpty_{k}"),
             .. Enum.GetValues<RepeatMode>().Select(m => $"NowPlaying_Repeat{m}"),
             .. Enum.GetValues<AlbumSortField>().Select(f => $"AlbumSort_{f}"),
             .. Enum.GetValues<ArtistSortField>().Select(f => $"ArtistSort_{f}"),

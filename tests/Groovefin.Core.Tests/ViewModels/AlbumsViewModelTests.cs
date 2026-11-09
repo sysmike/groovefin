@@ -259,6 +259,49 @@ public sealed class AlbumsViewModelTests
     }
 
     [Fact]
+    public async Task A_home_page_rows_albums_show_until_all_albums_are_asked_for()
+    {
+        using var sut = CreateSut();
+        await sut.InitializeAsync();
+        var before = new DateTimeOffset(2025, 11, 9, 0, 0, 0, TimeSpan.Zero);
+
+        await sut.ShowAsync(new AlbumsOrder(AlbumSortField.DatePlayed, Descending: true)
+        {
+            Selection = new AlbumSelection("Not played in a year") { PlayedBefore = before },
+        });
+
+        sut.HasSelection.Should().BeTrue();
+        sut.SelectionTitle.Should().Be("Not played in a year");
+        _queries[^1].PlayedBefore.Should().Be(before);
+
+        await sut.ClearSelectionCommand.ExecuteAsync(null);
+
+        sut.HasSelection.Should().BeFalse();
+        _queries[^1].PlayedBefore.Should().BeNull();
+        _queries[^1].SortBy.Should().Be(AlbumSortField.DatePlayed, "the order stays");
+    }
+
+    [Fact]
+    public async Task Given_albums_or_the_favourites_open_as_their_row_asks()
+    {
+        using var sut = CreateSut();
+        await sut.InitializeAsync();
+
+        await sut.ShowAsync(new AlbumsOrder(AlbumSortField.Name, Descending: false) { Selection = new AlbumSelection("This week last year") { Ids = ["al2", "al1"] } });
+        _queries[^1].Ids.Should().Equal("al2", "al1");
+
+        await sut.ShowAsync(new AlbumsOrder(AlbumSortField.Name, Descending: false) { FavouritesOnly = true });
+        sut.FavouritesOnly.Should().BeTrue();
+        sut.HasSelection.Should().BeFalse();
+        _queries[^1].Should().BeEquivalentTo(new { FavouritesOnly = true, Ids = Array.Empty<string>() });
+
+        // Opened from the navigation pane, the page shows every album.
+        await sut.ShowAsync(new AlbumsOrder(AlbumSortField.Name, Descending: false) { Selection = new AlbumSelection("x") { Ids = ["al1"] } });
+        await sut.ShowEveryAlbumAsync();
+        _queries[^1].Ids.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Show_all_before_the_page_is_shown_sets_the_order_of_the_first_load()
     {
         using var sut = CreateSut();

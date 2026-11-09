@@ -59,6 +59,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly ILauncherService _launcher;
     private bool _loadingLibraries;
     private bool _fillingNavigation;
+    private bool _fillingHomeRows;
 
     public SettingsViewModel(
         IThemeService themeService,
@@ -99,6 +100,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         StartPageOptions = [.. PageKeys.MainSections.Select(key => strings.GetString($"StartPage_{key}"))];
         NavigationItems.CollectionChanged += OnNavigationItemsChanged;
         FillNavigation(settings.Current.Appearance.Navigation);
+        HomeRows.CollectionChanged += OnHomeRowsChanged;
+        FillHomeRows(settings.Current.Appearance.HomeRows);
         CacheLimitOptions = [.. CacheLimits.Select(mb => ByteSizes.Format(mb * 1024L * 1024L, strings))];
         CrossfadeOptions =
         [
@@ -431,6 +434,80 @@ public sealed partial class SettingsViewModel : ObservableObject
             item.CanToggle = !item.IsVisible || visible > 1;
             item.CanMoveUp = i > 0;
             item.CanMoveDown = i < NavigationItems.Count - 1;
+        }
+    }
+
+    /// <summary>
+    /// Gets the home page's rows in order, each with its switch (#394). Like the navigation pane's sections, they
+    /// move with the arrows or by dragging; every row may be hidden.
+    /// </summary>
+    public ObservableCollection<NavigationItemOption> HomeRows { get; } = [];
+
+    /// <summary>Shows the default rows again, in the default order.</summary>
+    [RelayCommand]
+    private void ResetHomeRows()
+    {
+        FillHomeRows([]);
+        _settings.Update(s => s with { Appearance = s.Appearance with { HomeRows = [] } });
+    }
+
+    private void FillHomeRows(IReadOnlyList<HomeRowSettings> saved)
+    {
+        _fillingHomeRows = true;
+        try
+        {
+            HomeRows.Clear();
+            foreach (var row in HomeLayout.Resolve(saved))
+            {
+                HomeRows.Add(new NavigationItemOption(
+                    row.Key, _strings.GetString($"HomeShelf_{row.Key}"), _strings, row.IsVisible, MoveHomeRow, SaveHomeRows));
+            }
+        }
+        finally
+        {
+            _fillingHomeRows = false;
+        }
+
+        UpdateHomeRowMoves();
+    }
+
+    private void MoveHomeRow(NavigationItemOption row, int offset)
+    {
+        var from = HomeRows.IndexOf(row);
+        var to = from + offset;
+        if (from >= 0 && to >= 0 && to < HomeRows.Count)
+        {
+            HomeRows.Move(from, to);
+        }
+    }
+
+    /// <summary>A drag removes the row and inserts it elsewhere: save once it is back.</summary>
+    private void OnHomeRowsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
+        {
+            SaveHomeRows();
+        }
+    }
+
+    private void SaveHomeRows()
+    {
+        if (_fillingHomeRows)
+        {
+            return;
+        }
+
+        UpdateHomeRowMoves();
+        IReadOnlyList<HomeRowSettings> layout = [.. HomeRows.Select(r => new HomeRowSettings { Key = r.Key, IsVisible = r.IsVisible })];
+        _settings.Update(s => s with { Appearance = s.Appearance with { HomeRows = layout } });
+    }
+
+    private void UpdateHomeRowMoves()
+    {
+        for (var i = 0; i < HomeRows.Count; i++)
+        {
+            HomeRows[i].CanMoveUp = i > 0;
+            HomeRows[i].CanMoveDown = i < HomeRows.Count - 1;
         }
     }
 

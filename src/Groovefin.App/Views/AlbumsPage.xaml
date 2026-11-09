@@ -93,6 +93,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -191,12 +192,29 @@
             </StackPanel>
         </Grid>
 
+        <!--  A home page row's albums (#394): the row's name, and the way back to all albums.  -->
+        <StackPanel
+            Grid.Row="1"
+            Margin="36,0,36,12"
+            Orientation="Horizontal"
+            Spacing="8"
+            Visibility="{x:Bind ViewModel.HasSelection, Mode=OneWay}">
+            <TextBlock
+                VerticalAlignment="Center"
+                Style="{StaticResource BodyStrongTextBlockStyle}"
+                Text="{x:Bind ViewModel.SelectionTitle, Mode=OneWay}" />
+            <HyperlinkButton
+                x:Uid="AlbumsShowAllButton"
+                AutomationProperties.AutomationId="AlbumsShowAllButton"
+                Command="{x:Bind ViewModel.ClearSelectionCommand}" />
+        </StackPanel>
+
         <ItemsView
             controls:ItemMenu.IsEnabled="True"
             x:Name="AlbumsView"
             x:Uid="AlbumsView"
             controls:TileSize.Source="{StaticResource AlbumTile}"
-            Grid.Row="1"
+            Grid.Row="2"
             Padding="36,0,36,24"
             IsItemInvokedEnabled="True"
             ItemInvoked="OnAlbumInvoked"
@@ -205,7 +223,7 @@
 
         <TextBlock
             x:Uid="AlbumsEmpty"
-            Grid.Row="1"
+            Grid.Row="2"
             Margin="36,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"

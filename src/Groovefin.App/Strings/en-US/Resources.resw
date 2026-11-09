@@ -645,9 +645,6 @@
   <data name="HomeShelfShowAllButton.Content" xml:space="preserve">
     <value>Show all</value>
   </data>
-  <data name="HomeShelfEmpty.Text" xml:space="preserve">
-    <value>Nothing here yet.</value>
-  </data>
   <data name="HomeShelfFailed.Text" xml:space="preserve">
     <value>This list couldn't be loaded.</value>
   </data>
@@ -3024,5 +3021,62 @@
   </data>
   <data name="SettingsDownloadMoveCancelButton.Content" xml:space="preserve">
     <value>Cancel</value>
+  </data>
+  <data name="HomeShelf_MostPlayed" xml:space="preserve">
+    <value>Most played</value>
+  </data>
+  <data name="HomeShelf_FavouriteAlbums" xml:space="preserve">
+    <value>Favourite albums</value>
+  </data>
+  <data name="HomeShelf_NotPlayedInAYear" xml:space="preserve">
+    <value>Not played in a year</value>
+  </data>
+  <data name="HomeShelf_RandomArtist" xml:space="preserve">
+    <value>Random artist</value>
+  </data>
+  <data name="HomeShelf_ThisWeekLastYear" xml:space="preserve">
+    <value>This week last year</value>
+  </data>
+  <data name="HomeShelf_MoreBy" xml:space="preserve">
+    <value>More by {0}</value>
+  </data>
+  <data name="HomeShelfEmpty_RecentlyPlayed" xml:space="preserve">
+    <value>The albums you play show here.</value>
+  </data>
+  <data name="HomeShelfEmpty_RecentlyAdded" xml:space="preserve">
+    <value>Nothing here yet.</value>
+  </data>
+  <data name="HomeShelfEmpty_MostPlayed" xml:space="preserve">
+    <value>The albums you play most show here.</value>
+  </data>
+  <data name="HomeShelfEmpty_FavouriteAlbums" xml:space="preserve">
+    <value>Albums you give a heart show here.</value>
+  </data>
+  <data name="HomeShelfEmpty_NotPlayedInAYear" xml:space="preserve">
+    <value>Albums you last played more than a year ago show here.</value>
+  </data>
+  <data name="HomeShelfEmpty_RandomArtist" xml:space="preserve">
+    <value>No artist with albums was found.</value>
+  </data>
+  <data name="HomeShelfEmpty_ThisWeekLastYear" xml:space="preserve">
+    <value>What you played this week a year ago shows here. Groovefin remembers your plays from the day you started using it.</value>
+  </data>
+  <data name="SettingsHomeRowsCard.Header" xml:space="preserve">
+    <value>Home page rows</value>
+  </data>
+  <data name="SettingsHomeRowsCard.Description" xml:space="preserve">
+    <value>Choose the rows the home page shows and their order: drag them or use the arrows.</value>
+  </data>
+  <data name="SettingsHomeRowsResetButton.Content" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="SettingsHomeRowsResetButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Reset the home page rows</value>
+  </data>
+  <data name="SettingsHomeRowsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Home page rows</value>
+  </data>
+  <data name="AlbumsShowAllButton.Content" xml:space="preserve">
+    <value>Show all albums</value>
   </data>
 </root>

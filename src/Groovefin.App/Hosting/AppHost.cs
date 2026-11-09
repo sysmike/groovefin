@@ -132,6 +132,7 @@ internal static class AppHost
         builder.Services.AddSingleton(new PlayHistoryStoreOptions(Path.Join(AppPaths.LocalData, "history")));
         builder.Services.AddSingleton<IPlayHistoryStore, JsonPlayHistoryStore>();
         builder.Services.AddSingleton<PlayHistory>();
+        builder.Services.AddSingleton<IPlayLog>(sp => sp.GetRequiredService<PlayHistory>());
         builder.Services.AddSingleton<IListeningStatistics, ListeningStatistics>();
         // Offline downloads (#327): a folder per server and user, with its index; in local app data, or in the
         // folder chosen in Settings (#399).

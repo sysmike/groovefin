@@ -632,9 +632,6 @@
   <data name="HomeShelfShowAllButton.Content" xml:space="preserve">
     <value>Alle anzeigen</value>
   </data>
-  <data name="HomeShelfEmpty.Text" xml:space="preserve">
-    <value>Hier ist noch nichts.</value>
-  </data>
   <data name="HomeShelfFailed.Text" xml:space="preserve">
     <value>Diese Liste konnte nicht geladen werden.</value>
   </data>
@@ -2997,5 +2994,62 @@
   </data>
   <data name="SettingsDownloadMoveCancelButton.Content" xml:space="preserve">
     <value>Abbrechen</value>
+  </data>
+  <data name="HomeShelf_MostPlayed" xml:space="preserve">
+    <value>Am häufigsten gespielt</value>
+  </data>
+  <data name="HomeShelf_FavouriteAlbums" xml:space="preserve">
+    <value>Lieblingsalben</value>
+  </data>
+  <data name="HomeShelf_NotPlayedInAYear" xml:space="preserve">
+    <value>Seit einem Jahr nicht gespielt</value>
+  </data>
+  <data name="HomeShelf_RandomArtist" xml:space="preserve">
+    <value>Zufälliger Künstler</value>
+  </data>
+  <data name="HomeShelf_ThisWeekLastYear" xml:space="preserve">
+    <value>Diese Woche vor einem Jahr</value>
+  </data>
+  <data name="HomeShelf_MoreBy" xml:space="preserve">
+    <value>Mehr von {0}</value>
+  </data>
+  <data name="HomeShelfEmpty_RecentlyPlayed" xml:space="preserve">
+    <value>Hier erscheinen die Alben, die du spielst.</value>
+  </data>
+  <data name="HomeShelfEmpty_RecentlyAdded" xml:space="preserve">
+    <value>Hier ist noch nichts.</value>
+  </data>
+  <data name="HomeShelfEmpty_MostPlayed" xml:space="preserve">
+    <value>Hier erscheinen die Alben, die du am häufigsten spielst.</value>
+  </data>
+  <data name="HomeShelfEmpty_FavouriteAlbums" xml:space="preserve">
+    <value>Hier erscheinen die Alben, denen du ein Herz gibst.</value>
+  </data>
+  <data name="HomeShelfEmpty_NotPlayedInAYear" xml:space="preserve">
+    <value>Hier erscheinen die Alben, die du zuletzt vor mehr als einem Jahr gespielt hast.</value>
+  </data>
+  <data name="HomeShelfEmpty_RandomArtist" xml:space="preserve">
+    <value>Es wurde kein Künstler mit Alben gefunden.</value>
+  </data>
+  <data name="HomeShelfEmpty_ThisWeekLastYear" xml:space="preserve">
+    <value>Hier erscheint, was du diese Woche vor einem Jahr gespielt hast. Groovefin merkt sich deine Wiedergaben ab dem Tag, an dem du es zum ersten Mal genutzt hast.</value>
+  </data>
+  <data name="SettingsHomeRowsCard.Header" xml:space="preserve">
+    <value>Zeilen der Startseite</value>
+  </data>
+  <data name="SettingsHomeRowsCard.Description" xml:space="preserve">
+    <value>Wähle die Zeilen, die die Startseite zeigt, und ihre Reihenfolge: zieh sie oder nutze die Pfeile.</value>
+  </data>
+  <data name="SettingsHomeRowsResetButton.Content" xml:space="preserve">
+    <value>Zurücksetzen</value>
+  </data>
+  <data name="SettingsHomeRowsResetButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zeilen der Startseite zurücksetzen</value>
+  </data>
+  <data name="SettingsHomeRowsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zeilen der Startseite</value>
+  </data>
+  <data name="AlbumsShowAllButton.Content" xml:space="preserve">
+    <value>Alle Alben anzeigen</value>
   </data>
 </root>

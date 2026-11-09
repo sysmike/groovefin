@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
+using Groovefin.Core.History;
 using Groovefin.Core.Images;
 using Groovefin.Core.Layout;
 using Groovefin.Core.Models;
@@ -10,31 +11,63 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 
 namespace Groovefin.Core.ViewModels;
 
-/// <summary>The album lists on the home page, in display order.</summary>
+/// <summary>
+/// The album rows of the home page, in their default order (#394). Settings shows and hides them and changes the
+/// order (<see cref="HomeLayout"/>).
+/// </summary>
 public enum HomeShelfKind
 {
     RecentlyPlayed,
     RecentlyAdded,
+
+    /// <summary>The albums whose songs were played most often, together.</summary>
+    MostPlayed,
+
+    /// <summary>The favourite albums, in random order.</summary>
+    FavouriteAlbums,
+
+    /// <summary>Albums played before, but none of their songs in the last year (the server's play dates).</summary>
+    NotPlayedInAYear,
+
+    /// <summary>The albums of an artist from the play history, or of any artist without one.</summary>
+    RandomArtist,
+
+    /// <summary>The albums played most in Groovefin in the week around this day a year ago (the play history).</summary>
+    ThisWeekLastYear,
 }
 
 /// <summary>
 /// One row of albums on the home page with its own loading, empty and error state. It shows only as
-/// many of its albums as fit in the window (#376); "Show all" opens the Albums page in the same order.
+/// many of its albums as fit in the window (#376); "Show all" opens the Albums page in the same order,
+/// or the row's artist (#394).
 /// </summary>
-public sealed partial class HomeShelf(HomeShelfKind kind, string title, string showAllName) : ObservableObject
+public sealed partial class HomeShelf(HomeShelfKind kind, string title, string showAllName, string emptyText) : ObservableObject
 {
     private List<AlbumItem> _loaded = [];
     private int _tiles = int.MaxValue;
 
     public HomeShelfKind Kind { get; } = kind;
 
-    public string Title { get; } = title;
+    /// <summary>Gets the row's title; a random artist's row gets the artist's name once loaded.</summary>
+    [ObservableProperty]
+    public partial string Title { get; internal set; } = title;
 
     /// <summary>Gets the "Show all" link's name, e.g. "Show all: Recently played".</summary>
-    public string ShowAllName { get; } = showAllName;
+    [ObservableProperty]
+    public partial string ShowAllName { get; internal set; } = showAllName;
+
+    /// <summary>Gets what the row says without albums, e.g. how it fills.</summary>
+    public string EmptyText { get; } = emptyText;
+
+    /// <summary>Gets the artist of a random artist's row, for Show all.</summary>
+    internal string? ArtistId { get; set; }
+
+    /// <summary>Gets the albums of a row that is a set of its own (this week last year), for Show all.</summary>
+    internal IReadOnlyList<string> AlbumIds { get; set; } = [];
 
     /// <summary>Gets the albums shown: the first of the loaded ones, as many as fit.</summary>
     public ObservableCollection<AlbumItem> Albums { get; } = [];
@@ -139,8 +172,9 @@ public sealed partial class HomeHighlight(Album album, ImageRequest? cover, IRea
 }
 
 /// <summary>
-/// Home page: a random album, then the recently played and recently added albums. The lists and the
-/// album load in parallel; a failing list shows its error state and does not stop the others.
+/// Home page: a random album, then the rows chosen in Settings (#394), by default the recently played and recently
+/// added albums. The lists and the album load in parallel; a failing list shows its error state and does not stop
+/// the others.
 /// </summary>
 public sealed partial class HomeViewModel : ObservableObject, IDisposable
 {
@@ -156,6 +190,15 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     /// <summary>Cover width of the random album in device-independent pixels.</summary>
     public const double HighlightCoverWidth = 200;
 
+    /// <summary>The artists from the play history a random artist's row tries, for one with albums of their own.</summary>
+    public const int ArtistTries = 3;
+
+    /// <summary>The played songs of last year's week whose albums are looked up on the server, at most.</summary>
+    public const int MaxLookups = 200;
+
+    /// <summary>How far a year ago "this week" reaches before and after the day.</summary>
+    public static readonly TimeSpan HalfWeek = TimeSpan.FromDays(3.5);
+
     private readonly ILibraryService _library;
     private readonly INavigationService _navigation;
     private readonly IErrorReporter _errors;
@@ -163,6 +206,8 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     private readonly IPlayer _player;
     private readonly FavouritesService _favourites;
     private readonly ICoverColours _colours;
+    private readonly IPlayLog _history;
+    private readonly TimeProvider _time;
     private CancellationTokenSource _cancellation = new();
     private CancellationTokenSource _highlightCancellation = new();
     private bool _disposed;
@@ -174,7 +219,10 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
         IStringResources strings,
         IPlayer player,
         FavouritesService favourites,
-        ICoverColours colours)
+        ICoverColours colours,
+        ISettingsService settings,
+        IPlayLog history,
+        TimeProvider time)
     {
         _library = library;
         _navigation = navigation;
@@ -183,7 +231,9 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
         _player = player;
         _favourites = favourites;
         _colours = colours;
-        Shelves = Enum.GetValues<HomeShelfKind>().Select(kind => CreateShelf(kind, strings)).ToList();
+        _history = history;
+        _time = time;
+        Shelves = [.. HomeLayout.VisibleRows(settings.Current.Appearance.HomeRows).Select(kind => CreateShelf(kind, strings))];
     }
 
     public IReadOnlyList<HomeShelf> Shelves { get; }
@@ -203,13 +253,22 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     /// <summary>Gets or sets the DPI scale of the view, used to request covers in physical pixels.</summary>
     public double DisplayScale { get; set; } = 1;
 
-    /// <summary>Gets the query for a list.</summary>
-    public static AlbumQuery QueryFor(HomeShelfKind kind) => kind switch
+    /// <summary>Gets the query for a list the server answers on its own, at <paramref name="now"/>.</summary>
+    public static AlbumQuery QueryFor(HomeShelfKind kind, DateTimeOffset now) => kind switch
     {
         HomeShelfKind.RecentlyPlayed => new() { Limit = ShelfSize, SortBy = AlbumSortField.DatePlayed, Descending = true, PlayedOnly = true },
         HomeShelfKind.RecentlyAdded => new() { Limit = ShelfSize, SortBy = AlbumSortField.DateAdded, Descending = true },
+        HomeShelfKind.MostPlayed => new() { Limit = ShelfSize, SortBy = AlbumSortField.PlayCount, Descending = true, PlayedOnly = true },
+        HomeShelfKind.FavouriteAlbums => new() { Limit = ShelfSize, SortBy = AlbumSortField.Random, FavouritesOnly = true },
+        HomeShelfKind.NotPlayedInAYear => new() { Limit = ShelfSize, SortBy = AlbumSortField.DatePlayed, Descending = true, PlayedBefore = YearAgo(now) },
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
+
+    /// <summary>Gets a year before the start of <paramref name="now"/>'s day (UTC): the same all day, so the server's order can be kept between pages.</summary>
+    public static DateTimeOffset YearAgo(DateTimeOffset now) => new DateTimeOffset(now.UtcDateTime.Date, TimeSpan.Zero).AddYears(-1);
+
+    /// <summary>Picks a number below the given one: random; tests replace it.</summary>
+    internal Func<int, int> Pick { get; init; } = Random.Shared.Next;
 
     /// <summary>Gets two random albums: the second is shown when the first is the one shown already.</summary>
     public static AlbumQuery HighlightQuery { get; } = new() { Limit = 2, SortBy = AlbumSortField.Random };
@@ -251,12 +310,36 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenGenre(Genre genre) => _navigation.NavigateTo(PageKeys.Genre, genre.Id);
 
-    /// <summary>Opens the Albums page in the row's order, with every album (#376).</summary>
+    /// <summary>
+    /// Opens the Albums page in the row's order, with every album (#376), or with the row's albums only; a random
+    /// artist's row opens the artist (#394).
+    /// </summary>
     [RelayCommand]
     private void ShowAll(HomeShelf shelf)
     {
-        var query = QueryFor(shelf.Kind);
-        _navigation.NavigateTo(PageKeys.Albums, new AlbumsOrder(query.SortBy, query.Descending));
+        switch (shelf.Kind)
+        {
+            case HomeShelfKind.RandomArtist when shelf.ArtistId is { } artist:
+                _navigation.NavigateTo(PageKeys.Artist, artist);
+                return;
+            case HomeShelfKind.RandomArtist:
+                return;
+            case HomeShelfKind.ThisWeekLastYear:
+                _navigation.NavigateTo(PageKeys.Albums, new AlbumsOrder(AlbumSortField.Name, false)
+                {
+                    Selection = new AlbumSelection(shelf.Title) { Ids = shelf.AlbumIds },
+                });
+                return;
+            case HomeShelfKind.FavouriteAlbums:
+                _navigation.NavigateTo(PageKeys.Albums, new AlbumsOrder(AlbumSortField.Name, false) { FavouritesOnly = true });
+                return;
+        }
+
+        var query = QueryFor(shelf.Kind, _time.GetUtcNow());
+        _navigation.NavigateTo(PageKeys.Albums, new AlbumsOrder(query.SortBy, query.Descending)
+        {
+            Selection = query.PlayedBefore is { } before ? new AlbumSelection(shelf.Title) { PlayedBefore = before } : null,
+        });
     }
 
     [RelayCommand(CanExecute = nameof(CanPlayHighlight))]
@@ -309,8 +392,11 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     private static HomeShelf CreateShelf(HomeShelfKind kind, IStringResources strings)
     {
         var title = strings.GetString($"HomeShelf_{kind}");
-        return new HomeShelf(kind, title, strings.GetString("HomeShelfShowAll").Replace("{0}", title, StringComparison.Ordinal));
+        return new HomeShelf(kind, title, ShowAllNameOf(title, strings), strings.GetString($"HomeShelfEmpty_{kind}"));
     }
+
+    private static string ShowAllNameOf(string title, IStringResources strings) =>
+        strings.GetString("HomeShelfShowAll").Replace("{0}", title, StringComparison.Ordinal);
 
     private CancellationToken RestartHighlight()
     {
@@ -379,13 +465,18 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
         shelf.LoadFailed = false;
         try
         {
-            var page = await _library.GetAlbumsAsync(QueryFor(shelf.Kind), cancellation);
+            var albums = shelf.Kind switch
+            {
+                HomeShelfKind.RandomArtist => await LoadRandomArtistAsync(shelf, cancellation),
+                HomeShelfKind.ThisWeekLastYear => await LoadWeekLastYearAsync(shelf, cancellation),
+                _ => (await _library.GetAlbumsAsync(QueryFor(shelf.Kind, _time.GetUtcNow()), cancellation)).Items,
+            };
             if (cancellation.IsCancellationRequested)
             {
                 return null;
             }
 
-            shelf.Replace(page.Items.Select(album => new AlbumItem(album, ImageRequest.Primary(album.Id, album.PrimaryImageTag, TileWidth, DisplayScale))));
+            shelf.Replace(albums.Select(album => new AlbumItem(album, ImageRequest.Primary(album.Id, album.PrimaryImageTag, TileWidth, DisplayScale))));
 
             shelf.IsLoaded = true;
             return null;
@@ -412,5 +503,95 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
                 shelf.IsLoading = false;
             }
         }
+    }
+
+    /// <summary>
+    /// The albums of an artist from the play history: a few picked at random, the first with albums of their own;
+    /// without one, a random artist of the library. The row takes the artist's name.
+    /// </summary>
+    private async Task<IReadOnlyList<Album>> LoadRandomArtistAsync(HomeShelf shelf, CancellationToken cancellation)
+    {
+        var log = await _history.GetLogAsync();
+        var played = log.Plays
+            .Select(p => log.Tracks.GetValueOrDefault(p.TrackId))
+            .OfType<PlayedTrack>()
+            .SelectMany(t => t.ArtistIds)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        for (var i = 0; i < ArtistTries && played.Count > 0; i++)
+        {
+            var id = played[Pick(played.Count)];
+            played.Remove(id);
+            var albums = await ArtistAlbumsAsync(id, cancellation);
+            if (albums.Count > 0)
+            {
+                var artist = await _library.GetArtistAsync(id, cancellation);
+                ShowArtist(shelf, artist);
+                return albums;
+            }
+        }
+
+        var any = await _library.GetArtistsAsync(new ArtistQuery { SortBy = ArtistSortField.Random, Limit = 1 }, cancellation);
+        if (any.Items.FirstOrDefault() is not { } random)
+        {
+            return [];
+        }
+
+        ShowArtist(shelf, random);
+        return await ArtistAlbumsAsync(random.Id, cancellation);
+    }
+
+    private async Task<IReadOnlyList<Album>> ArtistAlbumsAsync(string artistId, CancellationToken cancellation) =>
+        (await _library.GetAlbumsAsync(new AlbumQuery { AlbumArtistId = artistId, Limit = ShelfSize, SortBy = AlbumSortField.Year, Descending = true }, cancellation)).Items;
+
+    private void ShowArtist(HomeShelf shelf, Artist artist)
+    {
+        shelf.ArtistId = artist.Id;
+        shelf.Title = _strings.GetString("HomeShelf_MoreBy").Replace("{0}", artist.Name, StringComparison.Ordinal);
+        shelf.ShowAllName = ShowAllNameOf(shelf.Title, _strings);
+    }
+
+    /// <summary>
+    /// The albums played most in Groovefin in the week around this day a year ago: played in Groovefin or on other
+    /// devices, not the first sync's guesses. Songs the history has no album for are looked up on the server.
+    /// </summary>
+    private async Task<IReadOnlyList<Album>> LoadWeekLastYearAsync(HomeShelf shelf, CancellationToken cancellation)
+    {
+        var log = await _history.GetLogAsync();
+        var day = _time.GetUtcNow().AddYears(-1);
+        var plays = log.Plays
+            .Where(p => p.Source != PlaySource.Seeded && p.PlayedAt >= day - HalfWeek && p.PlayedAt < day + HalfWeek)
+            .Select(p => p.TrackId)
+            .ToList();
+        var albumOf = plays.Distinct(StringComparer.Ordinal)
+            .Where(log.Tracks.ContainsKey)
+            .ToDictionary(id => id, id => log.Tracks[id].AlbumId, StringComparer.Ordinal);
+        var missing = plays.Where(id => !albumOf.ContainsKey(id)).Distinct(StringComparer.Ordinal).Take(MaxLookups).ToList();
+        if (missing.Count > 0)
+        {
+            foreach (var track in await _library.GetTracksByIdAsync(missing, cancellation))
+            {
+                albumOf[track.Id] = track.AlbumId;
+            }
+        }
+
+        List<string> ranked =
+        [
+            .. plays.Select(id => albumOf.GetValueOrDefault(id)).OfType<string>()
+                .GroupBy(id => id, StringComparer.Ordinal)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key)
+                .Take(ShelfSize),
+        ];
+        shelf.AlbumIds = ranked;
+        if (ranked.Count == 0)
+        {
+            return [];
+        }
+
+        var found = (await _library.GetAlbumsAsync(new AlbumQuery { Ids = ranked, Limit = ranked.Count }, cancellation)).Items
+            .DistinctBy(a => a.Id)
+            .ToDictionary(a => a.Id, StringComparer.Ordinal);
+        return [.. ranked.Where(found.ContainsKey).Select(id => found[id])];
     }
 }

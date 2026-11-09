@@ -89,6 +89,12 @@ public sealed record AppearanceSettings
     public IReadOnlyList<NavigationItemSettings> Navigation { get; set; } = [];
 
     /// <summary>
+    /// Gets or sets the order and visibility of the home page's rows (#394); empty is the default: Recently played
+    /// and Recently added shown, the others hidden. Read it through <c>HomeLayout.Resolve</c>.
+    /// </summary>
+    public IReadOnlyList<HomeRowSettings> HomeRows { get; set; } = [];
+
+    /// <summary>
     /// Gets or sets the order of the favourite playlists in the navigation pane (#306) by server and user
     /// (<c>"{server ID}/{user ID}"</c>): playlist IDs, top first. Favourites not in it follow by name; there is
     /// none until the user rearranges them. The default is one shared empty instance, so that defaults compare
@@ -130,6 +136,14 @@ public sealed record WindowSettings
 public sealed record NavigationItemSettings
 {
     /// <summary>Gets or sets a key of <see cref="PageKeys.MainSections"/>.</summary>
+    public string Key { get; set; } = string.Empty;
+
+    public bool IsVisible { get; set; } = true;
+}
+
+/// <summary>One row of the home page: which (a <c>HomeShelfKind</c> name), and whether it shows (#394).</summary>
+public sealed record HomeRowSettings
+{
     public string Key { get; set; } = string.Empty;
 
     public bool IsVisible { get; set; } = true;

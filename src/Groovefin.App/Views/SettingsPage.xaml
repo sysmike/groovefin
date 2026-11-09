@@ -149,6 +149,66 @@
                         </ListView>
                     </controls:SettingsExpander.ItemsHeader>
                 </controls:SettingsExpander>
+                <!--
+                    The home page's rows (#394): each can be shown, hidden and moved, like the navigation pane's
+                    sections. Every row may be hidden.
+                -->
+                <controls:SettingsExpander x:Uid="SettingsHomeRowsCard" HeaderIcon="{ui:FontIcon Glyph=&#xE80F;}">
+                    <Button x:Uid="SettingsHomeRowsResetButton" Command="{x:Bind ViewModel.ResetHomeRowsCommand}" />
+                    <controls:SettingsExpander.ItemsHeader>
+                        <ListView
+                            x:Uid="SettingsHomeRowsList"
+                            Padding="0,4"
+                            AllowDrop="True"
+                            AutomationProperties.AutomationId="SettingsHomeRowsList"
+                            CanDragItems="True"
+                            CanReorderItems="True"
+                            ItemsSource="{x:Bind ViewModel.HomeRows}"
+                            SelectionMode="None">
+                            <ListView.ItemContainerStyle>
+                                <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Margin" Value="0,1" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:NavigationItemOption">
+                                    <controls:SettingsCard
+                                        MinHeight="48"
+                                        Padding="58,4,16,4"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Header="{x:Bind Name}"
+                                        HeaderIcon="{ui:FontIcon Glyph=&#xE76F;}">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <Button
+                                                AutomationProperties.Name="{x:Bind MoveUpName}"
+                                                Command="{x:Bind MoveUpCommand}"
+                                                Style="{StaticResource SubtleButtonStyle}"
+                                                ToolTipService.ToolTip="{x:Bind MoveUpName}">
+                                                <FontIcon FontSize="14" Glyph="&#xE70E;" />
+                                            </Button>
+                                            <Button
+                                                AutomationProperties.Name="{x:Bind MoveDownName}"
+                                                Command="{x:Bind MoveDownCommand}"
+                                                Style="{StaticResource SubtleButtonStyle}"
+                                                ToolTipService.ToolTip="{x:Bind MoveDownName}">
+                                                <FontIcon FontSize="14" Glyph="&#xE70D;" />
+                                            </Button>
+                                            <ToggleSwitch
+                                                MinWidth="0"
+                                                Margin="12,0,0,0"
+                                                AutomationProperties.Name="{x:Bind ShowName}"
+                                                IsEnabled="{x:Bind CanToggle, Mode=OneWay}"
+                                                IsOn="{x:Bind IsVisible, Mode=TwoWay}" />
+                                        </StackPanel>
+                                    </controls:SettingsCard>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </controls:SettingsExpander.ItemsHeader>
+                </controls:SettingsExpander>
                 <controls:SettingsCard x:Uid="SettingsTaskbarProgressCard" HeaderIcon="{ui:FontIcon Glyph=&#xE7C4;}">
                     <ToggleSwitch IsOn="{x:Bind ViewModel.ShowTaskbarProgress, Mode=TwoWay}" />
                 </controls:SettingsCard>
