@@ -1075,6 +1075,16 @@ try {
     Test-Accessibility 'albums'
     Test-TabOrder 'albums'
     Test-TilesFillRows 'Albums' 16
+    # A letter jump (#390): the A–Z button offers the letters, and "A" asks the server where A starts. The fake
+    # server counts all three albums before it, so the jump lands on the last one, with the focus on it.
+    $lettersBefore = Get-RequestCount 'nameLessThan=a'
+    (Find-ById 'AlbumsLetterJump').GetCurrentPattern($invoke).Invoke()
+    (Find-ById 'Letter_A').GetCurrentPattern($invoke).Invoke()
+    Wait-Request 'nameLessThan=a' $lettersBefore 'The letter A was chosen on the Albums page'
+    Start-Sleep -Seconds 1
+    $jumped = [System.Windows.Automation.AutomationElement]::FocusedElement
+    if ($jumped.Current.Name -notlike '*Album 3*') { Stop-Test 'Letter jump' "After the letter A the focus is on '$($jumped.Current.Name)', not on Album 3." }
+    Write-Output "The letter A asked the server where A starts and focused '$($jumped.Current.Name)'."
     $album2 = 'parentId=a{31}2'
     $reports = 'POST /Sessions/Playing'
     $reportsBefore = Get-RequestCount $reports

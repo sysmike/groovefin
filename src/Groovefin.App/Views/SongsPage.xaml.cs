@@ -49,6 +49,9 @@ internal sealed partial class SongsPage : Page
         _strings = App.Services.GetRequiredService<IStringResources>();
         InitializeComponent();
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+        // A letter jump (#390) arrived: show its first item.
+        ViewModel.JumpRequested += (_, index) => ListJump.Show(SongsList, index);
         ViewModel.LayoutChanged += (_, _) => RefreshHeader();
         RefreshHeader();
     }

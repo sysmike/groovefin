@@ -1,3 +1,4 @@
+using Groovefin.App.Controls;
 using System.ComponentModel;
 using System.Globalization;
 using Groovefin.Core.Api;
@@ -35,6 +36,9 @@ internal sealed partial class ArtistsPage : Page
         }
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+        // A letter jump (#390) arrived: show its first item.
+        ViewModel.JumpRequested += (_, index) => ListJump.Show(ArtistsView, index);
         SyncControls();
         ApplyViewMode();
     }

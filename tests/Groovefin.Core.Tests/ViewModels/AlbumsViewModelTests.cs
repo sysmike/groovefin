@@ -269,4 +269,67 @@ public sealed class AlbumsViewModelTests
 
         _queries.Should().ContainSingle().Which.Should().BeEquivalentTo(new { SortBy = AlbumSortField.DateAdded, Descending = true });
     }
+
+    /// <summary>250 albums; 180 of them sort before "m".</summary>
+    private void StubLetters() =>
+        _library.GetAlbumsAsync(Arg.Do<AlbumQuery>(_queries.Add), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var q = call.Arg<AlbumQuery>();
+                if (q.NameLessThan is { } name)
+                {
+                    return new PagedResult<Album>([Album(0)], name == "m" ? 180 : 0, 0);
+                }
+
+                var count = Math.Max(0, Math.Min(q.Limit, 250 - q.StartIndex));
+                return new PagedResult<Album>([.. Enumerable.Range(q.StartIndex, count).Select(Album)], 250, q.StartIndex);
+            });
+
+    [Fact]
+    public async Task A_letter_loads_the_albums_up_to_it_and_shows_its_first()
+    {
+        StubLetters();
+        using var sut = CreateSut();
+        await sut.InitializeAsync();
+        var shown = new List<int>();
+        sut.JumpRequested += (_, index) => shown.Add(index);
+
+        await sut.JumpToLetterCommand.ExecuteAsync("M");
+
+        shown.Should().Equal(180);
+        sut.Albums.Should().HaveCount(200);
+        _queries.Should().ContainSingle(q => q.NameLessThan != null).Which.Should().BeEquivalentTo(new { StartIndex = 0, Limit = 1, NameLessThan = "m" });
+    }
+
+    [Fact]
+    public async Task The_hash_is_the_start_of_the_list()
+    {
+        StubLetters();
+        using var sut = CreateSut();
+        await sut.InitializeAsync();
+        var shown = new List<int>();
+        sut.JumpRequested += (_, index) => shown.Add(index);
+
+        await sut.JumpToLetterCommand.ExecuteAsync("#");
+
+        shown.Should().Equal(0);
+        _queries.Should().NotContain(q => q.NameLessThan != null);
+    }
+
+    [Fact]
+    public void Letters_are_offered_only_for_names_from_a_to_z()
+    {
+        using var sut = CreateSut();
+        var changed = new List<string?>();
+        sut.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+        sut.CanJumpToLetter.Should().BeTrue();
+
+        sut.Descending = true;
+        sut.CanJumpToLetter.Should().BeFalse();
+        sut.Descending = false;
+        sut.SortBy = AlbumSortField.Year;
+
+        sut.CanJumpToLetter.Should().BeFalse();
+        changed.Should().Contain(nameof(AlbumsViewModel.CanJumpToLetter));
+    }
 }

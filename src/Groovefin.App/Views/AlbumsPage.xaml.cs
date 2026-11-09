@@ -42,6 +42,9 @@ internal sealed partial class AlbumsPage : Page
         GenreBox.Items.Add(new ComboBoxItem { Content = _strings.GetString("Albums_AllGenres"), Tag = null });
         ViewModel.Genres.CollectionChanged += (_, _) => SyncGenres();
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+        // A letter jump (#390) arrived: show its first item.
+        ViewModel.JumpRequested += (_, index) => ListJump.Show(AlbumsView, index);
         SyncControls();
         ApplyViewMode();
     }

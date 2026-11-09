@@ -112,6 +112,11 @@
                 <ToggleButton x:Uid="ArtistsDescendingToggle" IsChecked="{x:Bind ViewModel.Descending, Mode=TwoWay}">
                     <FontIcon FontSize="16" Glyph="&#xE8CB;" />
                 </ToggleButton>
+                <controls:LetterJumpButton
+                    x:Uid="LetterJumpButton"
+                    AutomationProperties.AutomationId="ArtistsLetterJump"
+                    LetterCommand="{x:Bind ViewModel.JumpToLetterCommand}"
+                    Visibility="{x:Bind ViewModel.CanJumpToLetter, Mode=OneWay}" />
                 <ToggleButton x:Uid="ArtistsFavouritesToggle" IsChecked="{x:Bind ViewModel.FavouritesOnly, Mode=TwoWay}">
                     <FontIcon FontSize="16" Glyph="&#xEB51;" />
                 </ToggleButton>

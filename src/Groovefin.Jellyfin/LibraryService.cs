@@ -239,6 +239,9 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                         p.GenreIds = query.GenreIds.Select(id => (Guid?)Guid.Parse(id)).ToArray();
                     }
 
+                    // Where a letter starts (#390).
+                    p.NameLessThan = query.NameLessThan;
+
                     if (query.Ids.Count > 0)
                     {
                         p.Ids = query.Ids.Select(id => (Guid?)ParseId(id)).ToArray();
@@ -403,6 +406,9 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     {
                         p.Filters = [ItemFilter.IsFavorite];
                     }
+
+                    // Where a letter starts (#390).
+                    p.NameLessThan = query.NameLessThan;
                 },
                 cancellationToken),
             "Loading tracks").ConfigureAwait(false);
@@ -645,6 +651,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                         p.SortBy = sortBy;
                         p.SortOrder = [order];
                         p.IsFavorite = favourites;
+                        p.NameLessThan = query.NameLessThan;
                         p.EnableUserData = !idsOnly;
                         p.EnableTotalRecordCount = !idsOnly;
                         p.EnableImages = !idsOnly;
@@ -663,6 +670,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                         p.SortBy = sortBy;
                         p.SortOrder = [order];
                         p.IsFavorite = favourites;
+                        p.NameLessThan = query.NameLessThan;
                         p.EnableUserData = !idsOnly;
                         p.EnableTotalRecordCount = !idsOnly;
                         p.EnableImages = !idsOnly;
