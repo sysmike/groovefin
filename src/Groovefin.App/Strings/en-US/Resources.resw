@@ -412,7 +412,7 @@
     <value>Enter a valid address, for example https://192.168.1.10:8920.</value>
   </data>
   <data name="Servers_Unreachable" xml:space="preserve">
-    <value>No server answered at this address. Check the address, the port and your network connection.</value>
+    <value>No server answered at this address. Check the address and the port (Jellyfin uses 8096 for http and 8920 for https), whether the server uses http or https, and your network connection.</value>
   </data>
   <data name="Servers_NotJellyfin" xml:space="preserve">
     <value>The server at this address doesn't look like a Jellyfin server.</value>
@@ -2889,6 +2889,15 @@
   </data>
   <data name="Settings_OutputUnknown" xml:space="preserve">
     <value>Chosen device</value>
+  </data>
+  <data name="Servers_Retrying" xml:space="preserve">
+    <value>No answer yet. Trying again (attempt {0})…</value>
+  </data>
+  <data name="ServerCancelButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Servers_Connecting" xml:space="preserve">
+    <value>Connecting…</value>
   </data>
   <data name="LetterJumpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Jump to a letter</value>
