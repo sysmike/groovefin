@@ -15,11 +15,12 @@ internal static class Glyphs
     /// <summary>"Repeat one" for <see cref="RepeatMode.One"/>, "repeat all" otherwise (off is shown unchecked).</summary>
     public static string Repeat(RepeatMode mode) => mode == RepeatMode.One ? "" : "";
 
-    /// <summary>Person, album or note for a search suggestion, as on the navigation pane.</summary>
+    /// <summary>Person, album, genre or note for a search suggestion, as on the navigation pane.</summary>
     public static string Suggestion(SuggestionKind kind) => kind switch
     {
         SuggestionKind.Artist => "\uE77B",
         SuggestionKind.Album => "\uE93C",
+        SuggestionKind.Genre => "\uE8EC",
         _ => "\uEC4F",
     };
 

@@ -11,6 +11,7 @@ using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
+using Groovefin.Core.Search;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
 
@@ -87,6 +88,9 @@ public sealed partial class PlaylistDetailViewModel(
 
     private bool _loadingOrder;
 
+    /// <summary>Whether the filter follows changes to <see cref="Entries"/> yet (#391).</summary>
+    private bool _followsEntries;
+
     public ObservableCollection<PlaylistEntryItem> Entries { get; } = currentTrack.Watch(new ObservableCollection<PlaylistEntryItem>());
 
     public double DisplayScale { get; set; } = 1;
@@ -134,8 +138,26 @@ public sealed partial class PlaylistDetailViewModel(
     [NotifyCanExecuteChangedFor(nameof(MoveUpCommand), nameof(MoveDownCommand))]
     public partial bool IsReversed { get; set; }
 
-    /// <summary>Gets a value indicating whether entries can be moved: only in the playlist's own order.</summary>
-    public bool CanReorder => !IsReversed;
+    /// <summary>Gets a value indicating whether entries can be moved: only in the playlist's own order, unfiltered.</summary>
+    public bool CanReorder => !IsReversed && !IsFiltering;
+
+    /// <summary>
+    /// Gets or sets the text the entries are filtered by (#391): every word must start a word of the title, an
+    /// artist or the album, or come close to it. Empty shows every entry.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFiltering), nameof(CanReorder), nameof(ShownEntries))]
+    [NotifyCanExecuteChangedFor(nameof(MoveUpCommand), nameof(MoveDownCommand))]
+    public partial string FilterText { get; set; } = string.Empty;
+
+    /// <summary>Gets a value indicating whether a filter is typed; the list then shows <see cref="FilteredEntries"/> and cannot be reordered.</summary>
+    public bool IsFiltering => !string.IsNullOrWhiteSpace(FilterText);
+
+    /// <summary>Gets the entries that match <see cref="FilterText"/>, in the list's order.</summary>
+    public ObservableCollection<PlaylistEntryItem> FilteredEntries { get; } = [];
+
+    /// <summary>Gets what the list shows: every entry, or while filtering the matching ones.</summary>
+    public IList<PlaylistEntryItem> ShownEntries => IsFiltering ? FilteredEntries : Entries;
 
     public async Task LoadAsync(string playlistId, CancellationToken cancellationToken = default)
     {
@@ -377,6 +399,43 @@ public sealed partial class PlaylistDetailViewModel(
         }
     }
 
+    partial void OnFilterTextChanged(string value)
+    {
+        if (!_followsEntries)
+        {
+            // Removing, reversing or reloading entries while a filter is typed shows the change at once.
+            _followsEntries = true;
+            Entries.CollectionChanged += (_, _) =>
+            {
+                if (IsFiltering)
+                {
+                    RefreshFilter();
+                }
+            };
+        }
+
+        RefreshFilter();
+    }
+
+    private void RefreshFilter()
+    {
+        FilteredEntries.Clear();
+        if (!IsFiltering)
+        {
+            return;
+        }
+
+        var words = ForgivingSearch.Words(FilterText);
+        foreach (var item in Entries)
+        {
+            var track = item.Entry.Track;
+            if (ForgivingSearch.Score(words, [track.Name, track.AlbumName, .. track.Artists.Select(a => a.Name)]) >= 0)
+            {
+                FilteredEntries.Add(item);
+            }
+        }
+    }
+
     [RelayCommand(CanExecute = nameof(CanReorder))]
     private Task MoveUpAsync(PlaylistEntryItem item) => MoveByAsync(item, -1);
 
@@ -387,7 +446,7 @@ public sealed partial class PlaylistDetailViewModel(
     {
         var index = Entries.IndexOf(item);
         var target = index + offset;
-        if (IsReversed || index < 0 || target < 0 || target >= Entries.Count)
+        if (!CanReorder || index < 0 || target < 0 || target >= Entries.Count)
         {
             return Task.CompletedTask;
         }

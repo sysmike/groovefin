@@ -31,7 +31,8 @@ public sealed partial class SearchTrackItem(Track track, int index) : Observable
     public string Name => Track.Name;
 
     /// <summary>Gets the artists and the album, e.g. "Daft Punk · Discovery".</summary>
-    public string Details => string.Join(" · ", new[] { string.Join(", ", Track.Artists.Select(a => a.Name)), Track.AlbumName ?? string.Empty }.Where(s => s.Length > 0));
+    /// <summary>Gets the artists, album and year, so the same song on several albums can be told apart (#391).</summary>
+    public string Details => SearchTexts.TrackDetails(Track);
 
     public string Duration => Durations.Track(Track.Duration);
 
@@ -65,6 +66,9 @@ public sealed partial class SearchViewModel(
 
     public ObservableCollection<PlaylistItem> Playlists { get; } = [];
 
+    /// <summary>Gets the genres whose name matches (#391).</summary>
+    public ObservableCollection<Genre> Genres { get; } = [];
+
     public double DisplayScale { get; set; } = 1;
 
     [ObservableProperty]
@@ -91,6 +95,9 @@ public sealed partial class SearchViewModel(
 
     [ObservableProperty]
     public partial bool HasPlaylists { get; private set; }
+
+    [ObservableProperty]
+    public partial bool HasGenres { get; private set; }
 
     public async Task LoadAsync(string query, CancellationToken cancellationToken = default)
     {
@@ -130,6 +137,9 @@ public sealed partial class SearchViewModel(
     [RelayCommand]
     private void OpenPlaylist(PlaylistItem item) => navigation.NavigateTo(PageKeys.Playlist, item.Playlist.Id);
 
+    [RelayCommand]
+    private void OpenGenre(Genre genre) => navigation.NavigateTo(PageKeys.Genre, genre.Id);
+
     /// <summary>Plays the found tracks from <paramref name="item"/> on.</summary>
     [RelayCommand]
     private void PlayTrack(SearchTrackItem item) => player.Play([.. Tracks.Select(t => t.Track)], item.Index);
@@ -163,7 +173,14 @@ public sealed partial class SearchViewModel(
         HasArtists = Artists.Count > 0;
         HasAlbums = Albums.Count > 0;
         HasTracks = Tracks.Count > 0;
+        Genres.Clear();
+        foreach (var genre in results.Genres)
+        {
+            Genres.Add(genre);
+        }
+
         HasPlaylists = Playlists.Count > 0;
+        HasGenres = Genres.Count > 0;
         Summary = results.Count == 0
             ? strings.GetString("Search_NoResults").Replace("{0}", Query, StringComparison.Ordinal)
             : strings.GetString(results.Count == 1 ? "Search_OneResult" : "Search_Results")

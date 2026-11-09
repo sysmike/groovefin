@@ -2845,4 +2845,19 @@
   <data name="MixEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Titel</value>
   </data>
+  <data name="SearchGenresHeader.Text" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="SearchGenres.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="Search_KindGenre" xml:space="preserve">
+    <value>Genre</value>
+  </data>
+  <data name="PlaylistFilterBox.PlaceholderText" xml:space="preserve">
+    <value>Titel filtern</value>
+  </data>
+  <data name="PlaylistFilterBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Titel filtern</value>
+  </data>
 </root>

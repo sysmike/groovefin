@@ -140,4 +140,20 @@ public sealed class SearchSuggestionsViewModelTests : IDisposable
 
         _player.DidNotReceiveWithAnyArgs().Play(default!);
     }
+
+    [Fact]
+    public async Task Songs_show_their_album_and_year_and_genres_open_their_page()
+    {
+        var song = new Track { Id = "t9", Name = "Fortress Europe", AlbumName = "Rafi's Revenge", Year = 1998, Artists = [new ArtistRef("ar9", "Asian Dub Foundation")] };
+        _search.SearchAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(new SearchResults([], [], [song], []) { Genres = [new Genre("g1", "Dub")] });
+
+        await TypeAsync("dub");
+
+        _sut.Suggestions.Select(s => (s.Kind, s.Subtitle)).Should().Equal(
+            (SuggestionKind.Track, "Asian Dub Foundation · Rafi's Revenge · 1998"),
+            (SuggestionKind.Genre, "Genre"));
+        _sut.Choose(_sut.Suggestions[1]);
+        _navigation.Received(1).NavigateTo(PageKeys.Genre, "g1");
+    }
 }

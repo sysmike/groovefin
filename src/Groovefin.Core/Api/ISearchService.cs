@@ -11,11 +11,14 @@ public sealed record SearchResults(
 {
     public static SearchResults Empty { get; } = new([], [], [], []);
 
+    /// <summary>Gets the genres whose name matches (#391).</summary>
+    public IReadOnlyList<Genre> Genres { get; init; } = [];
+
     /// <summary>Gets the number of matches of all kinds.</summary>
-    public int Count => Artists.Count + Albums.Count + Tracks.Count + Playlists.Count;
+    public int Count => Artists.Count + Albums.Count + Tracks.Count + Playlists.Count + Genres.Count;
 }
 
-/// <summary>Searches the music library (artists, albums, tracks) and the user's audio playlists.</summary>
+/// <summary>Searches the music library (artists, albums, tracks, genres) and the user's audio playlists.</summary>
 public interface ISearchService
 {
     /// <summary>Finds up to <paramref name="limit"/> matches of each kind for <paramref name="query"/>.</summary>
