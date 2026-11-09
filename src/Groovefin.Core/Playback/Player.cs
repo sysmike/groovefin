@@ -99,6 +99,18 @@ public sealed partial class Player : IPlayer, IDisposable
         LoadCurrent();
     }
 
+    public void ShuffleAlbums(IReadOnlyList<Track> tracks)
+    {
+        ArgumentNullException.ThrowIfNull(tracks);
+        if (tracks.Count == 0)
+        {
+            return;
+        }
+
+        Drive(() => Queue.PlayAlbumsShuffled(tracks));
+        LoadCurrent();
+    }
+
     public void PlayNext(IReadOnlyList<Track> tracks)
     {
         Drive(() => Queue.PlayNext(tracks));
