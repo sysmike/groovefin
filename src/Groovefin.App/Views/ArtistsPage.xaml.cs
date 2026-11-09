@@ -1,6 +1,6 @@
-using Groovefin.App.Controls;
 using System.ComponentModel;
 using System.Globalization;
+using Groovefin.App.Controls;
 using Groovefin.Core.Api;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
