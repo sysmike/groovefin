@@ -58,9 +58,8 @@ public static class Shuffling
     private static List<T> SpreadBy<T>(IReadOnlyList<T> items, Func<T, int, string> key, Random random, Func<List<T>, List<T>> arrange)
     {
         var places = new List<(double Place, T Item)>(items.Count);
-        foreach (var group in Group(items, key))
+        foreach (var members in Group(items, key).Select(arrange))
         {
-            var members = arrange(group);
             var gap = 1d / members.Count;
             var offset = random.NextDouble() * gap;
             for (var i = 0; i < members.Count; i++)
