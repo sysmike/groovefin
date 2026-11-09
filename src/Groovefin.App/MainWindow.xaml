@@ -387,7 +387,13 @@
                         Style="{StaticResource CaptionTextBlockStyle}"
                         Text="{x:Bind Player.ArtistNames, Mode=OneWay}"
                         TextTrimming="CharacterEllipsis" />
-                    <Grid Margin="0,8,0,0">
+                    <!--  The transport, a seek bar (#406) taking the width left, and the button back to the full window.  -->
+                    <Grid Margin="0,8,0,0" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <Button x:Uid="MiniPreviousButton" Command="{x:Bind Player.PreviousCommand}">
                                 <FontIcon FontSize="14" Glyph="&#xE892;" />
@@ -403,9 +409,26 @@
                                 <FontIcon FontSize="14" Glyph="&#xE893;" />
                             </Button>
                         </StackPanel>
+                        <Slider
+                            x:Name="MiniSeekSlider"
+                            x:Uid="MiniSeekSlider"
+                            Grid.Column="1"
+                            MinWidth="48"
+                            VerticalAlignment="Center"
+                            AutomationProperties.AutomationId="MiniSeekSlider"
+                            IsEnabled="{x:Bind Player.HasTrack, Mode=OneWay}"
+                            IsThumbToolTipEnabled="False"
+                            LargeChange="30"
+                            Maximum="{x:Bind Player.DurationSeconds, Mode=OneWay}"
+                            Minimum="0"
+                            SmallChange="5"
+                            StepFrequency="1"
+                            ToolTipService.ToolTip="{x:Bind Player.ElapsedText, Mode=OneWay}"
+                            Value="{x:Bind Player.PositionSeconds, Mode=OneWay}"
+                            ValueChanged="OnMiniSeekValueChanged" />
                         <Button
                             x:Uid="MiniExitButton"
-                            HorizontalAlignment="Right"
+                            Grid.Column="2"
                             Command="{x:Bind Player.ExitMiniPlayerCommand}">
                             <FontIcon FontSize="14" Glyph="&#xE73F;" />
                         </Button>

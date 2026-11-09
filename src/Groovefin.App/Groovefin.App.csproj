@@ -16,6 +16,8 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <DefaultLanguage>en-US</DefaultLanguage>
     <SatelliteResourceLanguages>en-US;de-DE</SatelliteResourceLanguages>
+    <!-- Program.cs is the entry point: Groovefin runs once, and a second start goes to the running app (#406). -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
 
   <!-- One runtime identifier per solution platform. -->

@@ -7,6 +7,7 @@ using Groovefin.Core.Discord;
 using Groovefin.Core.Downloads;
 using Groovefin.Core.Equalizer;
 using Groovefin.Core.History;
+using Groovefin.Core.JumpLists;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Session;
@@ -68,7 +69,7 @@ public partial class App : Application
     {
         try
         {
-            await StartAsync();
+            await StartAsync(args.Arguments);
         }
         catch (Exception ex) when (!_windowShown)
         {
@@ -87,7 +88,7 @@ public partial class App : Application
         }
     }
 
-    private async Task StartAsync()
+    private async Task StartAsync(string? arguments)
     {
         _host = AppHost.Build();
         _host.Start();
@@ -152,6 +153,19 @@ public partial class App : Application
         // The window has restored the server connection: bring back the last queue (paused) and keep saving it.
         await _host.Services.GetRequiredService<SessionPersistence>().RestoreAsync();
 
+        // Lives as long as the app: the jump list's tasks and favourite playlists (#406).
+        _host.Services.GetRequiredService<JumpListSync>();
+
+        // A jump list entry that started the app runs once the session is back: Play/Pause plays the restored
+        // queue. Later starts come here instead of opening a second app.
+        var command = JumpListCommand.Parse(arguments) ?? JumpListCommand.Parse(Environment.CommandLine);
+        if (command is not null)
+        {
+            await RunJumpListCommandAsync(command);
+        }
+
+        Program.OnRedirected(activation => window.DispatcherQueue.TryEnqueue(() => OnStartedAgain(window, Program.ArgumentsOf(activation))));
+
         LogStartupMeasured(_logger);
     }
 
@@ -163,8 +177,35 @@ public partial class App : Application
         LogStartup(logger, (long)elapsed.TotalMilliseconds, process.WorkingSet64 / (1024 * 1024), GC.GetTotalMemory(forceFullCollection: false) / (1024 * 1024));
     }
 
+    /// <summary>
+    /// Groovefin was started again (#406): a jump list entry runs its command; a plain start brings the window
+    /// to the front, also from the notification area.
+    /// </summary>
+    private async void OnStartedAgain(MainWindow window, string? arguments)
+    {
+        var command = JumpListCommand.Parse(arguments);
+        if (_logger is not null)
+        {
+            LogStartedAgain(_logger, command?.Action.ToString() ?? "none");
+        }
+
+        if (command is null)
+        {
+            window.BringToFront();
+            return;
+        }
+
+        await RunJumpListCommandAsync(command);
+    }
+
+    private Task RunJumpListCommandAsync(JumpListCommand command) =>
+        _host?.Services.GetRequiredService<JumpListActions>().RunAsync(command) ?? Task.CompletedTask;
+
     private void OnMainWindowClosed(object sender, WindowEventArgs args)
     {
+        // A start from now on opens a new app instead of reaching this closing one.
+        Program.StopTakingStarts();
+
         if (_logger is not null)
         {
             LogStopping(_logger);
@@ -393,6 +434,9 @@ public partial class App : Application
 
     [LoggerMessage(Level = LogLevel.Critical, Message = "Start-up failed before the window was shown; exiting")]
     private static partial void LogStartupFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Groovefin was started again; it runs already (jump list command: {Command})")]
+    private static partial void LogStartedAgain(ILogger logger, string command);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Groovefin is shutting down")]
     private static partial void LogStopping(ILogger logger);

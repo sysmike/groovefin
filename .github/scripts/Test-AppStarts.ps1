@@ -237,6 +237,28 @@ try {
     }
     Write-Output "The shell knows the app ID 'Groovefin' as '$($app.Name)'."
 
+    # Groovefin runs once (#406): a second start, here with a jump list entry's arguments, hands them to the
+    # running app and ends at once; the running app logs that it was started again, with the command.
+    $second = Start-Process -FilePath $Path -ArgumentList '--play-pause' -PassThru
+    $null = $second.Handle
+    if (-not $second.WaitForExit(20000)) {
+        Stop-Process -Id $second.Id -Force
+        Stop-Test 'Single instance' 'A second start of Groovefin did not end within 20 seconds: it may have opened a second app.'
+    }
+    if ($second.ExitCode -ne 0) { Stop-Test 'Single instance' "A second start of Groovefin ended with code $($second.ExitCode)." }
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        $again = Select-String -Path $log.FullName -Pattern 'was started again' -SimpleMatch | Select-Object -Last 1
+        if (-not $again) { Start-Sleep -Milliseconds 300 }
+    } while (-not $again -and (Get-Date) -lt $until)
+    if (-not $again -or $again.Line -notmatch 'PlayPause') { Stop-Test 'Single instance' "The running Groovefin did not get the second start's jump list command: $($again.Line)" }
+    if ($process.HasExited) { Stop-Test 'Single instance' 'Groovefin exited after a second start.' }
+    Write-Output "A second start went to the running app: $($again.Line)"
+    # The jump list (#406): its three tasks are set at start-up.
+    $jump = Select-String -Path $log.FullName -Pattern 'Jump list updated|jump list could not be updated' | Select-Object -Last 1
+    if (-not $jump -or $jump.Line -notmatch 'Jump list updated with 3 tasks') { Stop-Test 'Jump list' "The jump list was not set: $($jump.Line)" }
+    Write-Output "The jump list is set: $($jump.Line)"
+
     Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
     $automation = [System.Windows.Automation.AutomationElement]
     $scope = [System.Windows.Automation.TreeScope]
@@ -2030,6 +2052,15 @@ try {
     if ([Math]::Abs($miniWidth - 420) -gt 2 -or [Math]::Abs($miniHeight - 140) -gt 2) {
         Stop-Test 'Smoke test' ("The mini player's client area is {0}x{1}; it should be 420x140." -f $miniWidth, $miniHeight)
     }
+    # Its seek bar (#406) sits between the transport buttons and the button back to the full window.
+    $miniSeek = Find-ById 'MiniSeekSlider'
+    $miniSeekBounds = Get-Bounds $miniSeek
+    $exitBounds = Get-Bounds $exitMini
+    if ($miniSeekBounds.Right -gt $exitBounds.Left -or $miniSeekBounds.Width -lt 48) {
+        Stop-Test 'Mini player' ("The mini player's seek bar is {0:0} px wide and ends at {1:0}, past the full-window button at {2:0}." -f $miniSeekBounds.Width, $miniSeekBounds.Right, $exitBounds.Left)
+    }
+    $range = $miniSeek.GetCurrentPattern([System.Windows.Automation.RangeValuePattern]::Pattern).Current
+    Write-Output ("The mini player's seek bar is {0:0} px wide, at {1:0} of {2:0} seconds." -f $miniSeekBounds.Width, $range.Value, $range.Maximum)
     Test-Accessibility 'mini-player'
     # Resized like Windows does it (UI Automation's resize does nothing on a WinUI window): SetWindowPos goes
     # through the window's size limits, the same ones a drag on its edges meets.

@@ -8,6 +8,7 @@ using Groovefin.Core.Equalizer;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.History;
 using Groovefin.Core.Images;
+using Groovefin.Core.JumpLists;
 using Groovefin.Core.Menus;
 using Groovefin.Core.Mixes;
 using Groovefin.Core.Notifications;
@@ -175,6 +176,9 @@ internal static class AppHost
         builder.Services.AddSingleton<MixBuilder>();
         builder.Services.AddSingleton<MixEditing>();
         builder.Services.AddSingleton<IMixEditor, MixEditorDialog>();
+        builder.Services.AddSingleton<IJumpList, WindowsJumpList>();
+        builder.Services.AddSingleton<JumpListSync>();
+        builder.Services.AddSingleton<JumpListActions>();
 
         // Servers
         builder.Services.AddSingleton<IServerManager, ServerManager>();
