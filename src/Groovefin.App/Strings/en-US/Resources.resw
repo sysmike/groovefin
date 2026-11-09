@@ -2872,4 +2872,7 @@
   <data name="MixEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Songs</value>
   </data>
+  <data name="NowPlayingReconnecting.Text" xml:space="preserve">
+    <value>Reconnecting…</value>
+  </data>
 </root>
