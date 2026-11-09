@@ -1,11 +1,15 @@
+using System.Runtime.InteropServices;
 using Groovefin.Audio;
+using Groovefin.Core.AudioOutput;
 using Groovefin.Core.Equalizer;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
 using Microsoft.Extensions.Logging;
+using Windows.Devices.Enumeration;
 using Windows.Foundation.Collections;
 using Windows.Media;
 using Windows.Media.Core;
+using Windows.Media.Devices;
 using Windows.Media.Playback;
 
 namespace Groovefin.Playback.Windows;
@@ -23,7 +27,7 @@ namespace Groovefin.Playback.Windows;
 /// only created for the first fade. The transport controls stay those of the first player, which
 /// <see cref="SystemMediaControls"/> drives by hand whichever deck plays.
 /// </remarks>
-public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable, IAudioEqualizer
+public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable, IAudioEqualizer, IAudioOutput
 {
     /// <summary>How long before the end of the current item the next one starts buffering.</summary>
     public static readonly TimeSpan PrefetchTime = TimeSpan.FromSeconds(30);
@@ -58,6 +62,15 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
 
     /// <summary>Whether the parameters set last change the sound.</summary>
     private bool _equalizerActive;
+
+    /// <summary>The output device the user chose (#389), or <see langword="null"/> for the Windows default.</summary>
+    private string? _outputId;
+
+    /// <summary>The chosen device while it is connected; <see langword="null"/> plays on the Windows default.</summary>
+    private DeviceInformation? _outputDevice;
+
+    /// <summary>Follows the chosen device coming and going.</summary>
+    private DeviceWatcher? _outputWatcher;
 
     public MediaPlayerEngine(IDispatcher dispatcher, TimeProvider time, ILogger<MediaPlayerEngine> logger)
         : base(dispatcher, time)
@@ -109,6 +122,7 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
         }
 
         _disposed = true;
+        StopOutputWatcher();
         EndFade();
         lock (_gate)
         {
@@ -143,6 +157,49 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
         catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or ArgumentException)
         {
             LogEqualizerNotApplied(ex);
+        }
+    }
+
+    public async Task<IReadOnlyList<AudioOutputDevice>> GetDevicesAsync()
+    {
+        var devices = await DeviceInformation.FindAllAsync(MediaDevice.GetAudioRenderSelector());
+        return [.. devices.Where(d => d.IsEnabled).Select(d => new AudioOutputDevice(d.Id, d.Name)).OrderBy(d => d.Name, StringComparer.CurrentCultureIgnoreCase)];
+    }
+
+    /// <summary>
+    /// Plays on <paramref name="deviceId"/> (#389). A device watcher reports the device when it is there (also
+    /// right away, for every device it finds first) and when it goes; meanwhile the Windows default plays.
+    /// </summary>
+    public void Use(string? deviceId)
+    {
+        StopOutputWatcher();
+        lock (_gate)
+        {
+            _outputId = deviceId;
+        }
+
+        ApplyOutput(null);
+        if (deviceId is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var watcher = DeviceInformation.CreateWatcher(MediaDevice.GetAudioRenderSelector());
+            watcher.Added += (_, device) => OnOutputSeen(device.Id, device);
+            watcher.Updated += (sender, update) => _ = OnOutputUpdatedAsync(update.Id);
+            watcher.Removed += (_, update) => OnOutputSeen(update.Id, null);
+            lock (_gate)
+            {
+                _outputWatcher = watcher;
+            }
+
+            watcher.Start();
+        }
+        catch (COMException ex)
+        {
+            LogOutputWatchFailed(ex);
         }
     }
 
@@ -221,7 +278,16 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
         Deck incoming;
         lock (_gate)
         {
-            _spare ??= new Deck(this);
+            if (_spare is null)
+            {
+                // A deck made for a crossfade plays where the first one does (#389).
+                _spare = new Deck(this);
+                if (_outputDevice is { } device)
+                {
+                    PutOnOutput(_spare, device);
+                }
+            }
+
             incoming = _spare;
             _spare = null;
             _fading = _active;
@@ -436,6 +502,23 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
         }
 
         public MediaPlayer Player { get; }
+
+        /// <summary>
+        /// Plays on <paramref name="device"/>, or on the Windows default for <see langword="null"/>. Returns why the
+        /// player refused, or <see langword="null"/>.
+        /// </summary>
+        public Exception? UseOutput(DeviceInformation? device)
+        {
+            try
+            {
+                Player.AudioDevice = device;
+                return null;
+            }
+            catch (Exception ex) when (ex is COMException or ArgumentException or ObjectDisposedException)
+            {
+                return ex;
+            }
+        }
 
         /// <summary>Gets the source this deck reports about: its current one while it is the active deck.</summary>
         private PlaybackSource? ReportedSource
@@ -699,6 +782,95 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
             }
         }
     }
+
+    /// <summary>The watcher saw the chosen device come (<paramref name="device"/>) or go (<see langword="null"/>).</summary>
+    private void OnOutputSeen(string id, DeviceInformation? device)
+    {
+        lock (_gate)
+        {
+            if (id != _outputId)
+            {
+                return;
+            }
+        }
+
+        if (device is null || device.IsEnabled)
+        {
+            ApplyOutput(device);
+        }
+    }
+
+    /// <summary>A device was turned on or off in Windows' sound settings: look at the chosen one again.</summary>
+    private async Task OnOutputUpdatedAsync(string id)
+    {
+        lock (_gate)
+        {
+            if (id != _outputId)
+            {
+                return;
+            }
+        }
+
+        try
+        {
+            var device = await DeviceInformation.CreateFromIdAsync(id);
+            OnOutputSeen(id, device.IsEnabled ? device : null);
+        }
+        catch (Exception ex) when (ex is COMException or ArgumentException)
+        {
+            OnOutputSeen(id, null);
+        }
+    }
+
+    /// <summary>Puts every player on <paramref name="device"/>, or on the Windows default for <see langword="null"/>.</summary>
+    private void ApplyOutput(DeviceInformation? device)
+    {
+        Deck?[] decks;
+        lock (_gate)
+        {
+            _outputDevice = device;
+            decks = [_primary, _active, _spare, _fading];
+        }
+
+        foreach (var deck in decks.OfType<Deck>().Distinct())
+        {
+            PutOnOutput(deck, device);
+        }
+
+        LogOutputUsed(device?.Name ?? "the Windows default");
+    }
+
+    private void PutOnOutput(Deck deck, DeviceInformation? device)
+    {
+        if (deck.UseOutput(device) is { } error)
+        {
+            LogOutputFailed(error);
+        }
+    }
+
+    private void StopOutputWatcher()
+    {
+        DeviceWatcher? watcher;
+        lock (_gate)
+        {
+            watcher = _outputWatcher;
+            _outputWatcher = null;
+        }
+
+        if (watcher is { Status: DeviceWatcherStatus.Started or DeviceWatcherStatus.EnumerationCompleted })
+        {
+            watcher.Stop();
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Music plays on {Device}")]
+    private partial void LogOutputUsed(string device);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The output devices could not be watched; the chosen one is not followed")]
+    private partial void LogOutputWatchFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The player could not switch to the output device")]
+    private partial void LogOutputFailed(Exception exception);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Equalizer effect is available")]
     private partial void LogEqualizerAvailable();
