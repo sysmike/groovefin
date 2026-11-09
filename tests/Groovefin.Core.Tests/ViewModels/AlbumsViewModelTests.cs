@@ -270,9 +270,9 @@ public sealed class AlbumsViewModelTests
         _queries.Should().ContainSingle().Which.Should().BeEquivalentTo(new { SortBy = AlbumSortField.DateAdded, Descending = true });
     }
 
-    /// <summary>250 albums; 180 of them sort before "m".</summary>
+    /// <summary>250 albums; 180 of them sort before "m". The constructor's stub records the queries already.</summary>
     private void StubLetters() =>
-        _library.GetAlbumsAsync(Arg.Do<AlbumQuery>(_queries.Add), Arg.Any<CancellationToken>())
+        _library.GetAlbumsAsync(Arg.Any<AlbumQuery>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
                 var q = call.Arg<AlbumQuery>();
