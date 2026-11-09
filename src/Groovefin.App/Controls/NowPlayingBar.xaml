@@ -50,7 +50,8 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MinWidth="200" />
             <ColumnDefinition Width="2*" MaxWidth="720" />
-            <ColumnDefinition Width="*" MinWidth="340" />
+            <!--  Seven 36 px buttons and the 100 px volume slider, 4 px apart: the sleep timer (#396) made it 380.  -->
+            <ColumnDefinition Width="*" MinWidth="380" />
         </Grid.ColumnDefinitions>
 
         <!--  Cover, title (opens the album) and artists (links).  -->
@@ -241,6 +242,39 @@
                 Style="{StaticResource NowPlayingToggleStyle}">
                 <FontIcon FontSize="14" Glyph="{x:Bind conv:Glyphs.Heart(ViewModel.IsFavourite), Mode=OneWay}" />
             </ToggleButton>
+            <!--  The sleep timer (#396): its menu starts and stops it; while it runs the moon is in the accent colour.  -->
+            <Button
+                AutomationProperties.AutomationId="NowPlayingSleepTimerButton"
+                AutomationProperties.Name="{x:Bind SleepTimer.Description, Mode=OneWay}"
+                Style="{StaticResource NowPlayingButtonStyle}"
+                ToolTipService.ToolTip="{x:Bind SleepTimer.Description, Mode=OneWay}">
+                <Grid>
+                    <FontIcon
+                        FontSize="14"
+                        Glyph="&#xE708;"
+                        Visibility="{x:Bind conv:Visible.Unless(SleepTimer.IsActive), Mode=OneWay}" />
+                    <FontIcon
+                        FontSize="14"
+                        Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                        Glyph="&#xE708;"
+                        Visibility="{x:Bind conv:Visible.When(SleepTimer.IsActive), Mode=OneWay}" />
+                </Grid>
+                <Button.Flyout>
+                    <MenuFlyout Placement="Top">
+                        <MenuFlyoutItem x:Uid="SleepTimer15" Click="OnSleepMinutesClick" Tag="15" />
+                        <MenuFlyoutItem x:Uid="SleepTimer30" Click="OnSleepMinutesClick" Tag="30" />
+                        <MenuFlyoutItem x:Uid="SleepTimer60" Click="OnSleepMinutesClick" Tag="60" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem x:Uid="SleepTimerEndOfTrack" Command="{x:Bind SleepTimer.StartEndOfTrackCommand}" />
+                        <MenuFlyoutItem x:Uid="SleepTimerEndOfAlbum" Command="{x:Bind SleepTimer.StartEndOfAlbumCommand}" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem
+                            x:Uid="SleepTimerOff"
+                            Command="{x:Bind SleepTimer.CancelCommand}"
+                            IsEnabled="{x:Bind SleepTimer.IsActive, Mode=OneWay}" />
+                    </MenuFlyout>
+                </Button.Flyout>
+            </Button>
             <ToggleButton
                 x:Uid="NowPlayingQueueButton"
                 IsChecked="{x:Bind Queue.IsOpen, Mode=TwoWay}"

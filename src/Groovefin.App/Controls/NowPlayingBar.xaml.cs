@@ -23,6 +23,7 @@ internal sealed partial class NowPlayingBar : UserControl
         Queue = App.Services.GetRequiredService<QueueViewModel>();
         Lyrics = App.Services.GetRequiredService<LyricsViewModel>();
         StreamQuality = App.Services.GetRequiredService<StreamQualityMonitor>();
+        SleepTimer = App.Services.GetRequiredService<SleepTimer>();
         InitializeComponent();
         Loaded += (_, _) => ViewModel.DisplayScale = XamlRoot?.RasterizationScale ?? 1;
     }
@@ -35,6 +36,18 @@ internal sealed partial class NowPlayingBar : UserControl
 
     /// <summary>Gets what plays: the original file, a conversion or a download (#397).</summary>
     public StreamQualityMonitor StreamQuality { get; }
+
+    /// <summary>Gets the sleep timer (#396).</summary>
+    public SleepTimer SleepTimer { get; }
+
+    /// <summary>A minutes entry of the sleep timer's menu: its Tag is the minutes.</summary>
+    private void OnSleepMinutesClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is string text && int.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var minutes))
+        {
+            SleepTimer.StartMinutesCommand.Execute(minutes);
+        }
+    }
 
     /// <summary>
     /// The slider follows the playing position (one-way binding). A value that differs from it comes

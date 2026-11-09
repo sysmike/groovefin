@@ -2911,6 +2911,36 @@
   <data name="PlaylistFilterBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Titel filtern</value>
   </data>
+  <data name="SleepTimer_Off" xml:space="preserve">
+    <value>Schlaf-Timer</value>
+  </data>
+  <data name="SleepTimer_PausesIn" xml:space="preserve">
+    <value>Schlaf-Timer: pausiert in {0} Min.</value>
+  </data>
+  <data name="SleepTimer_PausesAfterTrack" xml:space="preserve">
+    <value>Schlaf-Timer: pausiert nach diesem Titel</value>
+  </data>
+  <data name="SleepTimer_PausesAfterAlbum" xml:space="preserve">
+    <value>Schlaf-Timer: pausiert nach diesem Album</value>
+  </data>
+  <data name="SleepTimer15.Text" xml:space="preserve">
+    <value>15 Minuten</value>
+  </data>
+  <data name="SleepTimer30.Text" xml:space="preserve">
+    <value>30 Minuten</value>
+  </data>
+  <data name="SleepTimer60.Text" xml:space="preserve">
+    <value>60 Minuten</value>
+  </data>
+  <data name="SleepTimerEndOfTrack.Text" xml:space="preserve">
+    <value>Ende dieses Titels</value>
+  </data>
+  <data name="SleepTimerEndOfAlbum.Text" xml:space="preserve">
+    <value>Ende dieses Albums</value>
+  </data>
+  <data name="SleepTimerOff.Text" xml:space="preserve">
+    <value>Ausschalten</value>
+  </data>
   <data name="StreamQuality_Downloaded" xml:space="preserve">
     <value>heruntergeladen</value>
   </data>
