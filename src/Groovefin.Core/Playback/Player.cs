@@ -457,7 +457,13 @@ public sealed partial class Player : IPlayer, IDisposable
     /// <exception cref="InvalidOperationException">Not downloaded, and not connected to a server.</exception>
     private PlaybackSource SourceFor(QueueItem item)
     {
-        var gain = Normalization.VolumeFactor(item.Track, _settings.Current.Playback.Normalization);
+        var playback = _settings.Current.Playback;
+        var preamp = Normalization.PreampDb(playback.NormalizationTarget);
+        var order = Queue.Items;
+        var index = order.ToList().IndexOf(item);
+        var gain = index >= 0
+            ? Normalization.VolumeFactor([.. order.Select(i => i.Track)], index, playback.Normalization, preamp)
+            : Normalization.VolumeFactor(item.Track, playback.Normalization, preamp);
         if (_offline?.FileOf(item.Track.Id) is { } file)
         {
             return new PlaybackSource(item.Id, new Uri(file), item.Track, gain);
