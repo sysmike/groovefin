@@ -60,6 +60,13 @@ public static class ServiceCollectionExtensions
         options.Retry.Delay = TimeSpan.FromMilliseconds(500);
         options.Retry.UseJitter = true;
 
+        // A slow first connection shows the attempt it is on (#392). AttemptNumber counts retries from 0.
+        options.Retry.OnRetry = args =>
+        {
+            RequestAttempts.Retrying(args.AttemptNumber + 2);
+            return default;
+        };
+
         // Retrying POST/DELETE could add a track to a playlist twice.
         options.Retry.DisableForUnsafeHttpMethods();
 

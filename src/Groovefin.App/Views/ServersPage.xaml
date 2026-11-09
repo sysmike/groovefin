@@ -62,7 +62,31 @@
                         Width="20"
                         Height="20"
                         VerticalAlignment="Bottom"
-                        IsActive="{x:Bind ViewModel.AddCommand.IsRunning, Mode=OneWay}" />
+                        IsActive="{x:Bind ViewModel.IsConnecting, Mode=OneWay}" />
+                </Grid>
+
+                <!--  A slow connection says what it is doing, and can be cancelled (#392).  -->
+                <Grid
+                    Margin="0,-8,0,0"
+                    ColumnSpacing="12"
+                    Visibility="{x:Bind ViewModel.IsConnecting, Mode=OneWay}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="ServerAttempt"
+                        AutomationProperties.LiveSetting="Polite"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource BodyTextBlockStyle}"
+                        Text="{x:Bind ViewModel.AttemptText, Mode=OneWay}"
+                        TextWrapping="Wrap" />
+                    <Button
+                        x:Uid="ServerCancelButton"
+                        Grid.Column="1"
+                        AutomationProperties.AutomationId="ServerCancelButton"
+                        Command="{x:Bind ViewModel.CancelConnectCommand}" />
                 </Grid>
 
                 <!--  Servers found on the local network (#405): searched when the page opens.  -->
