@@ -13,6 +13,12 @@ public interface IPlayer
 
     IPlaybackEngine Engine { get; }
 
+    /// <summary>Gets a value indicating whether a stream the network broke waits to be tried again where it stopped (#385).</summary>
+    bool IsReconnecting { get; }
+
+    /// <summary>Raised on the UI thread when <see cref="IsReconnecting"/> changed.</summary>
+    event EventHandler? ReconnectingChanged;
+
     /// <summary>
     /// Replaces the queue with <paramref name="tracks"/> and plays the one at <paramref name="startIndex"/>.
     /// Without an index it plays the first, or with shuffle on a random one (#317).

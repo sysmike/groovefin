@@ -102,6 +102,23 @@
                         </DataTemplate>
                     </ItemsRepeater.ItemTemplate>
                 </ItemsRepeater>
+                <!--  The network broke the stream; it is tried again where it stopped (#385). Narrator says it once.  -->
+                <StackPanel
+                    AutomationProperties.AutomationId="NowPlayingReconnecting"
+                    AutomationProperties.LiveSetting="Polite"
+                    Orientation="Horizontal"
+                    Spacing="4"
+                    Visibility="{x:Bind ViewModel.IsReconnecting, Mode=OneWay}">
+                    <FontIcon
+                        AutomationProperties.AccessibilityView="Raw"
+                        FontSize="12"
+                        Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                        Glyph="&#xE7BA;" />
+                    <TextBlock
+                        x:Uid="NowPlayingReconnecting"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}" />
+                </StackPanel>
             </StackPanel>
         </Grid>
 
