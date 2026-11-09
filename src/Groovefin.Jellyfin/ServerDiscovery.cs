@@ -152,20 +152,12 @@ public sealed partial class ServerDiscovery : IServerDiscovery
         var addresses = new HashSet<IPAddress> { IPAddress.Broadcast, IPAddress.Loopback };
         try
         {
-            foreach (var network in NetworkInterface.GetAllNetworkInterfaces())
+            var networks = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(n => n.OperationalStatus == OperationalStatus.Up && n.NetworkInterfaceType != NetworkInterfaceType.Loopback);
+            foreach (var unicast in networks.SelectMany(n => n.GetIPProperties().UnicastAddresses)
+                .Where(u => u.Address.AddressFamily == AddressFamily.InterNetwork && u.IPv4Mask is { } mask && !mask.Equals(IPAddress.Any)))
             {
-                if (network.OperationalStatus != OperationalStatus.Up || network.NetworkInterfaceType == NetworkInterfaceType.Loopback)
-                {
-                    continue;
-                }
-
-                foreach (var unicast in network.GetIPProperties().UnicastAddresses)
-                {
-                    if (unicast.Address.AddressFamily == AddressFamily.InterNetwork && unicast.IPv4Mask is { } mask && !mask.Equals(IPAddress.Any))
-                    {
-                        addresses.Add(BroadcastAddress(unicast.Address, mask));
-                    }
-                }
+                addresses.Add(BroadcastAddress(unicast.Address, unicast.IPv4Mask));
             }
         }
         catch (NetworkInformationException)
