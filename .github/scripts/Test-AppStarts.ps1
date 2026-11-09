@@ -2387,9 +2387,12 @@ try {
     $until = (Get-Date).AddSeconds(10)
     do { $appWindow = Get-AppWindow; if (-not $appWindow) { Start-Sleep -Milliseconds 300 } } while (-not $appWindow -and (Get-Date) -lt $until)
     if (-not $appWindow) { Stop-Test 'Start minimized' 'A start with Windows without the notification area icon showed no window.' }
+    # The window shows first and is minimized once laid out: wait for that.
     $windowPattern = $appWindow.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern)
+    $until = (Get-Date).AddSeconds(10)
+    while ($windowPattern.Current.WindowVisualState -ne [System.Windows.Automation.WindowVisualState]::Minimized -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 300 }
     if ($windowPattern.Current.WindowVisualState -ne [System.Windows.Automation.WindowVisualState]::Minimized) {
-        Stop-Test 'Start minimized' "A start with Windows with Start minimized opened the window $($windowPattern.Current.WindowVisualState), not minimized."
+        Stop-Test 'Start minimized' "A start with Windows with Start minimized left the window $($windowPattern.Current.WindowVisualState) for 10 seconds, not minimized."
     }
     $windowPattern.Close()
     if (-not $process.WaitForExit(20000)) { Stop-Test 'Keep playing' 'Without the notification area icon, closing the window must quit: Groovefin was still running after 20 seconds.' }
