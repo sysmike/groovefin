@@ -780,6 +780,21 @@
   <data name="NowPlayingSeekSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Position</value>
   </data>
+  <data name="MiniSeekSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="JumpList_PlayPause" xml:space="preserve">
+    <value>Play or pause</value>
+  </data>
+  <data name="JumpList_Next" xml:space="preserve">
+    <value>Next track</value>
+  </data>
+  <data name="JumpList_ShuffleAll" xml:space="preserve">
+    <value>Shuffle all songs</value>
+  </data>
+  <data name="JumpList_Playlists" xml:space="preserve">
+    <value>Favourite playlists</value>
+  </data>
   <data name="NowPlayingFavouriteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Favourite</value>
   </data>

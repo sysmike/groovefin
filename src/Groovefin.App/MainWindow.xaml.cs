@@ -39,6 +39,9 @@ internal sealed partial class MainWindow : Window
     /// cover with 12 px margins and the text beside it.
     /// </summary>
     private const int MiniPlayerWidth = 420;
+
+    /// <summary>How far the mini player's seek bar must move from the position to seek, as on the now playing bar.</summary>
+    private const double MiniSeekThresholdSeconds = 0.5;
     private const int MiniPlayerHeight = 140;
 
     /// <summary>How far the mini player's client area can be resized (#183): from just the layout to where it still makes sense.</summary>
@@ -237,6 +240,21 @@ internal sealed partial class MainWindow : Window
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e) =>
         DispatcherQueue.TryEnqueue(() => _tray.SetVisible(_settings.Current.Appearance.ShowTrayIcon));
+
+    /// <summary>
+    /// The mini player's seek bar (#406), like the now playing bar's: only a move by the user seeks, not the
+    /// position updates that move the thumb.
+    /// </summary>
+    private void OnMiniSeekValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        if (Math.Abs(e.NewValue - Player.PositionSeconds) > MiniSeekThresholdSeconds)
+        {
+            Player.Seek(e.NewValue);
+        }
+    }
+
+    /// <summary>Brings the window to the front, also from the notification area or minimized (#406).</summary>
+    public void BringToFront() => ShowFromTray();
 
     /// <summary>Brings the window back from the notification area (or from minimized) and to the front.</summary>
     private void ShowFromTray()
