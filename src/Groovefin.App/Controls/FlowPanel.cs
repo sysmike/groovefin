@@ -53,12 +53,13 @@ public sealed partial class FlowPanel : Panel
         double x = 0, y = 0, lineHeight = 0, widest = 0;
         foreach (var child in Children)
         {
-            var size = child.DesiredSize;
-            if (size.Width == 0 && size.Height == 0)
+            if (child.Visibility == Visibility.Collapsed)
             {
-                // Collapsed: no place and no spacing.
+                // No place and no spacing.
                 continue;
             }
+
+            var size = child.DesiredSize;
 
             if (x > 0 && x + size.Width > width)
             {
