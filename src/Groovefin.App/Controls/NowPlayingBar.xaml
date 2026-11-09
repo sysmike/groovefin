@@ -50,7 +50,8 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MinWidth="200" />
             <ColumnDefinition Width="2*" MaxWidth="720" />
-            <ColumnDefinition Width="*" MinWidth="340" />
+            <!--  Seven 36 px buttons and the 100 px volume slider, 4 px apart: the sleep timer (#396) made it 380.  -->
+            <ColumnDefinition Width="*" MinWidth="380" />
         </Grid.ColumnDefinitions>
 
         <!--  Cover, title (opens the album) and artists (links).  -->
