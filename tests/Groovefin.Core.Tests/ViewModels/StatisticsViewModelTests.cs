@@ -58,6 +58,7 @@ public sealed class StatisticsViewModelTests
         });
         _library.GetArtistsByIdAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
             .Returns(call => call.Arg<IReadOnlyList<string>>().Select(id => new Artist { Id = id, Name = id }).ToList());
+    }
 
     /// <summary>The view model in the culture the test set (US English: weeks start on Sunday).</summary>
     private StatisticsViewModel CreateSut() => new(
