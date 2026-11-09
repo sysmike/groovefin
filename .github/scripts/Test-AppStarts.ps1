@@ -1889,23 +1889,28 @@ try {
     # The Downloads page (#388), from its card in Settings: the playlist is listed with its Remove button, the space
     # used shows, and the page passes the accessibility scan. Back in Settings the switch turns the download off.
     # The expander's cards are made again when one above them shows or goes (the activity line, as the sync
-    # ends): find the card anew after scrolling, and once more if it went meanwhile.
+    # ends): find the card anew after scrolling, click it with the mouse (UI Automation's Invoke on it fails),
+    # and try again until the Downloads page shows.
     $opened = $false
+    $listCondition = [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'DownloadsScroller')
     for ($try = 1; $try -le 5 -and -not $opened; $try++) {
         try {
             $listCard = Find-ById 'DownloadListCard'
             $scroll = $null
             if ($listCard.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
             Start-Sleep -Milliseconds 500
-            (Find-ById 'DownloadListCard').GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
-            $opened = $true
+            Send-Click (Find-ById 'DownloadListCard')
         }
-        catch [System.Windows.Automation.ElementNotAvailableException] {
-            Write-Output "The 'See each download' card went while it was clicked (try $try)."
-            Start-Sleep -Milliseconds 500
+        catch {
+            Write-Output "Clicking the 'See each download' card failed (try $try): $($_.Exception.Message)"
+        }
+        $until = (Get-Date).AddSeconds(5)
+        while (-not $opened -and (Get-Date) -lt $until) {
+            $opened = $null -ne $window.FindFirst($scope::Descendants, $listCondition)
+            if (-not $opened) { Start-Sleep -Milliseconds 300 }
         }
     }
-    if (-not $opened) { Stop-Test 'Downloads page' "The 'See each download' card could not be clicked: it kept going away." }
+    if (-not $opened) { Stop-Test 'Downloads page' "The 'See each download' card did not open the Downloads page." }
     $null = Find-ById 'DownloadsList'
     $null = Find-Button 'Remove Road trip from the downloads'
     $space = (Find-ById 'DownloadsSpace').Current.Name
