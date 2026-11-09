@@ -68,10 +68,12 @@ public sealed class GenreDetailViewModelTests
         await _sut.LoadAsync("g1", Ct);
 
         _sut.ShuffleCommand.Execute(null);
+        _sut.ShuffleAlbumsCommand.Execute(null);
         _sut.PlayTrackCommand.Execute(_sut.Tracks[2]);
         _sut.OpenAlbumCommand.Execute(_sut.Albums[0]);
 
         _player.Received(1).Shuffle(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 3));
+        _player.Received(1).ShuffleAlbums(Arg.Is<IReadOnlyList<Track>>(t => t.Count == 3));
         _player.Received(1).Play(Arg.Any<IReadOnlyList<Track>>(), 2);
         _navigation.Received(1).NavigateTo(PageKeys.Album, "al1");
     }

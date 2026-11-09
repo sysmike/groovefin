@@ -22,6 +22,9 @@ public interface IPlayer
     /// <summary>Turns shuffle on and plays <paramref name="tracks"/> from a random track.</summary>
     void Shuffle(IReadOnlyList<Track> tracks);
 
+    /// <summary>Plays <paramref name="tracks"/> album by album in a random order, each album's songs in order (#403).</summary>
+    void ShuffleAlbums(IReadOnlyList<Track> tracks);
+
     /// <summary>Plays <paramref name="tracks"/> after the current track.</summary>
     void PlayNext(IReadOnlyList<Track> tracks);
 

@@ -536,6 +536,12 @@
   <data name="ArtistShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Shuffle</value>
   </data>
+  <data name="ArtistShuffleAlbumsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Shuffle albums</value>
+  </data>
+  <data name="ArtistShuffleAlbumsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Shuffle albums</value>
+  </data>
   <data name="ArtistFavouriteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Favourite</value>
   </data>
@@ -1418,6 +1424,12 @@
   </data>
   <data name="GenreShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Shuffle the genre</value>
+  </data>
+  <data name="GenreShuffleAlbumsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Shuffle the genre's albums</value>
+  </data>
+  <data name="GenreShuffleAlbumsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Shuffle the genre's albums</value>
   </data>
   <data name="GenreMixButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Instant mix from this genre</value>
