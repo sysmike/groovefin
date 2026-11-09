@@ -41,6 +41,46 @@ public enum DownloadStop
 /// <summary>A song that failed to download, why (not localized: an HTTP status or the error), and how often.</summary>
 public sealed record DownloadFailure(string TrackId, string TrackName, string Reason, int Attempts);
 
+/// <summary>How far a download of the Downloads page is (#388).</summary>
+public enum DownloadItemState
+{
+    /// <summary>Every song is on disk in the chosen format.</summary>
+    Downloaded,
+
+    /// <summary>Songs are missing and wait for the next sync, or for what stops it.</summary>
+    Waiting,
+
+    Downloading,
+
+    /// <summary>A song failed; the failures say why.</summary>
+    Failed,
+}
+
+/// <summary>
+/// One download of the Downloads page (#388): the favourite songs together, or a playlist, favourite album or
+/// favourite artist, with its songs on disk and their size. A song several have counts in each.
+/// </summary>
+public sealed record DownloadItem(DownloadItemKind Kind, string Id, string Name)
+{
+    /// <summary>The <see cref="Id"/> of the favourite songs, which have none of their own.</summary>
+    public const string FavouriteSongsId = "favourite-songs";
+
+    /// <summary>Gets an album's artist; <see langword="null"/> for the others.</summary>
+    public string? Artist { get; init; }
+
+    public IReadOnlyList<string> TrackIds { get; init; } = [];
+
+    /// <summary>Gets the songs on disk in the chosen format.</summary>
+    public int Downloaded { get; init; }
+
+    /// <summary>Gets the size of its songs on disk.</summary>
+    public long Bytes { get; init; }
+
+    public DownloadItemState State { get; init; }
+
+    public IReadOnlyList<DownloadFailure> Failures { get; init; } = [];
+}
+
 /// <summary>What turning on a collection would download beyond the files on disk: songs, and about how many bytes (#331).</summary>
 public sealed record DownloadEstimate(int Songs, long Bytes);
 
@@ -417,7 +457,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             return new DownloadEstimate(0, 0);
         }
 
-        var wanted = await LoadWantedAsync(settings, cancellationToken).ConfigureAwait(false);
+        var wanted = await LoadWantedAsync(settings, key, cancellationToken).ConfigureAwait(false);
         var format = DownloadFormat.From(settings);
         List<Track> missing;
         await _indexGate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -459,6 +499,158 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
 
         LogRemovedAll();
         Publish(key, DownloadStop.None);
+    }
+
+    /// <summary>
+    /// Gets the signed-in user's downloads for the Downloads page (#388), from the last sync: the favourite songs,
+    /// then the playlists, albums and artists, each by name. Empty before the index is read.
+    /// </summary>
+    public IReadOnlyList<DownloadItem> GetItems()
+    {
+        if (_client.Connection?.UserDataKey is not { } key)
+        {
+            return [];
+        }
+
+        var format = DownloadFormat.From(_settings.Current.Downloads).Key;
+        var current = _current.Keys.ToHashSet(StringComparer.Ordinal);
+        var failures = _failures.ToDictionary(f => f.Key, f => f.Value, StringComparer.Ordinal);
+        lock (_indexLock)
+        {
+            if (_key != key)
+            {
+                return [];
+            }
+
+            var index = _index;
+            DownloadItem Item(DownloadItemKind kind, string id, string name, IReadOnlyList<string> trackIds, string? artist = null)
+            {
+                var onDisk = trackIds.Distinct(StringComparer.Ordinal)
+                    .Select(t => index.Tracks.GetValueOrDefault(t))
+                    .OfType<DownloadedTrack>()
+                    .Where(t => t.Format == format)
+                    .ToList();
+                List<DownloadFailure> failed = [.. trackIds.Distinct(StringComparer.Ordinal).Select(t => failures.GetValueOrDefault(t)).OfType<DownloadFailure>()];
+                var songs = trackIds.Distinct(StringComparer.Ordinal).Count();
+                return new DownloadItem(kind, id, name)
+                {
+                    Artist = artist,
+                    TrackIds = trackIds,
+                    Downloaded = onDisk.Count,
+                    Bytes = onDisk.Sum(t => t.Size),
+                    Failures = failed,
+                    State = trackIds.Any(current.Contains) ? DownloadItemState.Downloading
+                        : failed.Count > 0 ? DownloadItemState.Failed
+                        : onDisk.Count < songs ? DownloadItemState.Waiting
+                        : DownloadItemState.Downloaded,
+                };
+            }
+
+            List<DownloadItem> items = [];
+            if (index.FavouriteSongs.Count > 0)
+            {
+                items.Add(Item(DownloadItemKind.FavouriteSongs, DownloadItem.FavouriteSongsId, string.Empty, index.FavouriteSongs));
+            }
+
+            items.AddRange(index.Playlists.OrderBy(p => p.Playlist.Name, StringComparer.CurrentCultureIgnoreCase)
+                .Select(p => Item(DownloadItemKind.Playlist, p.Playlist.Id, p.Playlist.Name, p.TrackIds)));
+            items.AddRange(index.Albums.OrderBy(a => a.Album.Name, StringComparer.CurrentCultureIgnoreCase)
+                .Select(a => Item(DownloadItemKind.Album, a.Album.Id, a.Album.Name, a.TrackIds, a.Album.AlbumArtist)));
+            items.AddRange(index.Artists.OrderBy(a => a.Artist.Name, StringComparer.CurrentCultureIgnoreCase)
+                .Select(a => Item(DownloadItemKind.Artist, a.Artist.Id, a.Artist.Name, a.TrackIds)));
+            return items;
+        }
+    }
+
+    /// <summary>Gets what the signed-in user removed from the downloads (#388), by name.</summary>
+    public IReadOnlyList<DownloadExclusion> Removed =>
+        _client.Connection?.UserDataKey is { } key && _settings.Current.Downloads.Removed.GetValueOrDefault(key) is { } removed
+            ? [.. removed.OrderBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase)]
+            : [];
+
+    /// <summary>Gets the free bytes on the download folder's drive, or <see langword="null"/> without it.</summary>
+    public long? FreeBytes()
+    {
+        if (_client.Connection?.UserDataKey is not { } key || !_store.IsAvailable)
+        {
+            return null;
+        }
+
+        try
+        {
+            return _store.FreeSpace(key);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Removes one download (#388): the favourite songs turn their switch off; a playlist, album or artist is kept
+    /// from downloading. The next sync, shortly after, deletes the files nothing else wants.
+    /// </summary>
+    public void Remove(DownloadItem item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (item.Kind == DownloadItemKind.FavouriteSongs)
+        {
+            _settings.Update(s => s with { Downloads = s.Downloads with { FavouriteSongs = false } });
+            return;
+        }
+
+        if (_client.Connection?.UserDataKey is not { } key)
+        {
+            return;
+        }
+
+        var exclusion = new DownloadExclusion(item.Kind, item.Id, item.Name);
+        _settings.Update(s => s with { Downloads = s.Downloads with { Removed = WithRemoved(s.Downloads.Removed, key, list => [.. list.Where(r => r != exclusion), exclusion]) } });
+    }
+
+    /// <summary>Downloads a removed playlist, album or artist again, while its collection is on.</summary>
+    public void Restore(DownloadExclusion removed)
+    {
+        ArgumentNullException.ThrowIfNull(removed);
+        if (_client.Connection?.UserDataKey is not { } key)
+        {
+            return;
+        }
+
+        _settings.Update(s => s with
+        {
+            Downloads = s.Downloads with { Removed = WithRemoved(s.Downloads.Removed, key, list => [.. list.Where(r => (r.Kind, r.Id) != (removed.Kind, removed.Id))]) },
+        });
+    }
+
+    /// <summary>Tries the failed songs of one download again (#388), at once, also those given up on.</summary>
+    public Task RetryAsync(DownloadItem item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        foreach (var id in item.TrackIds)
+        {
+            _failures.TryRemove(id, out _);
+        }
+
+        Publish(_client.Connection?.UserDataKey, _stopped);
+        return SyncAsync();
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlyList<DownloadExclusion>> WithRemoved(
+        IReadOnlyDictionary<string, IReadOnlyList<DownloadExclusion>> all, string key, Func<IReadOnlyList<DownloadExclusion>, IReadOnlyList<DownloadExclusion>> change)
+    {
+        var copy = all.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
+        var list = change(copy.GetValueOrDefault(key) ?? []);
+        if (list.Count == 0)
+        {
+            copy.Remove(key);
+        }
+        else
+        {
+            copy[key] = list;
+        }
+
+        return copy;
     }
 
     public void Dispose()
@@ -729,7 +921,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         Wanted wanted;
         try
         {
-            wanted = await LoadWantedAsync(settings, cancellationToken).ConfigureAwait(false);
+            wanted = await LoadWantedAsync(settings, key, cancellationToken).ConfigureAwait(false);
         }
         catch (JellyfinException ex)
         {
@@ -784,8 +976,10 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         }
     }
 
-    private async Task<Wanted> LoadWantedAsync(DownloadSettings settings, CancellationToken cancellationToken)
+    private async Task<Wanted> LoadWantedAsync(DownloadSettings settings, string key, CancellationToken cancellationToken)
     {
+        // What was removed on the Downloads page (#388) stays in its collection, but is not downloaded.
+        var removed = (settings.Removed.GetValueOrDefault(key) ?? []).Select(r => (r.Kind, r.Id)).ToHashSet();
         var tracks = new Dictionary<string, Track>(StringComparer.Ordinal);
         List<string> favourites = [];
         List<DownloadedPlaylist> playlists = [];
@@ -810,7 +1004,8 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
 
         if (settings.Playlists)
         {
-            foreach (var playlist in await _playlists.GetPlaylistsAsync(cancellationToken).ConfigureAwait(false))
+            foreach (var playlist in (await _playlists.GetPlaylistsAsync(cancellationToken).ConfigureAwait(false))
+                .Where(p => !removed.Contains((DownloadItemKind.Playlist, p.Id))))
             {
                 var entries = await _playlists.GetEntriesAsync(playlist.Id, cancellationToken).ConfigureAwait(false);
                 foreach (var entry in entries)
@@ -825,7 +1020,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         if (settings.FavouriteAlbums)
         {
             var favourite = await _library.GetAlbumsAsync(new AlbumQuery { FavouritesOnly = true, Limit = MaxFavouriteItems }, cancellationToken).ConfigureAwait(false);
-            foreach (var album in favourite.Items)
+            foreach (var album in favourite.Items.Where(a => !removed.Contains((DownloadItemKind.Album, a.Id))))
             {
                 var songs = await _library.GetAlbumTracksAsync(album.Id, cancellationToken).ConfigureAwait(false);
                 Add(songs);
@@ -838,7 +1033,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             // Every artist, not only album artists: a heart on a featured artist counts too.
             var query = new ArtistQuery { FavouritesOnly = true, AlbumArtistsOnly = false, Limit = MaxFavouriteItems };
             var favourite = await _library.GetArtistsAsync(query, cancellationToken).ConfigureAwait(false);
-            foreach (var artist in favourite.Items)
+            foreach (var artist in favourite.Items.Where(a => !removed.Contains((DownloadItemKind.Artist, a.Id))))
             {
                 var songs = await _library.GetArtistTracksAsync(artist.Id, cancellationToken).ConfigureAwait(false);
                 Add(songs);

@@ -302,6 +302,22 @@ public enum DownloadFormatKind
     Aac,
 }
 
+/// <summary>What a download of the Downloads page is (#388): what a collection switch downloads.</summary>
+public enum DownloadItemKind
+{
+    /// <summary>Every favourite song, together.</summary>
+    FavouriteSongs,
+
+    Playlist,
+
+    Album,
+
+    Artist,
+}
+
+/// <summary>A playlist, album or artist removed from the downloads, with its name for the Downloads page (#388).</summary>
+public sealed record DownloadExclusion(DownloadItemKind Kind, string Id, string Name);
+
 /// <summary>What is downloaded for offline playback, and how (#58, #327, #331). Everything is off by default.</summary>
 public sealed record DownloadSettings
 {
@@ -328,6 +344,13 @@ public sealed record DownloadSettings
     /// <see langword="null"/> keeps them in the app's local data. Changed by moving them (<c>DownloadManager.MoveAsync</c>).
     /// </summary>
     public string? Folder { get; set; }
+
+    /// <summary>
+    /// Gets or sets the playlists, albums and artists removed from the downloads on the Downloads page (#388), by
+    /// server and user (the download folder's key): their collection still has them, but they are not downloaded.
+    /// The default is one shared empty instance, so that defaults compare equal.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<DownloadExclusion>> Removed { get; set; } = ReadOnlyDictionary<string, IReadOnlyList<DownloadExclusion>>.Empty;
 
     /// <summary>Gets a value indicating whether any collection is downloaded.</summary>
     [JsonIgnore]

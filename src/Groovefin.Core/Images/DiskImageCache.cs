@@ -87,6 +87,13 @@ public sealed partial class DiskImageCache(
     {
         try
         {
+            // A caller that missed the file just before the download that made it ended gets here: the file is in
+            // place before that download leaves _inFlight, so nothing downloads twice.
+            if (File.Exists(path))
+            {
+                return path;
+            }
+
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             var temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
 

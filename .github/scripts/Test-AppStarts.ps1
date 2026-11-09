@@ -1855,20 +1855,25 @@ try {
     $downloads = Join-Path $data 'Downloads'
     # The expander makes its cards only once they are near the screen: scroll it into view first.
     # Its header text is named like the expander: try each, and their parents, until one scrolls.
-    $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Offline downloads')) 'Downloads settings'
-    $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
-    $scroll = $null
-    $scrolled = $false
-    foreach ($named in @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Offline downloads')))) {
-        for ($e = $named; $e -and -not $scrolled; $e = $walker.GetParent($e)) {
-            if ($e.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView(); $scrolled = $true }
+    # Returns the Playlists switch, scrolled into view.
+    function Show-DownloadSettings {
+        $null = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Offline downloads')) 'Downloads settings'
+        $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+        $scroll = $null
+        $scrolled = $false
+        foreach ($named in @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Offline downloads')))) {
+            for ($e = $named; $e -and -not $scrolled; $e = $walker.GetParent($e)) {
+                if ($e.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView(); $scrolled = $true }
+            }
+            if ($scrolled) { break }
         }
-        if ($scrolled) { break }
+        Start-Sleep -Milliseconds 500
+        $switch = Find-ById 'DownloadPlaylistsSwitch'
+        $scroll = $null
+        if ($switch.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
+        $switch
     }
-    Start-Sleep -Milliseconds 500
-    $playlistsSwitch = Find-ById 'DownloadPlaylistsSwitch'
-    $scroll = $null
-    if ($playlistsSwitch.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
+    $playlistsSwitch = Show-DownloadSettings
     $playlistsSwitch.GetCurrentPattern($toggle).Toggle()
     $until = (Get-Date).AddSeconds(30)
     while (@(Get-ChildItem $downloads -Recurse -Filter '*.wav' -ErrorAction SilentlyContinue).Count -lt 2 -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
@@ -1880,6 +1885,44 @@ try {
     if ((Get-RequestCount '^GET /Audio/c{31}[12]/stream\?static=true') -lt 2) { Stop-Test 'Downloads' 'The playlist''s songs were not downloaded as their original files (/Audio/{id}/stream?static=true).' }
     if (-not (Test-Path (Join-Path $files[0].DirectoryName 'downloads.json'))) { Stop-Test 'Downloads' 'The downloads have no index (downloads.json).' }
     Test-Running 'after downloading a playlist'
+
+    # The Downloads page (#388), from its card in Settings: the playlist is listed with its Remove button, the space
+    # used shows, and the page passes the accessibility scan. Back in Settings the switch turns the download off.
+    # The expander's cards are made again when one above them shows or goes (the activity line, as the sync
+    # ends): find the card anew after scrolling, click it with the mouse (UI Automation's Invoke on it fails),
+    # and try again until the Downloads page shows.
+    $opened = $false
+    $listCondition = [System.Windows.Automation.PropertyCondition]::new($automation::AutomationIdProperty, 'DownloadsScroller')
+    for ($try = 1; $try -le 5 -and -not $opened; $try++) {
+        try {
+            $listCard = Find-ById 'DownloadListCard'
+            $scroll = $null
+            if ($listCard.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
+            Start-Sleep -Milliseconds 500
+            Send-Click (Find-ById 'DownloadListCard')
+        }
+        catch {
+            Write-Output "Clicking the 'See each download' card failed (try $try): $($_.Exception.Message)"
+        }
+        $until = (Get-Date).AddSeconds(5)
+        while (-not $opened -and (Get-Date) -lt $until) {
+            $opened = $null -ne $window.FindFirst($scope::Descendants, $listCondition)
+            if (-not $opened) { Start-Sleep -Milliseconds 300 }
+        }
+    }
+    if (-not $opened) { Stop-Test 'Downloads page' "The 'See each download' card did not open the Downloads page." }
+    $null = Find-ById 'DownloadsList'
+    $null = Find-Button 'Remove Road trip from the downloads'
+    $space = (Find-ById 'DownloadsSpace').Current.Name
+    if ($space -notmatch ' used') { Stop-Test 'Downloads page' "The Downloads page shows no space used: '$space'." }
+    Write-Output "The Downloads page lists the playlist with its Remove button and says '$space'."
+    Save-Screenshot 'downloads'
+    Test-Accessibility 'downloads'
+    [System.Windows.Forms.SendKeys]::SendWait('%{LEFT}')
+    $null = Find-ById 'SettingsScroller'
+    # A new Settings page: what was found on the old one is gone.
+    $equalizerCard = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) "equalizer settings"
+    $playlistsSwitch = Show-DownloadSettings
     $playlistsSwitch.GetCurrentPattern($toggle).Toggle()
     $until = (Get-Date).AddSeconds(15)
     while ((Test-Path $files[0].DirectoryName) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }

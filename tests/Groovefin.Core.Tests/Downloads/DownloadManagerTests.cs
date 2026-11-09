@@ -650,4 +650,95 @@ public sealed class DownloadManagerTests : IDisposable
         _source.Requests.Should().HaveCount(3);
         later.FileOf("a").Should().Be(Path.Join(Folder, "a.flac"));
     }
+
+    private DownloadItem Item(DownloadItemKind kind) => _sut.GetItems().Single(i => i.Kind == kind);
+
+    [Fact]
+    public async Task Each_download_is_listed_with_its_songs_and_size()
+    {
+        await _sut.SyncAsync();
+
+        var items = _sut.GetItems();
+
+        items.Select(i => (i.Kind, i.Name)).Should().Equal((DownloadItemKind.FavouriteSongs, string.Empty), (DownloadItemKind.Playlist, "Road trip"));
+        items.Should().OnlyContain(i => i.State == DownloadItemState.Downloaded && i.Downloaded == 2 && i.Bytes == 8);
+        Item(DownloadItemKind.Playlist).TrackIds.Should().Equal("b", "c");
+        _sut.FreeBytes().Should().Be(_freeSpace);
+    }
+
+    [Fact]
+    public async Task Removing_a_playlist_keeps_the_songs_another_download_has()
+    {
+        await _sut.SyncAsync();
+
+        _sut.Remove(Item(DownloadItemKind.Playlist));
+        await _sut.SyncAsync();
+
+        // b is a favourite too; c only was in the playlist.
+        Files().Should().Equal("a.flac", "b.flac");
+        _sut.GetItems().Should().ContainSingle().Which.Kind.Should().Be(DownloadItemKind.FavouriteSongs);
+        _sut.Removed.Should().Equal(new DownloadExclusion(DownloadItemKind.Playlist, PlaylistId, "Road trip"));
+        _settings.Current.Downloads.Playlists.Should().BeTrue("the other playlists still download");
+
+        _sut.Restore(_sut.Removed[0]);
+        await _sut.SyncAsync();
+
+        Files().Should().Equal("a.flac", "b.flac", "c.flac");
+        _sut.Removed.Should().BeEmpty();
+        _settings.Current.Downloads.Removed.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task What_was_removed_is_left_out_of_the_size_asked_about()
+    {
+        _settings.Update(s => s with
+        {
+            Downloads = s.Downloads with
+            {
+                Removed = new Dictionary<string, IReadOnlyList<DownloadExclusion>>
+                {
+                    [_client.Connection!.UserDataKey] = [new DownloadExclusion(DownloadItemKind.Playlist, PlaylistId, "Road trip")],
+                },
+            },
+        });
+
+        var estimate = await _sut.EstimateAsync(_settings.Current.Downloads, Ct);
+
+        estimate.Songs.Should().Be(2, "the playlist's own song is not wanted");
+    }
+
+    [Fact]
+    public async Task Removing_the_favourite_songs_turns_their_switch_off()
+    {
+        await _sut.SyncAsync();
+
+        _sut.Remove(Item(DownloadItemKind.FavouriteSongs));
+        await _sut.SyncAsync();
+
+        _settings.Current.Downloads.FavouriteSongs.Should().BeFalse();
+        _sut.Removed.Should().BeEmpty();
+        Files().Should().Equal("b.flac", "c.flac");
+    }
+
+    [Fact]
+    public async Task A_failed_download_says_why_and_retry_tries_its_songs_again()
+    {
+        _source.Failures["c"] = new JellyfinException("Forbidden", HttpStatusCode.Forbidden);
+        for (var i = 0; i < DownloadManager.MaxAttempts; i++)
+        {
+            await _sut.SyncAsync();
+        }
+
+        var playlist = Item(DownloadItemKind.Playlist);
+        playlist.State.Should().Be(DownloadItemState.Failed);
+        playlist.Failures.Should().ContainSingle().Which.Reason.Should().Be("HTTP 403");
+        playlist.Downloaded.Should().Be(1);
+        Item(DownloadItemKind.FavouriteSongs).State.Should().Be(DownloadItemState.Downloaded);
+
+        _source.Failures.Remove("c");
+        await _sut.RetryAsync(playlist);
+
+        Item(DownloadItemKind.Playlist).State.Should().Be(DownloadItemState.Downloaded);
+        _source.Count("c").Should().Be(DownloadManager.MaxAttempts + 1);
+    }
 }
