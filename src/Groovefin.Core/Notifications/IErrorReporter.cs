@@ -40,6 +40,7 @@ public static class Operations
     public const string LoadFolder = "Operation_LoadFolder";
     public const string LoadLyrics = "Operation_LoadLyrics";
     public const string LoadOnRepeat = "Operation_LoadOnRepeat";
+    public const string LoadStatistics = "Operation_LoadStatistics";
     public const string ClearCache = "Operation_ClearCache";
     public const string OpenLogFolder = "Operation_OpenLogFolder";
 }

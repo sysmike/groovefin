@@ -2458,4 +2458,163 @@
   <data name="DownloadedIcon.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Heruntergeladen</value>
   </data>
+  <data name="StatisticsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Statistik</value>
+  </data>
+  <data name="StatisticsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Statistik</value>
+  </data>
+  <data name="StatisticsButton.AccessKey" xml:space="preserve">
+    <value>C</value>
+  </data>
+  <data name="StatisticsHeader.Text" xml:space="preserve">
+    <value>Statistik</value>
+  </data>
+  <data name="StatisticsRanges.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zeitraum</value>
+  </data>
+  <data name="StatisticsWeekRange.Text" xml:space="preserve">
+    <value>Woche</value>
+  </data>
+  <data name="StatisticsMonthRange.Text" xml:space="preserve">
+    <value>Monat</value>
+  </data>
+  <data name="StatisticsYearRange.Text" xml:space="preserve">
+    <value>Jahr</value>
+  </data>
+  <data name="StatisticsAllTimeRange.Text" xml:space="preserve">
+    <value>Gesamt</value>
+  </data>
+  <data name="StatisticsPreviousButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Vorheriger Zeitraum</value>
+  </data>
+  <data name="StatisticsPreviousButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Vorheriger Zeitraum</value>
+  </data>
+  <data name="StatisticsNextButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Nächster Zeitraum</value>
+  </data>
+  <data name="StatisticsNextButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Nächster Zeitraum</value>
+  </data>
+  <data name="StatisticsLoadFailed.Text" xml:space="preserve">
+    <value>Die Statistik konnte nicht geladen werden.</value>
+  </data>
+  <data name="StatisticsEmpty.Text" xml:space="preserve">
+    <value>Keine Wiedergaben in diesem Zeitraum. Hier zählen Titel, die du in Groovefin und auf deinen anderen Geräten hörst.</value>
+  </data>
+  <data name="StatisticsTimeLabel.Text" xml:space="preserve">
+    <value>Hörzeit</value>
+  </data>
+  <data name="StatisticsPlaysLabel.Text" xml:space="preserve">
+    <value>Wiedergaben</value>
+  </data>
+  <data name="StatisticsSongsLabel.Text" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="StatisticsArtistsLabel.Text" xml:space="preserve">
+    <value>Interpreten</value>
+  </data>
+  <data name="StatisticsActivityHeader.Text" xml:space="preserve">
+    <value>Aktivität</value>
+  </data>
+  <data name="StatisticsClockHeader.Text" xml:space="preserve">
+    <value>Tageszeit</value>
+  </data>
+  <data name="StatisticsTopArtistsHeader.Text" xml:space="preserve">
+    <value>Top-Interpreten</value>
+  </data>
+  <data name="StatisticsTopArtists.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Top-Interpreten</value>
+  </data>
+  <data name="StatisticsTopAlbumsHeader.Text" xml:space="preserve">
+    <value>Top-Alben</value>
+  </data>
+  <data name="StatisticsTopAlbums.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Top-Alben</value>
+  </data>
+  <data name="StatisticsTopSongsHeader.Text" xml:space="preserve">
+    <value>Top-Titel</value>
+  </data>
+  <data name="StatisticsTopSongs.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Top-Titel</value>
+  </data>
+  <data name="StatisticsPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Top-Titel abspielen</value>
+  </data>
+  <data name="StatisticsPlayButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Top-Titel abspielen</value>
+  </data>
+  <data name="StatisticsShuffleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Top-Titel zufällig abspielen</value>
+  </data>
+  <data name="StatisticsShuffleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Top-Titel zufällig abspielen</value>
+  </data>
+  <data name="StatisticsSaveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Top-Titel als Playlist speichern</value>
+  </data>
+  <data name="StatisticsSaveButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Top-Titel als Playlist speichern</value>
+  </data>
+  <data name="StatisticsFootnote.Text" xml:space="preserve">
+    <value>Aus deinen Wiedergaben in Groovefin und auf deinen anderen Geräten, ein Jahr lang auf diesem PC gespeichert. „Gesamt“ nutzt die Wiedergabezähler des Servers. Im Privatmodus wird nichts gezählt.</value>
+  </data>
+  <data name="Statistics_ShowAll" xml:space="preserve">
+    <value>Alle anzeigen</value>
+  </data>
+  <data name="Statistics_ShowLess" xml:space="preserve">
+    <value>Weniger anzeigen</value>
+  </data>
+  <data name="Statistics_AllTime" xml:space="preserve">
+    <value>Gesamt</value>
+  </data>
+  <data name="Statistics_Change" xml:space="preserve">
+    <value>{0} im Vergleich zu {1}</value>
+  </data>
+  <data name="Statistics_Since" xml:space="preserve">
+    <value>Seit {0}</value>
+  </data>
+  <data name="Statistics_ChartsSince" xml:space="preserve">
+    <value>Diagramme: Wiedergaben seit {0}</value>
+  </data>
+  <data name="Statistics_MostOn" xml:space="preserve">
+    <value>Höchstwert: {0}, {1}</value>
+  </data>
+  <data name="Statistics_MostAt" xml:space="preserve">
+    <value>Am meisten um {0}</value>
+  </data>
+  <data name="Statistics_Bar" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Statistics_OnePlay" xml:space="preserve">
+    <value>1 Wiedergabe</value>
+  </data>
+  <data name="Statistics_PlaylistName" xml:space="preserve">
+    <value>Top-Titel: {0}</value>
+  </data>
+  <data name="Shortcut_Statistics" xml:space="preserve">
+    <value>Statistik öffnen</value>
+  </data>
+  <data name="Operation_LoadStatistics" xml:space="preserve">
+    <value>Die Statistik konnte nicht geladen werden</value>
+  </data>
+  <data name="SettingsHistoryCard.Header" xml:space="preserve">
+    <value>Hörverlauf</value>
+  </data>
+  <data name="SettingsHistoryCard.Description" xml:space="preserve">
+    <value>Die Wiedergaben, die ein Jahr lang auf diesem PC für „Auf Dauerschleife“ und die Statistik gespeichert werden. Die Wiedergabezähler des Servers bleiben.</value>
+  </data>
+  <data name="SettingsClearHistoryButton.Content" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="History_ClearTitle" xml:space="preserve">
+    <value>Hörverlauf löschen?</value>
+  </data>
+  <data name="History_ClearMessage" xml:space="preserve">
+    <value>„Auf Dauerschleife“ und die Statistik der Wochen, Monate und Jahre beginnen ab jetzt neu. Die Wiedergabezähler des Servers bleiben, „Gesamt“ behält also seine Zahlen.</value>
+  </data>
+  <data name="History_ClearConfirm" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
 </root>

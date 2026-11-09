@@ -22,6 +22,7 @@ public enum ShortcutAction
     GoForward,
     PrivacyMode,
     Settings,
+    Statistics,
 }
 
 /// <summary>An action and the keys that run it.</summary>
@@ -71,6 +72,7 @@ public static class KeyboardShortcuts
         new(ShortcutAction.GoForward, new("Right", Alt: true)),
         new(ShortcutAction.PrivacyMode, new("P", Control: true, Shift: true)),
         new(ShortcutAction.Settings, new("Comma", Control: true)),
+        new(ShortcutAction.Statistics, new("I", Control: true)),
     ];
 
     /// <summary>Keys shown by a name of their own (<c>Key_{name}</c> in the strings); they need Ctrl or Alt, except Space.</summary>

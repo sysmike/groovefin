@@ -200,6 +200,38 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
+    public void ToggleStatistics_opens_the_statistics_and_selects_their_button()
+    {
+        using var sut = CreateSut();
+        _navigation.CurrentPageKey.Returns(PageKeys.Albums);
+        RaiseNavigated(PageKeys.Albums);
+
+        sut.ToggleStatisticsCommand.Execute(null);
+        RaiseNavigated(PageKeys.Statistics);
+
+        _navigation.Received(1).NavigateTo(PageKeys.Statistics);
+        sut.SelectedSection.Should().Be(PageKeys.Statistics);
+    }
+
+    [Fact]
+    public void ToggleStatistics_on_the_statistics_returns_to_the_page_before()
+    {
+        using var sut = CreateSut();
+        _navigation.CurrentPageKey.Returns(PageKeys.Statistics);
+        Func<string, bool>? match = null;
+        _navigation.GoBackTo(Arg.Do<Func<string, bool>>(m => match = m)).Returns(true);
+        RaiseNavigated(PageKeys.Statistics);
+
+        sut.ToggleStatisticsCommand.Execute(null);
+
+        _navigation.DidNotReceiveWithAnyArgs().NavigateTo(default!);
+        match.Should().NotBeNull();
+        match!(PageKeys.Statistics).Should().BeFalse();
+        match(PageKeys.Settings).Should().BeTrue();
+        match(PageKeys.Album).Should().BeTrue();
+    }
+
+    [Fact]
     public void GoBack_is_disabled_until_navigation_reports_a_back_stack()
     {
         using var sut = CreateSut();

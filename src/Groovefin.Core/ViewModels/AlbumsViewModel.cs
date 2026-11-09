@@ -21,11 +21,14 @@ public sealed record AlbumItem(Album Album, ImageRequest? Cover)
 
     public string Year => Album.Year?.ToString(CultureInfo.CurrentCulture) ?? string.Empty;
 
-    /// <summary>Gets the text Narrator reads for the item, e.g. "Discovery, Daft Punk, 2001".</summary>
-    public string AccessibleName => string.Join(", ", new[] { Name, Artist, Year }.Where(s => s.Length > 0));
+    /// <summary>Gets the text Narrator reads for the item, e.g. "Discovery, Daft Punk, 2001", with the plays on the statistics page.</summary>
+    public string AccessibleName => string.Join(", ", new[] { Name, Artist, Year, PlaysText }.Where(s => s.Length > 0));
 
     /// <summary>Gets a value indicating whether the album is downloaded with every song (#337).</summary>
     public bool IsDownloaded { get; init; }
+
+    /// <summary>Gets how often the album was played, e.g. "21 plays", on the statistics page (#382); empty elsewhere.</summary>
+    public string PlaysText { get; init; } = string.Empty;
 }
 
 /// <summary>The order to open the Albums page in, e.g. from "Show all" on the home page (#376).</summary>

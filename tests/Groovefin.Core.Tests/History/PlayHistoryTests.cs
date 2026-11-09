@@ -47,7 +47,20 @@ public sealed class PlayHistoryTests : IDisposable
 
     private DateTimeOffset Now => _time.GetUtcNow();
 
-    private static Track Song(string id, int seconds = 200) => new() { Id = id, Name = id, Duration = TimeSpan.FromSeconds(seconds) };
+    private static Track Song(string id, int seconds = 200) => new()
+    {
+        Id = id,
+        Name = id,
+        Duration = TimeSpan.FromSeconds(seconds),
+        AlbumId = $"album-{id}",
+        Artists = [new ArtistRef($"artist-{id}", id), new ArtistRef("guest", "Guest")],
+    };
+
+    private async Task<PlayHistoryData> SavedAsync()
+    {
+        await PlaysAsync();
+        return _store.Saved[_store.LastKey!];
+    }
 
     /// <summary>Loads and plays <paramref name="track"/> for <paramref name="seconds"/>, in steps of one second.</summary>
     private void Listen(Track track, double seconds)
@@ -172,12 +185,13 @@ public sealed class PlayHistoryTests : IDisposable
 
         await _sut.SyncAsync();
 
+        // Marked as seeded (#382): On repeat counts them, the statistics of a period do not.
         (await PlaysAsync()).Should().BeEquivalentTo(
         [
-            new PlayRecord("yesterday", Now.AddDays(-1), PlaySource.Server),
-            new PlayRecord("recent", Now.AddDays(-2), PlaySource.Server),
-            new PlayRecord("recent", Now.AddDays(-2), PlaySource.Server),
-            new PlayRecord("recent", Now.AddDays(-2), PlaySource.Server),
+            new PlayRecord("yesterday", Now.AddDays(-1), PlaySource.Seeded),
+            new PlayRecord("recent", Now.AddDays(-2), PlaySource.Seeded),
+            new PlayRecord("recent", Now.AddDays(-2), PlaySource.Seeded),
+            new PlayRecord("recent", Now.AddDays(-2), PlaySource.Seeded),
         ]);
         (await OnRepeatAsync()).Should().Equal("recent×3");
     }
@@ -195,7 +209,8 @@ public sealed class PlayHistoryTests : IDisposable
 
         var plays = await PlaysAsync();
         plays.Count(p => p.Source == PlaySource.Groovefin).Should().Be(1);
-        plays.Count(p => p.Source == PlaySource.Server).Should().Be(5 + 2);
+        plays.Count(p => p.Source == PlaySource.Seeded).Should().Be(5);
+        plays.Count(p => p.Source == PlaySource.Server).Should().Be(2);
     }
 
     [Fact]
@@ -255,15 +270,108 @@ public sealed class PlayHistoryTests : IDisposable
     }
 
     [Fact]
-    public async Task Plays_older_than_the_window_are_dropped()
+    public async Task Plays_are_kept_for_a_year_and_on_repeat_looks_at_the_last_30_days()
     {
+        Listen(Song("a"), 150);
         Listen(Song("a"), 150);
         await PlaysAsync();
 
         _time.Advance(PlayHistory.Window + TimeSpan.FromMinutes(1));
         Listen(Song("b"), 150);
 
-        (await PlaysAsync()).Select(p => p.TrackId).Should().Equal("b");
+        (await PlaysAsync()).Select(p => p.TrackId).Should().Equal("a", "a", "b");
+        (await OnRepeatAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Plays_older_than_a_year_are_dropped_with_their_songs()
+    {
+        Listen(Song("a"), 150);
+        await PlaysAsync();
+
+        _time.Advance(PlayHistory.Retention + TimeSpan.FromMinutes(1));
+        Listen(Song("b"), 150);
+
+        var saved = await SavedAsync();
+        saved.Plays.Select(p => p.TrackId).Should().Equal("b");
+        saved.Tracks.Keys.Should().Equal("b");
+    }
+
+    [Fact]
+    public async Task A_play_keeps_its_songs_album_artists_and_length()
+    {
+        Listen(Song("a", seconds: 300), 150);
+        OnServer("b", 1, Now);
+        await _sut.SyncAsync();
+
+        var saved = await SavedAsync();
+        saved.Tracks["a"].Should().BeEquivalentTo(new PlayedTrack("album-a", ["artist-a", "guest"], TimeSpan.FromSeconds(300)));
+        saved.Tracks["b"].Should().BeEquivalentTo(new PlayedTrack("album-b", ["artist-b", "guest"], TimeSpan.FromSeconds(200)));
+    }
+
+    [Fact]
+    public async Task The_log_is_a_copy_of_the_plays_since_the_history_began()
+    {
+        var started = (await _sut.GetLogAsync()).Started;
+        started.Should().Be(Now, "the history begins at its first use");
+        Listen(Song("a"), 150);
+        await PlaysAsync();
+
+        var log = await _sut.GetLogAsync();
+        Listen(Song("b"), 150);
+        await PlaysAsync();
+
+        log.Started.Should().Be(started);
+        log.Plays.Select(p => p.TrackId).Should().Equal("a");
+        log.Tracks.Keys.Should().Equal("a");
+    }
+
+    [Fact]
+    public async Task A_history_from_before_the_statistics_begins_at_its_first_use()
+    {
+        var history = new PlayHistoryData();
+        history.Plays.Add(new PlayRecord("a", Now.AddDays(-3), PlaySource.Server));
+        _store.Preload(history);
+
+        var log = await _sut.GetLogAsync();
+
+        log.Started.Should().Be(Now);
+        log.Plays.Should().ContainSingle();
+        log.Tracks.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Remembered_songs_are_kept_for_their_plays_only()
+    {
+        var history = new PlayHistoryData();
+        history.Plays.Add(new PlayRecord("old", Now.AddDays(-3), PlaySource.Server));
+        _store.Preload(history);
+        await _sut.GetLogAsync();
+
+        await _sut.RememberTracksAsync([Song("old"), Song("never-played")]);
+
+        var log = await _sut.GetLogAsync();
+        log.Tracks.Keys.Should().Equal("old");
+        log.Tracks["old"].AlbumId.Should().Be("album-old");
+    }
+
+    [Fact]
+    public async Task Clearing_drops_the_plays_but_not_what_the_next_sync_needs()
+    {
+        OnServer("a", 3, Now.AddDays(-1));
+        await _sut.SyncAsync();
+        Listen(Song("b"), 150);
+        await PlaysAsync();
+        _time.Advance(TimeSpan.FromHours(1));
+
+        await _sut.ClearAsync();
+        await _sut.SyncAsync();
+
+        var log = await _sut.GetLogAsync();
+        log.Plays.Should().BeEmpty("the sync must not count the plays it saw before again");
+        log.Tracks.Should().BeEmpty();
+        log.Started.Should().Be(Now);
+        (await OnRepeatAsync()).Should().BeEmpty();
     }
 
     [Fact]

@@ -442,7 +442,7 @@ try {
     # and a place on screen, Tab must not get stuck, and each part of the window (title bar, search box,
     # navigation, page, now playing bar) must be one run of stops, not visited in pieces. The order is printed.
     # The landmarks MainContent (the page) and NowPlaying come before NavView, which holds the page too.
-    $regions = 'SearchBox', 'PrivacyButton', 'SettingsButton', 'MainContent', 'NowPlaying', 'NavView'
+    $regions = 'SearchBox', 'PrivacyButton', 'StatisticsButton', 'SettingsButton', 'MainContent', 'NowPlaying', 'NavView'
     function Get-Region([System.Windows.Automation.AutomationElement] $element) {
         $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
         for ($e = $element; $e; $e = $walker.GetParent($e)) {
@@ -1280,6 +1280,42 @@ try {
     $null = Find-ById 'OnRepeatEmpty'
     Write-Output 'On repeat opens and says it has no songs yet.'
     Test-Accessibility 'on-repeat'
+
+    # Statistics (#382): the title bar's button between privacy mode and Settings opens them and is checked there.
+    # The runner's plays do not count (no sound card) and the fake server's songs have no play counts, so each
+    # period says it has none. Year and All time show their periods; the checked button returns to On repeat,
+    # and Ctrl+I opens the statistics again.
+    $statisticsToggle = (Find-ById 'StatisticsButton').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+    $statisticsToggle.Toggle()
+    $null = Find-ById 'StatisticsRanges'
+    Start-Sleep -Seconds 1
+    if ($statisticsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Statistics' 'The title bar''s Statistics button is not checked on the statistics page.' }
+    function Test-StatisticsPeriod([string] $rangeId, [string] $expected) {
+        (Find-ById $rangeId).GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
+        $until = (Get-Date).AddSeconds(10)
+        do {
+            Start-Sleep -Milliseconds 250
+            $period = (Find-ById 'StatisticsPeriod').Current.Name
+        } while ($period -ne $expected -and (Get-Date) -lt $until)
+        if ($period -ne $expected) { Stop-Test 'Statistics' "After choosing $rangeId the period is '$period', not '$expected'." }
+        $null = Find-ById 'StatisticsEmpty'
+    }
+    $null = Find-ById 'StatisticsEmpty'
+    Test-StatisticsPeriod 'StatisticsYearRange' ((Get-Date).Year.ToString())
+    Save-Screenshot 'statistics'
+    Test-Accessibility 'statistics'
+    Test-TabOrder 'statistics'
+    Test-StatisticsPeriod 'StatisticsAllTimeRange' 'All time'
+    Write-Output 'The Statistics button opened the statistics and is checked; Year and All time show their periods, with no plays yet.'
+    $statisticsToggle.Toggle()
+    $null = Find-ById 'OnRepeatEmpty'
+    Start-Sleep -Seconds 1
+    if ($statisticsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::Off) { Stop-Test 'Statistics' 'The checked Statistics button did not return to On repeat, or is still checked there.' }
+    [System.Windows.Forms.SendKeys]::SendWait('^i')
+    $null = Find-ById 'StatisticsRanges'
+    Start-Sleep -Seconds 1
+    if ($statisticsToggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Statistics' 'Ctrl+I did not open the statistics, or their button is not checked.' }
+    Write-Output 'The checked Statistics button returned to On repeat, unchecked, and Ctrl+I opened the statistics again.'
 
     # A playlist's tracks are a table like the album's (#245): a header with the Title, Artist and Album
     # labels, each row's album under the Album label, and a divider between the Title and Artist columns,
