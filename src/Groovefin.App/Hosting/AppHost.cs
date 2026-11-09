@@ -113,6 +113,7 @@ internal static class AppHost
         builder.Services.AddSingleton<ContentDialogService>();
         builder.Services.AddSingleton<IDialogService>(sp => sp.GetRequiredService<ContentDialogService>());
         builder.Services.AddSingleton<ILauncherService, LauncherService>();
+        builder.Services.AddSingleton<IFolderPicker, WindowsFolderPicker>();
 
         // Playback
         builder.Services.AddSingleton<MediaPlayerEngine>();
@@ -132,8 +133,13 @@ internal static class AppHost
         builder.Services.AddSingleton<IPlayHistoryStore, JsonPlayHistoryStore>();
         builder.Services.AddSingleton<PlayHistory>();
         builder.Services.AddSingleton<IListeningStatistics, ListeningStatistics>();
-        // Offline downloads (#327): a folder per server and user, with its index.
-        builder.Services.AddSingleton(new DownloadStoreOptions(Path.Join(AppPaths.LocalData, "Downloads")));
+        // Offline downloads (#327): a folder per server and user, with its index; in local app data, or in the
+        // folder chosen in Settings (#399).
+        builder.Services.AddSingleton(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            return new DownloadStoreOptions(Path.Join(AppPaths.LocalData, "Downloads")) { ChosenFolder = () => settings.Current.Downloads.Folder };
+        });
         builder.Services.AddSingleton<IDownloadStore, JsonDownloadStore>();
         builder.Services.AddSingleton<NetworkStatus>();
         builder.Services.AddSingleton<INetworkStatus>(sp => sp.GetRequiredService<NetworkStatus>());

@@ -33,6 +33,9 @@ public enum DownloadStop
 
     /// <summary>The server refused to list the favourites or playlists.</summary>
     LoadFailed,
+
+    /// <summary>The drive of the download folder is not there (#399): a USB drive that is not plugged in.</summary>
+    FolderMissing,
 }
 
 /// <summary>A song that failed to download, why (not localized: an HTTP status or the error), and how often.</summary>
@@ -153,6 +156,9 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
     private bool _pendingAllowMetered;
     private bool _disposed;
 
+    // A move of the downloads runs (#399): syncs wait for it.
+    private bool _moving;
+
     // The loaded index and whose it is: changed and saved only under _indexGate, one at a time; each change
     // also takes _indexLock, so Publish can count on any thread meanwhile.
     private readonly SemaphoreSlim _indexGate = new(1, 1);
@@ -212,6 +218,9 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
     public event EventHandler? StatusChanged;
 
     public event EventHandler? Changed;
+
+    /// <summary>Gets the folder that holds the downloads (#399).</summary>
+    public string Folder => _store.Root;
 
     public DownloadStatus Status
     {
@@ -341,7 +350,58 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             _indexGate.Release();
         }
 
-        Publish(key, _stopped);
+        Publish(key, _store.IsAvailable ? _stopped : DownloadStop.FolderMissing);
+    }
+
+    /// <summary>
+    /// Moves every download to the folder chosen in Settings (#399), or to the app's local data for
+    /// <see langword="null"/>, and saves the choice. Syncs wait meanwhile; nothing downloads again. Runs the
+    /// copying on the thread pool and returns on the caller's context, which saves the setting.
+    /// </summary>
+    public async Task<DownloadMoveResult> MoveAsync(string? folder, IProgress<DownloadMoveProgress>? progress = null, CancellationToken cancellationToken = default)
+    {
+        folder = string.IsNullOrWhiteSpace(folder) ? null : Path.GetFullPath(folder);
+        lock (_gate)
+        {
+            if (_disposed || _moving)
+            {
+                return new DownloadMoveResult(DownloadMoveOutcome.Failed);
+            }
+
+            _moving = true;
+        }
+
+        try
+        {
+            await StopRunningAsync().ConfigureAwait(true);
+            await _indexGate.WaitAsync(CancellationToken.None).ConfigureAwait(true);
+            try
+            {
+                var root = _store.RootOf(folder);
+                var result = await Task.Run(() => _store.MoveAsync(root, progress, cancellationToken), CancellationToken.None).ConfigureAwait(true);
+                if (result.Outcome is DownloadMoveOutcome.Moved or DownloadMoveOutcome.Same)
+                {
+                    // The index stays as it is: the files keep their names.
+                    _settings.Update(s => s with { Downloads = s.Downloads with { Folder = folder } });
+                }
+
+                return result;
+            }
+            finally
+            {
+                _indexGate.Release();
+            }
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                _moving = false;
+            }
+
+            Publish(_client.Connection?.UserDataKey, _store.IsAvailable ? _stopped : DownloadStop.FolderMissing);
+            SyncSoon();
+        }
     }
 
     /// <summary>
@@ -545,6 +605,12 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             _pending = true;
             _pendingManual |= manual;
             _pendingAllowMetered |= allowMetered;
+            if (_moving)
+            {
+                // The move syncs when it is done.
+                return Task.CompletedTask;
+            }
+
             if (!_running)
             {
                 _running = true;
@@ -563,7 +629,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             CancellationToken cancellationToken;
             lock (_gate)
             {
-                if (!_pending || _disposed)
+                if (!_pending || _disposed || _moving)
                 {
                     _running = false;
                     return;
@@ -635,6 +701,14 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             _failures.Clear();
         }
 
+        // Without its drive the folder looks empty: nothing may be deleted or downloaded again meanwhile.
+        if (!_store.IsAvailable)
+        {
+            _stopped = DownloadStop.FolderMissing;
+            return;
+        }
+
+        _store.RemoveLeftovers();
         var settings = _settings.Current.Downloads;
         _stopped = DownloadStop.None;
         if (!settings.AnyCollection)
@@ -1123,6 +1197,12 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
     {
         if (_key != key)
         {
+            // Without its drive, an empty index for now: kept, it would delete the files when the drive is back.
+            if (!_store.IsAvailable)
+            {
+                return new DownloadIndex();
+            }
+
             var index = await _store.LoadAsync(key, cancellationToken).ConfigureAwait(false);
             lock (_indexLock)
             {

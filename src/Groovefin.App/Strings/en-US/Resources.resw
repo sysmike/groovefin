@@ -2989,4 +2989,40 @@
   <data name="StreamQuality_DownloadedFile" xml:space="preserve">
     <value>Downloaded file</value>
   </data>
+  <data name="Downloads_StopFolderMissing" xml:space="preserve">
+    <value>The download folder can't be found. Connect its drive, or choose another folder.</value>
+  </data>
+  <data name="Downloads_MoveStarting" xml:space="preserve">
+    <value>Getting ready to move the downloads…</value>
+  </data>
+  <data name="Downloads_MoveProgress" xml:space="preserve">
+    <value>{0} of {1} moved</value>
+  </data>
+  <data name="Downloads_MoveNotEnoughSpace" xml:space="preserve">
+    <value>There isn't enough space there: the downloads need {0}, and {1} is free. They stay where they are.</value>
+  </data>
+  <data name="Downloads_MoveNotLocal" xml:space="preserve">
+    <value>Choose a folder on a drive of this PC. A network folder isn't there when the network isn't.</value>
+  </data>
+  <data name="Downloads_MoveInside" xml:space="preserve">
+    <value>Choose a folder outside the current download folder.</value>
+  </data>
+  <data name="Downloads_MoveFailed" xml:space="preserve">
+    <value>The downloads couldn't be moved there, so they stay where they are.</value>
+  </data>
+  <data name="SettingsDownloadFolderCard.Header" xml:space="preserve">
+    <value>Download folder</value>
+  </data>
+  <data name="SettingsDownloadFolderButton.Content" xml:space="preserve">
+    <value>Change folder</value>
+  </data>
+  <data name="SettingsDownloadDefaultFolderButton.Content" xml:space="preserve">
+    <value>Use the default folder</value>
+  </data>
+  <data name="SettingsDownloadMoveCard.Header" xml:space="preserve">
+    <value>Moving the downloads</value>
+  </data>
+  <data name="SettingsDownloadMoveCancelButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
 </root>

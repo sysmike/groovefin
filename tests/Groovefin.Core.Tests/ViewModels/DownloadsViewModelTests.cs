@@ -22,6 +22,8 @@ public sealed class DownloadsViewModelTests : IDisposable
     private readonly FakeNetworkStatus _network = new();
     private readonly IDialogService _dialogs = Substitute.For<IDialogService>();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
+    private readonly IFolderPicker _picker = Substitute.For<IFolderPicker>();
+    private readonly string _chosen = Path.Join(Path.GetTempPath(), "groovefin-tests", Guid.NewGuid().ToString("N"));
     private readonly DownloadManager _downloads;
     private readonly DownloadsViewModel _sut;
 
@@ -36,20 +38,22 @@ public sealed class DownloadsViewModelTests : IDisposable
         _strings.GetString("Size_Gigabytes").Returns("{0} GB");
         _client.Connection.Returns(new ServerConnection(new Uri("http://media:8096"), "user1", "token"));
         _library.GetFavouriteTracksAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns([new Track { Id = "a", Name = "Song a" }, new Track { Id = "b", Name = "Song b" }]);
-        var store = new JsonDownloadStore(new DownloadStoreOptions(_directory) { FreeSpace = _ => long.MaxValue }, NullLogger<JsonDownloadStore>.Instance);
+        var store = new JsonDownloadStore(
+            new DownloadStoreOptions(_directory) { FreeSpace = _ => long.MaxValue, IsLocal = path => !path.Contains("network", StringComparison.Ordinal) },
+            NullLogger<JsonDownloadStore>.Instance);
         _downloads = new DownloadManager(
             _client, _library, Substitute.For<IPlaylistService>(), _source, store, _settings, _network, Substitute.For<IServerManager>(),
             new WeakReferenceMessenger(), new FakeTimeProvider(), NullLogger<DownloadManager>.Instance);
-        _sut = new DownloadsViewModel(_downloads, _settings, _network, _dialogs, _strings, new ImmediateDispatcher());
+        _sut = new DownloadsViewModel(_downloads, _settings, _network, _dialogs, _strings, new ImmediateDispatcher(), _picker);
     }
 
     public void Dispose()
     {
         _sut.Dispose();
         _downloads.Dispose();
-        if (Directory.Exists(_directory))
+        foreach (var folder in new[] { _directory, _chosen }.Where(Directory.Exists))
         {
-            Directory.Delete(_directory, recursive: true);
+            Directory.Delete(folder, recursive: true);
         }
     }
 
@@ -171,5 +175,49 @@ public sealed class DownloadsViewModelTests : IDisposable
         _settings.Current.Downloads.AnyCollection.Should().BeFalse();
         _downloads.Status.Bytes.Should().Be(0);
         _sut.StatusText.Should().Be("Downloads_StatusNone");
+    }
+
+    [Fact]
+    public async Task Changing_the_folder_moves_the_downloads_and_shows_it()
+    {
+        _picker.PickFolderAsync().Returns(_chosen);
+        _sut.FolderText.Should().Be(_directory);
+        _sut.UseDefaultFolderCommand.CanExecute(null).Should().BeFalse();
+
+        await _sut.ChangeFolderCommand.ExecuteAsync(null);
+
+        _sut.FolderText.Should().Be(Path.Join(Path.GetFullPath(_chosen), DownloadStoreOptions.FolderName));
+        _sut.IsCustomFolder.Should().BeTrue();
+        _sut.IsMoving.Should().BeFalse();
+        _sut.HasMoveMessage.Should().BeFalse();
+        _sut.UseDefaultFolderCommand.CanExecute(null).Should().BeTrue();
+
+        await _sut.UseDefaultFolderCommand.ExecuteAsync(null);
+
+        _sut.FolderText.Should().Be(_directory);
+        _sut.IsCustomFolder.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_cancelled_picker_changes_nothing()
+    {
+        _picker.PickFolderAsync().Returns(Task.FromResult<string?>(null));
+
+        await _sut.ChangeFolderCommand.ExecuteAsync(null);
+
+        _sut.FolderText.Should().Be(_directory);
+        _settings.Current.Downloads.Folder.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_network_folder_says_why_the_downloads_stay()
+    {
+        _picker.PickFolderAsync().Returns(Path.Join(_chosen, "network"));
+
+        await _sut.ChangeFolderCommand.ExecuteAsync(null);
+
+        _sut.MoveMessage.Should().Be("Downloads_MoveNotLocal");
+        _sut.FolderText.Should().Be(_directory);
+        _settings.Current.Downloads.Folder.Should().BeNull();
     }
 }
