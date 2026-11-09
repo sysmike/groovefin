@@ -1888,10 +1888,24 @@ try {
 
     # The Downloads page (#388), from its card in Settings: the playlist is listed with its Remove button, the space
     # used shows, and the page passes the accessibility scan. Back in Settings the switch turns the download off.
-    $listCard = Find-ById 'DownloadListCard'
-    $scroll = $null
-    if ($listCard.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
-    $listCard.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+    # The expander's cards are made again when one above them shows or goes (the activity line, as the sync
+    # ends): find the card anew after scrolling, and once more if it went meanwhile.
+    $opened = $false
+    for ($try = 1; $try -le 5 -and -not $opened; $try++) {
+        try {
+            $listCard = Find-ById 'DownloadListCard'
+            $scroll = $null
+            if ($listCard.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
+            Start-Sleep -Milliseconds 500
+            (Find-ById 'DownloadListCard').GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+            $opened = $true
+        }
+        catch [System.Windows.Automation.ElementNotAvailableException] {
+            Write-Output "The 'See each download' card went while it was clicked (try $try)."
+            Start-Sleep -Milliseconds 500
+        }
+    }
+    if (-not $opened) { Stop-Test 'Downloads page' "The 'See each download' card could not be clicked: it kept going away." }
     $null = Find-ById 'DownloadsList'
     $null = Find-Button 'Remove Road trip from the downloads'
     $space = (Find-ById 'DownloadsSpace').Current.Name
