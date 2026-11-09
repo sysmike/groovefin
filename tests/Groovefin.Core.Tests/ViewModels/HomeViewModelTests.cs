@@ -475,12 +475,9 @@ public sealed class HomeViewModelTests
         HomeViewModel.QueryFor(HomeShelfKind.FavouriteAlbums, Now).Should().BeEquivalentTo(new { SortBy = AlbumSortField.Random, FavouritesOnly = true });
 
         // A year before today's start, the same all day.
-        HomeViewModel.QueryFor(HomeShelfKind.NotPlayedInAYear, Now).Should().BeEquivalentTo(new
-        {
-            SortBy = AlbumSortField.DatePlayed,
-            Descending = true,
-            PlayedBefore = (DateTimeOffset?)new DateTimeOffset(2025, 11, 9, 0, 0, 0, TimeSpan.Zero),
-        });
+        var notPlayed = HomeViewModel.QueryFor(HomeShelfKind.NotPlayedInAYear, Now);
+        notPlayed.Should().BeEquivalentTo(new { SortBy = AlbumSortField.DatePlayed, Descending = true });
+        notPlayed.PlayedBefore.Should().Be(new DateTimeOffset(2025, 11, 9, 0, 0, 0, TimeSpan.Zero));
     }
 
     [Fact]
