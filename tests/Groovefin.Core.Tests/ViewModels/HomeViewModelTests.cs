@@ -519,7 +519,7 @@ public sealed class HomeViewModelTests
         shelf.Albums.Select(a => a.Album.Id).Should().Equal("ar1-0", "ar1-1");
         sut.ShowAllCommand.Execute(shelf);
         _navigation.Received(1).NavigateTo(PageKeys.Artist, "ar1");
-        await _library.DidNotReceiveWithAnyArgs().GetArtistsAsync(default!, default);
+        await _library.DidNotReceive().GetArtistsAsync(Arg.Any<ArtistQuery>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
