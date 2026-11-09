@@ -366,6 +366,10 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// </summary>
     public ObservableCollection<NavigationItemOption> NavigationItems { get; } = [];
 
+    /// <summary>Opens the page with every download (#388).</summary>
+    [RelayCommand]
+    private void OpenDownloads() => _navigation.NavigateTo(PageKeys.Downloads);
+
     /// <summary>Shows every section again, in the default order.</summary>
     [RelayCommand]
     private void ResetNavigation()

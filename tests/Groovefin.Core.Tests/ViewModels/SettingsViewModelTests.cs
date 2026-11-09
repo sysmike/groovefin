@@ -604,6 +604,16 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void See_each_download_opens_the_downloads_page()
+    {
+        var sut = CreateNavigationSut();
+
+        sut.OpenDownloadsCommand.Execute(null);
+
+        _navigation.Received(1).NavigateTo(PageKeys.Downloads);
+    }
+
+    [Fact]
     public void The_home_rows_list_every_row_with_the_default_ones_shown()
     {
         var sut = CreateNavigationSut();

@@ -3052,4 +3052,100 @@
   <data name="AlbumsShowAllButton.Content" xml:space="preserve">
     <value>Alle Alben anzeigen</value>
   </data>
+  <data name="Downloads_FavouriteSongs" xml:space="preserve">
+    <value>Lieblingstitel</value>
+  </data>
+  <data name="Downloads_KindFavouriteSongs" xml:space="preserve">
+    <value>Jeder Titel mit Herz</value>
+  </data>
+  <data name="Downloads_KindPlaylist" xml:space="preserve">
+    <value>Playlist</value>
+  </data>
+  <data name="Downloads_KindAlbum" xml:space="preserve">
+    <value>Album</value>
+  </data>
+  <data name="Downloads_KindAlbumBy" xml:space="preserve">
+    <value>Album von {0}</value>
+  </data>
+  <data name="Downloads_KindArtist" xml:space="preserve">
+    <value>Künstler</value>
+  </data>
+  <data name="Downloads_ItemDownloaded" xml:space="preserve">
+    <value>{0} Titel · {1}</value>
+  </data>
+  <data name="Downloads_ItemWaiting" xml:space="preserve">
+    <value>Wartet · {0} von {1} Titeln · {2}</value>
+  </data>
+  <data name="Downloads_ItemDownloading" xml:space="preserve">
+    <value>Wird heruntergeladen · {0} von {1} Titeln · {2}</value>
+  </data>
+  <data name="Downloads_ItemFailed" xml:space="preserve">
+    <value>Fehlgeschlagene Titel: {0}. „{1}“: {2}</value>
+  </data>
+  <data name="Downloads_RetryName" xml:space="preserve">
+    <value>{0} erneut versuchen</value>
+  </data>
+  <data name="Downloads_RemoveName" xml:space="preserve">
+    <value>{0} aus den Downloads entfernen</value>
+  </data>
+  <data name="Downloads_RestoreName" xml:space="preserve">
+    <value>{0} wieder herunterladen</value>
+  </data>
+  <data name="Downloads_RemoveItemTitle" xml:space="preserve">
+    <value>„{0}“ aus den Downloads entfernen?</value>
+  </data>
+  <data name="Downloads_RemoveItemMessage" xml:space="preserve">
+    <value>Die Titel werden von diesem PC gelöscht, außer ein anderer Download hat sie. Auf dem Server und in der Sammlung bleibt alles, wie es ist; heruntergeladen wird erst wieder mit „Wieder herunterladen“.</value>
+  </data>
+  <data name="Downloads_RemoveFavouritesMessage" xml:space="preserve">
+    <value>Die Lieblingstitel werden nicht mehr heruntergeladen, und ihre Dateien werden von diesem PC gelöscht, außer ein anderer Download hat sie. Der Schalter „Lieblingstitel“ in den Einstellungen schaltet es wieder ein.</value>
+  </data>
+  <data name="Downloads_RemoveItemConfirm" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="Downloads_Space" xml:space="preserve">
+    <value>{0} belegt · {1} frei auf dem Laufwerk</value>
+  </data>
+  <data name="Downloads_SpaceUsed" xml:space="preserve">
+    <value>{0} belegt</value>
+  </data>
+  <data name="DownloadsPageHeader.Text" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="DownloadsPageSettingsButton.Content" xml:space="preserve">
+    <value>Download-Einstellungen</value>
+  </data>
+  <data name="DownloadsPageSyncButton.Content" xml:space="preserve">
+    <value>Jetzt synchronisieren</value>
+  </data>
+  <data name="DownloadsPageEmpty.Text" xml:space="preserve">
+    <value>Es ist nichts heruntergeladen. Wähle in den Download-Einstellungen, was heruntergeladen wird.</value>
+  </data>
+  <data name="DownloadsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="DownloadsRetryButton.Content" xml:space="preserve">
+    <value>Erneut versuchen</value>
+  </data>
+  <data name="DownloadsRemoveButton.Content" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="DownloadsRemovedHeader.Text" xml:space="preserve">
+    <value>Nicht heruntergeladen</value>
+  </data>
+  <data name="DownloadsRemovedDescription.Text" xml:space="preserve">
+    <value>Aus den Downloads entfernt. Sie bleiben in ihrer Sammlung, und „Wieder herunterladen“ holt sie zurück.</value>
+  </data>
+  <data name="DownloadsRemovedList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Nicht heruntergeladen</value>
+  </data>
+  <data name="DownloadsRestoreButton.Content" xml:space="preserve">
+    <value>Wieder herunterladen</value>
+  </data>
+  <data name="SettingsDownloadListCard.Header" xml:space="preserve">
+    <value>Jeden Download ansehen</value>
+  </data>
+  <data name="SettingsDownloadListCard.Description" xml:space="preserve">
+    <value>Jede Playlist, jedes Album und jeden Künstler mit Größe. Fehlgeschlagenes erneut versuchen oder einzeln entfernen.</value>
+  </data>
 </root>

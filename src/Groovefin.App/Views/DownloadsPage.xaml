@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="Groovefin.App.Views.DownloadsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Groovefin.Core.ViewModels"
+    mc:Ignorable="d">
+
+    <ScrollViewer AutomationProperties.AutomationId="DownloadsScroller">
+        <!--  The content of limited width, centred as on the Settings page (#347).  -->
+        <Grid>
+            <StackPanel
+                MaxWidth="{StaticResource PageContentMaxWidth}"
+                Margin="{StaticResource PageContentMargin}"
+                HorizontalAlignment="Stretch"
+                Spacing="4">
+                <TextBlock
+                    x:Uid="DownloadsPageHeader"
+                    AutomationProperties.HeadingLevel="Level1"
+                    Style="{StaticResource TitleTextBlockStyle}" />
+
+                <!--  The space used and free, what happens now, Sync now and the way to the switches.  -->
+                <Grid Margin="0,8,0,12" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock
+                            AutomationProperties.AutomationId="DownloadsSpace"
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            Text="{x:Bind ViewModel.SpaceText, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            Text="{x:Bind ViewModel.ActivityText, Mode=OneWay}"
+                            Visibility="{x:Bind ViewModel.HasActivity, Mode=OneWay}" />
+                    </StackPanel>
+                    <StackPanel
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="8">
+                        <HyperlinkButton x:Uid="DownloadsPageSettingsButton" Command="{x:Bind ViewModel.OpenSettingsCommand}" />
+                        <Button x:Uid="DownloadsPageSyncButton" Command="{x:Bind ViewModel.SyncNowCommand}" />
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock
+                    x:Uid="DownloadsPageEmpty"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    TextWrapping="Wrap"
+                    Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
+
+                <!--
+                    Each download (#388): its kind, how far it is and its size, Retry when a song failed, and
+                    Remove. A list, so Narrator says how many there are and where in them it is.
+                -->
+                <ListView
+                    x:Uid="DownloadsList"
+                    AutomationProperties.AutomationId="DownloadsList"
+                    IsItemClickEnabled="False"
+                    ItemsSource="{x:Bind ViewModel.Items}"
+                    SelectionMode="None"
+                    Visibility="{x:Bind ViewModel.HasItems, Mode=OneWay}">
+                    <ListView.ItemContainerStyle>
+                        <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0,0,0,4" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:DownloadItemRow">
+                            <controls:SettingsCard Description="{x:Bind StatusText, Mode=OneWay}" Header="{x:Bind Name}">
+                                <controls:SettingsCard.HeaderIcon>
+                                    <FontIcon Glyph="{x:Bind Glyph}" />
+                                </controls:SettingsCard.HeaderIcon>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock
+                                        MaxWidth="200"
+                                        VerticalAlignment="Center"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Text="{x:Bind Detail, Mode=OneWay}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <Button
+                                        x:Uid="DownloadsRetryButton"
+                                        AutomationProperties.Name="{x:Bind RetryName}"
+                                        Command="{x:Bind RetryCommand}"
+                                        Visibility="{x:Bind CanRetry, Mode=OneWay}" />
+                                    <Button
+                                        x:Uid="DownloadsRemoveButton"
+                                        AutomationProperties.Name="{x:Bind RemoveName}"
+                                        Command="{x:Bind RemoveCommand}" />
+                                </StackPanel>
+                            </controls:SettingsCard>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <!--  What was removed: it stays in its collection and downloads again with Download again.  -->
+                <StackPanel Spacing="4" Visibility="{x:Bind ViewModel.HasRemoved, Mode=OneWay}">
+                    <TextBlock
+                        x:Uid="DownloadsRemovedHeader"
+                        Margin="1,28,0,0"
+                        AutomationProperties.HeadingLevel="Level2"
+                        Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock
+                        x:Uid="DownloadsRemovedDescription"
+                        Margin="1,0,0,4"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource BodyTextBlockStyle}"
+                        TextWrapping="Wrap" />
+                    <ListView
+                        x:Uid="DownloadsRemovedList"
+                        IsItemClickEnabled="False"
+                        ItemsSource="{x:Bind ViewModel.Removed}"
+                        SelectionMode="None">
+                        <ListView.ItemContainerStyle>
+                            <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0,0,0,4" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RemovedDownloadRow">
+                                <controls:SettingsCard Description="{x:Bind Detail}" Header="{x:Bind Name}">
+                                    <Button
+                                        x:Uid="DownloadsRestoreButton"
+                                        AutomationProperties.Name="{x:Bind RestoreName}"
+                                        Command="{x:Bind RestoreCommand}" />
+                                </controls:SettingsCard>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

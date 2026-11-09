@@ -23,6 +23,9 @@ public static class PageKeys
 
     /// <summary>The statistics (#382), opened from the title bar like Settings.</summary>
     public const string Statistics = "statistics";
+
+    /// <summary>Every download with its size and status (#388), opened from Settings → Downloads.</summary>
+    public const string Downloads = "downloads";
     public const string Album = "album";
     public const string Artist = "artist";
     public const string Playlist = "playlist";

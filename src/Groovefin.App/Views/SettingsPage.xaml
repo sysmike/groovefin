@@ -314,6 +314,13 @@
                     <Button x:Uid="SettingsDownloadSyncButton" Command="{x:Bind Downloads.SyncNowCommand}" />
                     <controls:SettingsExpander.Items>
                         <controls:SettingsCard Header="{x:Bind Downloads.ActivityText, Mode=OneWay}" Visibility="{x:Bind Downloads.HasActivity, Mode=OneWay}" />
+                        <!--  Every download on a page of its own, with Retry and Remove for each (#388).  -->
+                        <controls:SettingsCard
+                            x:Uid="SettingsDownloadListCard"
+                            ActionIcon="{ui:FontIcon Glyph=&#xE76C;}"
+                            AutomationProperties.AutomationId="DownloadListCard"
+                            Command="{x:Bind ViewModel.OpenDownloadsCommand}"
+                            IsClickEnabled="True" />
                         <controls:SettingsCard x:Uid="SettingsDownloadFavouritesCard">
                             <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteSongs, Mode=TwoWay}" />
                         </controls:SettingsCard>

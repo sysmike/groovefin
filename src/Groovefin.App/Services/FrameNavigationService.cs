@@ -31,6 +31,7 @@ internal sealed partial class FrameNavigationService(ILogger<FrameNavigationServ
         [PageKeys.Search] = typeof(SearchPage),
         [PageKeys.Settings] = typeof(SettingsPage),
         [PageKeys.Statistics] = typeof(StatisticsPage),
+        [PageKeys.Downloads] = typeof(DownloadsPage),
         [PageKeys.Album] = typeof(AlbumDetailPage),
         [PageKeys.Artist] = typeof(ArtistDetailPage),
         [PageKeys.Playlist] = typeof(PlaylistDetailPage),

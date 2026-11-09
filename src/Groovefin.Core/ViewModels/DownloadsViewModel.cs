@@ -381,6 +381,19 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
         SyncNowCommand.NotifyCanExecuteChanged();
     }
 
+    /// <summary>
+    /// Gets what happens now, or why nothing does, e.g. "Downloading “Digital Love”"; empty when all is done. A stop
+    /// shows with nothing on only when it concerns the folder.
+    /// </summary>
+    internal static string Activity(DownloadStatus status, bool anyCollection, IStringResources strings) => status switch
+    {
+        { Current: { } name } => strings.GetString("Downloads_Current").Replace("{0}", name, StringComparison.Ordinal),
+        { IsSyncing: true } => strings.GetString("Downloads_Checking"),
+        { Stopped: DownloadStop.None } => string.Empty,
+        { Stopped: var stop } when !anyCollection && stop is not (DownloadStop.LowDisk or DownloadStop.FolderMissing) => string.Empty,
+        { Stopped: var stop } => strings.GetString($"Downloads_Stop{stop}"),
+    };
+
     private void Update(DownloadStatus status)
     {
         IsSyncing = status.IsSyncing;
@@ -391,15 +404,7 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
                 .Replace("{0}", status.Downloaded.ToString("N0", CultureInfo.CurrentCulture), StringComparison.Ordinal)
                 .Replace("{1}", status.Wanted.ToString("N0", CultureInfo.CurrentCulture), StringComparison.Ordinal)
                 .Replace("{2}", ByteSizes.Format(status.Bytes, _strings), StringComparison.Ordinal);
-        ActivityText = status switch
-        {
-            _ when _checkingSize => _strings.GetString("Downloads_CheckingSize"),
-            { Current: { } name } => _strings.GetString("Downloads_Current").Replace("{0}", name, StringComparison.Ordinal),
-            { IsSyncing: true } => _strings.GetString("Downloads_Checking"),
-            { Stopped: DownloadStop.None } => string.Empty,
-            { Stopped: var stop } when !Current.AnyCollection && stop is not (DownloadStop.LowDisk or DownloadStop.FolderMissing) => string.Empty,
-            { Stopped: var stop } => _strings.GetString($"Downloads_Stop{stop}"),
-        };
+        ActivityText = _checkingSize ? _strings.GetString("Downloads_CheckingSize") : Activity(status, Current.AnyCollection, _strings);
 
         Failures.Clear();
         foreach (var failure in status.Failures)
