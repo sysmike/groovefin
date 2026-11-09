@@ -279,11 +279,29 @@ internal sealed partial class MainWindow : Window
             return;
         }
 
-        // Shown first, then minimized: minimized before its first showing, the window stays invisible, not on
-        // the taskbar.
+        // Shown first, and minimized only once its content is laid out: the title bar laid out for the first
+        // time in a minimized window ends WinUI (TitleBar.UpdatePadding makes a GridLength of its negative insets).
         Activate();
-        _windowPresenter.Minimize();
+        if (Content is FrameworkElement { IsLoaded: false } content)
+        {
+            content.Loaded += OnLoadedMinimize;
+        }
+        else
+        {
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, MinimizeAtStart);
+        }
+    }
 
+    private void OnLoadedMinimize(object sender, RoutedEventArgs e)
+    {
+        ((FrameworkElement)sender).Loaded -= OnLoadedMinimize;
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, MinimizeAtStart);
+    }
+
+    /// <summary>Minimizes the window at a start with Windows: hidden to the notification area when its icon shows.</summary>
+    private void MinimizeAtStart()
+    {
+        _windowPresenter?.Minimize();
         if (_tray.IsVisible)
         {
             AppWindow.Hide();
