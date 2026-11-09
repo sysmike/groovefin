@@ -3,6 +3,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using Groovefin.App.Hosting;
 using Groovefin.Core;
+using Groovefin.Core.AudioOutput;
 using Groovefin.Core.Discord;
 using Groovefin.Core.Downloads;
 using Groovefin.Core.Equalizer;
@@ -149,6 +150,9 @@ public partial class App : Application
 
         // Lives as long as the app: the equalizer settings reach the audio effect.
         _host.Services.GetRequiredService<EqualizerSync>();
+
+        // Lives as long as the app: the music plays on the chosen output device (#389).
+        _host.Services.GetRequiredService<AudioOutputSync>();
 
         // The window has restored the server connection: bring back the last queue (paused) and keep saving it.
         await _host.Services.GetRequiredService<SessionPersistence>().RestoreAsync();

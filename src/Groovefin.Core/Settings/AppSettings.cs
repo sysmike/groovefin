@@ -260,6 +260,12 @@ public sealed record PlaybackSettings
     /// <summary>Gets or sets how many seconds the end of a track overlaps the next one; 0 for none (gapless).</summary>
     public int CrossfadeSeconds { get; set; }
 
+    /// <summary>Gets or sets the ID of the device the music plays on (#389), or <see langword="null"/> for the Windows default.</summary>
+    public string? OutputDeviceId { get; set; }
+
+    /// <summary>Gets or sets the chosen device's name, shown while it is not connected.</summary>
+    public string? OutputDeviceName { get; set; }
+
     public EqualizerSettings Equalizer { get; set; } = new();
 
     /// <summary>Gets or sets the volume from 0 to 100, as the user left it (#257).</summary>
