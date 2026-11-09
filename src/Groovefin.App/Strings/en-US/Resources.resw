@@ -2938,4 +2938,34 @@
   <data name="PlaylistFilterBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Filter the songs</value>
   </data>
+  <data name="SleepTimer_Off" xml:space="preserve">
+    <value>Sleep timer</value>
+  </data>
+  <data name="SleepTimer_PausesIn" xml:space="preserve">
+    <value>Sleep timer: pauses in {0} min</value>
+  </data>
+  <data name="SleepTimer_PausesAfterTrack" xml:space="preserve">
+    <value>Sleep timer: pauses after this song</value>
+  </data>
+  <data name="SleepTimer_PausesAfterAlbum" xml:space="preserve">
+    <value>Sleep timer: pauses after this album</value>
+  </data>
+  <data name="SleepTimer15.Text" xml:space="preserve">
+    <value>15 minutes</value>
+  </data>
+  <data name="SleepTimer30.Text" xml:space="preserve">
+    <value>30 minutes</value>
+  </data>
+  <data name="SleepTimer60.Text" xml:space="preserve">
+    <value>60 minutes</value>
+  </data>
+  <data name="SleepTimerEndOfTrack.Text" xml:space="preserve">
+    <value>End of this song</value>
+  </data>
+  <data name="SleepTimerEndOfAlbum.Text" xml:space="preserve">
+    <value>End of this album</value>
+  </data>
+  <data name="SleepTimerOff.Text" xml:space="preserve">
+    <value>Turn off</value>
+  </data>
 </root>

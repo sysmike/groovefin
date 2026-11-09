@@ -1,4 +1,5 @@
 using Groovefin.Core.Models;
+using Groovefin.Core.Playback;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -21,6 +22,7 @@ internal sealed partial class NowPlayingBar : UserControl
         ViewModel = App.Services.GetRequiredService<NowPlayingViewModel>();
         Queue = App.Services.GetRequiredService<QueueViewModel>();
         Lyrics = App.Services.GetRequiredService<LyricsViewModel>();
+        SleepTimer = App.Services.GetRequiredService<SleepTimer>();
         InitializeComponent();
         Loaded += (_, _) => ViewModel.DisplayScale = XamlRoot?.RasterizationScale ?? 1;
     }
@@ -30,6 +32,18 @@ internal sealed partial class NowPlayingBar : UserControl
     public QueueViewModel Queue { get; }
 
     public LyricsViewModel Lyrics { get; }
+
+    /// <summary>Gets the sleep timer (#396).</summary>
+    public SleepTimer SleepTimer { get; }
+
+    /// <summary>A minutes entry of the sleep timer's menu: its Tag is the minutes.</summary>
+    private void OnSleepMinutesClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is string text && int.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var minutes))
+        {
+            SleepTimer.StartMinutesCommand.Execute(minutes);
+        }
+    }
 
     /// <summary>
     /// The slider follows the playing position (one-way binding). A value that differs from it comes
