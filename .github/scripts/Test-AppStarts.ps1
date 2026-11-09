@@ -1726,6 +1726,34 @@ try {
     Test-Accessibility 'settings'
     Test-TabOrder 'settings'
 
+    # Section links (#404): the "Keyboard shortcuts" link at the top scrolls its section to the top of the
+    # page and moves the focus into it. Then the page goes back to its top for the steps below.
+    $byNameAndType = {
+        param([string] $name, [System.Windows.Automation.ControlType] $type)
+        [System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $name),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, $type))
+    }
+    $sectionLink = Find-Element (& $byNameAndType 'Keyboard shortcuts' ([System.Windows.Automation.ControlType]::Hyperlink)) 'Keyboard shortcuts section link'
+    $sectionLink.GetCurrentPattern($invoke).Invoke()
+    Start-Sleep -Milliseconds 800
+    $pageTop = (Get-Bounds (Find-ById 'MainContent')).Top
+    $headings = @($window.FindAll($scope::Descendants, (& $byNameAndType 'Keyboard shortcuts' ([System.Windows.Automation.ControlType]::Text))) |
+        Where-Object { -not $_.Current.IsOffscreen })
+    if ($headings.Count -eq 0) { Stop-Test 'Settings' 'After its section link, the Keyboard shortcuts heading is not on screen.' }
+    $headingTop = ($headings | ForEach-Object { (Get-Bounds $_).Top } | Measure-Object -Minimum).Minimum
+    if ($headingTop - $pageTop -gt 120) {
+        Stop-Test 'Settings' ("After its section link, the Keyboard shortcuts heading is {0:0} px below the top of the page, not at the top." -f ($headingTop - $pageTop))
+    }
+    $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+    if (-not $focused -or $focused.Current.ControlType -eq [System.Windows.Automation.ControlType]::Hyperlink -or $focused.Current.BoundingRectangle.Top -lt $headingTop) {
+        Stop-Test 'Settings' "After its section link, the focus is not in the Keyboard shortcuts section (focused: '$($focused.Current.Name)')."
+    }
+    Write-Output ("The Keyboard shortcuts link scrolled its heading to {0:0} px below the page's top and focused '{1}'." -f ($headingTop - $pageTop), $focused.Current.Name)
+    $settingsScroll = (Find-ById 'SettingsScroller').GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
+    $settingsScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 0)
+    Start-Sleep -Milliseconds 500
+
     # Downloads (#327): turning on Playlists downloads the playlist's two songs, as the original files, into the
     # user's folder with its index; turning it off again deletes them. Each change syncs a few seconds later.
     $downloads = Join-Path $data 'Downloads'
