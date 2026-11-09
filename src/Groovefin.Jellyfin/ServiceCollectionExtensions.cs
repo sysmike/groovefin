@@ -1,6 +1,7 @@
 using Groovefin.Core.Api;
 using Groovefin.Core.Downloads;
 using Groovefin.Core.Images;
+using Groovefin.Core.Search;
 using Groovefin.Core.Servers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
@@ -41,7 +42,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IDownloadSource, JellyfinDownloadSource>();
         services.AddSingleton<IPlaybackReporter, PlaybackReporter>();
         services.AddSingleton<IPlaylistService, PlaylistService>();
-        services.AddSingleton<ISearchService, SearchService>();
+        services.AddSingleton<SearchService>();
+        services.AddSingleton<ISearchService>(sp => new ForgivingSearch(sp.GetRequiredService<SearchService>()));
         services.AddSingleton<ILyricsService, LyricsService>();
         services.AddSingleton<IServerDiscovery, ServerDiscovery>();
         return services;

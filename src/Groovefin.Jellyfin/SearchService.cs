@@ -70,8 +70,9 @@ internal sealed class SearchService(JellyfinClient client) : ISearchService
         var albums = FindItemsAsync(BaseItemKind.MusicAlbum, library, "Searching albums");
         var tracks = FindItemsAsync(BaseItemKind.Audio, library, "Searching tracks");
         var playlists = FindItemsAsync(BaseItemKind.Playlist, parent: null, "Searching playlists");
+        var genres = FindGenresAsync();
 
-        await Task.WhenAll(artists, albumArtists, albums, tracks, playlists).ConfigureAwait(false);
+        await Task.WhenAll(artists, albumArtists, albums, tracks, playlists, genres).ConfigureAwait(false);
 
         var allArtists = Map(await artists.ConfigureAwait(false), ItemMapper.ToArtist)
             .Concat(Map(await albumArtists.ConfigureAwait(false), ItemMapper.ToArtist))
@@ -84,7 +85,41 @@ internal sealed class SearchService(JellyfinClient client) : ISearchService
             allArtists,
             Map(await albums.ConfigureAwait(false), ItemMapper.ToAlbum),
             Map(await tracks.ConfigureAwait(false), ItemMapper.ToTrack),
-            Map(await playlists.ConfigureAwait(false), ItemMapper.ToPlaylist));
+            Map(await playlists.ConfigureAwait(false), ItemMapper.ToPlaylist))
+        {
+            Genres = await genres.ConfigureAwait(false),
+        };
+
+        // The albums' genres (#391), as the Genres page lists them. Extra: without them the search still works.
+        async Task<IReadOnlyList<Genre>> FindGenresAsync()
+        {
+            try
+            {
+                var result = await JellyfinCall.RunAsync(
+                    () => api.Genres.GetAsync(
+                        request =>
+                        {
+                            var p = request.QueryParameters;
+                            p.UserId = userId;
+                            p.ParentId = library;
+                            p.IncludeItemTypes = [BaseItemKind.MusicAlbum];
+                            p.SearchTerm = term;
+                            p.Limit = limit;
+                            p.SortBy = [ItemSortBy.SortName];
+                            p.EnableImages = false;
+                            p.EnableTotalRecordCount = false;
+                        },
+                        cancellationToken),
+                    "Searching genres").ConfigureAwait(false);
+                return [.. (result.Items ?? [])
+                    .Where(g => g.Id is not null && !string.IsNullOrEmpty(g.Name))
+                    .Select(g => new Genre(ItemMapper.FormatId(g.Id)!, g.Name!))];
+            }
+            catch (JellyfinException)
+            {
+                return [];
+            }
+        }
 
         Task<BaseItemDtoQueryResult> FindItemsAsync(BaseItemKind kind, Guid? parent, string operation) =>
             JellyfinCall.RunAsync(

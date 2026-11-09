@@ -102,6 +102,14 @@
                     <Button x:Uid="PlaylistDeleteButton" Command="{x:Bind ViewModel.DeleteCommand}">
                         <FontIcon FontSize="14" Glyph="&#xE74D;" />
                     </Button>
+                    <!--  Filter the entries by typing (#391); while filtering they cannot be dragged.  -->
+                    <TextBox
+                        x:Uid="PlaylistFilterBox"
+                        Width="220"
+                        Margin="12,0,0,0"
+                        AutomationProperties.AutomationId="PlaylistFilterBox"
+                        IsEnabled="{x:Bind ViewModel.HasEntries, Mode=OneWay}"
+                        Text="{x:Bind ViewModel.FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 </StackPanel>
             </StackPanel>
         </Grid>
@@ -221,7 +229,7 @@
             DragItemsCompleted="OnEntriesDragCompleted"
             IsItemClickEnabled="True"
             ItemClick="OnEntryClick"
-            ItemsSource="{x:Bind ViewModel.Entries}"
+            ItemsSource="{x:Bind ViewModel.ShownEntries, Mode=OneWay}"
             SelectionChanged="OnEntriesSelectionChanged">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="vm:PlaylistEntryItem">

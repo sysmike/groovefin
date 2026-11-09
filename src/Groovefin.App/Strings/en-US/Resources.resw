@@ -2923,4 +2923,19 @@
   <data name="LetterJumpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Jump to a letter</value>
   </data>
+  <data name="SearchGenresHeader.Text" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="SearchGenres.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="Search_KindGenre" xml:space="preserve">
+    <value>Genre</value>
+  </data>
+  <data name="PlaylistFilterBox.PlaceholderText" xml:space="preserve">
+    <value>Filter songs</value>
+  </data>
+  <data name="PlaylistFilterBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Filter the songs</value>
+  </data>
 </root>

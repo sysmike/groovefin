@@ -15,6 +15,9 @@ public enum SuggestionKind
     Artist,
     Album,
     Track,
+
+    /// <summary>A genre (#391): opens the genre page.</summary>
+    Genre,
 }
 
 /// <summary>One entry under the search box.</summary>
@@ -110,6 +113,9 @@ public sealed partial class SearchSuggestionsViewModel(
             case SuggestionKind.Track when suggestion.Track is { } track:
                 player.Play([track]);
                 break;
+            case SuggestionKind.Genre:
+                navigation.NavigateTo(PageKeys.Genre, suggestion.Id);
+                break;
             default:
                 break;
         }
@@ -123,6 +129,7 @@ public sealed partial class SearchSuggestionsViewModel(
         var artistKind = strings.GetString("Search_KindArtist");
         var albumKind = strings.GetString("Search_KindAlbum");
         var trackKind = strings.GetString("Search_KindTrack");
+        var genreKind = strings.GetString("Search_KindGenre");
 
         foreach (var artist in results.Artists)
         {
@@ -143,10 +150,19 @@ public sealed partial class SearchSuggestionsViewModel(
 
         foreach (var track in results.Tracks)
         {
-            var subtitle = string.Join(", ", track.Artists.Select(a => a.Name));
+            // With the album and year: the same song is often on several albums (#391).
+            var subtitle = SearchTexts.TrackDetails(track);
             Suggestions.Add(new SearchSuggestion(SuggestionKind.Track, track.Id, track.Name, subtitle, track)
             {
                 AccessibleName = Join(track.Name, trackKind, subtitle),
+            });
+        }
+
+        foreach (var genre in results.Genres.Take(PerKind))
+        {
+            Suggestions.Add(new SearchSuggestion(SuggestionKind.Genre, genre.Id, genre.Name, genreKind)
+            {
+                AccessibleName = Join(genre.Name, genreKind),
             });
         }
     }

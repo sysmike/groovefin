@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Groovefin.App.Controls;
 using Groovefin.App.Services;
+using Groovefin.Core.Models;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -76,6 +77,14 @@ internal sealed partial class SearchPage : Page
         if (args.InvokedItem is AlbumItem item)
         {
             ViewModel.OpenAlbumCommand.Execute(item);
+        }
+    }
+
+    private void OnGenreClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is Genre genre)
+        {
+            ViewModel.OpenGenreCommand.Execute(genre);
         }
     }
 
