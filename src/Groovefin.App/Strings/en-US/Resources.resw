@@ -2872,6 +2872,9 @@
   <data name="MixEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Songs</value>
   </data>
+  <data name="NowPlayingReconnecting.Text" xml:space="preserve">
+    <value>Reconnecting…</value>
+  </data>
   <data name="SettingsNormalizationAutomatic.Content" xml:space="preserve">
     <value>Automatic: albums as albums, mixes track by track</value>
   </data>
@@ -2889,7 +2892,5 @@
   </data>
   <data name="SettingsNormalizationTargetLoudest.Content" xml:space="preserve">
     <value>Loudest (+7 dB)</value>
-  <data name="NowPlayingReconnecting.Text" xml:space="preserve">
-    <value>Reconnecting…</value>
   </data>
 </root>

@@ -2845,6 +2845,9 @@
   <data name="MixEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Titel</value>
   </data>
+  <data name="NowPlayingReconnecting.Text" xml:space="preserve">
+    <value>Verbindung wird wiederhergestellt …</value>
+  </data>
   <data name="SettingsNormalizationAutomatic.Content" xml:space="preserve">
     <value>Automatisch: Alben als Ganzes, Mixe Titel für Titel</value>
   </data>
@@ -2862,7 +2865,5 @@
   </data>
   <data name="SettingsNormalizationTargetLoudest.Content" xml:space="preserve">
     <value>Am lautesten (+7 dB)</value>
-  <data name="NowPlayingReconnecting.Text" xml:space="preserve">
-    <value>Verbindung wird wiederhergestellt …</value>
   </data>
 </root>
