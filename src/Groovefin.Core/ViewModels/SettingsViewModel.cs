@@ -38,7 +38,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     private static readonly AppTheme[] ThemeOrder = [AppTheme.System, AppTheme.Light, AppTheme.Dark];
     private static readonly int?[] Bitrates = [null, 320, 256, 192, 128, 96, 64];
     private static readonly TranscodingCodec[] CodecOrder = [TranscodingCodec.Aac, TranscodingCodec.Mp3];
-    private static readonly NormalizationMode[] NormalizationOrder = [NormalizationMode.Off, NormalizationMode.Track, NormalizationMode.Album];
+    private static readonly NormalizationMode[] NormalizationOrder = [NormalizationMode.Off, NormalizationMode.Automatic, NormalizationMode.Track, NormalizationMode.Album];
+    private static readonly NormalizationTarget[] NormalizationTargetOrder = [NormalizationTarget.Server, NormalizationTarget.Louder, NormalizationTarget.Loudest];
     private static readonly InstantMixMode[] InstantMixOrder = [InstantMixMode.Replace, InstantMixMode.Append];
     private static readonly ListDensity[] DensityOrder = [ListDensity.Standard, ListDensity.Compact];
     private static readonly int[] CacheLimits = [100, 250, 500, 1000, 2000, 5000];
@@ -152,7 +153,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
-    /// <summary>Gets or sets the volume normalization as an index into off, track, album.</summary>
+    /// <summary>Gets or sets the volume normalization as an index into off, automatic, track, album.</summary>
     public int NormalizationIndex
     {
         get => Array.IndexOf(NormalizationOrder, _settings.Current.Playback.Normalization);
@@ -161,6 +162,24 @@ public sealed partial class SettingsViewModel : ObservableObject
             if (value >= 0 && value < NormalizationOrder.Length && value != NormalizationIndex)
             {
                 _settings.Update(s => s with { Playback = s.Playback with { Normalization = NormalizationOrder[value] } });
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasNormalization));
+            }
+        }
+    }
+
+    /// <summary>Gets a value indicating whether normalization is on, so its loudness target can be chosen (#393).</summary>
+    public bool HasNormalization => _settings.Current.Playback.Normalization != NormalizationMode.Off;
+
+    /// <summary>Gets or sets how loud normalized music plays (#393), as an index into the server's target, louder, loudest.</summary>
+    public int NormalizationTargetIndex
+    {
+        get => Math.Max(0, Array.IndexOf(NormalizationTargetOrder, _settings.Current.Playback.NormalizationTarget));
+        set
+        {
+            if (value >= 0 && value < NormalizationTargetOrder.Length && value != NormalizationTargetIndex)
+            {
+                _settings.Update(s => s with { Playback = s.Playback with { NormalizationTarget = NormalizationTargetOrder[value] } });
                 OnPropertyChanged();
             }
         }
