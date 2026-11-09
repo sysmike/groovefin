@@ -230,6 +230,7 @@ public sealed class ArtistDetailViewModelTests
 
         sut.PlayCommand.CanExecute(null).Should().BeFalse();
         sut.ShuffleCommand.CanExecute(null).Should().BeFalse();
+        sut.ShuffleAlbumsCommand.CanExecute(null).Should().BeFalse();
     }
 
     [Fact]
@@ -242,9 +243,11 @@ public sealed class ArtistDetailViewModelTests
 
         await sut.PlayCommand.ExecuteAsync(null);
         await sut.ShuffleCommand.ExecuteAsync(null);
+        await sut.ShuffleAlbumsCommand.ExecuteAsync(null);
 
         _player.Received(1).Play(all);
         _player.Received(1).Shuffle(all);
+        _player.Received(1).ShuffleAlbums(all);
     }
 
     [Fact]

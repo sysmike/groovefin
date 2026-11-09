@@ -123,6 +123,18 @@ public sealed class QueueManager
         OnChanged();
     }
 
+    /// <summary>
+    /// Replaces the queue with <paramref name="tracks"/> album by album in a random order, each album's songs in
+    /// order, and plays from the first (#403). Song shuffle is turned off: the order is the shuffle.
+    /// </summary>
+    public void PlayAlbumsShuffled(IEnumerable<Track> tracks)
+    {
+        ArgumentNullException.ThrowIfNull(tracks);
+        var order = Shuffling.Albums([.. tracks], _random);
+        _shuffle = false;
+        PlayNow(order);
+    }
+
     /// <summary>Inserts <paramref name="tracks"/> right after the current entry (at the start when nothing is current).</summary>
     public void PlayNext(IEnumerable<Track> tracks)
     {
@@ -419,12 +431,10 @@ public sealed class QueueManager
             _order.Remove(first);
         }
 
-        // Fisher-Yates.
-        for (var i = _order.Count - 1; i > 0; i--)
-        {
-            var j = _random.Next(i + 1);
-            (_order[i], _order[j]) = (_order[j], _order[i]);
-        }
+        // Artists and albums spread out instead of plain random (#403).
+        var spread = Shuffling.Spread(_order, item => item.Track, _random);
+        _order.Clear();
+        _order.AddRange(spread);
 
         if (first is not null)
         {
