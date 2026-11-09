@@ -2845,4 +2845,7 @@
   <data name="MixEntries.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Titel</value>
   </data>
+  <data name="NowPlayingReconnecting.Text" xml:space="preserve">
+    <value>Verbindung wird wiederhergestellt …</value>
+  </data>
 </root>

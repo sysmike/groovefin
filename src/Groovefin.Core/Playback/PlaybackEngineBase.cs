@@ -376,13 +376,16 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
         }
     });
 
-    /// <summary>The player could not play <paramref name="source"/>. Safe to call from any thread.</summary>
-    protected void ReportFailed(PlaybackSource source, string message, Exception? exception) => Dispatch(() =>
+    /// <summary>
+    /// The player could not play <paramref name="source"/>; <paramref name="isNetworkError"/> when the network failed,
+    /// not the file (#385). Safe to call from any thread.
+    /// </summary>
+    protected void ReportFailed(PlaybackSource source, string message, Exception? exception, bool isNetworkError = false) => Dispatch(() =>
     {
         if (ReferenceEquals(source, Current))
         {
             SetState(PlaybackState.Idle);
-            Failed?.Invoke(this, new PlaybackFailedEventArgs(source, message, exception));
+            Failed?.Invoke(this, new PlaybackFailedEventArgs(source, message, exception, isNetworkError));
         }
     });
 
