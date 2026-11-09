@@ -297,6 +297,15 @@
                     x:Uid="SettingsPlaybackHeader"
                     AutomationProperties.HeadingLevel="Level2"
                     Style="{StaticResource SettingsSectionHeaderStyle}" />
+                <!--  Where the music plays (#389).  -->
+                <controls:SettingsCard x:Uid="SettingsOutputDeviceCard" HeaderIcon="{ui:FontIcon Glyph=&#xE7F5;}">
+                    <ComboBox
+                        MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                        MaxWidth="320"
+                        AutomationProperties.AutomationId="SettingsOutputDevice"
+                        ItemsSource="{x:Bind OutputDevice.Options}"
+                        SelectedIndex="{x:Bind OutputDevice.SelectedIndex, Mode=TwoWay}" />
+                </controls:SettingsCard>
                 <controls:SettingsCard x:Uid="SettingsNormalizationCard" HeaderIcon="{ui:FontIcon Glyph=&#xE995;}">
                     <ComboBox MinWidth="{StaticResource SettingsChoiceMinWidth}" SelectedIndex="{x:Bind ViewModel.NormalizationIndex, Mode=TwoWay}">
                         <ComboBoxItem x:Uid="SettingsNormalizationOff" />
