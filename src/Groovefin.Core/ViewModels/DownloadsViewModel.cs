@@ -13,8 +13,8 @@ namespace Groovefin.Core.ViewModels;
 /// <summary>
 /// Settings → Downloads (#327, #331): which collections are kept offline, in which format, on metered connections
 /// or not; the status of the downloads; Sync now and Remove all. Turning on a collection that downloads more
-/// than <see cref="DownloadManager.LargeDownloadBytes"/> asks first; the switch shows on meanwhile. Create it per
-/// visit and dispose it.
+/// than <see cref="DownloadManager.LargeDownloadBytes"/> asks first; the switch shows on meanwhile. The folder can
+/// be changed, which moves the downloads with progress (#399). Create it per visit and dispose it.
 /// </summary>
 public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
 {
@@ -27,10 +27,12 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
     private readonly IDialogService _dialogs;
     private readonly IStringResources _strings;
     private readonly IDispatcher _dispatcher;
+    private readonly IFolderPicker _picker;
 
     // The switches turning on while their size is checked, by property name.
     private readonly HashSet<string> _turningOn = [];
     private bool _checkingSize;
+    private CancellationTokenSource? _moveCancel;
 
     public DownloadsViewModel(
         DownloadManager downloads,
@@ -38,7 +40,8 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
         INetworkStatus network,
         IDialogService dialogs,
         IStringResources strings,
-        IDispatcher dispatcher)
+        IDispatcher dispatcher,
+        IFolderPicker picker)
     {
         _downloads = downloads;
         _settings = settings;
@@ -46,6 +49,7 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
         _dialogs = dialogs;
         _strings = strings;
         _dispatcher = dispatcher;
+        _picker = picker;
         FormatOptions =
         [
             .. Formats.Select(kbps => kbps is { } value
@@ -131,6 +135,34 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
     [NotifyCanExecuteChangedFor(nameof(RemoveAllCommand))]
     public partial bool HasDownloads { get; private set; }
 
+    /// <summary>Gets the folder that holds the downloads (#399).</summary>
+    public string FolderText => _downloads.Folder;
+
+    /// <summary>Gets whether a folder was chosen: Use the default folder then moves them back.</summary>
+    public bool IsCustomFolder => Current.Folder is not null;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotMoving))]
+    [NotifyCanExecuteChangedFor(nameof(ChangeFolderCommand), nameof(UseDefaultFolderCommand), nameof(SyncNowCommand), nameof(RemoveAllCommand), nameof(CancelMoveCommand))]
+    public partial bool IsMoving { get; private set; }
+
+    public bool IsNotMoving => !IsMoving;
+
+    /// <summary>Gets how far the move is, 0 to 100.</summary>
+    [ObservableProperty]
+    public partial double MoveProgress { get; private set; }
+
+    /// <summary>Gets e.g. "1.2 GB of 4.5 GB moved".</summary>
+    [ObservableProperty]
+    public partial string MoveText { get; private set; } = string.Empty;
+
+    /// <summary>Gets why the last move did not happen, or an empty string.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMoveMessage))]
+    public partial string MoveMessage { get; private set; } = string.Empty;
+
+    public bool HasMoveMessage => MoveMessage.Length > 0;
+
     private DownloadSettings Current => _settings.Current.Downloads;
 
     /// <summary>Shows what is on disk at once, before the next sync.</summary>
@@ -138,12 +170,82 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        // Leaving the page does not stop a move: it ends on its own, and the next visit shows the folder.
         _downloads.StatusChanged -= OnStatusChanged;
         _settings.Changed -= OnSettingsChanged;
         _network.Changed -= OnNetworkChanged;
     }
 
-    private bool CanSyncNow() => Current.AnyCollection && !IsSyncing && _network.IsOnline;
+    private bool CanSyncNow() => Current.AnyCollection && !IsSyncing && !IsMoving && _network.IsOnline;
+
+    private bool CanRemoveAll() => HasDownloads && !IsMoving;
+
+    private bool CanUseDefaultFolder() => IsCustomFolder && !IsMoving;
+
+    /// <summary>Lets the user choose a folder and moves the downloads there (#399).</summary>
+    [RelayCommand(CanExecute = nameof(IsNotMoving))]
+    private async Task ChangeFolderAsync()
+    {
+        if (await _picker.PickFolderAsync() is { } folder)
+        {
+            await MoveToAsync(folder);
+        }
+    }
+
+    /// <summary>Moves the downloads back to the app's local data.</summary>
+    [RelayCommand(CanExecute = nameof(CanUseDefaultFolder))]
+    private Task UseDefaultFolderAsync() => MoveToAsync(null);
+
+    [RelayCommand(CanExecute = nameof(IsMoving))]
+    private void CancelMove() => _moveCancel?.Cancel();
+
+    private async Task MoveToAsync(string? folder)
+    {
+        using var cancel = new CancellationTokenSource();
+        _moveCancel = cancel;
+        MoveMessage = string.Empty;
+        MoveProgress = 0;
+        MoveText = _strings.GetString("Downloads_MoveStarting");
+        IsMoving = true;
+        DownloadMoveResult result;
+        try
+        {
+            result = await _downloads.MoveAsync(folder, new Progress<DownloadMoveProgress>(ShowProgress), cancel.Token);
+        }
+        finally
+        {
+            _moveCancel = null;
+            IsMoving = false;
+        }
+
+        MoveMessage = result.Outcome switch
+        {
+            DownloadMoveOutcome.NotEnoughSpace => _strings.GetString("Downloads_MoveNotEnoughSpace")
+                .Replace("{0}", ByteSizes.Format(result.Needed, _strings), StringComparison.Ordinal)
+                .Replace("{1}", ByteSizes.Format(result.Free, _strings), StringComparison.Ordinal),
+            DownloadMoveOutcome.NotLocal => _strings.GetString("Downloads_MoveNotLocal"),
+            DownloadMoveOutcome.Inside => _strings.GetString("Downloads_MoveInside"),
+            DownloadMoveOutcome.Failed => _strings.GetString("Downloads_MoveFailed"),
+            _ => string.Empty,
+        };
+        OnPropertyChanged(nameof(FolderText));
+        OnPropertyChanged(nameof(IsCustomFolder));
+        UseDefaultFolderCommand.NotifyCanExecuteChanged();
+    }
+
+    private void ShowProgress(DownloadMoveProgress progress)
+    {
+        // A report can come after the end.
+        if (!IsMoving)
+        {
+            return;
+        }
+
+        MoveProgress = progress.Total > 0 ? 100.0 * progress.Moved / progress.Total : 0;
+        MoveText = _strings.GetString("Downloads_MoveProgress")
+            .Replace("{0}", ByteSizes.Format(progress.Moved, _strings), StringComparison.Ordinal)
+            .Replace("{1}", ByteSizes.Format(progress.Total, _strings), StringComparison.Ordinal);
+    }
 
     /// <summary>Syncs at once; on a metered connection with downloads there off, it asks first.</summary>
     [RelayCommand(CanExecute = nameof(CanSyncNow))]
@@ -169,7 +271,7 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Deletes every download after a confirmation, and turns the switches off, so nothing downloads again.</summary>
-    [RelayCommand(CanExecute = nameof(HasDownloads))]
+    [RelayCommand(CanExecute = nameof(CanRemoveAll))]
     private async Task RemoveAllAsync()
     {
         var size = ByteSizes.Format(_downloads.Status.Bytes, _strings);
@@ -273,6 +375,9 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(Playlists));
         OnPropertyChanged(nameof(FormatIndex));
         OnPropertyChanged(nameof(AllowMetered));
+        OnPropertyChanged(nameof(FolderText));
+        OnPropertyChanged(nameof(IsCustomFolder));
+        UseDefaultFolderCommand.NotifyCanExecuteChanged();
         SyncNowCommand.NotifyCanExecuteChanged();
     }
 
@@ -292,7 +397,7 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
             { Current: { } name } => _strings.GetString("Downloads_Current").Replace("{0}", name, StringComparison.Ordinal),
             { IsSyncing: true } => _strings.GetString("Downloads_Checking"),
             { Stopped: DownloadStop.None } => string.Empty,
-            { Stopped: var stop } when !Current.AnyCollection && stop != DownloadStop.LowDisk => string.Empty,
+            { Stopped: var stop } when !Current.AnyCollection && stop is not (DownloadStop.LowDisk or DownloadStop.FolderMissing) => string.Empty,
             { Stopped: var stop } => _strings.GetString($"Downloads_Stop{stop}"),
         };
 

@@ -309,6 +309,12 @@ public sealed record DownloadSettings
     /// <summary>Gets or sets a value indicating whether songs download on a metered connection too.</summary>
     public bool AllowMetered { get; set; }
 
+    /// <summary>
+    /// Gets or sets the folder chosen for the downloads (#399), which get a <c>Groovefin Downloads</c> folder in it;
+    /// <see langword="null"/> keeps them in the app's local data. Changed by moving them (<c>DownloadManager.MoveAsync</c>).
+    /// </summary>
+    public string? Folder { get; set; }
+
     /// <summary>Gets a value indicating whether any collection is downloaded.</summary>
     [JsonIgnore]
     public bool AnyCollection => FavouriteSongs || FavouriteAlbums || FavouriteArtists || Playlists;

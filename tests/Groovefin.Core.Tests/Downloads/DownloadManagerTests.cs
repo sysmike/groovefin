@@ -32,6 +32,8 @@ public sealed class DownloadManagerTests : IDisposable
     private readonly JsonDownloadStore _store;
     private readonly DownloadManager _sut;
     private long _freeSpace = 50L << 30;
+    private bool _driveReady = true;
+    private readonly string _chosen = Path.Join(Path.GetTempPath(), "groovefin-tests", Guid.NewGuid().ToString("N"));
 
     public DownloadManagerTests()
     {
@@ -42,7 +44,9 @@ public sealed class DownloadManagerTests : IDisposable
             .Returns(call => (IReadOnlyDictionary<string, TrackFile>)call.Arg<IReadOnlyList<string>>()
                 .Where(_files.ContainsKey).ToDictionary(id => id, id => _files[id]));
         _settings.Update(s => s with { Downloads = s.Downloads with { FavouriteSongs = true, Playlists = true } });
-        _store = new JsonDownloadStore(new DownloadStoreOptions(_directory) { FreeSpace = _ => _freeSpace }, NullLogger<JsonDownloadStore>.Instance);
+        _store = new JsonDownloadStore(
+            new DownloadStoreOptions(_directory) { FreeSpace = _ => _freeSpace, DriveReady = _ => _driveReady },
+            NullLogger<JsonDownloadStore>.Instance);
         _sut = new DownloadManager(
             _client,
             _library,
@@ -64,9 +68,12 @@ public sealed class DownloadManagerTests : IDisposable
     public void Dispose()
     {
         _sut.Dispose();
-        if (Directory.Exists(_directory))
+        foreach (var folder in new[] { _directory, _chosen })
         {
-            Directory.Delete(_directory, recursive: true);
+            if (Directory.Exists(folder))
+            {
+                Directory.Delete(folder, recursive: true);
+            }
         }
     }
 
@@ -576,5 +583,74 @@ public sealed class DownloadManagerTests : IDisposable
         await later.RefreshStatusAsync();
 
         later.Status.Should().BeEquivalentTo(new { Wanted = 3, Downloaded = 3, Bytes = 12L });
+    }
+
+    [Fact]
+    public async Task Moving_the_downloads_saves_the_folder_and_downloads_nothing_again()
+    {
+        await _sut.SyncAsync();
+
+        var result = await _sut.MoveAsync(_chosen, cancellationToken: Ct);
+
+        result.Outcome.Should().Be(DownloadMoveOutcome.Moved);
+        _settings.Current.Downloads.Folder.Should().Be(Path.GetFullPath(_chosen));
+        _sut.Folder.Should().Be(Path.Join(Path.GetFullPath(_chosen), DownloadStoreOptions.FolderName));
+        Folder.Should().StartWith(_sut.Folder);
+        Files().Should().Equal("a.flac", "b.flac", "c.flac");
+        _sut.FileOf("a").Should().Be(Path.Join(Folder, "a.flac"));
+        Directory.Exists(_directory).Should().BeFalse();
+
+        await _sut.SyncAsync();
+
+        _source.Requests.Should().HaveCount(3, "the moved files are found");
+        _sut.Status.Should().BeEquivalentTo(new { Downloaded = 3, Bytes = 12L, Stopped = DownloadStop.None });
+    }
+
+    [Fact]
+    public async Task Moving_back_to_the_default_folder_forgets_the_chosen_one()
+    {
+        await _sut.SyncAsync();
+        await _sut.MoveAsync(_chosen, cancellationToken: Ct);
+
+        var result = await _sut.MoveAsync(null, cancellationToken: Ct);
+
+        result.Outcome.Should().Be(DownloadMoveOutcome.Moved);
+        _settings.Current.Downloads.Folder.Should().BeNull();
+        _sut.Folder.Should().Be(_directory);
+        Files().Should().Equal("a.flac", "b.flac", "c.flac");
+    }
+
+    [Fact]
+    public async Task A_move_that_is_refused_keeps_the_folder_setting()
+    {
+        await _sut.SyncAsync();
+
+        var result = await _sut.MoveAsync(Path.Join(_directory, "inside"), cancellationToken: Ct);
+
+        result.Outcome.Should().Be(DownloadMoveOutcome.Inside);
+        _settings.Current.Downloads.Folder.Should().BeNull();
+        Files().Should().Equal("a.flac", "b.flac", "c.flac");
+    }
+
+    [Fact]
+    public async Task Without_the_folders_drive_nothing_is_deleted_or_downloaded_again()
+    {
+        await _sut.SyncAsync();
+        _driveReady = false;
+
+        // Started while the drive is not there: the index it reads then is not kept.
+        using var later = new DownloadManager(
+            _client, _library, _playlists, _source, _store, _settings, _network, _servers, _messenger, _time, NullLogger<DownloadManager>.Instance);
+        await later.RefreshStatusAsync();
+        later.FileOf("a").Should().BeNull();
+        await later.SyncAsync();
+
+        later.Status.Stopped.Should().Be(DownloadStop.FolderMissing);
+        _driveReady = true;
+        await later.SyncAsync();
+
+        Files().Should().Equal("a.flac", "b.flac", "c.flac");
+        _source.Requests.Should().HaveCount(3);
+        later.FileOf("a").Should().Be(Path.Join(Folder, "a.flac"));
     }
 }

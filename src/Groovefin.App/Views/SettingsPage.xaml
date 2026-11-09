@@ -286,6 +286,37 @@
                                 </ItemsControl>
                             </controls:SettingsCard.Description>
                         </controls:SettingsCard>
+                        <!--
+                            Where the downloads are (#399): a folder of the user's choice gets a Groovefin Downloads
+                            folder; changing it moves them, with progress.
+                        -->
+                        <controls:SettingsCard x:Uid="SettingsDownloadFolderCard" Description="{x:Bind Downloads.FolderText, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button
+                                    x:Uid="SettingsDownloadDefaultFolderButton"
+                                    Command="{x:Bind Downloads.UseDefaultFolderCommand}"
+                                    Visibility="{x:Bind Downloads.IsCustomFolder, Mode=OneWay}" />
+                                <Button
+                                    x:Uid="SettingsDownloadFolderButton"
+                                    AutomationProperties.AutomationId="DownloadFolderButton"
+                                    Command="{x:Bind Downloads.ChangeFolderCommand}" />
+                            </StackPanel>
+                        </controls:SettingsCard>
+                        <controls:SettingsCard
+                            x:Uid="SettingsDownloadMoveCard"
+                            Description="{x:Bind Downloads.MoveText, Mode=OneWay}"
+                            Visibility="{x:Bind Downloads.IsMoving, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <ProgressBar
+                                    Width="160"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.Name="{x:Bind Downloads.MoveText, Mode=OneWay}"
+                                    Maximum="100"
+                                    Value="{x:Bind Downloads.MoveProgress, Mode=OneWay}" />
+                                <Button x:Uid="SettingsDownloadMoveCancelButton" Command="{x:Bind Downloads.CancelMoveCommand}" />
+                            </StackPanel>
+                        </controls:SettingsCard>
+                        <controls:SettingsCard Header="{x:Bind Downloads.MoveMessage, Mode=OneWay}" Visibility="{x:Bind Downloads.HasMoveMessage, Mode=OneWay}" />
                         <controls:SettingsCard x:Uid="SettingsDownloadRemoveCard">
                             <Button x:Uid="SettingsDownloadRemoveButton" Command="{x:Bind Downloads.RemoveAllCommand}" />
                         </controls:SettingsCard>
