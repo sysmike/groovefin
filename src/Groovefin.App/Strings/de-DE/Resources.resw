@@ -2941,4 +2941,25 @@
   <data name="SleepTimerOff.Text" xml:space="preserve">
     <value>Ausschalten</value>
   </data>
+  <data name="StreamQuality_Downloaded" xml:space="preserve">
+    <value>heruntergeladen</value>
+  </data>
+  <data name="StreamQuality_ConvertedShort" xml:space="preserve">
+    <value>umgewandelt</value>
+  </data>
+  <data name="StreamQuality_DownloadedWhy" xml:space="preserve">
+    <value>Spielt die heruntergeladene Datei.</value>
+  </data>
+  <data name="StreamQuality_OriginalWhy" xml:space="preserve">
+    <value>Die Originaldatei, wie sie auf dem Server liegt.</value>
+  </data>
+  <data name="StreamQuality_FormatWhy" xml:space="preserve">
+    <value>Vom Server umgewandelt: Windows kann {0}-Dateien nicht abspielen.</value>
+  </data>
+  <data name="StreamQuality_BitrateWhy" xml:space="preserve">
+    <value>Vom Server umgewandelt: Die Datei liegt über der Grenze von {0}, die in Einstellungen → Streaming für diesen Server gilt.</value>
+  </data>
+  <data name="StreamQuality_DownloadedFile" xml:space="preserve">
+    <value>Heruntergeladene Datei</value>
+  </data>
 </root>

@@ -22,6 +22,7 @@ internal sealed partial class NowPlayingBar : UserControl
         ViewModel = App.Services.GetRequiredService<NowPlayingViewModel>();
         Queue = App.Services.GetRequiredService<QueueViewModel>();
         Lyrics = App.Services.GetRequiredService<LyricsViewModel>();
+        StreamQuality = App.Services.GetRequiredService<StreamQualityMonitor>();
         SleepTimer = App.Services.GetRequiredService<SleepTimer>();
         InitializeComponent();
         Loaded += (_, _) => ViewModel.DisplayScale = XamlRoot?.RasterizationScale ?? 1;
@@ -32,6 +33,9 @@ internal sealed partial class NowPlayingBar : UserControl
     public QueueViewModel Queue { get; }
 
     public LyricsViewModel Lyrics { get; }
+
+    /// <summary>Gets what plays: the original file, a conversion or a download (#397).</summary>
+    public StreamQualityMonitor StreamQuality { get; }
 
     /// <summary>Gets the sleep timer (#396).</summary>
     public SleepTimer SleepTimer { get; }
