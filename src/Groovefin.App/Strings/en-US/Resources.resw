@@ -347,6 +347,30 @@
   <data name="ServersListHeader.Text" xml:space="preserve">
     <value>Your servers</value>
   </data>
+  <data name="ServersFoundHeader.Text" xml:space="preserve">
+    <value>Servers on your network</value>
+  </data>
+  <data name="ServerFoundList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Servers on your network</value>
+  </data>
+  <data name="ServersSearchAgainButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Search again</value>
+  </data>
+  <data name="ServersSearchAgainButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Search again</value>
+  </data>
+  <data name="ServersSearchingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Looking for servers on your network</value>
+  </data>
+  <data name="ServersNoneFound.Text" xml:space="preserve">
+    <value>No new servers found on your network.</value>
+  </data>
+  <data name="ServerAddFoundButton.Content" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Servers_AddFound" xml:space="preserve">
+    <value>Add {0}</value>
+  </data>
   <data name="ServerList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Your servers</value>
   </data>
