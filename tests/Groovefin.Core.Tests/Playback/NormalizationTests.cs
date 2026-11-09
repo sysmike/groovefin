@@ -61,4 +61,64 @@ public sealed class NormalizationTests
 
         act.Should().Throw<ArgumentNullException>();
     }
+
+    private static Track Song(string album, int number, double? trackGain, double? albumGain = -3.0) => new()
+    {
+        Id = $"{album}{number}",
+        Name = $"{album}{number}",
+        AlbumId = album,
+        TrackNumber = number,
+        NormalizationGain = trackGain,
+        AlbumNormalizationGain = albumGain,
+    };
+
+    [Fact]
+    public void Automatic_takes_the_album_gain_while_an_album_plays_in_order()
+    {
+        Track[] album = [Song("x", 1, -8), Song("x", 2, -1), Song("x", 3, -5)];
+
+        Enumerable.Range(0, 3).Select(i => Normalization.GainDb(album, i, NormalizationMode.Automatic))
+            .Should().Equal(-3.0, -3.0, -3.0);
+    }
+
+    [Fact]
+    public void Automatic_takes_the_track_gain_in_a_mix_or_out_of_order()
+    {
+        Track[] mixed = [Song("x", 1, -8), Song("y", 1, -1), Song("x", 2, -5)];
+        Track[] shuffled = [Song("x", 3, -8), Song("x", 1, -1)];
+
+        Enumerable.Range(0, 3).Select(i => Normalization.GainDb(mixed, i, NormalizationMode.Automatic)).Should().Equal(-8.0, -1.0, -5.0);
+        Normalization.GainDb(shuffled, 0, NormalizationMode.Automatic).Should().Be(-8.0, "track 1 after track 3 is not the album in order");
+        Normalization.GainDb(shuffled, 1, NormalizationMode.Automatic).Should().Be(-1.0);
+        Normalization.GainDb(Song("x", 1, -8), NormalizationMode.Automatic).Should().Be(-8.0, "alone it has no album around it");
+    }
+
+    [Fact]
+    public void The_next_disc_still_counts_as_in_order()
+    {
+        Track[] album = [Song("x", 12, -8) with { DiscNumber = 1 }, Song("x", 1, -1) with { DiscNumber = 2 }];
+
+        Normalization.GainDb(album, 1, NormalizationMode.Automatic).Should().Be(-3.0);
+    }
+
+    [Fact]
+    public void A_track_without_the_album_gain_takes_it_from_its_album_in_the_queue()
+    {
+        Track[] album = [Song("x", 1, -8), Song("x", 2, -1, albumGain: null), Song("y", 1, -6, albumGain: null)];
+
+        Normalization.GainDb(album, 1, NormalizationMode.Album).Should().Be(-3.0);
+        Normalization.GainDb(album, 1, NormalizationMode.Automatic).Should().Be(-3.0);
+        Normalization.GainDb(album, 2, NormalizationMode.Album).Should().Be(-6.0, "nothing of its album has one: its track gain");
+    }
+
+    [Theory]
+    [InlineData(NormalizationTarget.Server, -8.0, -8.0)]
+    [InlineData(NormalizationTarget.Louder, -8.0, -4.0)]
+    [InlineData(NormalizationTarget.Loudest, -8.0, -1.0)]
+    [InlineData(NormalizationTarget.Loudest, -3.0, 0.0)]
+    [InlineData(NormalizationTarget.Loudest, 2.0, 0.0)]
+    public void A_louder_target_lifts_the_gain_but_never_above_zero(NormalizationTarget target, double gain, double expected)
+    {
+        Normalization.GainDb(Song(gain, null), NormalizationMode.Track, Normalization.PreampDb(target)).Should().Be(expected);
+    }
 }

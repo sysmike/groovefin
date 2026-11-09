@@ -345,12 +345,28 @@ public sealed class SettingsViewModelTests
         sut.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
         sut.NormalizationIndex.Should().Be(0);
 
-        sut.NormalizationIndex = 2;
-        sut.NormalizationIndex = 2;
+        sut.NormalizationIndex = 3;
+        sut.NormalizationIndex = 3;
         sut.NormalizationIndex = 5;
 
         _settings.Current.Playback.Normalization.Should().Be(NormalizationMode.Album);
-        changed.Should().Equal(nameof(sut.NormalizationIndex));
+        changed.Should().Equal(nameof(sut.NormalizationIndex), nameof(sut.HasNormalization));
+    }
+
+    [Fact]
+    public void Automatic_normalization_comes_second_and_the_target_is_saved()
+    {
+        var sut = CreateSut();
+        sut.HasNormalization.Should().BeFalse();
+
+        sut.NormalizationIndex = 1;
+        sut.NormalizationTargetIndex = 2;
+        sut.NormalizationTargetIndex = 9;
+
+        _settings.Current.Playback.Normalization.Should().Be(NormalizationMode.Automatic);
+        sut.HasNormalization.Should().BeTrue();
+        _settings.Current.Playback.NormalizationTarget.Should().Be(NormalizationTarget.Loudest);
+        sut.NormalizationTargetIndex.Should().Be(2);
     }
 
     [Fact]
