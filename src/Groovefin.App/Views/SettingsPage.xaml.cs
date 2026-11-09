@@ -1,13 +1,13 @@
 using Groovefin.Core.Services;
 using Groovefin.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
-using Windows.Foundation;
 
 namespace Groovefin.App.Views;
 
@@ -84,16 +84,22 @@ internal sealed partial class SettingsPage : Page
             return;
         }
 
-        // Focus first: focusing brings the setting into view only as far as needed, and the scroll below wins.
+        // Focus first: focusing brings the setting into view only as far as needed. The heading's request comes
+        // after that one has been laid out, so it wins and puts the heading at the top.
         var state = link.FocusState == FocusState.Keyboard ? FocusState.Keyboard : FocusState.Programmatic;
         if (FirstSettingAfter(heading) is { } setting)
         {
             setting.Focus(state);
         }
 
-        // The heading's top margin is the space above the section; keep some of it.
-        var top = heading.TransformToVisual((UIElement)PageScroller.Content).TransformPoint(new Point(0, 0)).Y;
-        PageScroller.ChangeView(null, Math.Max(0, top - 12), null, disableAnimation: true);
+        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () => heading.StartBringIntoView(new BringIntoViewOptions
+        {
+            AnimationDesired = false,
+            VerticalAlignmentRatio = 0,
+
+            // The heading's top margin is the space above the section; keep some of it.
+            VerticalOffset = -12,
+        }));
     }
 
     /// <summary>The first element that takes the focus between <paramref name="heading"/> and the next heading.</summary>
