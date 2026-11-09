@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using static Groovefin.App.Hosting.ShellInterop;
 
 namespace Groovefin.App.Hosting;
 
@@ -117,101 +118,4 @@ internal static class AppIdentity
     [DllImport("shell32.dll", ExactSpelling = true, CharSet = CharSet.Unicode)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern int SetCurrentProcessExplicitAppUserModelID(string appId);
-
-    [DllImport("ole32.dll", ExactSpelling = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern int PropVariantClear(ref PropVariant value);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private readonly struct PropertyKey(Guid formatId, uint propertyId)
-    {
-        public readonly Guid FormatId = formatId;
-        public readonly uint PropertyId = propertyId;
-    }
-
-    /// <summary>A <c>PROPVARIANT</c> holding at most a string (<c>VT_LPWSTR</c>); 24 bytes on 64-bit Windows.</summary>
-    [StructLayout(LayoutKind.Explicit, Size = 24)]
-    private struct PropVariant
-    {
-        private const ushort VtLpwstr = 31;
-
-        [FieldOffset(0)]
-        private ushort _type;
-
-        [FieldOffset(8)]
-        private IntPtr _pointer;
-
-        /// <summary>Copies <paramref name="value"/> into task memory; <see cref="PropVariantClear"/> frees it.</summary>
-        public static PropVariant FromString(string value) =>
-            new() { _type = VtLpwstr, _pointer = Marshal.StringToCoTaskMemUni(value) };
-
-        public readonly string? ToStringOrNull() => _type == VtLpwstr ? Marshal.PtrToStringUni(_pointer) : null;
-    }
-
-    /// <summary>The shell's shortcut object (<c>CLSID_ShellLink</c>).</summary>
-    [ComImport]
-    [Guid("00021401-0000-0000-C000-000000000046")]
-    [ClassInterface(ClassInterfaceType.None)]
-    private class ShellLink;
-
-    /// <summary><c>IShellLinkW</c> up to the methods used; the order must match the vtable.</summary>
-    [ComImport]
-    [Guid("000214F9-0000-0000-C000-000000000046")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IShellLinkW
-    {
-        void GetPath(
-            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] char[] file, int size, IntPtr findData, uint flags);
-
-        void GetIDList(out IntPtr idList);
-
-        void SetIDList(IntPtr idList);
-
-        void GetDescription([Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] char[] name, int size);
-
-        void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string name);
-
-        void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] char[] directory, int size);
-
-        void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string directory);
-
-        void GetArguments([Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] char[] arguments, int size);
-
-        void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string arguments);
-
-        void GetHotkey(out ushort hotkey);
-
-        void SetHotkey(ushort hotkey);
-
-        void GetShowCmd(out int showCommand);
-
-        void SetShowCmd(int showCommand);
-
-        void GetIconLocation([Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] char[] iconPath, int size, out int index);
-
-        void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string iconPath, int index);
-
-        void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string relativePath, uint reserved);
-
-        void Resolve(IntPtr window, uint flags);
-
-        void SetPath([MarshalAs(UnmanagedType.LPWStr)] string file);
-    }
-
-    /// <summary><c>IPropertyStore</c>; the order must match the vtable.</summary>
-    [ComImport]
-    [Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IPropertyStore
-    {
-        void GetCount(out uint count);
-
-        void GetAt(uint index, out PropertyKey key);
-
-        void GetValue(ref PropertyKey key, out PropVariant value);
-
-        void SetValue(ref PropertyKey key, ref PropVariant value);
-
-        void Commit();
-    }
 }

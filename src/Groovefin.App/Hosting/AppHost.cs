@@ -8,6 +8,7 @@ using Groovefin.Core.Equalizer;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.History;
 using Groovefin.Core.Images;
+using Groovefin.Core.JumpLists;
 using Groovefin.Core.Menus;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
@@ -170,6 +171,9 @@ internal static class AppHost
         builder.Services.AddSingleton<CurrentTrack>();
         builder.Services.AddSingleton<ContextMenus>();
         builder.Services.AddSingleton<QuickPlay>();
+        builder.Services.AddSingleton<IJumpList, WindowsJumpList>();
+        builder.Services.AddSingleton<JumpListSync>();
+        builder.Services.AddSingleton<JumpListActions>();
 
         // Servers
         builder.Services.AddSingleton<IServerManager, ServerManager>();
