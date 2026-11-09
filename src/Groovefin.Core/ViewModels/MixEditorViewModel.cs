@@ -147,7 +147,7 @@ public sealed partial class MixEditorViewModel : ObservableObject
             return true;
         }
 
-        if (value < MinYearValue || value > MaxYearValue || value != Math.Floor(value))
+        if (value < MinYearValue || value > MaxYearValue || !double.IsInteger(value))
         {
             return false;
         }
