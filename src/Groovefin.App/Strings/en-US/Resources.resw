@@ -2917,6 +2917,12 @@
   <data name="SettingsNormalizationTargetLoudest.Content" xml:space="preserve">
     <value>Loudest (+7 dB)</value>
   </data>
+  <data name="LetterJumpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Jump to a letter</value>
+  </data>
+  <data name="LetterJumpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Jump to a letter</value>
+  </data>
   <data name="SearchGenresHeader.Text" xml:space="preserve">
     <value>Genres</value>
   </data>

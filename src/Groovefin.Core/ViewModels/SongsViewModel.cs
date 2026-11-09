@@ -151,10 +151,18 @@ public sealed partial class SongsViewModel : ObservableObject, IDisposable
     public bool IsEmpty => _initialized && !IsLoading && Songs.Count == 0;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanJumpToLetter))]
     public partial TrackSortField SortBy { get; private set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanJumpToLetter))]
     public partial bool Descending { get; private set; }
+
+    /// <summary>Gets a value indicating whether the list can jump to a letter: sorted by name, A to Z (#390).</summary>
+    public bool CanJumpToLetter => SortBy == TrackSortField.Name && !Descending;
+
+    /// <summary>Raised with the index of the item a letter jump arrived at, for the view to show and focus it.</summary>
+    public event EventHandler<int>? JumpRequested;
 
     /// <summary>Loads the first page. Called once when the page is shown.</summary>
     public Task InitializeAsync()
@@ -199,6 +207,34 @@ public sealed partial class SongsViewModel : ObservableObject, IDisposable
 
     [RelayCommand(CanExecute = nameof(CanLoadMore))]
     private Task LoadMoreAsync() => LoadPageAsync(_generation);
+
+    /// <summary>Loads the songs up to the first one with <paramref name="letter"/> and asks the view to show it (#390).</summary>
+    [RelayCommand]
+    private async Task JumpToLetterAsync(string letter)
+    {
+        var generation = _generation;
+        try
+        {
+            var index = await LetterJump.LoadUpToAsync(
+                letter,
+                async name => (await _library.GetTracksAsync(CurrentQuery() with { StartIndex = 0, Limit = 1, NameLessThan = name }, _loadCancellation.Token)).TotalCount,
+                () => Songs.Count,
+                () => TotalCount,
+                count => LoadPageAsync(generation, count));
+            if (index is { } found && generation == _generation)
+            {
+                JumpRequested?.Invoke(this, found);
+            }
+        }
+        catch (Exception ex) when (ex is JellyfinException or InvalidOperationException or ArgumentException)
+        {
+            _errors.Report(ex, Operations.LoadSongs);
+        }
+        catch (OperationCanceledException)
+        {
+            // Reloaded or closed meanwhile.
+        }
+    }
 
     /// <summary>Plays the loaded songs from <paramref name="row"/> on.</summary>
     [RelayCommand]
@@ -386,14 +422,15 @@ public sealed partial class SongsViewModel : ObservableObject, IDisposable
         }
     }
 
-    private async Task LoadPageAsync(int generation)
+    private TrackQuery CurrentQuery() => new() { StartIndex = Songs.Count, Limit = PageSize, SortBy = SortBy, Descending = Descending };
+
+    private async Task LoadPageAsync(int generation, int? limit = null)
     {
         var cancellation = _loadCancellation.Token;
         IsLoading = true;
         try
         {
-            var query = new TrackQuery { StartIndex = Songs.Count, Limit = PageSize, SortBy = SortBy, Descending = Descending };
-            var page = await _library.GetTracksAsync(query, cancellation);
+            var page = await _library.GetTracksAsync(CurrentQuery() with { Limit = Math.Max(PageSize, limit ?? 0) }, cancellation);
 
             // A newer reload started while this page was loading: drop the stale result.
             if (generation != _generation)

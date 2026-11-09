@@ -95,10 +95,18 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     public partial CollectionViewMode ViewMode { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanJumpToLetter))]
     public partial AlbumSortField SortBy { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanJumpToLetter))]
     public partial bool Descending { get; set; }
+
+    /// <summary>Gets a value indicating whether the list can jump to a letter: sorted by name, A to Z (#390).</summary>
+    public bool CanJumpToLetter => SortBy == AlbumSortField.Name && !Descending;
+
+    /// <summary>Raised with the index of the item a letter jump arrived at, for the view to show and focus it.</summary>
+    public event EventHandler<int>? JumpRequested;
 
     [ObservableProperty]
     public partial bool FavouritesOnly { get; set; }
@@ -162,6 +170,34 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
 
     [RelayCommand(CanExecute = nameof(CanLoadMore))]
     private Task LoadMoreAsync() => LoadPageAsync(_generation);
+
+    /// <summary>Loads the albums up to the first one with <paramref name="letter"/> and asks the view to show it (#390).</summary>
+    [RelayCommand]
+    private async Task JumpToLetterAsync(string letter)
+    {
+        var generation = _generation;
+        try
+        {
+            var index = await LetterJump.LoadUpToAsync(
+                letter,
+                async name => (await _library.GetAlbumsAsync(CurrentQuery() with { StartIndex = 0, Limit = 1, NameLessThan = name }, _loadCancellation.Token)).TotalCount,
+                () => Albums.Count,
+                () => TotalCount,
+                count => LoadPageAsync(generation, count));
+            if (index is { } found && generation == _generation)
+            {
+                JumpRequested?.Invoke(this, found);
+            }
+        }
+        catch (Exception ex) when (ex is JellyfinException or InvalidOperationException or ArgumentException)
+        {
+            _errors.Report(ex, Operations.LoadAlbums);
+        }
+        catch (OperationCanceledException)
+        {
+            // Reloaded or closed meanwhile.
+        }
+    }
 
     [RelayCommand]
     private void OpenAlbum(AlbumItem item) => _navigation.NavigateTo(PageKeys.Album, item.Album.Id);
@@ -236,13 +272,13 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
         return LoadPageAsync(generation);
     }
 
-    private async Task LoadPageAsync(int generation)
+    private async Task LoadPageAsync(int generation, int? limit = null)
     {
         var cancellation = _loadCancellation.Token;
         IsLoading = true;
         try
         {
-            var page = await _library.GetAlbumsAsync(CurrentQuery(), cancellation);
+            var page = await _library.GetAlbumsAsync(CurrentQuery() with { Limit = Math.Max(PageSize, limit ?? 0) }, cancellation);
 
             // A newer reload started while this page was loading: drop the stale result.
             if (generation != _generation)
