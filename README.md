@@ -6,7 +6,7 @@ A native Jellyfin music player for Windows 11, built with C#, .NET 10 and WinUI 
 [![CodeQL](https://github.com/sysmike/groovefin/actions/workflows/codeql.yml/badge.svg)](https://github.com/sysmike/groovefin/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-![Groovefin's start page: a random album on a colour taken from its cover, then rows of recently played and recently added albums](assets/screenshots/home.webp)
+![Groovefin's start page with the navigation pane open: a random album on a colour taken from its cover, then rows of recently played and recently added albums](assets/screenshots/home.webp)
 
 ## Features
 
