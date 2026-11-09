@@ -17,6 +17,7 @@ public sealed class ServersViewModelTests
     private readonly IDialogService _dialogs = Substitute.For<IDialogService>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
+    private readonly IServerDiscovery _discovery = Substitute.For<IServerDiscovery>();
     private IDispatcher _dispatcher = new ImmediateDispatcher();
 
     public ServersViewModelTests()
@@ -26,7 +27,12 @@ public sealed class ServersViewModelTests
         _servers.ActiveServer.Returns(Alpha);
     }
 
-    private ServersViewModel CreateSut() => new(_servers, _dialogs, _navigation, _strings, _dispatcher);
+    private ServersViewModel CreateSut() => new(_servers, _dialogs, _navigation, _strings, _dispatcher, _discovery);
+
+    private void Discover(params DiscoveredServer[] servers) =>
+        _discovery.DiscoverAsync(Arg.Any<CancellationToken>()).Returns(servers);
+
+    private static DiscoveredServer Found(string id, string name, string address) => new(id, name, new Uri(address));
 
     private void RaiseChanged() => _servers.Changed += Raise.Event();
 
@@ -221,5 +227,88 @@ public sealed class ServersViewModelTests
         ui.RunAll();
 
         sut.Servers.Select(s => s.Name).Should().Equal("Alpha");
+    }
+
+    [Fact]
+    public async Task Servers_found_on_the_network_are_listed_unless_already_added()
+    {
+        Discover(
+            Found("id-a", "Alpha again", "http://192.168.1.2:8096"),
+            Found("id-x", "Beta's address", "http://beta:8096"),
+            Found("id-g", "Gamma", "http://192.168.1.3:8096"));
+        using var sut = CreateSut();
+
+        await sut.DiscoverCommand.ExecuteAsync(null);
+
+        sut.Discovered.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Name = "Gamma",
+            Address = "http://192.168.1.3:8096",
+            IsUnencrypted = true,
+            AccessibleName = "Gamma, http://192.168.1.3:8096",
+            AddName = "Servers_AddFound",
+        });
+        sut.HasDiscovered.Should().BeTrue();
+        sut.NoneDiscovered.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_search_without_new_servers_says_so()
+    {
+        Discover(Found("id-a", "Alpha", "http://alpha:8096"));
+        using var sut = CreateSut();
+
+        await sut.DiscoverCommand.ExecuteAsync(null);
+
+        sut.HasDiscovered.Should().BeFalse();
+        sut.NoneDiscovered.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Adding_a_found_server_uses_its_address_and_takes_it_off_the_list()
+    {
+        _servers.Servers.Returns([]);
+        var gamma = new ServerProfile { Id = "id-g", Name = "Gamma", Address = new Uri("http://192.168.1.3:8096/") };
+        _servers.AddAsync("http://192.168.1.3:8096", Arg.Any<CancellationToken>()).Returns(_ =>
+        {
+            _servers.Servers.Returns([gamma]);
+            RaiseChanged();
+            return gamma;
+        });
+        Discover(Found("id-g", "Gamma", "http://192.168.1.3:8096"));
+        using var sut = CreateSut();
+        await sut.DiscoverCommand.ExecuteAsync(null);
+
+        await sut.AddDiscoveredCommand.ExecuteAsync(sut.Discovered[0]);
+
+        sut.Discovered.Should().BeEmpty();
+        _navigation.Received(1).NavigateTo(PageKeys.SignIn, "id-g");
+    }
+
+    [Fact]
+    public async Task A_found_server_that_fails_to_add_shows_the_error()
+    {
+        _servers.AddAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns<ServerProfile>(_ => throw new JellyfinException("down", statusCode: null));
+        Discover(Found("id-g", "Gamma", "http://192.168.1.3:8096"));
+        using var sut = CreateSut();
+        await sut.DiscoverCommand.ExecuteAsync(null);
+
+        await sut.AddDiscoveredCommand.ExecuteAsync(sut.Discovered[0]);
+
+        sut.FormError.Should().Be("Servers_Unreachable");
+        sut.Discovered.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task A_cancelled_search_changes_nothing()
+    {
+        _discovery.DiscoverAsync(Arg.Any<CancellationToken>()).Returns<IReadOnlyList<DiscoveredServer>>(_ => throw new OperationCanceledException());
+        using var sut = CreateSut();
+
+        await sut.DiscoverCommand.ExecuteAsync(null);
+
+        sut.HasDiscovered.Should().BeFalse();
+        sut.NoneDiscovered.Should().BeFalse();
     }
 }

@@ -14,7 +14,7 @@ internal sealed partial class ServersPage : Page
     {
         ViewModel = App.CreateViewModel<ServersViewModel>();
         InitializeComponent();
-        Loaded += (_, _) => AddressBox.Focus(FocusState.Programmatic);
+        Loaded += OnLoaded;
     }
 
     public ServersViewModel ViewModel { get; }
@@ -22,7 +22,24 @@ internal sealed partial class ServersPage : Page
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
+        ViewModel.DiscoverCommand.Cancel();
         ViewModel.Dispose();
+    }
+
+    /// <summary>Focuses the address box and looks for servers on the network (#405).</summary>
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        Loaded -= OnLoaded;
+        AddressBox.Focus(FocusState.Programmatic);
+        ViewModel.DiscoverCommand.Execute(null);
+    }
+
+    private void OnAddFoundClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is DiscoveredServerItem item)
+        {
+            ViewModel.AddDiscoveredCommand.Execute(item);
+        }
     }
 
     private static ServerItem? ItemOf(object sender) => (sender as FrameworkElement)?.DataContext as ServerItem;

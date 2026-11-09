@@ -65,6 +65,91 @@
                         IsActive="{x:Bind ViewModel.AddCommand.IsRunning, Mode=OneWay}" />
                 </Grid>
 
+                <!--  Servers found on the local network (#405): searched when the page opens.  -->
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        x:Uid="ServersFoundHeader"
+                        VerticalAlignment="Center"
+                        AutomationProperties.HeadingLevel="Level2"
+                        Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <Button
+                        x:Uid="ServersSearchAgainButton"
+                        Grid.Column="1"
+                        AutomationProperties.AutomationId="ServersSearchAgainButton"
+                        Command="{x:Bind ViewModel.DiscoverCommand}"
+                        Style="{StaticResource SubtleButtonStyle}">
+                        <FontIcon FontSize="14" Glyph="&#xE72C;" />
+                    </Button>
+                    <ProgressRing
+                        x:Uid="ServersSearchingRing"
+                        Grid.Column="2"
+                        Width="16"
+                        Height="16"
+                        HorizontalAlignment="Left"
+                        IsActive="{x:Bind ViewModel.DiscoverCommand.IsRunning, Mode=OneWay}" />
+                </Grid>
+                <TextBlock
+                    x:Uid="ServersNoneFound"
+                    Margin="0,-8,0,0"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    Visibility="{x:Bind ViewModel.NoneDiscovered, Mode=OneWay}" />
+                <ListView
+                    x:Uid="ServerFoundList"
+                    Margin="0,-8,0,0"
+                    AutomationProperties.AutomationId="ServerFoundList"
+                    ItemsSource="{x:Bind ViewModel.Discovered}"
+                    SelectionMode="None"
+                    Visibility="{x:Bind ViewModel.HasDiscovered, Mode=OneWay}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:DiscoveredServerItem">
+                            <Grid
+                                Padding="0,8"
+                                AutomationProperties.Name="{x:Bind AccessibleName}"
+                                ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <FontIcon VerticalAlignment="Center" Glyph="&#xE968;" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Name}" />
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind Address}" />
+                                    <StackPanel
+                                        Orientation="Horizontal"
+                                        Spacing="4"
+                                        Visibility="{x:Bind IsUnencrypted}">
+                                        <FontIcon
+                                            AutomationProperties.AccessibilityView="Raw"
+                                            FontSize="12"
+                                            Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                                            Glyph="&#xE7BA;" />
+                                        <TextBlock
+                                            x:Uid="ServerUnencryptedBadge"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Style="{StaticResource CaptionTextBlockStyle}" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <Button
+                                    x:Uid="ServerAddFoundButton"
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.Name="{x:Bind AddName}"
+                                    Click="OnAddFoundClick" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
                 <TextBlock
                     x:Uid="ServersListHeader"
                     AutomationProperties.HeadingLevel="Level2"
