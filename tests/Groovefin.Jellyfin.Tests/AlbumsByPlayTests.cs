@@ -76,6 +76,40 @@ public sealed class AlbumsByPlayTests : IDisposable
     }
 
     [Fact]
+    public async Task Played_before_keeps_only_the_albums_not_played_since()
+    {
+        // B's newest song played last week, an older one two years ago: B is out. A was last played two years ago.
+        var now = DateTimeOffset.UtcNow;
+        object Played(int number, string albumId, DateTimeOffset at) => new
+        {
+            Id = Guid.NewGuid(),
+            Name = $"Song {number}",
+            Type = "Audio",
+            AlbumId = Guid.ParseExact(albumId, "N"),
+            UserData = new { PlayCount = 1, Played = true, LastPlayedDate = at },
+        };
+        Stub(Request.Create().WithPath("/Items").WithParam("includeItemTypes", "Audio"),
+            new { Items = new[] { Played(1, AlbumB, now.AddDays(-7)), Played(2, AlbumA, now.AddYears(-2)), Played(3, AlbumB, now.AddYears(-2)) }, TotalRecordCount = 3 }, 1);
+        Stub(Request.Create().WithPath("/Items").WithParam("ids"),
+            new { Items = new[] { Album(AlbumA, "A"), Album(AlbumB, "B"), Album(AlbumC, "C") }, TotalRecordCount = 3 }, 1);
+        Stub(Request.Create().WithPath("/Items").WithParam("includeItemTypes", "MusicAlbum"),
+            new { Items = new[] { Album(AlbumA, "A"), Album(AlbumB, "B"), Album(AlbumC, "C") }, TotalRecordCount = 3 }, 5);
+        _host.ConnectAsTestUser();
+        var query = ByLastPlay() with { PlayedBefore = now.AddYears(-1), Limit = 20 };
+
+        var page = await _host.Library.GetAlbumsAsync(query, TestContext.Current.CancellationToken);
+        var byName = await _host.Library.GetAlbumsAsync(query with { SortBy = AlbumSortField.Name, Descending = false }, TestContext.Current.CancellationToken);
+
+        page.Items.Select(a => a.Name).Should().Equal("A");
+        byName.Items.Select(a => a.Name).Should().Equal("A");
+
+        // The songs newest first, with their play dates.
+        var songs = Queries().First(q => q["includeItemTypes"] == "Audio");
+        songs["sortBy"].Should().Be("DatePlayed");
+        songs["enableUserData"].Should().BeEquivalentTo("true");
+    }
+
+    [Fact]
     public async Task Oldest_first_is_the_reverse()
     {
         StubLibrary();

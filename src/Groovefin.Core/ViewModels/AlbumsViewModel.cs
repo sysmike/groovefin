@@ -31,8 +31,27 @@ public sealed record AlbumItem(Album Album, ImageRequest? Cover)
     public string PlaysText { get; init; } = string.Empty;
 }
 
-/// <summary>The order to open the Albums page in, e.g. from "Show all" on the home page (#376).</summary>
-public sealed record AlbumsOrder(AlbumSortField SortBy, bool Descending);
+/// <summary>
+/// The order to open the Albums page in, e.g. from "Show all" on the home page (#376); with the favourites only, or
+/// only the albums of a home page row (#394).
+/// </summary>
+public sealed record AlbumsOrder(AlbumSortField SortBy, bool Descending)
+{
+    public bool FavouritesOnly { get; init; }
+
+    public AlbumSelection? Selection { get; init; }
+}
+
+/// <summary>
+/// Albums the Albums page shows instead of all, under the name of the home page row they come from (#394): given
+/// ones, or those not played since a time. The filters apply within them.
+/// </summary>
+public sealed record AlbumSelection(string Title)
+{
+    public IReadOnlyList<string> Ids { get; init; } = [];
+
+    public DateTimeOffset? PlayedBefore { get; init; }
+}
 
 /// <summary>
 /// Albums page: pages through all albums of the active server with sorting and filters. Loads the next
@@ -120,6 +139,15 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial int? MaxYear { get; set; }
 
+    /// <summary>Gets the albums shown instead of all, from a home page row (#394); <see langword="null"/> for all.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelection), nameof(SelectionTitle))]
+    public partial AlbumSelection? Selection { get; private set; }
+
+    public bool HasSelection => Selection is not null;
+
+    public string SelectionTitle => Selection?.Title ?? string.Empty;
+
     /// <summary>Gets a value indicating whether any filter is active (for the filter button state).</summary>
     public bool HasFilters => FavouritesOnly || Genre is not null || MinYear is not null || MaxYear is not null;
 
@@ -145,8 +173,8 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Shows every album in <paramref name="order"/>: filters are cleared and the list reloads once. Before
-    /// <see cref="InitializeAsync"/> it only sets the order, which the first load uses.
+    /// Shows every album in <paramref name="order"/>, or its selection: other filters are cleared and the list
+    /// reloads once. Before <see cref="InitializeAsync"/> it only sets the order, which the first load uses.
     /// </summary>
     public Task ShowAsync(AlbumsOrder order)
     {
@@ -157,6 +185,8 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
             SortBy = order.SortBy;
             Descending = order.Descending;
             ClearFilters();
+            FavouritesOnly = order.FavouritesOnly;
+            Selection = order.Selection;
         }
         finally
         {
@@ -201,6 +231,16 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void OpenAlbum(AlbumItem item) => _navigation.NavigateTo(PageKeys.Album, item.Album.Id);
+
+    /// <summary>Shows all albums again instead of a home page row's, and reloads: the page opened from the navigation pane.</summary>
+    public Task ShowEveryAlbumAsync()
+    {
+        Selection = null;
+        return ReloadAsync();
+    }
+
+    [RelayCommand]
+    private Task ClearSelectionAsync() => ShowEveryAlbumAsync();
 
     [RelayCommand]
     private void ClearFilters()
@@ -324,5 +364,7 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
         MinYear = MinYear,
         MaxYear = MaxYear,
         FavouritesOnly = FavouritesOnly,
+        Ids = Selection?.Ids ?? [],
+        PlayedBefore = Selection?.PlayedBefore,
     };
 }

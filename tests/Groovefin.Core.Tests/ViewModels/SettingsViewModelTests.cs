@@ -604,6 +604,47 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void The_home_rows_list_every_row_with_the_default_ones_shown()
+    {
+        var sut = CreateNavigationSut();
+
+        sut.HomeRows.Select(r => r.Key).Should().Equal(Enum.GetNames<HomeShelfKind>());
+        sut.HomeRows.Where(r => r.IsVisible).Select(r => r.Key).Should().Equal(nameof(HomeShelfKind.RecentlyPlayed), nameof(HomeShelfKind.RecentlyAdded));
+        sut.HomeRows[2].Name.Should().Be("HomeShelf_MostPlayed");
+        sut.HomeRows[0].MoveUpCommand.CanExecute(null).Should().BeFalse();
+        sut.HomeRows[^1].MoveDownCommand.CanExecute(null).Should().BeFalse();
+        _settings.Current.Appearance.HomeRows.Should().BeEmpty("opening Settings saves nothing");
+    }
+
+    [Fact]
+    public void A_home_row_can_be_shown_moved_hidden_and_reset()
+    {
+        var sut = CreateNavigationSut();
+        var mostPlayed = sut.HomeRows.Single(r => r.Key == nameof(HomeShelfKind.MostPlayed));
+
+        mostPlayed.IsVisible = true;
+        mostPlayed.MoveUpCommand.Execute(null);
+        mostPlayed.MoveUpCommand.Execute(null);
+
+        HomeLayout.VisibleRows(_settings.Current.Appearance.HomeRows).Should().Equal(HomeShelfKind.MostPlayed, HomeShelfKind.RecentlyPlayed, HomeShelfKind.RecentlyAdded);
+        mostPlayed.MoveUpCommand.CanExecute(null).Should().BeFalse();
+
+        // Unlike the navigation pane, the home page may show no row at all.
+        foreach (var row in sut.HomeRows)
+        {
+            row.IsVisible = false;
+        }
+
+        sut.HomeRows.Should().OnlyContain(r => r.CanToggle);
+        HomeLayout.VisibleRows(_settings.Current.Appearance.HomeRows).Should().BeEmpty();
+
+        sut.ResetHomeRowsCommand.Execute(null);
+
+        _settings.Current.Appearance.HomeRows.Should().BeEmpty();
+        sut.HomeRows.Where(r => r.IsVisible).Select(r => r.Key).Should().Equal(nameof(HomeShelfKind.RecentlyPlayed), nameof(HomeShelfKind.RecentlyAdded));
+    }
+
+    [Fact]
     public void The_move_buttons_move_a_section_and_save_the_order()
     {
         var sut = CreateNavigationSut();

@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Navigation;
 
 namespace Groovefin.App.Views;
 
-/// <summary>Landing page: a random album, then rows of albums that fit the window (recently played, recently added).</summary>
+/// <summary>Landing page: a random album, then the rows of albums chosen in Settings (#394), each as many as fit the window.</summary>
 internal sealed partial class HomePage : Page
 {
     public HomePage()

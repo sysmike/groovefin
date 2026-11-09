@@ -29,13 +29,16 @@ namespace Groovefin.Core.History;
 /// are handled on the UI thread; loading, saving and syncing run one after another in the background.
 /// Create it once at startup and keep it alive.
 /// </summary>
-public sealed partial class PlayHistory : IDisposable
+public sealed partial class PlayHistory : IPlayLog, IDisposable
 {
     /// <summary>How far back "On repeat" looks, and how far back the first sync takes plays.</summary>
     public static readonly TimeSpan Window = TimeSpan.FromDays(30);
 
-    /// <summary>How long plays are kept: a year, for the statistics (#382).</summary>
-    public static readonly TimeSpan Retention = TimeSpan.FromDays(365);
+    /// <summary>
+    /// How long plays are kept: a year for the statistics (#382), and a few weeks more, so this week last year on
+    /// the home page is complete (#394).
+    /// </summary>
+    public static readonly TimeSpan Retention = TimeSpan.FromDays(400);
 
     /// <summary>A track counts once listened to for half its length, or this long.</summary>
     public static readonly TimeSpan MaxListenTime = TimeSpan.FromMinutes(4);

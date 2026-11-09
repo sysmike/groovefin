@@ -1,13 +1,17 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
+using Groovefin.Core.History;
 using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Groovefin.Core.Tests.ViewModels;
 
@@ -19,6 +23,9 @@ public sealed class HomeViewModelTests
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
     private readonly IPlayer _player = Substitute.For<IPlayer>();
     private readonly ICoverColours _colours = Substitute.For<ICoverColours>();
+    private readonly InMemorySettingsService _settings = new();
+    private readonly IPlayLog _history = Substitute.For<IPlayLog>();
+    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 11, 9, 12, 0, 0, TimeSpan.Zero));
 
     public HomeViewModelTests()
     {
@@ -37,7 +44,25 @@ public sealed class HomeViewModelTests
         _library.GetAlbumTracksAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns([new Track { Id = "song", Name = "Song", Duration = TimeSpan.FromMinutes(3) }]);
         _colours.GetAsync(Arg.Any<ImageRequest>(), Arg.Any<CancellationToken>()).Returns(new CoverColour(20, 40, 80));
+        History();
     }
+
+    private DateTimeOffset Now => _time.GetUtcNow();
+
+    private void History(params (string TrackId, DateTimeOffset At, PlaySource Source, PlayedTrack? Track)[] plays) =>
+        _history.GetLogAsync().Returns(new PlayLog(
+            Now.AddYears(-2),
+            [.. plays.Select(p => new PlayRecord(p.TrackId, p.At, p.Source))],
+            plays.Where(p => p.Track is not null).DistinctBy(p => p.TrackId).ToDictionary(p => p.TrackId, p => p.Track!, StringComparer.Ordinal)));
+
+    private void Rows(params HomeShelfKind[] shown) =>
+        _settings.Update(s => s with
+        {
+            Appearance = s.Appearance with
+            {
+                HomeRows = [.. Enum.GetValues<HomeShelfKind>().Select(k => new HomeRowSettings { Key = k.ToString(), IsVisible = shown.Contains(k) })],
+            },
+        });
 
     private static PagedResult<Album> Page(string prefix, int count)
     {
@@ -48,11 +73,14 @@ public sealed class HomeViewModelTests
     }
 
     private void FailFor(HomeShelfKind kind, Exception exception) =>
-        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q == HomeViewModel.QueryFor(kind)), Arg.Any<CancellationToken>())
+        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q == HomeViewModel.QueryFor(kind, Now)), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<PagedResult<Album>>(exception));
 
     private HomeViewModel CreateSut() =>
-        new(_library, _navigation, _errors, _strings, _player, new FavouritesService(_library, new WeakReferenceMessenger(), _errors), _colours);
+        new(_library, _navigation, _errors, _strings, _player, new FavouritesService(_library, new WeakReferenceMessenger(), _errors), _colours, _settings, _history, _time)
+        {
+            Pick = _ => 0,
+        };
 
     [Fact]
     public void Disposing_twice_does_not_throw()
@@ -71,7 +99,7 @@ public sealed class HomeViewModelTests
     {
         using var sut = CreateSut();
 
-        // Most played, random and favourite albums have pages of their own (#367).
+        // By default the two rows the page always had; the others are shown in Settings (#394).
         sut.Shelves.Select(s => s.Kind).Should().Equal(HomeShelfKind.RecentlyPlayed, HomeShelfKind.RecentlyAdded);
         sut.Shelves.Select(s => s.Title).Should().Equal("[HomeShelf_RecentlyPlayed]", "[HomeShelf_RecentlyAdded]");
         sut.Shelves.Should().OnlyContain(s => !s.IsLoaded && !s.IsEmpty);
@@ -83,7 +111,7 @@ public sealed class HomeViewModelTests
     public void Each_shelf_has_its_query(HomeShelfKind kind, AlbumSortField sortBy, bool playedOnly)
     {
         // Played albums by their songs' plays: the library service works that out (#369).
-        HomeViewModel.QueryFor(kind).Should().BeEquivalentTo(new
+        HomeViewModel.QueryFor(kind, Now).Should().BeEquivalentTo(new
         {
             StartIndex = 0,
             Limit = HomeViewModel.ShelfSize,
@@ -418,5 +446,138 @@ public sealed class HomeViewModelTests
 
         _navigation.Received(1).NavigateTo(PageKeys.Album, "Random-0");
         _navigation.Received(1).NavigateTo(PageKeys.Genre, "g1");
+    }
+
+    [Fact]
+    public void The_rows_are_those_shown_in_settings_in_their_order()
+    {
+        _settings.Update(s => s with
+        {
+            Appearance = s.Appearance with
+            {
+                HomeRows =
+                [
+                    new HomeRowSettings { Key = nameof(HomeShelfKind.MostPlayed) },
+                    new HomeRowSettings { Key = nameof(HomeShelfKind.RecentlyAdded), IsVisible = false },
+                ],
+            },
+        });
+        using var sut = CreateSut();
+
+        // Rows not saved follow, as by default: Recently played shown, the rest hidden.
+        sut.Shelves.Select(s => s.Kind).Should().Equal(HomeShelfKind.MostPlayed, HomeShelfKind.RecentlyPlayed);
+    }
+
+    [Fact]
+    public void The_server_rows_have_their_queries()
+    {
+        HomeViewModel.QueryFor(HomeShelfKind.MostPlayed, Now).Should().BeEquivalentTo(new { SortBy = AlbumSortField.PlayCount, Descending = true, PlayedOnly = true });
+        HomeViewModel.QueryFor(HomeShelfKind.FavouriteAlbums, Now).Should().BeEquivalentTo(new { SortBy = AlbumSortField.Random, FavouritesOnly = true });
+
+        // A year before today's start, the same all day.
+        HomeViewModel.QueryFor(HomeShelfKind.NotPlayedInAYear, Now).Should().BeEquivalentTo(new
+        {
+            SortBy = AlbumSortField.DatePlayed,
+            Descending = true,
+            PlayedBefore = (DateTimeOffset?)new DateTimeOffset(2025, 11, 9, 0, 0, 0, TimeSpan.Zero),
+        });
+    }
+
+    [Fact]
+    public void Show_all_of_the_server_rows_opens_the_albums_page_like_the_row()
+    {
+        Rows(HomeShelfKind.MostPlayed, HomeShelfKind.FavouriteAlbums, HomeShelfKind.NotPlayedInAYear);
+        using var sut = CreateSut();
+
+        foreach (var shelf in sut.Shelves)
+        {
+            sut.ShowAllCommand.Execute(shelf);
+        }
+
+        _navigation.Received(1).NavigateTo(PageKeys.Albums, new AlbumsOrder(AlbumSortField.PlayCount, Descending: true));
+        _navigation.Received(1).NavigateTo(PageKeys.Albums, new AlbumsOrder(AlbumSortField.Name, Descending: false) { FavouritesOnly = true });
+        _navigation.Received(1).NavigateTo(PageKeys.Albums, new AlbumsOrder(AlbumSortField.DatePlayed, Descending: true)
+        {
+            Selection = new AlbumSelection("[HomeShelf_NotPlayedInAYear]") { PlayedBefore = HomeViewModel.YearAgo(Now) },
+        });
+    }
+
+    [Fact]
+    public async Task A_random_artist_comes_from_the_play_history_and_shows_all_on_its_page()
+    {
+        _strings.GetString("HomeShelf_MoreBy").Returns("More by {0}");
+        History(("t1", Now.AddDays(-2), PlaySource.Groovefin, new PlayedTrack("al1", ["ar1"], TimeSpan.FromMinutes(3))));
+        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q.AlbumArtistId == "ar1"), Arg.Any<CancellationToken>()).Returns(Page("ar1", 2));
+        _library.GetArtistAsync("ar1", Arg.Any<CancellationToken>()).Returns(new Artist { Id = "ar1", Name = "Daft Punk" });
+        Rows(HomeShelfKind.RandomArtist);
+        using var sut = CreateSut();
+
+        await sut.RefreshAsync();
+
+        var shelf = sut.Shelves.Single();
+        shelf.Title.Should().Be("More by Daft Punk");
+        shelf.Albums.Select(a => a.Album.Id).Should().Equal("ar1-0", "ar1-1");
+        sut.ShowAllCommand.Execute(shelf);
+        _navigation.Received(1).NavigateTo(PageKeys.Artist, "ar1");
+        await _library.DidNotReceiveWithAnyArgs().GetArtistsAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task Without_a_play_history_the_random_artist_is_any_artist()
+    {
+        _strings.GetString("HomeShelf_MoreBy").Returns("More by {0}");
+        _library.GetArtistsAsync(Arg.Is<ArtistQuery>(q => q.SortBy == ArtistSortField.Random), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<Artist>([new Artist { Id = "ar9", Name = "Air" }], 1, 0));
+        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q.AlbumArtistId == "ar9"), Arg.Any<CancellationToken>()).Returns(Page("ar9", 1));
+        Rows(HomeShelfKind.RandomArtist);
+        using var sut = CreateSut();
+
+        await sut.RefreshAsync();
+
+        sut.Shelves.Single().Title.Should().Be("More by Air");
+        sut.Shelves.Single().Albums.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task This_week_last_year_ranks_the_albums_played_most_then()
+    {
+        var day = Now.AddYears(-1);
+        History(
+            ("t1", day, PlaySource.Groovefin, new PlayedTrack("al1", [], TimeSpan.Zero)),
+            ("t2", day.AddDays(1), PlaySource.Server, null),
+            ("t2", day.AddDays(-2), PlaySource.Groovefin, null),
+            ("t3", day.AddDays(-10), PlaySource.Groovefin, new PlayedTrack("al3", [], TimeSpan.Zero)),
+            ("t4", day, PlaySource.Seeded, new PlayedTrack("al4", [], TimeSpan.Zero)));
+
+        // t2 was played before the history kept albums: the server knows its album.
+        _library.GetTracksByIdAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns([new Track { Id = "t2", Name = "Two", AlbumId = "al2" }]);
+        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q.Ids.Count > 0), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<Album>([new Album { Id = "al1", Name = "One" }, new Album { Id = "al2", Name = "Two" }], 2, 0));
+        Rows(HomeShelfKind.ThisWeekLastYear);
+        using var sut = CreateSut();
+
+        await sut.RefreshAsync();
+
+        var shelf = sut.Shelves.Single();
+        shelf.Albums.Select(a => a.Album.Id).Should().Equal("al2", "al1");
+        await _library.Received(1).GetTracksByIdAsync(Arg.Is<IReadOnlyList<string>>(ids => ids.SequenceEqual(new[] { "t2" })), Arg.Any<CancellationToken>());
+
+        sut.ShowAllCommand.Execute(shelf);
+        _navigation.Received(1).NavigateTo(PageKeys.Albums, Arg.Is<AlbumsOrder>(o => o.Selection!.Ids.SequenceEqual(new[] { "al2", "al1" }) && o.Selection.Title == "[HomeShelf_ThisWeekLastYear]"));
+    }
+
+    [Fact]
+    public async Task This_week_last_year_without_plays_then_says_how_it_fills()
+    {
+        Rows(HomeShelfKind.ThisWeekLastYear);
+        using var sut = CreateSut();
+
+        await sut.RefreshAsync();
+
+        var shelf = sut.Shelves.Single();
+        shelf.IsEmpty.Should().BeTrue();
+        shelf.EmptyText.Should().Be("[HomeShelfEmpty_ThisWeekLastYear]");
+        await _library.DidNotReceive().GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q.Ids.Count > 0), Arg.Any<CancellationToken>());
     }
 }

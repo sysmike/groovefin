@@ -85,7 +85,7 @@ internal sealed partial class AlbumsPage : Page
             _openedAlbum = null;
             if (order is null)
             {
-                _ = ViewModel.ReloadAsync();
+                _ = ViewModel.ShowEveryAlbumAsync();
             }
         }
     }

@@ -5,8 +5,8 @@ using Groovefin.Core.Services;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>
-/// A row of the navigation pane's layout in Settings (#255): a main section, its switch and its move buttons.
-/// Changes go to <see cref="SettingsViewModel"/>, which saves them.
+/// A row of a layout in Settings: a main section of the navigation pane (#255) or a row of the home page (#394),
+/// with its switch and its move buttons. Changes go to <see cref="SettingsViewModel"/>, which saves them.
 /// </summary>
 public sealed partial class NavigationItemOption : ObservableObject
 {
@@ -25,7 +25,7 @@ public sealed partial class NavigationItemOption : ObservableObject
         IsVisible = isVisible;
     }
 
-    /// <summary>Gets a key of <see cref="Navigation.PageKeys.MainSections"/>.</summary>
+    /// <summary>Gets a key of <see cref="Navigation.PageKeys.MainSections"/>, or a <see cref="HomeShelfKind"/> name.</summary>
     public string Key { get; }
 
     public string Name { get; }

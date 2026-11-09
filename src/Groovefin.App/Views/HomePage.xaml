@@ -241,13 +241,13 @@
                                         VerticalAlignment="Center"
                                         AutomationProperties.HeadingLevel="Level2"
                                         Style="{StaticResource SubtitleTextBlockStyle}"
-                                        Text="{x:Bind Title}" />
-                                    <!--  The Albums page in the row's order (#376).  -->
+                                        Text="{x:Bind Title, Mode=OneWay}" />
+                                    <!--  The Albums page in the row's order (#376), or the row's artist (#394).  -->
                                     <HyperlinkButton
                                         x:Uid="HomeShelfShowAllButton"
                                         Grid.Column="1"
                                         VerticalAlignment="Center"
-                                        AutomationProperties.Name="{x:Bind ShowAllName}"
+                                        AutomationProperties.Name="{x:Bind ShowAllName, Mode=OneWay}"
                                         Click="OnShowAllClick"
                                         Tag="{x:Bind}"
                                         Visibility="{x:Bind HasAlbums, Mode=OneWay}" />
@@ -262,7 +262,7 @@
                                         controls:ItemMenu.IsEnabled="True"
                                         controls:TileSize.Source="{StaticResource HomeTile}"
                                         Padding="36,0"
-                                        AutomationProperties.Name="{x:Bind Title}"
+                                        AutomationProperties.Name="{x:Bind Title, Mode=OneWay}"
                                         IsItemInvokedEnabled="True"
                                         ItemInvoked="OnAlbumInvoked"
                                         ItemTemplate="{StaticResource HomeTileTemplate}"
@@ -285,11 +285,12 @@
                                         VerticalAlignment="Center"
                                         IsActive="{x:Bind ShowsProgress, Mode=OneWay}" />
                                     <TextBlock
-                                        x:Uid="HomeShelfEmpty"
                                         Margin="36,0"
                                         VerticalAlignment="Top"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                         Style="{StaticResource BodyTextBlockStyle}"
+                                        Text="{x:Bind EmptyText}"
+                                        TextWrapping="Wrap"
                                         Visibility="{x:Bind IsEmpty, Mode=OneWay}" />
                                     <TextBlock
                                         x:Uid="HomeShelfFailed"
