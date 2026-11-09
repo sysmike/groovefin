@@ -1077,6 +1077,23 @@ try {
     Test-TilesFillRows 'Albums' 16
     # A letter jump (#390): the A–Z button offers the letters, and "A" asks the server where A starts. The fake
     # server counts all three albums before it, so the jump lands on the last one, with the focus on it.
+    # Albums still has the order "Show all: Recently added" opened it in (#376), newest first; the A–Z button
+    # shows only sorted by name from A to Z, so that order is chosen first.
+    $sortBox = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Sort by'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ComboBox))) 'Albums sort box'
+    $sortBox.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+    Start-Sleep -Milliseconds 500
+    $byName = Find-Element ([System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Name'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) 'Name sort option'
+    $byName.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
+    Start-Sleep -Milliseconds 500
+    $sortExpand = $sortBox.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern)
+    if ($sortExpand.Current.ExpandCollapseState -eq [System.Windows.Automation.ExpandCollapseState]::Expanded) { $sortExpand.Collapse() }
+    $descendingToggle = (Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Descending order')) 'descending order button').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+    if ($descendingToggle.Current.ToggleState -eq [System.Windows.Automation.ToggleState]::On) { $descendingToggle.Toggle() }
+    Start-Sleep -Seconds 2
     $lettersBefore = Get-RequestCount 'nameLessThan=a'
     (Find-ById 'AlbumsLetterJump').GetCurrentPattern($invoke).Invoke()
     (Find-ById 'Letter_A').GetCurrentPattern($invoke).Invoke()
