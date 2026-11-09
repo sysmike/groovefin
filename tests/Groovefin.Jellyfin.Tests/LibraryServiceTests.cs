@@ -428,6 +428,17 @@ public sealed class LibraryServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetTracks_sends_where_a_letter_starts()
+    {
+        StubItems(new { Items = Array.Empty<object>(), TotalRecordCount = 0 });
+        _host.ConnectAsTestUser();
+
+        await _host.Library.GetTracksAsync(new TrackQuery { Limit = 1, NameLessThan = "m" }, TestContext.Current.CancellationToken);
+
+        LastQuery()["nameLessThan"].Should().Be("m");
+    }
+
+    [Fact]
     public async Task GetTracks_without_filters_sends_none()
     {
         StubItems(new { Items = Array.Empty<object>(), TotalRecordCount = 0 });

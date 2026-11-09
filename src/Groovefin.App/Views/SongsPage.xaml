@@ -74,7 +74,13 @@
                     VerticalAlignment="Center"
                     IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
             </StackPanel>
-            <DropDownButton x:Uid="SongsColumnsButton" Grid.Column="1">
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                <controls:LetterJumpButton
+                    x:Uid="LetterJumpButton"
+                    AutomationProperties.AutomationId="SongsLetterJump"
+                    LetterCommand="{x:Bind ViewModel.JumpToLetterCommand}"
+                    Visibility="{x:Bind ViewModel.CanJumpToLetter, Mode=OneWay}" />
+            <DropDownButton x:Uid="SongsColumnsButton">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon FontSize="16" Glyph="&#xE8A9;" />
                     <TextBlock x:Uid="SongsColumnsText" />
@@ -83,6 +89,7 @@
                     <MenuFlyout x:Name="ColumnsMenu" Opening="OnColumnsMenuOpening" Placement="BottomEdgeAlignedRight" />
                 </DropDownButton.Flyout>
             </DropDownButton>
+            </StackPanel>
         </Grid>
 
         <!--  Wider than the window when the columns are: header and rows scroll sideways together.  -->
