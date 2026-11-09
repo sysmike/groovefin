@@ -2850,5 +2850,7 @@
   </data>
   <data name="LetterJumpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Zu einem Buchstaben springen</value>
+  <data name="NowPlayingReconnecting.Text" xml:space="preserve">
+    <value>Verbindung wird wiederhergestellt …</value>
   </data>
 </root>

@@ -69,6 +69,7 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
         Engine.PositionChanged += OnPositionChanged;
         Engine.CurrentChanged += OnCurrentChanged;
         Queue.Changed += OnQueueChanged;
+        _player.ReconnectingChanged += OnReconnectingChanged;
         OnCurrentChanged(this, EventArgs.Empty);
     }
 
@@ -111,6 +112,9 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
 
     /// <summary>Gets the artists as one line, e.g. "Daft Punk, Romanthony".</summary>
     public string ArtistNames => string.Join(", ", Artists.Select(a => a.Name));
+
+    /// <summary>Gets a value indicating whether the bar shows "Reconnecting…": the network broke the stream, which is tried again (#385).</summary>
+    public bool IsReconnecting => _player.IsReconnecting;
 
     public bool IsPlaying => Engine.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Opening;
 
@@ -182,6 +186,7 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
         Engine.PositionChanged -= OnPositionChanged;
         Engine.CurrentChanged -= OnCurrentChanged;
         Queue.Changed -= OnQueueChanged;
+        _player.ReconnectingChanged -= OnReconnectingChanged;
         _messenger.UnregisterAll(this);
     }
 
@@ -292,6 +297,8 @@ public sealed partial class NowPlayingViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void OpenArtist(ArtistRef artist) => _navigation.NavigateTo(PageKeys.Artist, artist.Id);
+
+    private void OnReconnectingChanged(object? sender, EventArgs e) => OnPropertyChanged(nameof(IsReconnecting));
 
     private void OnStateChanged(object? sender, EventArgs e)
     {

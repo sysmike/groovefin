@@ -15,8 +15,9 @@ namespace Groovefin.Core.Playback;
 /// (up to <see cref="MaxConsecutiveFailures"/> in a row, then stops). The entry after the current one is
 /// queued in the engine (<see cref="IPlaybackEngine.SetNext"/>) so it follows without a gap; when the
 /// engine moves on by itself, the queue follows. A downloaded song plays from its file, also when the server is
-/// reachable; offline, the songs that are not downloaded are skipped without a try (#333). Use it from the UI
-/// thread.
+/// reachable; offline, the songs that are not downloaded are skipped without a try (#333). A stream the network
+/// broke is tried again where it stopped, after <see cref="RetryDelays"/> and at once when the network is back,
+/// before it counts as a failure (#385). Use it from the UI thread.
 /// </summary>
 public sealed partial class Player : IPlayer, IDisposable
 {
@@ -26,6 +27,13 @@ public sealed partial class Player : IPlayer, IDisposable
     /// <summary>Previous restarts the track when it has played longer than this.</summary>
     public static readonly TimeSpan RestartThreshold = TimeSpan.FromSeconds(3);
 
+    /// <summary>
+    /// The waits before each new try of a stream the network broke (#385): about 30 seconds in all. After the last
+    /// one the track counts as failed and is skipped.
+    /// </summary>
+    public static readonly IReadOnlyList<TimeSpan> RetryDelays =
+        [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(15)];
+
     private readonly IStreamUrlProvider _streams;
     private readonly IJellyfinClient _client;
     private readonly ISettingsService _settings;
@@ -33,7 +41,11 @@ public sealed partial class Player : IPlayer, IDisposable
     private readonly ILogger<Player> _logger;
     private readonly IOfflineLibrary? _offline;
     private readonly INetworkStatus? _network;
+    private readonly TimeProvider _time;
+    private readonly IDispatcher? _dispatcher;
     private string? _loadedItemId;
+    private Reconnection? _reconnection;
+    private bool _wasOnline;
     private int _failures;
     private bool _driving;
     private bool _loading;
@@ -47,7 +59,9 @@ public sealed partial class Player : IPlayer, IDisposable
         IErrorReporter errors,
         ILogger<Player> logger,
         IOfflineLibrary? offline = null,
-        INetworkStatus? network = null)
+        INetworkStatus? network = null,
+        TimeProvider? time = null,
+        IDispatcher? dispatcher = null)
     {
         Queue = queue;
         Engine = engine;
@@ -58,18 +72,33 @@ public sealed partial class Player : IPlayer, IDisposable
         _logger = logger;
         _offline = offline;
         _network = network;
+        _time = time ?? TimeProvider.System;
+        _dispatcher = dispatcher;
+        _wasOnline = network?.IsOnline ?? true;
 
         Engine.Ended += OnEnded;
+        Engine.StateChanged += OnEngineStateChanged;
         Engine.Failed += OnFailed;
         Engine.CurrentChanged += OnEngineCurrentChanged;
         Queue.Changed += OnQueueChanged;
         _settings.Changed += OnSettingsChanged;
+        if (_network is not null)
+        {
+            _network.Changed += OnNetworkChanged;
+        }
+
         Engine.Crossfade = CrossfadeFrom(settings.Current.Playback);
     }
+
+    /// <summary>Raised when <see cref="IsReconnecting"/> changed.</summary>
+    public event EventHandler? ReconnectingChanged;
 
     public QueueManager Queue { get; }
 
     public IPlaybackEngine Engine { get; }
+
+    /// <summary>Gets a value indicating whether a stream the network broke waits to be tried again (#385).</summary>
+    public bool IsReconnecting => _reconnection is not null;
 
     public void Play(IReadOnlyList<Track> tracks, int? startIndex = null)
     {
@@ -79,6 +108,7 @@ public sealed partial class Player : IPlayer, IDisposable
             return;
         }
 
+        EndReconnection();
         Drive(() => Queue.PlayNow(tracks, startIndex));
         LoadCurrent();
     }
@@ -91,6 +121,7 @@ public sealed partial class Player : IPlayer, IDisposable
             return;
         }
 
+        EndReconnection();
         Drive(() =>
         {
             Queue.Shuffle = true;
@@ -107,6 +138,7 @@ public sealed partial class Player : IPlayer, IDisposable
             return;
         }
 
+        EndReconnection();
         Drive(() => Queue.PlayAlbumsShuffled(tracks));
         LoadCurrent();
     }
@@ -131,6 +163,13 @@ public sealed partial class Player : IPlayer, IDisposable
 
     public void TogglePlayPause()
     {
+        if (_reconnection is not null)
+        {
+            // Nothing plays while it waits: Play tries again now.
+            RetryNow();
+            return;
+        }
+
         if (Engine.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Opening)
         {
             Engine.Pause();
@@ -148,12 +187,14 @@ public sealed partial class Player : IPlayer, IDisposable
 
     public void Next()
     {
+        EndReconnection();
         _failures = 0;
         Advance(() => Queue.Next());
     }
 
     public void Previous()
     {
+        EndReconnection();
         if (Engine.Current is not null && Engine.Position > RestartThreshold)
         {
             Engine.Seek(TimeSpan.Zero);
@@ -174,6 +215,7 @@ public sealed partial class Player : IPlayer, IDisposable
 
     public void JumpTo(string queueItemId)
     {
+        EndReconnection();
         _failures = 0;
         var jumped = false;
         Drive(() => jumped = Queue.JumpTo(queueItemId));
@@ -185,7 +227,15 @@ public sealed partial class Player : IPlayer, IDisposable
 
     public void Dispose()
     {
+        _reconnection?.Timer.Dispose();
+        _reconnection = null;
         Engine.Ended -= OnEnded;
+        Engine.StateChanged -= OnEngineStateChanged;
+        if (_network is not null)
+        {
+            _network.Changed -= OnNetworkChanged;
+        }
+
         Engine.Failed -= OnFailed;
         Engine.CurrentChanged -= OnEngineCurrentChanged;
         Queue.Changed -= OnQueueChanged;
@@ -205,8 +255,20 @@ public sealed partial class Player : IPlayer, IDisposable
     private void OnFailed(object? sender, PlaybackFailedEventArgs e)
     {
         LogPlaybackFailed(e.Exception, e.Source.ToString(), e.Message);
-        _errors.Report(new PlaybackException(e.Message, e.Exception), Operations.Playback);
+        // Only a stream: a downloaded file does not need the network.
+        if ((e.IsNetworkError || _network is { IsOnline: false }) && e.Source.UrlAt is not null && TryReconnect(e.Source))
+        {
+            return;
+        }
 
+        EndReconnection();
+        CountFailure(new PlaybackException(e.Message, e.Exception));
+    }
+
+    /// <summary>Reports a track that can't play and skips it, or stops after <see cref="MaxConsecutiveFailures"/> in a row.</summary>
+    private void CountFailure(Exception error)
+    {
+        _errors.Report(error, Operations.Playback);
         if (++_failures >= MaxConsecutiveFailures)
         {
             _failures = 0;
@@ -279,7 +341,11 @@ public sealed partial class Player : IPlayer, IDisposable
         }
     }
 
-    public void Resume(TimeSpan position) => LoadCurrent(autoPlay: false, position < TimeSpan.Zero ? TimeSpan.Zero : position);
+    public void Resume(TimeSpan position)
+    {
+        EndReconnection();
+        LoadCurrent(autoPlay: false, position < TimeSpan.Zero ? TimeSpan.Zero : position);
+    }
 
     private void LoadCurrent(bool autoPlay = true, TimeSpan startPosition = default)
     {
@@ -287,6 +353,11 @@ public sealed partial class Player : IPlayer, IDisposable
         {
             Stop();
             return;
+        }
+
+        if (_reconnection is { } waiting && waiting.ItemId != item.Id)
+        {
+            EndReconnection();
         }
 
         if (!CanPlay(item))
@@ -403,8 +474,134 @@ public sealed partial class Player : IPlayer, IDisposable
 
     private void Stop()
     {
+        EndReconnection();
         _loadedItemId = null;
         Engine.Stop();
+    }
+
+    /// <summary>
+    /// Waits to try <paramref name="source"/> again where it stopped, the next of <see cref="RetryDelays"/>.
+    /// Returns <see langword="false"/> when it is not the queue's current entry or has been tried often enough.
+    /// </summary>
+    private bool TryReconnect(PlaybackSource source)
+    {
+        if (Queue.Current?.Id != source.Id)
+        {
+            return false;
+        }
+
+        var earlier = _reconnection?.ItemId == source.Id ? _reconnection : null;
+        var attempt = earlier?.Attempt ?? 0;
+        if (attempt >= RetryDelays.Count)
+        {
+            return false;
+        }
+
+        // A failed try fails at its start position, which is where the stream broke.
+        var position = earlier?.Position ?? Engine.Position;
+        _reconnection?.Timer.Dispose();
+        var delay = RetryDelays[attempt];
+        var timer = _time.CreateTimer(_ => OnUiThread(RetryNow), null, delay, Timeout.InfiniteTimeSpan);
+        var wasReconnecting = _reconnection is not null;
+        _reconnection = new Reconnection(source.Id, position, attempt + 1, timer);
+        LogReconnecting(source.ToString(), position, attempt + 1, delay);
+        if (!wasReconnecting)
+        {
+            ReconnectingChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        return true;
+    }
+
+    /// <summary>Tries the broken stream again now, from where it stopped.</summary>
+    private void RetryNow()
+    {
+        if (_reconnection is not { } waiting)
+        {
+            return;
+        }
+
+        waiting.Timer.Dispose();
+        if (Queue.Current is not { } item || item.Id != waiting.ItemId)
+        {
+            EndReconnection();
+            return;
+        }
+
+        if (!CanPlay(item))
+        {
+            // Still offline: a load would skip to a downloaded song. Wait for the next try, or for the network.
+            if (Engine.Current is not { } source || source.Id != item.Id || !TryReconnect(source))
+            {
+                EndReconnection();
+                CountFailure(new PlaybackException("The network did not come back.", null));
+            }
+
+            return;
+        }
+
+        LoadCurrent(autoPlay: true, waiting.Position);
+    }
+
+    /// <summary>Stops waiting to try again: it played, the user moved on, or it was tried often enough.</summary>
+    private void EndReconnection()
+    {
+        if (_reconnection is not { } waiting)
+        {
+            return;
+        }
+
+        waiting.Timer.Dispose();
+        _reconnection = null;
+        ReconnectingChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>A try that plays ends the waiting, and the failures before it no longer count.</summary>
+    private void OnEngineStateChanged(object? sender, EventArgs e)
+    {
+        if (Engine.State == PlaybackState.Playing && _reconnection is { } waiting && Engine.Current?.Id == waiting.ItemId)
+        {
+            LogReconnected(Engine.Current.ToString(), waiting.Attempt);
+            _failures = 0;
+            EndReconnection();
+        }
+    }
+
+    /// <summary>
+    /// The network is back: a stream waiting to be tried again is tried now, and one stuck buffering since the
+    /// network went away starts again where it was, which a stalled stream does not do by itself.
+    /// </summary>
+    private void OnNetworkChanged(object? sender, EventArgs e) => OnUiThread(() =>
+    {
+        var online = _network!.IsOnline;
+        var cameBack = online && !_wasOnline;
+        _wasOnline = online;
+        if (!cameBack)
+        {
+            return;
+        }
+
+        if (_reconnection is not null)
+        {
+            RetryNow();
+        }
+        else if (Engine.State == PlaybackState.Buffering && Engine.Current is { UrlAt: not null } stalled && Queue.Current?.Id == stalled.Id)
+        {
+            LogStalledRestart(stalled.ToString(), Engine.Position);
+            LoadCurrent(autoPlay: true, Engine.Position);
+        }
+    });
+
+    private void OnUiThread(Action action)
+    {
+        if (_dispatcher is null || _dispatcher.HasThreadAccess)
+        {
+            action();
+        }
+        else
+        {
+            _ = _dispatcher.EnqueueAsync(action);
+        }
     }
 
     /// <summary>Runs a queue change of our own; <see cref="OnQueueChanged"/> ignores the events it raises.</summary>
@@ -421,9 +618,21 @@ public sealed partial class Player : IPlayer, IDisposable
         }
     }
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "The network broke {Source} at {Position}; try {Attempt} in {Delay}")]
+    private partial void LogReconnecting(string source, TimeSpan position, int attempt, TimeSpan delay);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{Source} plays again after {Attempts} tries")]
+    private partial void LogReconnected(string source, int attempts);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "The network is back: {Source} was stuck buffering and starts again at {Position}")]
+    private partial void LogStalledRestart(string source, TimeSpan position);
+
     [LoggerMessage(Level = LogLevel.Warning, Message = "Queueing {ItemId} for gapless playback failed")]
     private partial void LogNextFailed(Exception exception, string itemId);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Playback of {Source} failed: {Message}")]
     private partial void LogPlaybackFailed(Exception? exception, string source, string message);
+
+    /// <summary>A stream the network broke, waiting for its next try (#385).</summary>
+    private sealed record Reconnection(string ItemId, TimeSpan Position, int Attempt, ITimer Timer);
 }
