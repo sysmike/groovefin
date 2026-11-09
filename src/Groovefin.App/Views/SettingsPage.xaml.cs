@@ -18,6 +18,7 @@ internal sealed partial class SettingsPage : Page
         Equalizer = App.CreateViewModel<EqualizerViewModel>();
         Shortcuts = App.CreateViewModel<ShortcutsViewModel>();
         Downloads = App.CreateViewModel<DownloadsViewModel>();
+        History = App.Services.GetRequiredService<ListeningHistoryViewModel>();
         InitializeComponent();
         Loaded += OnFirstLoaded;
         Loaded += OnLoaded;
@@ -30,6 +31,9 @@ internal sealed partial class SettingsPage : Page
     public ShortcutsViewModel Shortcuts { get; }
 
     public DownloadsViewModel Downloads { get; }
+
+    /// <summary>Gets the listening history's card: clears the plays kept for On repeat and the statistics (#382).</summary>
+    public ListeningHistoryViewModel History { get; }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {

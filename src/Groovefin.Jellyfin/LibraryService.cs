@@ -564,13 +564,19 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
         }
 
         var pageIds = order.Ids.Skip(query.StartIndex).Take(query.Limit).ToList();
-        List<Artist> artists = pageIds.Count == 0 ? [] : await GetArtistsByIdAsync(pageIds, cancellationToken).ConfigureAwait(false);
+        List<Artist> artists = pageIds.Count == 0 ? [] : await QueryArtistsByIdAsync(pageIds, cancellationToken).ConfigureAwait(false);
         var byId = artists.DistinctBy(a => a.Id).ToDictionary(a => a.Id, StringComparer.Ordinal);
         return new PagedResult<Artist>([.. pageIds.Where(byId.ContainsKey).Select(id => byId[id])], order.Ids.Count, query.StartIndex);
     }
 
+    public async Task<IReadOnlyList<Artist>> GetArtistsByIdAsync(IReadOnlyList<string> artistIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(artistIds);
+        return artistIds.Count == 0 ? [] : await QueryArtistsByIdAsync(artistIds, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Gets artists by ID, in no particular order.</summary>
-    private async Task<List<Artist>> GetArtistsByIdAsync(IReadOnlyList<string> artistIds, CancellationToken cancellationToken)
+    private async Task<List<Artist>> QueryArtistsByIdAsync(IReadOnlyList<string> artistIds, CancellationToken cancellationToken)
     {
         var (api, connection) = client.Active;
         var userId = Guid.Parse(connection.UserId);

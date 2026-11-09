@@ -19,6 +19,7 @@ using Groovefin.Core.Services;
 using Groovefin.Core.Session;
 using Groovefin.Core.Settings;
 using Groovefin.Core.Shortcuts;
+using Groovefin.Core.Statistics;
 using Groovefin.Core.ViewModels;
 using Groovefin.Jellyfin;
 using Groovefin.Playback.Windows;
@@ -125,6 +126,7 @@ internal static class AppHost
         builder.Services.AddSingleton(new PlayHistoryStoreOptions(Path.Join(AppPaths.LocalData, "history")));
         builder.Services.AddSingleton<IPlayHistoryStore, JsonPlayHistoryStore>();
         builder.Services.AddSingleton<PlayHistory>();
+        builder.Services.AddSingleton<IListeningStatistics, ListeningStatistics>();
         // Offline downloads (#327): a folder per server and user, with its index.
         builder.Services.AddSingleton(new DownloadStoreOptions(Path.Join(AppPaths.LocalData, "Downloads")));
         builder.Services.AddSingleton<IDownloadStore, JsonDownloadStore>();
@@ -184,6 +186,8 @@ internal static class AppHost
         builder.Services.AddTransient<PlaylistDetailViewModel>();
         builder.Services.AddTransient<FavouritesViewModel>();
         builder.Services.AddTransient<OnRepeatViewModel>();
+        builder.Services.AddTransient<StatisticsViewModel>();
+        builder.Services.AddTransient<ListeningHistoryViewModel>();
         builder.Services.AddTransient<GenresViewModel>();
         builder.Services.AddTransient<GenreDetailViewModel>();
         builder.Services.AddTransient<FoldersViewModel>();

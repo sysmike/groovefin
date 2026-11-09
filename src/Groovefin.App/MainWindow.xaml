@@ -81,7 +81,7 @@
             <TitleBar.RightHeader>
                 <!--
                     The app-wide buttons next to the window's own (#254): privacy mode (#234, accent-coloured while
-                    on) and Settings, checked while Settings is shown.
+                    on), the statistics (#382) and Settings, each checked while its page is shown.
                 -->
                 <StackPanel
                     Margin="0,0,4,0"
@@ -94,6 +94,14 @@
                         AutomationProperties.AutomationId="PrivacyButton"
                         IsChecked="{x:Bind Privacy.IsOn, Mode=TwoWay}">
                         <FontIcon FontSize="16" Glyph="&#xED1A;" />
+                    </ToggleButton>
+                    <ToggleButton
+                        x:Name="StatisticsButton"
+                        x:Uid="StatisticsButton"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="StatisticsButton"
+                        Click="OnStatisticsButtonClick">
+                        <FontIcon FontSize="16" Glyph="&#xE9D2;" />
                     </ToggleButton>
                     <ToggleButton
                         x:Name="SettingsButton"

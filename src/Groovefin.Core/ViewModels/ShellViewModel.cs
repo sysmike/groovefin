@@ -46,7 +46,10 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>Gets the notifications shown above the page content.</summary>
     public ReadOnlyObservableCollection<AppNotification> Notifications => _notifications.Notifications;
 
-    /// <summary>Gets the key of the selected main section, or <see langword="null"/> when another page is shown.</summary>
+    /// <summary>
+    /// Gets the key of the selected main section, or of Settings or the statistics (the title bar's buttons), or
+    /// <see langword="null"/> when another page is shown.
+    /// </summary>
     [ObservableProperty]
     public partial string? SelectedSection { get; private set; }
 
@@ -110,6 +113,22 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         _navigation.GoBackTo(key => key is not (PageKeys.Settings or PageKeys.Servers));
     }
 
+    /// <summary>
+    /// The title bar's Statistics button (#382): opens the statistics, or, while they are shown, returns to the page
+    /// shown before.
+    /// </summary>
+    [RelayCommand]
+    private void ToggleStatistics()
+    {
+        if (SelectedSection != PageKeys.Statistics)
+        {
+            Navigate(PageKeys.Statistics);
+            return;
+        }
+
+        _navigation.GoBackTo(key => key != PageKeys.Statistics);
+    }
+
     [RelayCommand]
     private void DismissNotification(AppNotification notification) => _notifications.Dismiss(notification);
 
@@ -150,6 +169,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         {
             // Server management is part of Settings.
             PageKeys.Settings or PageKeys.Servers => PageKeys.Settings,
+            PageKeys.Statistics => PageKeys.Statistics,
             _ when PageKeys.MainSections.Contains(e.PageKey) => e.PageKey,
             _ => null,
         };
