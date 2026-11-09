@@ -104,9 +104,10 @@ internal static partial class Program
         // This start came from the user, so it may give the running app the right to come to the front.
         _ = AllowSetForegroundWindow((int)running.ProcessId);
 
-        // The redirection must not block this STA thread: it waits for it on another thread and pumps meanwhile.
+        // The redirection runs on another thread. A wait on this STA thread pumps COM messages meanwhile, so the
+        // redirection's calls back into this process are not blocked.
         var args = AppInstance.GetCurrent().GetActivatedEventArgs();
-        var done = CreateEvent(IntPtr.Zero, bManualReset: true, bInitialState: false, null);
+        using var done = new ManualResetEvent(initialState: false);
         _ = Task.Run(() =>
         {
             try
@@ -119,11 +120,10 @@ internal static partial class Program
             }
             finally
             {
-                _ = SetEvent(done);
+                done.Set();
             }
         });
-        _ = CoWaitForMultipleObjects(0, uint.MaxValue, 1, [done], out _);
-        _ = CloseHandle(done);
+        done.WaitOne();
         return true;
     }
 
@@ -151,22 +151,4 @@ internal static partial class Program
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool AllowSetForegroundWindow(int processId);
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern IntPtr CreateEvent(IntPtr lpEventAttributes, [MarshalAs(UnmanagedType.Bool)] bool bManualReset, [MarshalAs(UnmanagedType.Bool)] bool bInitialState, string? lpName);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SetEvent(IntPtr hEvent);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool CloseHandle(IntPtr hObject);
-
-    [DllImport("ole32.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern uint CoWaitForMultipleObjects(uint dwFlags, uint dwTimeout, uint cHandles, IntPtr[] pHandles, out uint lpdwindex);
 }

@@ -63,9 +63,8 @@ public sealed partial record JumpListCommand(JumpListAction Action, string? Play
             return null;
         }
 
-        foreach (var part in commandLine.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries))
+        foreach (var token in commandLine.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries).Select(part => part.Trim('"')))
         {
-            var token = part.Trim('"');
             switch (token)
             {
                 case "--play-pause":

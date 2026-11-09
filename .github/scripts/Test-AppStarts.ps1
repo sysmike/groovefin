@@ -238,7 +238,7 @@ try {
     if ($process.HasExited) { Stop-Test 'Single instance' 'Groovefin exited after a second start.' }
     Write-Output "A second start went to the running app: $($again.Line)"
     # The jump list (#406): its three tasks are set at start-up.
-    $jump = Select-String -Path $log.FullName -Pattern 'Jump list' -SimpleMatch | Select-Object -Last 1
+    $jump = Select-String -Path $log.FullName -Pattern 'Jump list updated|jump list could not be updated' | Select-Object -Last 1
     if (-not $jump -or $jump.Line -notmatch 'Jump list updated with 3 tasks') { Stop-Test 'Jump list' "The jump list was not set: $($jump.Line)" }
     Write-Output "The jump list is set: $($jump.Line)"
 
