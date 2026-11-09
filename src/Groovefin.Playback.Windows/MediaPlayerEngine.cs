@@ -278,7 +278,16 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
         Deck incoming;
         lock (_gate)
         {
-            _spare ??= new Deck(this);
+            if (_spare is null)
+            {
+                // A deck made for a crossfade plays where the first one does (#389).
+                _spare = new Deck(this);
+                if (_outputDevice is { } device)
+                {
+                    PutOnOutput(_spare, device);
+                }
+            }
+
             incoming = _spare;
             _spare = null;
             _fading = _active;
@@ -490,26 +499,24 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
             {
                 Player.AddAudioEffect(EqualizerEffectContract.ClassId, effectOptional: true, engine._equalizer);
             }
-
-            // A deck made for a crossfade plays where the first one does (#389).
-            if (engine._outputDevice is { } device)
-            {
-                UseOutput(device);
-            }
         }
 
         public MediaPlayer Player { get; }
 
-        /// <summary>Plays on <paramref name="device"/>, or on the Windows default for <see langword="null"/>.</summary>
-        public void UseOutput(DeviceInformation? device)
+        /// <summary>
+        /// Plays on <paramref name="device"/>, or on the Windows default for <see langword="null"/>. Returns why the
+        /// player refused, or <see langword="null"/>.
+        /// </summary>
+        public Exception? UseOutput(DeviceInformation? device)
         {
             try
             {
                 Player.AudioDevice = device;
+                return null;
             }
             catch (Exception ex) when (ex is COMException or ArgumentException or ObjectDisposedException)
             {
-                _engine.LogOutputFailed(ex);
+                return ex;
             }
         }
 
@@ -827,10 +834,18 @@ public sealed partial class MediaPlayerEngine : PlaybackEngineBase, IDisposable,
 
         foreach (var deck in decks.OfType<Deck>().Distinct())
         {
-            deck.UseOutput(device);
+            PutOnOutput(deck, device);
         }
 
         LogOutputUsed(device?.Name ?? "the Windows default");
+    }
+
+    private void PutOnOutput(Deck deck, DeviceInformation? device)
+    {
+        if (deck.UseOutput(device) is { } error)
+        {
+            LogOutputFailed(error);
+        }
     }
 
     private void StopOutputWatcher()
