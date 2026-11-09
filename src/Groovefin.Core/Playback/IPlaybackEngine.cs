@@ -40,7 +40,7 @@ public sealed record PlaybackSource(string Id, Uri Url, Track Track, double Gain
 }
 
 /// <summary>Why playback of <see cref="Source"/> failed.</summary>
-public sealed class PlaybackFailedEventArgs(PlaybackSource source, string message, Exception? exception) : EventArgs
+public sealed class PlaybackFailedEventArgs(PlaybackSource source, string message, Exception? exception, bool isNetworkError = false) : EventArgs
 {
     public PlaybackSource Source { get; } = source;
 
@@ -48,6 +48,9 @@ public sealed class PlaybackFailedEventArgs(PlaybackSource source, string messag
     public string Message { get; } = message;
 
     public Exception? Exception { get; } = exception;
+
+    /// <summary>Gets a value indicating whether the network failed, not the file (#385, <see cref="StreamFailures"/>).</summary>
+    public bool IsNetworkError { get; } = isNetworkError;
 }
 
 /// <summary>

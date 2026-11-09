@@ -2853,5 +2853,7 @@
   </data>
   <data name="Servers_Connecting" xml:space="preserve">
     <value>Verbindung wird hergestellt …</value>
+  <data name="NowPlayingReconnecting.Text" xml:space="preserve">
+    <value>Verbindung wird wiederhergestellt …</value>
   </data>
 </root>
