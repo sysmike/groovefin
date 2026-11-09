@@ -590,6 +590,21 @@ public sealed class QueueManagerTests
     }
 
     [Fact]
+    public void Shuffled_albums_play_from_the_first_song_with_song_shuffle_off()
+    {
+        _sut.Shuffle = true;
+        Track Song(string album, int number) => new() { Id = $"{album}{number}", Name = $"{album}{number}", AlbumId = album, TrackNumber = number };
+
+        _sut.PlayAlbumsShuffled([Song("x", 1), Song("x", 2), Song("y", 1), Song("y", 2), Song("z", 1)]);
+
+        _sut.Shuffle.Should().BeFalse();
+        _sut.CurrentIndex.Should().Be(0);
+        Order.Should().HaveCount(5);
+        string.Join(',', Order).Should().ContainAll("x1,x2", "y1,y2", "z1");
+        _changes.Should().Be(2);
+    }
+
+    [Fact]
     public void PlayNow_without_an_index_while_shuffled_starts_with_a_random_entry()
     {
         var names = Enumerable.Range(0, 20).Select(i => $"t{i}").ToArray();

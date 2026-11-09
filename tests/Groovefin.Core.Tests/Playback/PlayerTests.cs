@@ -105,6 +105,7 @@ public sealed class PlayerTests : IDisposable
     {
         _sut.Play([]);
         _sut.Shuffle([]);
+        _sut.ShuffleAlbums([]);
 
         _engine.Calls.Should().BeEmpty();
         _queue.Items.Should().BeEmpty();
@@ -115,6 +116,7 @@ public sealed class PlayerTests : IDisposable
     {
         _sut.Invoking(p => p.Play(null!)).Should().Throw<ArgumentNullException>();
         _sut.Invoking(p => p.Shuffle(null!)).Should().Throw<ArgumentNullException>();
+        _sut.Invoking(p => p.ShuffleAlbums(null!)).Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
@@ -125,6 +127,18 @@ public sealed class PlayerTests : IDisposable
         _queue.Shuffle.Should().BeTrue();
         _queue.CurrentIndex.Should().Be(0);
         Playing.Should().Be(_queue.Current!.Track.Id);
+    }
+
+    [Fact]
+    public void Shuffle_albums_plays_the_first_song_of_the_new_order()
+    {
+        _queue.Shuffle = true;
+
+        _sut.ShuffleAlbums(Tracks("a", "b", "c"));
+
+        _queue.Shuffle.Should().BeFalse();
+        _queue.Items.Should().HaveCount(3);
+        Playing.Should().Be(_queue.Items[0].Track.Id);
     }
 
     [Fact]

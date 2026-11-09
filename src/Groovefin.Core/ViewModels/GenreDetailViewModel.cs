@@ -100,7 +100,7 @@ public sealed partial class GenreDetailViewModel(
     public partial bool HasAlbums { get; private set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(PlayCommand), nameof(ShuffleCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PlayCommand), nameof(ShuffleCommand), nameof(ShuffleAlbumsCommand))]
     public partial bool HasTracks { get; private set; }
 
     public async Task LoadAsync(string genreId, CancellationToken cancellationToken = default)
@@ -158,6 +158,10 @@ public sealed partial class GenreDetailViewModel(
 
     [RelayCommand(CanExecute = nameof(HasTracks))]
     private void Shuffle() => player.Shuffle(_tracks);
+
+    /// <summary>Plays the genre's albums in a random order, each album's songs in order (#403).</summary>
+    [RelayCommand(CanExecute = nameof(HasTracks))]
+    private void ShuffleAlbums() => player.ShuffleAlbums(_tracks);
 
     /// <summary>Plays the genre's songs from <paramref name="row"/> on.</summary>
     [RelayCommand]
