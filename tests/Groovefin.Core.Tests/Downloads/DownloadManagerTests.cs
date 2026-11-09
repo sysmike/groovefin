@@ -68,12 +68,9 @@ public sealed class DownloadManagerTests : IDisposable
     public void Dispose()
     {
         _sut.Dispose();
-        foreach (var folder in new[] { _directory, _chosen })
+        foreach (var folder in new[] { _directory, _chosen }.Where(Directory.Exists))
         {
-            if (Directory.Exists(folder))
-            {
-                Directory.Delete(folder, recursive: true);
-            }
+            Directory.Delete(folder, recursive: true);
         }
     }
 

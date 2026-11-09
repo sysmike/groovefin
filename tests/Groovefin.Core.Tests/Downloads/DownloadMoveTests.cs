@@ -38,12 +38,9 @@ public sealed class DownloadMoveTests : IDisposable
 
     public void Dispose()
     {
-        foreach (var folder in new[] { _directory, _chosen })
+        foreach (var folder in new[] { _directory, _chosen }.Where(Directory.Exists))
         {
-            if (Directory.Exists(folder))
-            {
-                Directory.Delete(folder, recursive: true);
-            }
+            Directory.Delete(folder, recursive: true);
         }
     }
 

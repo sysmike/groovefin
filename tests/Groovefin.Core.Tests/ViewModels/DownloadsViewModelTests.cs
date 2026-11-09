@@ -51,12 +51,9 @@ public sealed class DownloadsViewModelTests : IDisposable
     {
         _sut.Dispose();
         _downloads.Dispose();
-        foreach (var folder in new[] { _directory, _chosen })
+        foreach (var folder in new[] { _directory, _chosen }.Where(Directory.Exists))
         {
-            if (Directory.Exists(folder))
-            {
-                Directory.Delete(folder, recursive: true);
-            }
+            Directory.Delete(folder, recursive: true);
         }
     }
 
@@ -204,7 +201,7 @@ public sealed class DownloadsViewModelTests : IDisposable
     [Fact]
     public async Task A_cancelled_picker_changes_nothing()
     {
-        _picker.PickFolderAsync().Returns((string?)null);
+        _picker.PickFolderAsync().Returns(Task.FromResult<string?>(null));
 
         await _sut.ChangeFolderCommand.ExecuteAsync(null);
 
