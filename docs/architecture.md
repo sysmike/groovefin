@@ -204,6 +204,9 @@ Media Foundation creates them with `RoActivateInstance`. So the equalizer runs a
   standard pipeline: up to 3 retries with exponential back-off and jitter for transient failures
   (network errors, timeouts, 408, 429, 5xx) of **safe** methods only, 15 s per attempt, 45 s per
   request, and a circuit breaker. 4xx such as 401 are never retried.
+- Each retry calls `RequestAttempts.Retrying` (Core). A caller that wants to show progress watches its own
+  requests with `RequestAttempts.Watch`: adding a server says "Trying again (attempt 2)…" and can be
+  cancelled (#392).
 - Services throw only `JellyfinException` (HTTP status, or `null` when the server was unreachable or
   timed out). Caller cancellation stays an `OperationCanceledException` and is not an error.
 - Failures are never silent. Code that catches an exception and does not rethrow calls

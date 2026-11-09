@@ -47,6 +47,7 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
     private readonly IStringResources _strings;
     private readonly IDispatcher _dispatcher;
     private readonly IServerDiscovery _discovery;
+    private bool _connecting;
     private IReadOnlyList<DiscoveredServer> _discovered = [];
 
     public ServersViewModel(
@@ -64,6 +65,8 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
         _dispatcher = dispatcher;
         _discovery = discovery;
         _servers.Changed += OnServersChanged;
+        AddCommand.PropertyChanged += OnConnectCommandChanged;
+        AddDiscoveredCommand.PropertyChanged += OnConnectCommandChanged;
         Refresh();
     }
 
@@ -90,6 +93,24 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
     public partial string? FormError { get; private set; }
 
     public bool HasFormError => FormError is not null;
+
+    /// <summary>Gets what a slow connection is doing (#392), e.g. "No answer yet. Trying again (attempt 2)…", or <see langword="null"/>.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAttempt))]
+    public partial string? AttemptText { get; private set; }
+
+    public bool HasAttempt => AttemptText is not null;
+
+    /// <summary>Gets a value indicating whether a server is being added: the page shows Cancel (#392).</summary>
+    public bool IsConnecting => AddCommand.IsRunning || AddDiscoveredCommand.IsRunning;
+
+    /// <summary>Stops adding a server; the address stays in the box.</summary>
+    [RelayCommand]
+    private void CancelConnect()
+    {
+        AddCommand.Cancel();
+        AddDiscoveredCommand.Cancel();
+    }
 
     private bool CanAdd() => !string.IsNullOrWhiteSpace(NewAddress);
 
@@ -170,13 +191,39 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
         }
     }
 
-    public void Dispose() => _servers.Changed -= OnServersChanged;
+    public void Dispose()
+    {
+        _servers.Changed -= OnServersChanged;
+        AddCommand.PropertyChanged -= OnConnectCommandChanged;
+        AddDiscoveredCommand.PropertyChanged -= OnConnectCommandChanged;
+    }
 
     private async Task<bool> AddAddressAsync(string address, CancellationToken cancellationToken)
     {
         FormError = null;
         ServerProfile? added = null;
-        if (!await TryAsync(async () => added = await _servers.AddAsync(address, cancellationToken)))
+        bool ok;
+        _connecting = true;
+        AttemptText = _strings.GetString("Servers_Connecting");
+        using (RequestAttempts.Watch(OnAttempt))
+        {
+            try
+            {
+                ok = await TryAsync(async () => added = await _servers.AddAsync(address, cancellationToken));
+            }
+            catch (OperationCanceledException)
+            {
+                // Cancelled while it waited: the address stays in the box to change or try again.
+                ok = false;
+            }
+            finally
+            {
+                _connecting = false;
+                AttemptText = null;
+            }
+        }
+
+        if (!ok)
         {
             return false;
         }
@@ -188,6 +235,28 @@ public sealed partial class ServersViewModel : ObservableObject, IDisposable
         }
 
         return true;
+    }
+
+    /// <summary>The connection is tried again; the retry runs on the HTTP layer's thread.</summary>
+    private void OnAttempt(int attempt)
+    {
+        var text = _strings.GetString("Servers_Retrying").Replace("{0}", attempt.ToString(System.Globalization.CultureInfo.CurrentCulture), StringComparison.Ordinal);
+        _ = _dispatcher.EnqueueAsync(() =>
+        {
+            // A retry reported just before the connection ended changes nothing any more.
+            if (_connecting)
+            {
+                AttemptText = text;
+            }
+        });
+    }
+
+    private void OnConnectCommandChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(IAsyncRelayCommand.IsRunning))
+        {
+            OnPropertyChanged(nameof(IsConnecting));
+        }
     }
 
     private async Task<bool> TryAsync(Func<Task> action)
