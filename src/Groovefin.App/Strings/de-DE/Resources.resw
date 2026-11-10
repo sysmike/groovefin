@@ -3148,4 +3148,31 @@
   <data name="SettingsDownloadListCard.Description" xml:space="preserve">
     <value>Jede Playlist, jedes Album und jeden Künstler mit Größe. Fehlgeschlagenes erneut versuchen oder einzeln entfernen.</value>
   </data>
+  <data name="SettingsCloseToTrayCard.Header" xml:space="preserve">
+    <value>Beim Schließen des Fensters weiterspielen</value>
+  </data>
+  <data name="SettingsCloseToTrayCard.Description" xml:space="preserve">
+    <value>Beim Schließen wird das Fenster in den Infobereich ausgeblendet, und die Musik spielt weiter. „Beenden“ im Menü des Symbols beendet Groovefin.</value>
+  </data>
+  <data name="SettingsStartupCard.Header" xml:space="preserve">
+    <value>Mit Windows starten</value>
+  </data>
+  <data name="SettingsStartupCard.Description" xml:space="preserve">
+    <value>Groovefin öffnet sich, wenn du dich bei Windows anmeldest.</value>
+  </data>
+  <data name="SettingsStartMinimizedCard.Header" xml:space="preserve">
+    <value>Minimiert starten</value>
+  </data>
+  <data name="SettingsStartMinimizedCard.Description" xml:space="preserve">
+    <value>Im Infobereich, wenn sein Symbol eingeschaltet ist, sonst auf der Taskleiste.</value>
+  </data>
+  <data name="Settings_StartupOffByUser" xml:space="preserve">
+    <value>Im Task-Manager unter „Autostart-Apps“ oder in den Windows-Einstellungen unter „Apps &gt; Autostart“ ausgeschaltet. Schalte es dort ein.</value>
+  </data>
+  <data name="Settings_StartupByPolicy" xml:space="preserve">
+    <value>Deine Organisation legt fest, ob Groovefin mit Windows startet.</value>
+  </data>
+  <data name="Settings_StartupUnavailable" xml:space="preserve">
+    <value>Windows kann diese Kopie von Groovefin bei der Anmeldung nicht starten.</value>
+  </data>
 </root>

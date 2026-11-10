@@ -1929,6 +1929,30 @@ try {
     if (Test-Path $files[0].DirectoryName) { Stop-Test 'Downloads' 'After the Playlists download was turned off, the downloaded songs are still on disk.' }
     Write-Output 'Turning on the Playlists download saved both songs of the playlist, and turning it off deleted them.'
 
+    # Start with Windows (#395): the unpackaged app's switch writes the user's Run entry, which starts it with
+    # --startup, and deletes it again.
+    $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+    $startupSwitch = Find-ById 'StartWithWindowsSwitch'
+    $scroll = $null
+    if ($startupSwitch.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
+    $until = (Get-Date).AddSeconds(10)
+    while (-not $startupSwitch.Current.IsEnabled -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 300 }
+    $startupSwitch.GetCurrentPattern($toggle).Toggle()
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        $entry = (Get-ItemProperty -Path $runKey -Name 'Groovefin' -ErrorAction SilentlyContinue).Groovefin
+        if (-not $entry) { Start-Sleep -Milliseconds 300 }
+    } while (-not $entry -and (Get-Date) -lt $until)
+    if ($entry -notmatch 'Groovefin\.exe" --startup$') { Stop-Test 'Start with Windows' "Turning on Start with Windows did not write the Run entry with --startup (found: '$entry')." }
+    $startupSwitch.GetCurrentPattern($toggle).Toggle()
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        $entry = (Get-ItemProperty -Path $runKey -Name 'Groovefin' -ErrorAction SilentlyContinue).Groovefin
+        if ($entry) { Start-Sleep -Milliseconds 300 }
+    } while ($entry -and (Get-Date) -lt $until)
+    if ($entry) { Stop-Test 'Start with Windows' 'Turning off Start with Windows left the Run entry.' }
+    Write-Output 'Start with Windows writes the Run entry with --startup, and turning it off deletes it.'
+
     # The band sliders: expanded and scrolled into view, each must have a visible size (#165).
     # The header text is named "Equalizer" too: expand the element that can be expanded.
     $pattern = $null
@@ -2327,6 +2351,74 @@ try {
         Stop-Test 'Smoke test' "Groovefin exited with code $($process.ExitCode) or logged an unhandled exception while closing."
     }
     Write-Output 'Closing the window shut Groovefin down cleanly.'
+
+    # Starts with Windows (#395), as the Run entry makes them (--startup), with "Start minimized" on. Without the
+    # notification area icon the window opens minimized on the taskbar, and closing it quits, also with "Keep
+    # playing when the window is closed" on. With the icon, no window shows; a plain start brings it back, and
+    # closing it then hides it while Groovefin keeps running. The settings file has every setting, so each is set
+    # where it is.
+    $settingsFile = Join-Path $data 'settings.json'
+    function Set-Setting([string] $name, [bool] $on) {
+        $text = [System.IO.File]::ReadAllText($settingsFile)
+        $pattern = '"' + $name + '"\s*:\s*(true|false)'
+        if ($text -notmatch $pattern) { Stop-Test 'Start with Windows' "The settings file has no '$name'." }
+        [System.IO.File]::WriteAllText($settingsFile, ($text -replace $pattern, ('"' + $name + '": ' + $(if ($on) { 'true' } else { 'false' }))))
+    }
+    function Get-AppWindow {
+        [System.Windows.Automation.AutomationElement]::RootElement.FindFirst($scope::Children,
+            [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $process.Id))
+    }
+    function Start-Groovefin([string] $arguments) {
+        $skip = if ($log = Get-AppLog) { @(Get-Content $log.FullName).Count } else { 0 }
+        $launched = if ($arguments) { Start-Process -FilePath $Path -ArgumentList $arguments -PassThru } else { Start-Process -FilePath $Path -PassThru }
+        $null = $launched.Handle
+        $until = (Get-Date).AddSeconds($Seconds)
+        do {
+            Start-Sleep -Seconds 1
+            $ready = @(Get-Content (Get-AppLog).FullName | Select-Object -Skip $skip | Where-Object { $_ -match 'Start-up took' }).Count -gt 0
+        } while (-not $ready -and -not $launched.HasExited -and (Get-Date) -lt $until)
+        if (-not $ready) { Stop-Test 'Start with Windows' "Groovefin did not finish starting with '$arguments' (exited: $($launched.HasExited))." }
+        $launched
+    }
+    Set-Setting 'startMinimized' $true
+    Set-Setting 'closeToTray' $true
+    Set-Setting 'showTrayIcon' $false
+    $process = Start-Groovefin '--startup'
+    $until = (Get-Date).AddSeconds(10)
+    do { $appWindow = Get-AppWindow; if (-not $appWindow) { Start-Sleep -Milliseconds 300 } } while (-not $appWindow -and (Get-Date) -lt $until)
+    if (-not $appWindow) { Stop-Test 'Start minimized' 'A start with Windows without the notification area icon showed no window.' }
+    # The window shows first and is minimized once laid out: wait for that.
+    $windowPattern = $appWindow.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern)
+    $until = (Get-Date).AddSeconds(10)
+    while ($windowPattern.Current.WindowVisualState -ne [System.Windows.Automation.WindowVisualState]::Minimized -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 300 }
+    if ($windowPattern.Current.WindowVisualState -ne [System.Windows.Automation.WindowVisualState]::Minimized) {
+        Stop-Test 'Start minimized' "A start with Windows with Start minimized left the window $($windowPattern.Current.WindowVisualState) for 10 seconds, not minimized."
+    }
+    $windowPattern.Close()
+    if (-not $process.WaitForExit(20000)) { Stop-Test 'Keep playing' 'Without the notification area icon, closing the window must quit: Groovefin was still running after 20 seconds.' }
+    if ($process.ExitCode -ne 0) { Stop-Test 'Keep playing' "Groovefin exited with code $($process.ExitCode) after a start with Windows." }
+    Write-Output 'A start with Windows opened the window minimized on the taskbar; without the icon, closing it quit.'
+
+    Set-Setting 'showTrayIcon' $true
+    $process = Start-Groovefin '--startup'
+    Start-Sleep -Seconds 2
+    if (Get-AppWindow) { Stop-Test 'Start minimized' 'With the notification area icon, a start with Windows showed a window.' }
+    $again = Start-Process -FilePath $Path -PassThru
+    $null = $again.Handle
+    if (-not $again.WaitForExit(20000)) { Stop-Test 'Start minimized' 'A second start did not end within 20 seconds.' }
+    $until = (Get-Date).AddSeconds(10)
+    do { $appWindow = Get-AppWindow; if (-not $appWindow) { Start-Sleep -Milliseconds 300 } } while (-not $appWindow -and (Get-Date) -lt $until)
+    if (-not $appWindow) { Stop-Test 'Start minimized' 'A second start did not bring the window back from the notification area.' }
+    $windowPattern = $appWindow.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern)
+    if ($windowPattern.Current.WindowVisualState -eq [System.Windows.Automation.WindowVisualState]::Minimized) { Stop-Test 'Start minimized' 'A second start left the window minimized.' }
+    $windowPattern.Close()
+    Start-Sleep -Seconds 3
+    if ($process.HasExited) { Stop-Test 'Keep playing' "With the icon and Keep playing on, closing the window quit Groovefin (code $($process.ExitCode))." }
+    if (Get-AppWindow) { Stop-Test 'Keep playing' 'With the icon and Keep playing on, closing the window left it shown.' }
+    Test-Running 'after the window was closed to the notification area'
+    Write-Output 'With the icon, a start with Windows showed no window, a plain start brought it back, and closing it kept Groovefin running.'
+    Stop-Process -Id $process.Id -Force
+    $null = $process.WaitForExit(10000)
 
     if ($accessibilityFailures.Count -gt 0) {
         Stop-Test 'Accessibility' "The accessibility scan found errors on: $($accessibilityFailures -join ', '). The errors are listed after each scan above."

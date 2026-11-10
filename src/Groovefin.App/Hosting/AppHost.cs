@@ -114,6 +114,7 @@ internal static class AppHost
         builder.Services.AddSingleton<IDialogService>(sp => sp.GetRequiredService<ContentDialogService>());
         builder.Services.AddSingleton<ILauncherService, LauncherService>();
         builder.Services.AddSingleton<IFolderPicker, WindowsFolderPicker>();
+        builder.Services.AddSingleton<IStartupRegistration, WindowsStartupRegistration>();
 
         // Playback
         builder.Services.AddSingleton<MediaPlayerEngine>();

@@ -127,8 +127,16 @@ public partial class App : Application
 
         var window = _host.Services.GetRequiredService<MainWindow>();
         window.Closed += OnMainWindowClosed;
-        window.Activate();
+
+        // A start with Windows (#395) opens minimized when chosen.
+        var withWindows = StartedWithWindows(arguments);
+        var minimized = withWindows && settings.Current.Appearance.StartMinimized;
+        window.ShowAtStart(minimized);
         _windowShown = true;
+        if (withWindows)
+        {
+            LogStartedWithWindows(logger, minimized);
+        }
 
         // Lives as long as the app: tells the server what is playing (play counts, recently played).
         _host.Services.GetRequiredService<PlaybackReporting>();
@@ -462,4 +470,28 @@ public partial class App : Application
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "XAML {Kind} failed: {Message}")]
     private static partial void LogXamlProblem(ILogger logger, string kind, string message);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Started with Windows, minimized: {Minimized}")]
+    private static partial void LogStartedWithWindows(ILogger logger, bool minimized);
+
+    /// <summary>
+    /// Whether Windows started the app at sign-in (#395): the package's startup task, or the Run entry's argument.
+    /// </summary>
+    private static bool StartedWithWindows(string? arguments)
+    {
+        if ((arguments ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries).Contains(Groovefin.Core.Services.IStartupRegistration.Argument, StringComparer.OrdinalIgnoreCase)
+            || Environment.GetCommandLineArgs().Contains(Groovefin.Core.Services.IStartupRegistration.Argument, StringComparer.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        try
+        {
+            return Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs().Kind == Microsoft.Windows.AppLifecycle.ExtendedActivationKind.StartupTask;
+        }
+        catch (COMException)
+        {
+            return false;
+        }
+    }
 }

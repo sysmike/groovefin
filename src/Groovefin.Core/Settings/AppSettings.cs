@@ -110,6 +110,18 @@ public sealed record AppearanceSettings
 
     /// <summary>Gets or sets a value indicating whether minimizing hides the window to the notification area icon.</summary>
     public bool MinimizeToTray { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether closing the window keeps Groovefin playing in the notification area
+    /// (#395): with the icon shown, the window hides, and Quit in the icon's menu quits.
+    /// </summary>
+    public bool CloseToTray { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether a start with Windows opens minimized (#395): in the notification area
+    /// with its icon shown, otherwise on the taskbar. Whether Groovefin starts with Windows is Windows' setting.
+    /// </summary>
+    public bool StartMinimized { get; set; }
 }
 
 /// <summary>

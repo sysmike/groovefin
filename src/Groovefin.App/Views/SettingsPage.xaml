@@ -218,6 +218,28 @@
                         <controls:SettingsCard x:Uid="SettingsMinimizeToTrayCard" IsEnabled="{x:Bind ViewModel.ShowTrayIcon, Mode=OneWay}">
                             <ToggleSwitch IsOn="{x:Bind ViewModel.MinimizeToTray, Mode=TwoWay}" />
                         </controls:SettingsCard>
+                        <!--  Closing keeps the music playing; Quit in the icon's menu quits (#395).  -->
+                        <controls:SettingsCard x:Uid="SettingsCloseToTrayCard" IsEnabled="{x:Bind ViewModel.ShowTrayIcon, Mode=OneWay}">
+                            <ToggleSwitch AutomationProperties.AutomationId="CloseToTraySwitch" IsOn="{x:Bind ViewModel.CloseToTray, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+                    </controls:SettingsExpander.Items>
+                </controls:SettingsExpander>
+                <!--
+                    Start with Windows (#395): Windows' own setting, which it may keep from changing (Task Manager,
+                    policy); the description then says why. Start minimized is Groovefin's.
+                -->
+                <controls:SettingsExpander
+                    x:Uid="SettingsStartupCard"
+                    HeaderIcon="{ui:FontIcon Glyph=&#xE7E8;}">
+                    <ToggleSwitch
+                        AutomationProperties.AutomationId="StartWithWindowsSwitch"
+                        IsEnabled="{x:Bind Startup.CanChange, Mode=OneWay}"
+                        IsOn="{x:Bind Startup.StartWithWindows, Mode=TwoWay}" />
+                    <controls:SettingsExpander.Items>
+                        <controls:SettingsCard Header="{x:Bind Startup.StateText, Mode=OneWay}" Visibility="{x:Bind Startup.HasStateText, Mode=OneWay}" />
+                        <controls:SettingsCard x:Uid="SettingsStartMinimizedCard" IsEnabled="{x:Bind Startup.StartWithWindows, Mode=OneWay}">
+                            <ToggleSwitch IsOn="{x:Bind Startup.StartMinimized, Mode=TwoWay}" />
+                        </controls:SettingsCard>
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
 
