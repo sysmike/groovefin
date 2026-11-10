@@ -1959,6 +1959,37 @@ try {
     if (Test-Path $files[0].DirectoryName) { Stop-Test 'Downloads' 'After the Playlists download was turned off, the downloaded songs are still on disk.' }
     Write-Output 'Turning on the Playlists download saved both songs of the playlist, and turning it off deleted them.'
 
+    # One album alone (#387): its page's Download toggle downloads Album 1's two songs, without a favourite sent to
+    # the server; turned off, they go again. Then Ctrl+, opens Settings again.
+    Select-Navigation 'Home'
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        $album = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) |
+            Where-Object { $_.Current.Name -like 'Album 1*' } | Select-Object -First 1
+        if (-not $album) { Start-Sleep -Milliseconds 500 }
+    } while (-not $album -and (Get-Date) -lt $until)
+    if (-not $album) { Stop-Test 'Download one album' "The album 'Album 1' was not found on the home page." }
+    $pattern = $null
+    if ($album.TryGetCurrentPattern($invoke, [ref] $pattern)) { $pattern.Invoke() }
+    else { $album.SetFocus(); [System.Windows.Forms.SendKeys]::SendWait('{ENTER}') }
+    $albumDownload = (Find-ById 'AlbumDownloadToggle').GetCurrentPattern($toggle)
+    $until = (Get-Date).AddSeconds(10)
+    while (-not (Find-ById 'AlbumDownloadToggle').Current.IsEnabled -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 300 }
+    $favouritesBefore = Get-RequestCount 'FavoriteItems'
+    $albumDownload.Toggle()
+    $until = (Get-Date).AddSeconds(30)
+    while (@(Get-ChildItem $downloads -Recurse -Filter '*.wav' -ErrorAction SilentlyContinue).Count -lt 2 -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
+    $albumFiles = @(Get-ChildItem $downloads -Recurse -Filter '*.wav' -ErrorAction SilentlyContinue)
+    if ($albumFiles.Count -ne 2) { Stop-Test 'Download one album' "After the album page's Download toggle was turned on, $($albumFiles.Count) song files are in $downloads, not Album 1's 2." }
+    if ((Get-RequestCount 'FavoriteItems') -ne $favouritesBefore) { Stop-Test 'Download one album' 'Downloading one album made it a favourite on the server.' }
+    $albumDownload.Toggle()
+    $until = (Get-Date).AddSeconds(15)
+    while (@(Get-ChildItem $downloads -Recurse -Filter '*.wav' -ErrorAction SilentlyContinue).Count -gt 0 -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
+    if (@(Get-ChildItem $downloads -Recurse -Filter '*.wav' -ErrorAction SilentlyContinue).Count -gt 0) { Stop-Test 'Download one album' "After the album page's Download toggle was turned off, Album 1's songs are still on disk." }
+    Write-Output "The album page's Download toggle downloaded Album 1's two songs without making it a favourite, and turning it off deleted them."
+    [System.Windows.Forms.SendKeys]::SendWait('^,')
+    $null = Find-ById 'SettingsScroller'
+
     # Start with Windows (#395): the unpackaged app's switch writes the user's Run entry, which starts it with
     # --startup, and deletes it again.
     $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'

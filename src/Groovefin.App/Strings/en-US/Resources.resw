@@ -1275,6 +1275,12 @@
   <data name="Menu_Unfavourite" xml:space="preserve">
     <value>Remove from favourites</value>
   </data>
+  <data name="Menu_Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="Menu_RemoveDownload" xml:space="preserve">
+    <value>Don't download</value>
+  </data>
   <data name="Menu_ShowInfo" xml:space="preserve">
     <value>Show info</value>
   </data>
@@ -2466,14 +2472,26 @@
   <data name="SettingsDownloadsCard.Header" xml:space="preserve">
     <value>Offline downloads</value>
   </data>
+  <data name="SettingsDownloadChosenCard.Header" xml:space="preserve">
+    <value>Albums, artists and playlists of your choice</value>
+  </data>
+  <data name="SettingsDownloadChosenCard.Description" xml:space="preserve">
+    <value>Download one with the Download button on its page or in its menu. It need not be a favourite.</value>
+  </data>
+  <data name="DownloadToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="DownloadToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Download to play offline, without making it a favourite. Turned off, its songs are deleted unless another download still wants them.</value>
+  </data>
   <data name="SettingsDownloadFavouritesCard.Header" xml:space="preserve">
-    <value>Favourite songs</value>
+    <value>Also download all favourite songs</value>
   </data>
   <data name="SettingsDownloadFavouritesCard.Description" xml:space="preserve">
     <value>Every song with a heart.</value>
   </data>
   <data name="SettingsDownloadPlaylistsCard.Header" xml:space="preserve">
-    <value>Playlists</value>
+    <value>Also download all playlists</value>
   </data>
   <data name="SettingsDownloadPlaylistsCard.Description" xml:space="preserve">
     <value>All your playlists, with every song in them.</value>
@@ -2526,13 +2544,13 @@
     <value>Download</value>
   </data>
   <data name="SettingsDownloadAlbumsCard.Header" xml:space="preserve">
-    <value>Favourite albums</value>
+    <value>Also download all favourite albums</value>
   </data>
   <data name="SettingsDownloadAlbumsCard.Description" xml:space="preserve">
     <value>Every song of each album with a heart.</value>
   </data>
   <data name="SettingsDownloadArtistsCard.Header" xml:space="preserve">
-    <value>Favourite artists</value>
+    <value>Also download all favourite artists</value>
   </data>
   <data name="SettingsDownloadArtistsCard.Description" xml:space="preserve">
     <value>Every song of each artist with a heart. This can be a lot.</value>

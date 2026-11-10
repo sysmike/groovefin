@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Menus;
 using Groovefin.Core.Models;
@@ -7,6 +8,7 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 using Groovefin.Core.Tests.TestDoubles;
 
 namespace Groovefin.Core.Tests.Menus;
@@ -20,6 +22,7 @@ public sealed class ContextMenusTests
     private readonly IDialogService _dialogs = Substitute.For<IDialogService>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
+    private readonly IDownloadChoices _downloads = Substitute.For<IDownloadChoices>();
     private readonly FavouritesService _favourites;
     private readonly ContextMenus _sut;
 
@@ -28,7 +31,7 @@ public sealed class ContextMenusTests
         _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
         _strings.GetString("Menu_GoToArtist").Returns("Go to {0}");
         _favourites = new FavouritesService(_library, new WeakReferenceMessenger(), _errors);
-        _sut = new ContextMenus(_player, _library, _playlists, _navigation, _favourites, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _dialogs, _errors, _strings);
+        _sut = new ContextMenus(_player, _library, _playlists, _navigation, _favourites, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _dialogs, _errors, _strings, _downloads);
     }
 
     private static readonly Track Song = new()
@@ -243,7 +246,7 @@ public sealed class ContextMenusTests
         _player.Received(1).AddToQueue(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(AlbumTracks)));
         actions.Select(a => a.Kind).Should().Equal(
             MenuActionKind.PlayNow, MenuActionKind.PlayNext, MenuActionKind.AddToQueue, MenuActionKind.AddToPlaylist,
-            MenuActionKind.GoToArtist, MenuActionKind.InstantMix, MenuActionKind.Unfavourite);
+            MenuActionKind.GoToArtist, MenuActionKind.InstantMix, MenuActionKind.Unfavourite, MenuActionKind.Download);
     }
 
     [Fact]
@@ -268,7 +271,7 @@ public sealed class ContextMenusTests
         _player.Received(1).PlayNext(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(AlbumTracks)));
         actions.Select(a => a.Kind).Should().Equal(
             MenuActionKind.PlayNow, MenuActionKind.PlayNext, MenuActionKind.AddToQueue, MenuActionKind.AddToPlaylist,
-            MenuActionKind.InstantMix, MenuActionKind.Favourite);
+            MenuActionKind.InstantMix, MenuActionKind.Favourite, MenuActionKind.Download);
     }
 
     [Fact]
@@ -280,7 +283,32 @@ public sealed class ContextMenusTests
         await Find(actions, MenuActionKind.PlayNow).InvokeAsync();
 
         _player.Received(1).Play(Arg.Is<IReadOnlyList<Track>>(t => t.SequenceEqual(AlbumTracks)));
-        actions.Select(a => a.Kind).Should().Equal(MenuActionKind.PlayNow, MenuActionKind.PlayNext, MenuActionKind.AddToQueue, MenuActionKind.InstantMix);
+        actions.Select(a => a.Kind).Should().Equal(MenuActionKind.PlayNow, MenuActionKind.PlayNext, MenuActionKind.AddToQueue, MenuActionKind.InstantMix, MenuActionKind.Download);
+    }
+
+    [Theory]
+    [InlineData(DownloadItemKind.Album)]
+    [InlineData(DownloadItemKind.Artist)]
+    [InlineData(DownloadItemKind.Playlist)]
+    public async Task Download_chooses_the_item_alone_and_then_offers_to_stop(DownloadItemKind kind)
+    {
+        IReadOnlyList<MenuAction> Menu() => kind switch
+        {
+            DownloadItemKind.Album => _sut.ForAlbum(new Album { Id = "x1", Name = "Discovery" }),
+            DownloadItemKind.Artist => _sut.ForArtist(new Artist { Id = "x1", Name = "Discovery" }),
+            _ => _sut.ForPlaylist(new Playlist { Id = "x1", Name = "Discovery" }),
+        };
+
+        await Find(Menu(), MenuActionKind.Download).InvokeAsync();
+        _downloads.Received(1).SetChosen(kind, "x1", "Discovery", true);
+        _downloads.IsChosen(kind, "x1").Returns(true);
+
+        var stop = Menu().Should().ContainSingle(a => a.Kind == MenuActionKind.RemoveDownload).Subject;
+        stop.Text.Should().Be("Menu_RemoveDownload");
+        await stop.InvokeAsync();
+
+        _downloads.Received(1).SetChosen(kind, "x1", "Discovery", false);
+        await _library.DidNotReceiveWithAnyArgs().SetFavouriteAsync(default!, default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -309,7 +337,7 @@ public sealed class ContextMenusTests
         // A lookup that never returns the key itself, unlike the one above: a key passed on as text shows.
         var strings = Substitute.For<IStringResources>();
         strings.GetString(Arg.Any<string>()).Returns(call => $"«{call.Arg<string>()}»");
-        var menus = new ContextMenus(_player, _library, _playlists, _navigation, _favourites, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _dialogs, _errors, strings);
+        var menus = new ContextMenus(_player, _library, _playlists, _navigation, _favourites, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _dialogs, _errors, strings, _downloads);
 
         IEnumerable<MenuAction> all =
         [

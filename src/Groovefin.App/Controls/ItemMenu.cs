@@ -158,6 +158,8 @@ public static class ItemMenu
         MenuActionKind.InstantMix => "",
         MenuActionKind.Favourite => "",
         MenuActionKind.Unfavourite => "",
+        MenuActionKind.Download => "\uE896",
+        MenuActionKind.RemoveDownload => "\uE74D",
         _ => "",
     };
 

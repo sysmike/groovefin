@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
@@ -79,7 +80,8 @@ public sealed partial class PlaylistDetailViewModel(
     FavouritesService favourites,
     IMessenger messenger,
     CurrentTrack currentTrack,
-    ISettingsService settings) : ObservableObject
+    ISettingsService settings,
+    IDownloadChoices downloads) : ObservableObject
 {
     public const double ImageWidth = 200;
 
@@ -92,6 +94,9 @@ public sealed partial class PlaylistDetailViewModel(
     private bool _followsEntries;
 
     public ObservableCollection<PlaylistEntryItem> Entries { get; } = currentTrack.Watch(new ObservableCollection<PlaylistEntryItem>());
+
+    /// <summary>Gets the Download toggle: this playlist alone, kept offline (#387).</summary>
+    public DownloadToggle Download { get; } = new(downloads, DownloadItemKind.Playlist);
 
     public double DisplayScale { get; set; } = 1;
 
@@ -181,6 +186,7 @@ public sealed partial class PlaylistDetailViewModel(
             _loadingOrder = false;
             IsFavourite = favourites.IsFavourite(playlist.Id, playlist.IsFavorite);
             Playlist = playlist with { IsFavorite = IsFavourite };
+            Download.Show(playlist.Id, playlist.Name, messenger);
             Image = ImageRequest.Primary(playlist.Id, playlist.PrimaryImageTag, ImageWidth, DisplayScale);
             ShowEntries(entries);
         }

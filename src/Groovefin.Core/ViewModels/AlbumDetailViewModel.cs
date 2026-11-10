@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
@@ -13,6 +14,7 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 
 namespace Groovefin.Core.ViewModels;
 
@@ -85,7 +87,8 @@ public sealed partial class AlbumDetailViewModel(
     FavouritesService favourites,
     IMessenger messenger,
     InstantMix instantMix,
-    CurrentTrack currentTrack) : ObservableObject
+    CurrentTrack currentTrack,
+    IDownloadChoices downloads) : ObservableObject
 {
     private IReadOnlyList<Track> _tracks = [];
 
@@ -99,6 +102,9 @@ public sealed partial class AlbumDetailViewModel(
     public const double BackgroundWidth = 128;
 
     public ObservableCollection<DiscGroup> Discs { get; } = [];
+
+    /// <summary>Gets the Download toggle: this album alone, kept offline (#387).</summary>
+    public DownloadToggle Download { get; } = new(downloads, DownloadItemKind.Album);
 
     /// <summary>Gets the album's tracks in play order (empty until loaded).</summary>
     public IReadOnlyList<Track> Tracks => _tracks;
@@ -196,6 +202,7 @@ public sealed partial class AlbumDetailViewModel(
             var tracks = await tracksTask;
 
             Album = album;
+            Download.Show(album.Id, album.Name, messenger);
             IsFavourite = favourites.IsFavourite(album.Id, album.IsFavorite);
             Cover = ImageRequest.Primary(album.Id, album.PrimaryImageTag, CoverWidth, DisplayScale);
             Background = ImageRequest.Primary(album.Id, album.PrimaryImageTag, BackgroundWidth, 1);

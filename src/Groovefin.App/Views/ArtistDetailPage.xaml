@@ -228,6 +228,14 @@
                                 IsChecked="{x:Bind ViewModel.IsFavourite, Mode=OneWay}">
                                 <FontIcon FontSize="14" Glyph="{x:Bind conv:Glyphs.Heart(ViewModel.IsFavourite), Mode=OneWay}" />
                             </ToggleButton>
+                            <!--  Download this alone (#387), not as a favourite; off deletes what nothing else wants.  -->
+                            <ToggleButton
+                                x:Uid="DownloadToggle"
+                                AutomationProperties.AutomationId="ArtistDownloadToggle"
+                                IsChecked="{x:Bind ViewModel.Download.IsOn, Mode=TwoWay}"
+                                IsEnabled="{x:Bind ViewModel.Download.CanChange, Mode=OneWay}">
+                                <FontIcon FontSize="14" Glyph="&#xE896;" />
+                            </ToggleButton>
 
                             <!--  The artist on other sites (#194); they open in the browser.  -->
                             <HyperlinkButton

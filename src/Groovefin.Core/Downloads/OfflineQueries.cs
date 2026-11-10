@@ -41,10 +41,10 @@ internal static class OfflineQueries
     public static PagedResult<Album> Albums(DownloadIndex index, AlbumQuery query)
     {
         IEnumerable<OfflineAlbum> albums = Albums(index).Values;
+        // As saved: a downloaded album may be chosen on its own (#387), not a favourite.
         if (query.FavouritesOnly)
         {
-            var favourites = index.Albums.Select(a => a.Album.Id).ToHashSet(StringComparer.Ordinal);
-            albums = albums.Where(a => a.Album.IsFavorite || favourites.Contains(a.Album.Id));
+            albums = albums.Where(a => a.Album.IsFavorite);
         }
 
         if (query.GenreIds.Count > 0)
@@ -109,7 +109,8 @@ internal static class OfflineQueries
 
     /// <summary>
     /// The artists of the downloaded songs: the album artists of their albums, or every artist on them. A
-    /// favourite artist counts with the songs downloaded for them, and comes as saved.
+    /// downloaded artist (a favourite, or chosen on its own) counts with the songs downloaded for them, and comes as
+    /// saved.
     /// </summary>
     public static List<OfflineArtist> Artists(DownloadIndex index, bool albumArtistsOnly)
     {
@@ -141,8 +142,7 @@ internal static class OfflineQueries
         [
             .. songs.Values.Select(e => new OfflineArtist(
                 saved.GetValueOrDefault(e.Ref.Id)?.Artist ?? new Artist { Id = e.Ref.Id, Name = e.Ref.Name },
-                e.Songs,
-                saved.ContainsKey(e.Ref.Id))),
+                e.Songs)),
         ];
     }
 
@@ -151,7 +151,7 @@ internal static class OfflineQueries
         IEnumerable<OfflineArtist> artists = Artists(index, query.AlbumArtistsOnly);
         if (query.FavouritesOnly)
         {
-            artists = artists.Where(a => a.IsFavourite);
+            artists = artists.Where(a => a.Artist.IsFavorite);
         }
 
         if (query.NameLessThan is { } name)
@@ -345,10 +345,8 @@ internal sealed record OfflineAlbum(Album Album, IReadOnlyList<Track> Songs, IRe
 }
 
 /// <summary>An artist of the downloaded songs, with them.</summary>
-internal sealed record OfflineArtist(Artist Artist, IReadOnlyList<Track> Songs, bool IsSavedFavourite)
+internal sealed record OfflineArtist(Artist Artist, IReadOnlyList<Track> Songs)
 {
-    public bool IsFavourite => IsSavedFavourite || Artist.IsFavorite;
-
     public int PlayCount => Songs.Sum(t => t.PlayCount);
 
     public DateTimeOffset? DateAdded => Songs.Min(t => t.DateAdded);

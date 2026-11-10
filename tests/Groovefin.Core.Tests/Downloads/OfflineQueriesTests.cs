@@ -98,11 +98,15 @@ public sealed class OfflineQueriesTests
     [Fact]
     public void A_favourite_artist_comes_as_saved()
     {
-        _index.Artists = [new DownloadedArtist { Artist = new Artist { Id = "ar2", Name = "Romanthony", PrimaryImageTag = "tag" }, TrackIds = ["s1"] }];
+        _index.Artists =
+        [
+            new DownloadedArtist { Artist = new Artist { Id = "ar2", Name = "Romanthony", PrimaryImageTag = "tag", IsFavorite = true }, TrackIds = ["s1"] },
+            new DownloadedArtist { Artist = new Artist { Id = "ar4", Name = "Donna Summer" }, TrackIds = ["s4"] },
+        ];
 
         var artists = OfflineQueries.Artists(_index, new ArtistQuery { AlbumArtistsOnly = false, FavouritesOnly = true }).Items;
 
-        artists.Should().ContainSingle().Which.PrimaryImageTag.Should().Be("tag");
+        artists.Should().ContainSingle("Donna Summer was chosen to download, not made a favourite (#387)").Which.PrimaryImageTag.Should().Be("tag");
     }
 
     [Fact]

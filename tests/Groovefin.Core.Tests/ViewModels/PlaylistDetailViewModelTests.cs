@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Images;
 using Groovefin.Core.Models;
@@ -42,7 +43,7 @@ public sealed class PlaylistDetailViewModelTests
         _playlists.GetEntriesAsync(Id, Arg.Any<CancellationToken>()).Returns(Entries("a", "b", "c"));
         _messenger.Register<PlaylistDetailViewModelTests, PlaylistChangedMessage>(this, static (r, m) => r._sent.Add(m));
         _messenger.Register<PlaylistDetailViewModelTests, PlaylistDeletedMessage>(this, static (r, m) => r._sent.Add(m));
-        _sut = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, _playing.Current, _settings);
+        _sut = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, _playing.Current, _settings, Substitute.For<IDownloadChoices>());
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -524,7 +525,7 @@ public sealed class PlaylistDetailViewModelTests
         _sut.ToggleReverseCommand.Execute(null);
         _settings.Current.Browse.ReversedPlaylists.Should().Equal("other", Id);
 
-        var reopened = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, _playing.Current, _settings);
+        var reopened = new PlaylistDetailViewModel(_playlists, _player, _navigation, _dialogs, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, _playing.Current, _settings, Substitute.For<IDownloadChoices>());
         await reopened.LoadAsync(Id, Ct);
         reopened.IsReversed.Should().BeTrue();
         reopened.Entries.Select(e => e.Entry.Track.Id).Should().Equal("c", "b", "a");

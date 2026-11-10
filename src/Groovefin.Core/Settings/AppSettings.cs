@@ -330,6 +330,12 @@ public enum DownloadItemKind
 /// <summary>A playlist, album or artist removed from the downloads, with its name for the Downloads page (#388).</summary>
 public sealed record DownloadExclusion(DownloadItemKind Kind, string Id, string Name);
 
+/// <summary>
+/// A playlist, album or artist the user chose to download on its own (#387), with its name for the Downloads page.
+/// It is kept here, not as a favourite on the server.
+/// </summary>
+public sealed record DownloadChoice(DownloadItemKind Kind, string Id, string Name);
+
 /// <summary>What is downloaded for offline playback, and how (#58, #327, #331). Everything is off by default.</summary>
 public sealed record DownloadSettings
 {
@@ -370,9 +376,15 @@ public sealed record DownloadSettings
     /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyList<DownloadExclusion>> Removed { get; set; } = ReadOnlyDictionary<string, IReadOnlyList<DownloadExclusion>>.Empty;
 
-    /// <summary>Gets a value indicating whether any collection is downloaded.</summary>
+    /// <summary>
+    /// Gets or sets the playlists, albums and artists chosen to download one by one (#387), by server and user (the
+    /// download folder's key). The default is one shared empty instance, so that defaults compare equal.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<DownloadChoice>> Chosen { get; set; } = ReadOnlyDictionary<string, IReadOnlyList<DownloadChoice>>.Empty;
+
+    /// <summary>Gets a value indicating whether anything is downloaded: a collection, or one chosen item.</summary>
     [JsonIgnore]
-    public bool AnyCollection => FavouriteSongs || FavouriteAlbums || FavouriteArtists || Playlists;
+    public bool AnyCollection => FavouriteSongs || FavouriteAlbums || FavouriteArtists || Playlists || Chosen.Values.Any(c => c.Count > 0);
 
     /// <summary>Gets a value indicating whether any favourites are downloaded: a heart then syncs.</summary>
     [JsonIgnore]

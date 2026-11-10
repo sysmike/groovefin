@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.Images;
@@ -13,6 +14,7 @@ using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 
 namespace Groovefin.Core.ViewModels;
 
@@ -61,7 +63,8 @@ public sealed partial class ArtistDetailViewModel(
     FavouritesService favourites,
     IMessenger messenger,
     InstantMix instantMix,
-    CurrentTrack currentTrack) : ObservableObject
+    CurrentTrack currentTrack,
+    IDownloadChoices downloads) : ObservableObject
 {
     public const double ImageWidth = 200;
 
@@ -90,6 +93,9 @@ public sealed partial class ArtistDetailViewModel(
     public ObservableCollection<AlbumItem> AppearsOn { get; } = [];
 
     public ObservableCollection<ArtistItem> Similar { get; } = [];
+
+    /// <summary>Gets the Download toggle: every song of this artist, kept offline (#387).</summary>
+    public DownloadToggle Download { get; } = new(downloads, DownloadItemKind.Artist);
 
     /// <summary>Gets the similar artists the page shows: as many as fit in one row (#264).</summary>
     public ObservableCollection<ArtistItem> SimilarRow { get; } = [];
@@ -191,6 +197,7 @@ public sealed partial class ArtistDetailViewModel(
 
             var artist = await artistTask;
             Artist = artist;
+            Download.Show(artist.Id, artist.Name, messenger);
             IsFavourite = favourites.IsFavourite(artist.Id, artist.IsFavorite);
             Image = ImageRequest.Primary(artist.Id, artist.PrimaryImageTag, ImageWidth, DisplayScale);
             Background = ImageRequest.Primary(artist.Id, artist.PrimaryImageTag, BackgroundWidth, 1);

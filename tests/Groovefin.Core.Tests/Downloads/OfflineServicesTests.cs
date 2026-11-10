@@ -75,8 +75,8 @@ public sealed class OfflineServicesTests : IDisposable
         {
             FavouriteSongs = ["d2", "w"],
             Playlists = [new DownloadedPlaylist { Playlist = new Playlist { Id = "p1", Name = "Road trip", TrackCount = 3 }, TrackIds = ["d2", "w", "d1"] }],
-            Albums = [new DownloadedAlbum { Album = new Album { Id = "al1", Name = "Discovery" }, TrackIds = ["d1", "d2"] }],
-            Artists = [new DownloadedArtist { Artist = new Artist { Id = "ar1", Name = "Daft Punk" }, TrackIds = ["d1", "d2"] }],
+            Albums = [new DownloadedAlbum { Album = new Album { Id = "al1", Name = "Discovery", IsFavorite = true }, TrackIds = ["d1", "d2"] }],
+            Artists = [new DownloadedArtist { Artist = new Artist { Id = "ar1", Name = "Daft Punk", IsFavorite = true }, TrackIds = ["d1", "d2"] }],
         };
         index.Tracks["d1"] = new DownloadedTrack { Track = Song("d1", number: 1), FileName = "d1.flac", Format = "original" };
         index.Tracks["d2"] = new DownloadedTrack { Track = Song("d2", number: 2), FileName = "d2.flac", Format = "original" };

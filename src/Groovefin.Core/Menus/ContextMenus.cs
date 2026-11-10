@@ -1,10 +1,12 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 
 namespace Groovefin.Core.Menus;
 
@@ -23,6 +25,12 @@ public enum MenuActionKind
     Favourite,
     Unfavourite,
     ShowInfo,
+
+    /// <summary>Downloads the album, artist or playlist on its own (#387).</summary>
+    Download,
+
+    /// <summary>No longer downloads it on its own (#387).</summary>
+    RemoveDownload,
 }
 
 /// <summary>
@@ -36,8 +44,8 @@ public sealed record MenuAction(MenuActionKind Kind, string Text, Func<Task> Inv
 
 /// <summary>
 /// The context menus of tracks, albums, artists and playlists, the same on every page: play now, play
-/// next, add to queue, add to playlist, go to album or artist, instant mix, favourite and show info.
-/// Album, artist, playlist and genre actions load their tracks when they run.
+/// next, add to queue, add to playlist, go to album or artist, instant mix, favourite, download (albums, artists
+/// and playlists, #387) and show info. Album, artist, playlist and genre actions load their tracks when they run.
 /// </summary>
 public sealed class ContextMenus(
     IPlayer player,
@@ -48,7 +56,8 @@ public sealed class ContextMenus(
     InstantMix instantMix,
     IDialogService dialogs,
     IErrorReporter errors,
-    IStringResources strings)
+    IStringResources strings,
+    IDownloadChoices downloads)
 {
     /// <summary>Most tracks a genre entry plays or queues.</summary>
     public const int GenreTrackLimit = 1000;
@@ -99,6 +108,7 @@ public sealed class ContextMenus(
         actions.AddRange(GoToArtists(album.AlbumArtists));
         actions.Add(Mix(album.Id));
         actions.Add(FavouriteToggle(album.Id, album.IsFavorite));
+        actions.Add(DownloadAction(DownloadItemKind.Album, album.Id, album.Name));
         return actions;
     }
 
@@ -107,7 +117,13 @@ public sealed class ContextMenus(
         ArgumentNullException.ThrowIfNull(artist);
         Task<IReadOnlyList<Track>> Tracks() => library.GetArtistTracksAsync(artist.Id);
 
-        var actions = new List<MenuAction>(Playback(Tracks)) { AddTo(Tracks), Mix(artist.Id), FavouriteToggle(artist.Id, artist.IsFavorite) };
+        var actions = new List<MenuAction>(Playback(Tracks))
+        {
+            AddTo(Tracks),
+            Mix(artist.Id),
+            FavouriteToggle(artist.Id, artist.IsFavorite),
+            DownloadAction(DownloadItemKind.Artist, artist.Id, artist.Name),
+        };
         return actions;
     }
 
@@ -116,7 +132,7 @@ public sealed class ContextMenus(
         ArgumentNullException.ThrowIfNull(playlist);
         async Task<IReadOnlyList<Track>> Tracks() => [.. (await playlists.GetEntriesAsync(playlist.Id)).Select(e => e.Track)];
 
-        return [.. Playback(Tracks), Mix(playlist.Id)];
+        return [.. Playback(Tracks), Mix(playlist.Id), DownloadAction(DownloadItemKind.Playlist, playlist.Id, playlist.Name)];
     }
 
     public IReadOnlyList<MenuAction> ForGenre(Genre genre)
@@ -162,6 +178,16 @@ public sealed class ContextMenus(
             isFavourite ? MenuActionKind.Unfavourite : MenuActionKind.Favourite,
             strings.GetString(isFavourite ? "Menu_Unfavourite" : "Menu_Favourite"),
             () => favourites.SetAsync(itemId, !isFavourite));
+    }
+
+    /// <summary>Downloads the item on its own, or no longer (#387); the toggle on its page does the same.</summary>
+    private MenuAction DownloadAction(DownloadItemKind kind, string id, string name)
+    {
+        var chosen = downloads.IsChosen(kind, id);
+        return Action(
+            chosen ? MenuActionKind.RemoveDownload : MenuActionKind.Download,
+            strings.GetString(chosen ? "Menu_RemoveDownload" : "Menu_Download"),
+            () => downloads.SetChosen(kind, id, name, !chosen));
     }
 
     /// <summary>Makes all the tracks favourites, or none when all are; only the ones that change are sent.</summary>

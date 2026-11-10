@@ -343,6 +343,8 @@
                             AutomationProperties.AutomationId="DownloadListCard"
                             Command="{x:Bind ViewModel.OpenDownloadsCommand}"
                             IsClickEnabled="True" />
+                        <!--  One by one (#387): the Download button on an album's, artist's or playlist's page.  -->
+                        <controls:SettingsCard x:Uid="SettingsDownloadChosenCard" />
                         <controls:SettingsCard x:Uid="SettingsDownloadFavouritesCard">
                             <ToggleSwitch IsOn="{x:Bind Downloads.FavouriteSongs, Mode=TwoWay}" />
                         </controls:SettingsCard>
