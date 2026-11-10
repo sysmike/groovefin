@@ -160,6 +160,7 @@ internal static class AppHost
         });
         // The player plays downloaded songs from their files (#333).
         builder.Services.AddSingleton<IOfflineLibrary>(sp => sp.GetRequiredService<DownloadManager>());
+        builder.Services.AddSingleton<IDownloadChoices>(sp => sp.GetRequiredService<DownloadManager>());
         // Offline, the image cache shows the covers kept with the downloads (#335).
         builder.Services.AddSingleton<IImageFallback>(sp => sp.GetRequiredService<DownloadManager>());
         builder.Services.AddSingleton<ISystemMediaControls, SystemMediaControls>();

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
@@ -52,7 +53,7 @@ public sealed class ArtistDetailViewModelTests
 
     private static PagedResult<Album> Page(params Album[] albums) => new(albums, albums.Length, 0);
 
-    private ArtistDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, new FavouritesService(_library, _messenger, _errors), _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current);
+    private ArtistDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, new FavouritesService(_library, _messenger, _errors), _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current, Substitute.For<IDownloadChoices>());
 
     [Fact]
     public async Task Load_fills_header_and_all_sections()

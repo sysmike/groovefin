@@ -1256,6 +1256,12 @@
   <data name="Menu_Unfavourite" xml:space="preserve">
     <value>Aus Favoriten entfernen</value>
   </data>
+  <data name="Menu_Download" xml:space="preserve">
+    <value>Herunterladen</value>
+  </data>
+  <data name="Menu_RemoveDownload" xml:space="preserve">
+    <value>Nicht mehr herunterladen</value>
+  </data>
   <data name="Menu_ShowInfo" xml:space="preserve">
     <value>Infos anzeigen</value>
   </data>
@@ -2447,14 +2453,26 @@
   <data name="SettingsDownloadsCard.Header" xml:space="preserve">
     <value>Offline-Downloads</value>
   </data>
+  <data name="SettingsDownloadChosenCard.Header" xml:space="preserve">
+    <value>Alben, Interpreten und Playlists deiner Wahl</value>
+  </data>
+  <data name="SettingsDownloadChosenCard.Description" xml:space="preserve">
+    <value>Lade eines mit dem Knopf „Herunterladen“ auf seiner Seite oder in seinem Menü herunter. Es muss kein Favorit sein.</value>
+  </data>
+  <data name="DownloadToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Herunterladen</value>
+  </data>
+  <data name="DownloadToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Herunterladen, um es offline zu hören, ohne es zum Favoriten zu machen. Ausgeschaltet werden die Titel gelöscht, außer ein anderer Download braucht sie noch.</value>
+  </data>
   <data name="SettingsDownloadFavouritesCard.Header" xml:space="preserve">
-    <value>Lieblingstitel</value>
+    <value>Auch alle Lieblingstitel herunterladen</value>
   </data>
   <data name="SettingsDownloadFavouritesCard.Description" xml:space="preserve">
     <value>Jeder Titel mit Herz.</value>
   </data>
   <data name="SettingsDownloadPlaylistsCard.Header" xml:space="preserve">
-    <value>Playlists</value>
+    <value>Auch alle Playlists herunterladen</value>
   </data>
   <data name="SettingsDownloadPlaylistsCard.Description" xml:space="preserve">
     <value>Alle deine Playlists mit allen Titeln darin.</value>
@@ -2507,13 +2525,13 @@
     <value>Herunterladen</value>
   </data>
   <data name="SettingsDownloadAlbumsCard.Header" xml:space="preserve">
-    <value>Lieblingsalben</value>
+    <value>Auch alle Lieblingsalben herunterladen</value>
   </data>
   <data name="SettingsDownloadAlbumsCard.Description" xml:space="preserve">
     <value>Jeder Titel jedes Albums mit Herz.</value>
   </data>
   <data name="SettingsDownloadArtistsCard.Header" xml:space="preserve">
-    <value>Lieblingsinterpreten</value>
+    <value>Auch alle Lieblingsinterpreten herunterladen</value>
   </data>
   <data name="SettingsDownloadArtistsCard.Description" xml:space="preserve">
     <value>Jeder Titel jedes Interpreten mit Herz. Das kann viel sein.</value>

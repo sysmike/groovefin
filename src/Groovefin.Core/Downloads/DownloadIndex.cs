@@ -25,7 +25,7 @@ public sealed record DownloadedTrack
     public string? FileVersion { get; init; }
 }
 
-/// <summary>A downloaded playlist: what it is and its songs in order, for offline browsing later (#58).</summary>
+/// <summary>A downloaded playlist (all of them, or chosen, #387): what it is and its songs in order, for offline browsing (#58).</summary>
 public sealed record DownloadedPlaylist
 {
     public required Playlist Playlist { get; init; }
@@ -33,7 +33,7 @@ public sealed record DownloadedPlaylist
     public IReadOnlyList<string> TrackIds { get; set; } = [];
 }
 
-/// <summary>A downloaded favourite album: what it is and its songs in order, for offline browsing later (#331).</summary>
+/// <summary>A downloaded album (a favourite, or chosen, #387): what it is and its songs in order, for offline browsing (#331).</summary>
 public sealed record DownloadedAlbum
 {
     public required Album Album { get; init; }
@@ -41,7 +41,7 @@ public sealed record DownloadedAlbum
     public IReadOnlyList<string> TrackIds { get; set; } = [];
 }
 
-/// <summary>A downloaded favourite artist: who it is and its songs, for offline browsing later (#331).</summary>
+/// <summary>A downloaded artist (a favourite, or chosen, #387): who it is and its songs, for offline browsing (#331).</summary>
 public sealed record DownloadedArtist
 {
     public required Artist Artist { get; init; }
@@ -66,13 +66,13 @@ public sealed record DownloadIndex
     /// <summary>Gets or sets the favourite songs at the last sync, by name.</summary>
     public IReadOnlyList<string> FavouriteSongs { get; set; } = [];
 
-    /// <summary>Gets or sets the playlists at the last sync.</summary>
+    /// <summary>Gets or sets the downloaded playlists at the last sync.</summary>
     public IReadOnlyList<DownloadedPlaylist> Playlists { get; set; } = [];
 
-    /// <summary>Gets or sets the favourite albums at the last sync.</summary>
+    /// <summary>Gets or sets the favourite and chosen albums at the last sync.</summary>
     public IReadOnlyList<DownloadedAlbum> Albums { get; set; } = [];
 
-    /// <summary>Gets or sets the favourite artists at the last sync.</summary>
+    /// <summary>Gets or sets the favourite and chosen artists at the last sync.</summary>
     public IReadOnlyList<DownloadedArtist> Artists { get; set; } = [];
 
     /// <summary>Gets the IDs of every song a collection holds.</summary>

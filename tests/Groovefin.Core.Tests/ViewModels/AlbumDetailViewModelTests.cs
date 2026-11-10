@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
@@ -59,7 +60,7 @@ public sealed class AlbumDetailViewModelTests
         Artists = artists,
     };
 
-    private AlbumDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current);
+    private AlbumDetailViewModel CreateSut() => new(_library, _player, _navigation, _errors, _strings, new FavouritesService(_library, _messenger, _errors), _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current, Substitute.For<IDownloadChoices>());
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -371,7 +372,7 @@ public sealed class AlbumDetailViewModelTests
     {
         var favourites = new FavouritesService(_library, _messenger, _errors);
         await favourites.SetAsync("t1", true);
-        var sut = new AlbumDetailViewModel(_library, _player, _navigation, _errors, _strings, favourites, _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current);
+        var sut = new AlbumDetailViewModel(_library, _player, _navigation, _errors, _strings, favourites, _messenger, new InstantMix(_library, _player, new InMemorySettingsService(), _errors), _playing.Current, Substitute.For<IDownloadChoices>());
 
         await sut.LoadAsync("album-1", Ct);
         await sut.LoadAsync("album-1", Ct);

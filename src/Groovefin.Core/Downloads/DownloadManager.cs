@@ -110,7 +110,8 @@ public sealed record DownloadStatus
 
 /// <summary>
 /// Keeps the collections that are on in Settings → Downloads on disk (#58, #327, #331): favourite songs, every
-/// song of the favourite albums and artists, and all playlists. A sync reads the wanted songs from the server, deletes the files no collection needs any more,
+/// song of the favourite albums and artists, and all playlists; and the playlists, albums and artists chosen one by
+/// one with their Download toggle (#387, <see cref="IDownloadChoices"/>). A sync reads the wanted songs from the server, deletes the files no collection needs any more,
 /// and downloads the missing ones, <see cref="Parallel"/> at a time, each to a <c>.part</c> file that is renamed
 /// when complete. An interrupted original resumes where it stopped. A song shared by several collections is
 /// kept once; one whose file changed on the server (another container or size) is downloaded again. The
@@ -125,7 +126,7 @@ public sealed record DownloadStatus
 /// that failed <see cref="MaxAttempts"/> times waits for <see cref="SyncNowAsync"/>.
 /// </para>
 /// </summary>
-public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, IDisposable
+public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices, IImageFallback, IDisposable
 {
     /// <summary>The favourite songs read per sync, at most.</summary>
     public const int MaxFavouriteSongs = 10_000;
@@ -586,9 +587,39 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         }
     }
 
+    public bool IsChosen(DownloadItemKind kind, string id) =>
+        _client.Connection?.UserDataKey is { } key
+        && (_settings.Current.Downloads.Chosen.GetValueOrDefault(key) ?? []).Any(c => c.Kind == kind && c.Id == id);
+
+    public void SetChosen(DownloadItemKind kind, string id, string name, bool chosen)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        if (_client.Connection?.UserDataKey is not { } key || IsChosen(kind, id) == chosen)
+        {
+            return;
+        }
+
+        _settings.Update(s => s with
+        {
+            Downloads = s.Downloads with
+            {
+                Chosen = WithList(s.Downloads.Chosen, key, list => chosen
+                    ? [.. list, new DownloadChoice(kind, id, name)]
+                    : [.. list.Where(c => (c.Kind, c.Id) != (kind, id))]),
+
+                // Chosen again after it was removed on the Downloads page: it downloads.
+                Removed = chosen
+                    ? WithList(s.Downloads.Removed, key, list => [.. list.Where(r => (r.Kind, r.Id) != (kind, id))])
+                    : s.Downloads.Removed,
+            },
+        });
+        _messenger.Send(new DownloadChoiceChangedMessage(kind, id, chosen));
+    }
+
     /// <summary>
-    /// Removes one download (#388): the favourite songs turn their switch off; a playlist, album or artist is kept
-    /// from downloading. The next sync, shortly after, deletes the files nothing else wants.
+    /// Removes one download (#388): the favourite songs turn their switch off; a chosen playlist, album or artist is
+    /// no longer chosen (#387), and one its collection switch downloads is kept from downloading. The next sync,
+    /// shortly after, deletes the files nothing else wants.
     /// </summary>
     public void Remove(DownloadItem item)
     {
@@ -604,8 +635,20 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             return;
         }
 
-        var exclusion = new DownloadExclusion(item.Kind, item.Id, item.Name);
-        _settings.Update(s => s with { Downloads = s.Downloads with { Removed = WithRemoved(s.Downloads.Removed, key, list => [.. list.Where(r => r != exclusion), exclusion]) } });
+        SetChosen(item.Kind, item.Id, item.Name, chosen: false);
+        var downloads = _settings.Current.Downloads;
+        var bySwitch = item.Kind switch
+        {
+            DownloadItemKind.Playlist => downloads.Playlists,
+            DownloadItemKind.Album => downloads.FavouriteAlbums,
+            DownloadItemKind.Artist => downloads.FavouriteArtists,
+            _ => false,
+        };
+        if (bySwitch)
+        {
+            var exclusion = new DownloadExclusion(item.Kind, item.Id, item.Name);
+            _settings.Update(s => s with { Downloads = s.Downloads with { Removed = WithList(s.Downloads.Removed, key, list => [.. list.Where(r => r != exclusion), exclusion]) } });
+        }
     }
 
     /// <summary>Downloads a removed playlist, album or artist again, while its collection is on.</summary>
@@ -619,7 +662,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
 
         _settings.Update(s => s with
         {
-            Downloads = s.Downloads with { Removed = WithRemoved(s.Downloads.Removed, key, list => [.. list.Where(r => (r.Kind, r.Id) != (removed.Kind, removed.Id))]) },
+            Downloads = s.Downloads with { Removed = WithList(s.Downloads.Removed, key, list => [.. list.Where(r => (r.Kind, r.Id) != (removed.Kind, removed.Id))]) },
         });
     }
 
@@ -636,8 +679,9 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
         return SyncAsync();
     }
 
-    private static IReadOnlyDictionary<string, IReadOnlyList<DownloadExclusion>> WithRemoved(
-        IReadOnlyDictionary<string, IReadOnlyList<DownloadExclusion>> all, string key, Func<IReadOnlyList<DownloadExclusion>, IReadOnlyList<DownloadExclusion>> change)
+    /// <summary>The list of one server and user changed; an empty one goes.</summary>
+    private static IReadOnlyDictionary<string, IReadOnlyList<T>> WithList<T>(
+        IReadOnlyDictionary<string, IReadOnlyList<T>> all, string key, Func<IReadOnlyList<T>, IReadOnlyList<T>> change)
     {
         var copy = all.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
         var list = change(copy.GetValueOrDefault(key) ?? []);
@@ -672,7 +716,8 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
     private void OnCollectionChanged(bool favourites)
     {
         var downloads = _settings.Current.Downloads;
-        if (favourites ? downloads.AnyFavourites : downloads.Playlists)
+        var anyChosen = _client.Connection?.UserDataKey is { } key && downloads.Chosen.GetValueOrDefault(key) is { Count: > 0 };
+        if (favourites ? downloads.AnyFavourites : downloads.Playlists || anyChosen)
         {
             SyncSoon();
         }
@@ -1041,12 +1086,56 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
             }
         }
 
+        // Chosen one by one (#387): what a collection already has comes once.
+        foreach (var choice in settings.Chosen.GetValueOrDefault(key) ?? [])
+        {
+            if (choice.Kind == DownloadItemKind.Playlist && playlists.All(p => p.Playlist.Id != choice.Id)
+                && await ChosenAsync(choice, () => _playlists.GetPlaylistAsync(choice.Id, cancellationToken)).ConfigureAwait(false) is { } playlist)
+            {
+                var entries = await _playlists.GetEntriesAsync(playlist.Id, cancellationToken).ConfigureAwait(false);
+                Add(entries.Select(e => e.Track));
+                playlists.Add(new DownloadedPlaylist { Playlist = playlist, TrackIds = [.. entries.Select(e => e.Track.Id)] });
+            }
+            else if (choice.Kind == DownloadItemKind.Album && albums.All(a => a.Album.Id != choice.Id)
+                && await ChosenAsync(choice, () => _library.GetAlbumAsync(choice.Id, cancellationToken)).ConfigureAwait(false) is { } album)
+            {
+                var songs = await _library.GetAlbumTracksAsync(album.Id, cancellationToken).ConfigureAwait(false);
+                Add(songs);
+                albums.Add(new DownloadedAlbum { Album = album, TrackIds = [.. songs.Select(t => t.Id)] });
+            }
+            else if (choice.Kind == DownloadItemKind.Artist && artists.All(a => a.Artist.Id != choice.Id)
+                && await ChosenAsync(choice, () => _library.GetArtistAsync(choice.Id, cancellationToken)).ConfigureAwait(false) is { } artist)
+            {
+                var songs = await _library.GetArtistTracksAsync(artist.Id, cancellationToken).ConfigureAwait(false);
+                Add(songs);
+                artists.Add(new DownloadedArtist { Artist = artist, TrackIds = [.. songs.Select(t => t.Id)] });
+            }
+        }
+
         // The files on the server: a changed one downloads the song again, and their sizes tell how much a
         // collection downloads.
         var files = tracks.Count > 0
             ? await _library.GetTrackFilesAsync([.. tracks.Keys], cancellationToken).ConfigureAwait(false)
             : new Dictionary<string, TrackFile>();
         return new Wanted(tracks, favourites, playlists, albums, artists, files);
+    }
+
+    /// <summary>
+    /// Reads a chosen item from the server, or <see langword="null"/> when the server no longer has it: the choice
+    /// stays, and the item downloads again should it come back.
+    /// </summary>
+    private async Task<T?> ChosenAsync<T>(DownloadChoice choice, Func<Task<T>> load)
+        where T : class
+    {
+        try
+        {
+            return await load().ConfigureAwait(false);
+        }
+        catch (JellyfinException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            LogChosenGone(choice.Kind, choice.Name);
+            return null;
+        }
     }
 
     /// <summary>
@@ -1608,6 +1697,9 @@ public sealed partial class DownloadManager : IOfflineLibrary, IImageFallback, I
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Reading the songs to download failed")]
     private partial void LogLoadFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "The {Kind} {Name} chosen to download is no longer on the server")]
+    private partial void LogChosenGone(DownloadItemKind kind, string name);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "A download sync failed")]
     private partial void LogSyncFailed(Exception exception);
