@@ -145,6 +145,12 @@ public sealed record AlbumQuery
     public IReadOnlyList<string> Ids { get; init; } = [];
 
     /// <summary>
+    /// Gets a value indicating whether only downloaded music is included (#400): the download index answers, not the
+    /// server.
+    /// </summary>
+    public bool DownloadedOnly { get; init; }
+
+    /// <summary>
     /// Gets a name: only items that sort before it are included, to find where a letter starts (#390).
     /// <see langword="null"/> includes every item.
     /// </summary>
@@ -184,6 +190,12 @@ public sealed record ArtistQuery
     public bool Descending { get; init; }
 
     public bool FavouritesOnly { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether only downloaded music is included (#400): the download index answers, not the
+    /// server.
+    /// </summary>
+    public bool DownloadedOnly { get; init; }
 
     /// <summary>
     /// Gets a name: only items that sort before it are included, to find where a letter starts (#390).
@@ -228,6 +240,12 @@ public sealed record TrackQuery
 
     /// <summary>Gets a value indicating whether only the user's favourite songs are included (#401).</summary>
     public bool FavouritesOnly { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether only downloaded music is included (#400): the download index answers, not the
+    /// server.
+    /// </summary>
+    public bool DownloadedOnly { get; init; }
 
     /// <summary>
     /// Gets a name: only items that sort before it are included, to find where a letter starts (#390).

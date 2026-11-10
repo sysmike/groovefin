@@ -64,6 +64,7 @@ internal sealed class PlaylistService(JellyfinClient client) : IPlaylistService
                     // Primary only: the track DTO then carries AlbumPrimaryImageTag for covers.
                     p.ImageTypeLimit = 1;
                     p.EnableImageTypes = [ImageType.Primary];
+                    p.Fields = ItemMapper.DownloadedSongFields();
                 },
                 cancellationToken),
             "Loading playlist tracks").ConfigureAwait(false);

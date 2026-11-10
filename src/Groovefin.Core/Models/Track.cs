@@ -21,6 +21,9 @@ public sealed record Track
     /// <summary>Gets the album artist's name, or <see langword="null"/> when unknown.</summary>
     public string? AlbumArtist { get; init; }
 
+    /// <summary>Gets the album's artists, for the offline Artists page (#400).</summary>
+    public IReadOnlyList<ArtistRef> AlbumArtists { get; set; } = [];
+
     /// <summary>Gets the track's artists (may differ from the album artist on compilations).</summary>
     public IReadOnlyList<ArtistRef> Artists { get; set; } = [];
 
@@ -34,6 +37,12 @@ public sealed record Track
 
     /// <summary>Gets the release year, or <see langword="null"/> when unknown.</summary>
     public int? Year { get; init; }
+
+    /// <summary>
+    /// Gets the genres, for the offline Genres page (#400). Only the requests a download sync makes ask for them;
+    /// elsewhere the list is empty.
+    /// </summary>
+    public IReadOnlyList<Genre> Genres { get; set; } = [];
 
     /// <summary>Gets when the track was added to the library, or <see langword="null"/> when not loaded.</summary>
     public DateTimeOffset? DateAdded { get; init; }

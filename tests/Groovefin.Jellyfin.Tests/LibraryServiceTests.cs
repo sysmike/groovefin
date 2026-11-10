@@ -319,6 +319,8 @@ public sealed class LibraryServiceTests : IDisposable
                     AlbumId = Guid.Parse(AlbumId),
                     Album = "Discovery",
                     ArtistItems = new[] { new { Id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", Name = "Daft Punk" } },
+                    AlbumArtists = new[] { new { Id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", Name = "Daft Punk" } },
+                    GenreItems = new[] { new { Name = "Electronic", Id = Guid.Parse("11111111-2222-3333-4444-555555555555") } },
                     RunTimeTicks = 3_200_000_000L,
                     IndexNumber = 1,
                     ParentIndexNumber = 2,
@@ -334,6 +336,7 @@ public sealed class LibraryServiceTests : IDisposable
         Guid.Parse(query["parentId"]).ToString("N").Should().Be(AlbumId);
         query["includeItemTypes"].Should().Be("Audio");
         query["sortBy"].Should().Be("ParentIndexNumber,IndexNumber,SortName");
+        query["fields"].Should().Be("Genres,DateCreated", "a download keeps them for the offline pages (#400)");
         tracks.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
             Id = "aaaaaaaa000000000000000000000001",
@@ -347,6 +350,8 @@ public sealed class LibraryServiceTests : IDisposable
             PlayCount = 3,
         });
         tracks[0].Artists.Should().ContainSingle().Which.Name.Should().Be("Daft Punk");
+        tracks[0].AlbumArtists.Should().Equal(new ArtistRef("aaaaaaaabbbbccccddddeeeeeeeeeeee", "Daft Punk"));
+        tracks[0].Genres.Should().Equal(new Genre("11111111222233334444555555555555", "Electronic"));
     }
 
     [Fact]

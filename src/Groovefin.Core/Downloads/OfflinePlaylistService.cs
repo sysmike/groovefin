@@ -52,7 +52,7 @@ public sealed class OfflinePlaylistService(IPlaylistService server, OfflineAnswe
         server.MoveEntryAsync(playlistId, entryId, newIndex, cancellationToken);
 
     /// <summary>The playlist with the count and length of its downloaded songs, or <see langword="null"/> without any.</summary>
-    private static Playlist? Downloaded(DownloadIndex index, DownloadedPlaylist playlist)
+    internal static Playlist? Downloaded(DownloadIndex index, DownloadedPlaylist playlist)
     {
         var songs = OfflineAnswers.Downloaded(index, playlist.TrackIds);
         return songs.Count == 0

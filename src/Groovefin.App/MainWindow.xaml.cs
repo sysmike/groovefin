@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Groovefin.App.Controls;
 using Groovefin.App.Services;
+using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Images;
 using Groovefin.Core.Layout;
@@ -107,6 +108,7 @@ internal sealed partial class MainWindow : Window
         NowPlayingViewModel nowPlaying,
         StreamQualityMonitor streamQuality,
         PrivacyMode privacy,
+        OfflineSwitch workOffline,
         FavouritePlaylists favouritePlaylists,
         TrackDrag trackDrag,
         QuickPlay quickPlay,
@@ -126,6 +128,7 @@ internal sealed partial class MainWindow : Window
         Player = nowPlaying;
         StreamQuality = streamQuality;
         Privacy = privacy;
+        WorkOffline = workOffline;
         Suggestions = suggestions;
         InitializeComponent();
 
@@ -248,6 +251,9 @@ internal sealed partial class MainWindow : Window
 
     /// <summary>Gets privacy mode, which the title bar button next to the search box turns on and off (#234).</summary>
     public PrivacyMode Privacy { get; }
+
+    /// <summary>Gets "Work offline", which the title bar button next to privacy mode turns on and off (#400).</summary>
+    public OfflineSwitch WorkOffline { get; }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e) =>
         DispatcherQueue.TryEnqueue(() => _tray.SetVisible(_settings.Current.Appearance.ShowTrayIcon));

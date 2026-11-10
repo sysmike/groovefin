@@ -80,8 +80,9 @@
             </TitleBar.Content>
             <TitleBar.RightHeader>
                 <!--
-                    The app-wide buttons next to the window's own (#254): privacy mode (#234, accent-coloured while
-                    on), the statistics (#382) and Settings, each checked while its page is shown.
+                    The app-wide buttons next to the window's own (#254): privacy mode (#234) and "Work offline"
+                    (#400), accent-coloured while on, the statistics (#382) and Settings, each checked while its
+                    page is shown.
                 -->
                 <StackPanel
                     Margin="0,0,4,0"
@@ -94,6 +95,14 @@
                         AutomationProperties.AutomationId="PrivacyButton"
                         IsChecked="{x:Bind Privacy.IsOn, Mode=TwoWay}">
                         <FontIcon FontSize="16" Glyph="&#xED1A;" />
+                    </ToggleButton>
+                    <ToggleButton
+                        x:Name="WorkOfflineButton"
+                        x:Uid="WorkOfflineButton"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="WorkOfflineButton"
+                        IsChecked="{x:Bind WorkOffline.IsOn, Mode=TwoWay}">
+                        <FontIcon FontSize="16" Glyph="&#xE709;" />
                     </ToggleButton>
                     <ToggleButton
                         x:Name="StatisticsButton"

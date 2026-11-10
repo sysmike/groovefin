@@ -130,6 +130,10 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial bool FavouritesOnly { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether only albums with downloaded songs are shown (#400).</summary>
+    [ObservableProperty]
+    public partial bool DownloadedOnly { get; set; }
+
     [ObservableProperty]
     public partial Genre? Genre { get; set; }
 
@@ -149,7 +153,7 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     public string SelectionTitle => Selection?.Title ?? string.Empty;
 
     /// <summary>Gets a value indicating whether any filter is active (for the filter button state).</summary>
-    public bool HasFilters => FavouritesOnly || Genre is not null || MinYear is not null || MaxYear is not null;
+    public bool HasFilters => FavouritesOnly || DownloadedOnly || Genre is not null || MinYear is not null || MaxYear is not null;
 
     /// <summary>Loads genres and the first page. Called once when the page is shown.</summary>
     public async Task InitializeAsync()
@@ -246,6 +250,7 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     private void ClearFilters()
     {
         FavouritesOnly = false;
+        DownloadedOnly = false;
         Genre = null;
         MinYear = null;
         MaxYear = null;
@@ -280,6 +285,8 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     }
 
     partial void OnFavouritesOnlyChanged(bool value) => FilterChanged();
+
+    partial void OnDownloadedOnlyChanged(bool value) => FilterChanged();
 
     partial void OnGenreChanged(Genre? value) => FilterChanged();
 
@@ -364,6 +371,7 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
         MinYear = MinYear,
         MaxYear = MaxYear,
         FavouritesOnly = FavouritesOnly,
+        DownloadedOnly = DownloadedOnly,
         Ids = Selection?.Ids ?? [],
         PlayedBefore = Selection?.PlayedBefore,
     };

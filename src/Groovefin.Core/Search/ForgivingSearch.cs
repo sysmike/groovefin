@@ -124,7 +124,8 @@ public sealed class ForgivingSearch(ISearchService inner) : ISearchService
         return d[a.Length, b.Length];
     }
 
-    private static List<T> Rank<T>(IEnumerable<T> items, Func<T, string> id, Func<T, IEnumerable<string?>> texts, IReadOnlyList<string> words, int limit) =>
+    /// <summary>The items every word matches, best first, then in their order; each once.</summary>
+    internal static List<T> Rank<T>(IEnumerable<T> items, Func<T, string> id, Func<T, IEnumerable<string?>> texts, IReadOnlyList<string> words, int limit) =>
         [
             .. items
                 .DistinctBy(id)

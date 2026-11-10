@@ -346,6 +346,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     // Primary only: the track DTO then carries AlbumPrimaryImageTag for the now playing cover.
                     p.ImageTypeLimit = 1;
                     p.EnableImageTypes = [ImageType.Primary];
+                    p.Fields = ItemMapper.DownloadedSongFields();
                     p.EnableTotalRecordCount = false;
                 },
                 cancellationToken),
@@ -760,6 +761,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     // Primary only: the track DTO then carries AlbumPrimaryImageTag for covers.
                     p.ImageTypeLimit = 1;
                     p.EnableImageTypes = [ImageType.Primary];
+                    p.Fields = ItemMapper.DownloadedSongFields();
                     p.EnableTotalRecordCount = false;
                 },
                 cancellationToken),
@@ -822,6 +824,7 @@ internal sealed class LibraryService(JellyfinClient client) : ILibraryService
                     // Primary only: the track DTO then carries AlbumPrimaryImageTag for the now playing cover.
                     p.ImageTypeLimit = 1;
                     p.EnableImageTypes = [ImageType.Primary];
+                    p.Fields = ItemMapper.DownloadedSongFields();
                     p.EnableTotalRecordCount = false;
                 },
                 cancellationToken),

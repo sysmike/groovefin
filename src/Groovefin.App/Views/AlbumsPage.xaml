@@ -151,6 +151,10 @@
                         <Flyout Placement="BottomEdgeAlignedRight">
                             <StackPanel MinWidth="260" Spacing="12">
                                 <ToggleSwitch x:Uid="AlbumsFavouritesSwitch" IsOn="{x:Bind ViewModel.FavouritesOnly, Mode=TwoWay}" />
+                                <ToggleSwitch
+                                    x:Uid="AlbumsDownloadedSwitch"
+                                    AutomationProperties.AutomationId="AlbumsDownloadedSwitch"
+                                    IsOn="{x:Bind ViewModel.DownloadedOnly, Mode=TwoWay}" />
                                 <ComboBox
                                     x:Name="GenreBox"
                                     x:Uid="AlbumsGenreBox"
