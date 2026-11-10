@@ -80,6 +80,12 @@
                     AutomationProperties.AutomationId="SongsLetterJump"
                     LetterCommand="{x:Bind ViewModel.JumpToLetterCommand}"
                     Visibility="{x:Bind ViewModel.CanJumpToLetter, Mode=OneWay}" />
+                <ToggleButton
+                    x:Uid="SongsDownloadedToggle"
+                    AutomationProperties.AutomationId="SongsDownloadedToggle"
+                    IsChecked="{x:Bind ViewModel.DownloadedOnly, Mode=TwoWay}">
+                    <FontIcon FontSize="16" Glyph="&#xE896;" />
+                </ToggleButton>
             <DropDownButton x:Uid="SongsColumnsButton">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon FontSize="16" Glyph="&#xE8A9;" />

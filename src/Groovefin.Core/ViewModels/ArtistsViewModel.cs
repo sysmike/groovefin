@@ -99,6 +99,10 @@ public sealed partial class ArtistsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial bool FavouritesOnly { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether only artists with downloaded songs are shown (#400).</summary>
+    [ObservableProperty]
+    public partial bool DownloadedOnly { get; set; }
+
     /// <summary>Gets or sets a value indicating whether only album artists are listed.</summary>
     [ObservableProperty]
     public partial bool AlbumArtistsOnly { get; set; }
@@ -182,6 +186,8 @@ public sealed partial class ArtistsViewModel : ObservableObject, IDisposable
 
     partial void OnFavouritesOnlyChanged(bool value) => _ = ReloadAsync();
 
+    partial void OnDownloadedOnlyChanged(bool value) => _ = ReloadAsync();
+
     /// <summary>Starts over: cancels a running load, clears the list and loads the first page.</summary>
     private Task ReloadAsync()
     {
@@ -251,5 +257,6 @@ public sealed partial class ArtistsViewModel : ObservableObject, IDisposable
         SortBy = SortBy,
         Descending = Descending,
         FavouritesOnly = FavouritesOnly,
+        DownloadedOnly = DownloadedOnly,
     };
 }

@@ -364,6 +364,10 @@
                         <controls:SettingsCard x:Uid="SettingsDownloadMeteredCard">
                             <ToggleSwitch IsOn="{x:Bind Downloads.AllowMetered, Mode=TwoWay}" />
                         </controls:SettingsCard>
+                        <!-- "Work offline" (#400), as the title bar button next to privacy mode. -->
+                        <controls:SettingsCard x:Uid="SettingsWorkOfflineCard">
+                            <ToggleSwitch AutomationProperties.AutomationId="WorkOfflineSwitch" IsOn="{x:Bind Downloads.WorkOffline, Mode=TwoWay}" />
+                        </controls:SettingsCard>
                         <controls:SettingsCard x:Uid="SettingsDownloadFailuresCard" Visibility="{x:Bind Downloads.HasFailures, Mode=OneWay}">
                             <controls:SettingsCard.Description>
                                 <ItemsControl ItemsSource="{x:Bind Downloads.Failures}">

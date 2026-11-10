@@ -30,6 +30,12 @@ internal static class ItemMapper
         };
     }
 
+    /// <summary>
+    /// The fields a download sync asks for with the songs (#400): their genres and when they were added, which the
+    /// offline pages sort and filter by.
+    /// </summary>
+    public static ItemFields[] DownloadedSongFields() => [ItemFields.Genres, ItemFields.DateCreated];
+
     public static Track ToTrack(BaseItemDto dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
@@ -42,11 +48,13 @@ internal static class ItemMapper
             AlbumName = dto.Album,
             AlbumImageTag = dto.AlbumPrimaryImageTag,
             AlbumArtist = dto.AlbumArtist,
+            AlbumArtists = ToArtistRefs(dto.AlbumArtists),
             Artists = ToArtistRefs(dto.ArtistItems),
             Duration = dto.RunTimeTicks is { } ticks ? TimeSpan.FromTicks(ticks) : null,
             TrackNumber = dto.IndexNumber,
             DiscNumber = dto.ParentIndexNumber,
             Year = dto.ProductionYear,
+            Genres = ToGenres(dto.GenreItems),
             DateAdded = dto.DateCreated,
             IsFavorite = dto.UserData?.IsFavorite ?? false,
             PlayCount = dto.UserData?.PlayCount ?? 0,

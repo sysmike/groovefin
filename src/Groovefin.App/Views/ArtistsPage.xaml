@@ -121,6 +121,12 @@
                     <FontIcon FontSize="16" Glyph="&#xEB51;" />
                 </ToggleButton>
                 <ToggleButton
+                    x:Uid="ArtistsDownloadedToggle"
+                    AutomationProperties.AutomationId="ArtistsDownloadedToggle"
+                    IsChecked="{x:Bind ViewModel.DownloadedOnly, Mode=TwoWay}">
+                    <FontIcon FontSize="16" Glyph="&#xE896;" />
+                </ToggleButton>
+                <ToggleButton
                     x:Name="GridViewToggle"
                     x:Uid="ArtistsGridViewToggle"
                     Click="OnViewModeClick">

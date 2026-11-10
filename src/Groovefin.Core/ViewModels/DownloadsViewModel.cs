@@ -110,6 +110,13 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
         set => Change(value != AllowMetered, d => d with { AllowMetered = value });
     }
 
+    /// <summary>Gets or sets "Work offline" (#400), as the title bar button does (<see cref="OfflineSwitch"/>).</summary>
+    public bool WorkOffline
+    {
+        get => Current.WorkOffline;
+        set => Change(value != WorkOffline, d => d with { WorkOffline = value });
+    }
+
     /// <summary>Gets e.g. "1,204 of 1,250 songs downloaded · 9.8 GB".</summary>
     [ObservableProperty]
     public partial string StatusText { get; private set; } = string.Empty;
@@ -375,6 +382,7 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(Playlists));
         OnPropertyChanged(nameof(FormatIndex));
         OnPropertyChanged(nameof(AllowMetered));
+        OnPropertyChanged(nameof(WorkOffline));
         OnPropertyChanged(nameof(FolderText));
         OnPropertyChanged(nameof(IsCustomFolder));
         UseDefaultFolderCommand.NotifyCanExecuteChanged();
@@ -385,12 +393,15 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
     /// Gets what happens now, or why nothing does, e.g. "Downloading “Digital Love”"; empty when all is done. A stop
     /// shows with nothing on only when it concerns the folder.
     /// </summary>
-    internal static string Activity(DownloadStatus status, bool anyCollection, IStringResources strings) => status switch
+    internal static string Activity(DownloadStatus status, DownloadSettings settings, IStringResources strings) => status switch
     {
         { Current: { } name } => strings.GetString("Downloads_Current").Replace("{0}", name, StringComparison.Ordinal),
         { IsSyncing: true } => strings.GetString("Downloads_Checking"),
         { Stopped: DownloadStop.None } => string.Empty,
-        { Stopped: var stop } when !anyCollection && stop is not (DownloadStop.LowDisk or DownloadStop.FolderMissing) => string.Empty,
+        { Stopped: var stop } when !settings.AnyCollection && stop is not (DownloadStop.LowDisk or DownloadStop.FolderMissing) => string.Empty,
+
+        // "Work offline" (#400) is why there is no network.
+        { Stopped: DownloadStop.Offline } when settings.WorkOffline => strings.GetString("Downloads_StopWorkingOffline"),
         { Stopped: var stop } => strings.GetString($"Downloads_Stop{stop}"),
     };
 
@@ -404,7 +415,7 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
                 .Replace("{0}", status.Downloaded.ToString("N0", CultureInfo.CurrentCulture), StringComparison.Ordinal)
                 .Replace("{1}", status.Wanted.ToString("N0", CultureInfo.CurrentCulture), StringComparison.Ordinal)
                 .Replace("{2}", ByteSizes.Format(status.Bytes, _strings), StringComparison.Ordinal);
-        ActivityText = _checkingSize ? _strings.GetString("Downloads_CheckingSize") : Activity(status, Current.AnyCollection, _strings);
+        ActivityText = _checkingSize ? _strings.GetString("Downloads_CheckingSize") : Activity(status, Current, _strings);
 
         Failures.Clear();
         foreach (var failure in status.Failures)

@@ -134,15 +134,16 @@ public sealed class AlbumsViewModelTests
         sut.MinYear = 1990;
         sut.MaxYear = 1999;
         sut.FavouritesOnly = true;
+        sut.DownloadedOnly = true;
         await Task.Yield();
 
         sut.HasFilters.Should().BeTrue();
-        _queries[^1].Should().BeEquivalentTo(new { GenreIds = new[] { "g1" }, MinYear = 1990, MaxYear = 1999, FavouritesOnly = true });
+        _queries[^1].Should().BeEquivalentTo(new { GenreIds = new[] { "g1" }, MinYear = 1990, MaxYear = 1999, FavouritesOnly = true, DownloadedOnly = true });
 
         sut.ClearFiltersCommand.Execute(null);
 
         sut.HasFilters.Should().BeFalse();
-        _queries[^1].Should().BeEquivalentTo(new { GenreIds = Array.Empty<string>(), MinYear = default(int?), MaxYear = default(int?), FavouritesOnly = false });
+        _queries[^1].Should().BeEquivalentTo(new { GenreIds = Array.Empty<string>(), MinYear = default(int?), MaxYear = default(int?), FavouritesOnly = false, DownloadedOnly = false });
     }
 
     [Fact]

@@ -161,6 +161,10 @@ public sealed partial class SongsViewModel : ObservableObject, IDisposable
     /// <summary>Gets a value indicating whether the list can jump to a letter: sorted by name, A to Z (#390).</summary>
     public bool CanJumpToLetter => SortBy == TrackSortField.Name && !Descending;
 
+    /// <summary>Gets or sets a value indicating whether only downloaded songs are shown (#400).</summary>
+    [ObservableProperty]
+    public partial bool DownloadedOnly { get; set; }
+
     /// <summary>Raised with the index of the item a letter jump arrived at, for the view to show and focus it.</summary>
     public event EventHandler<int>? JumpRequested;
 
@@ -422,7 +426,9 @@ public sealed partial class SongsViewModel : ObservableObject, IDisposable
         }
     }
 
-    private TrackQuery CurrentQuery() => new() { StartIndex = Songs.Count, Limit = PageSize, SortBy = SortBy, Descending = Descending };
+    private TrackQuery CurrentQuery() => new() { StartIndex = Songs.Count, Limit = PageSize, SortBy = SortBy, Descending = Descending, DownloadedOnly = DownloadedOnly };
+
+    partial void OnDownloadedOnlyChanged(bool value) => _ = ReloadAsync();
 
     private async Task LoadPageAsync(int generation, int? limit = null)
     {

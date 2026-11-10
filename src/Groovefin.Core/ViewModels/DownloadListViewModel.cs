@@ -271,7 +271,7 @@ public sealed partial class DownloadListViewModel : ObservableObject, IDisposabl
         var status = _downloads.Status;
         IsSyncing = status.IsSyncing;
         SyncNowCommand.NotifyCanExecuteChanged();
-        ActivityText = DownloadsViewModel.Activity(status, _settings.Current.Downloads.AnyCollection, _strings);
+        ActivityText = DownloadsViewModel.Activity(status, _settings.Current.Downloads, _strings);
         var used = ByteSizes.Format(status.Bytes, _strings);
         SpaceText = _downloads.FreeBytes() is { } free
             ? _strings.GetString("Downloads_Space").Replace("{0}", used, StringComparison.Ordinal).Replace("{1}", ByteSizes.Format(free, _strings), StringComparison.Ordinal)

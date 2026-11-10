@@ -8,8 +8,9 @@ namespace Groovefin.Core.Downloads;
 
 /// <summary>
 /// Asks the server, and answers from the downloads when it cannot be reached (#335): the shared part of
-/// <see cref="OfflineLibraryService"/> and <see cref="OfflinePlaylistService"/>. Without a network the server is
-/// not asked at all. Any other error, and a query the downloads cannot answer, fails as before.
+/// <see cref="OfflineLibraryService"/>, <see cref="OfflinePlaylistService"/> and <see cref="OfflineSearchService"/>.
+/// Without a network, or while "Work offline" is on (#400), the server is not asked at all. Any other error, and a
+/// query the downloads cannot answer, fails as before.
 /// </summary>
 public sealed class OfflineAnswers(OfflineCatalog catalog, OfflineMode mode, INetworkStatus network)
 {
@@ -43,6 +44,21 @@ public sealed class OfflineAnswers(OfflineCatalog catalog, OfflineMode mode, INe
 
         unreachable.Throw();
         throw unreachable.SourceException;
+    }
+
+    /// <summary>
+    /// Answers from the downloads alone, for the "Downloaded only" filters (#400): online too, without asking the
+    /// server. Without any downloads it is <paramref name="none"/>.
+    /// </summary>
+    public async Task<T> FromDownloadsAsync<T>(Func<DownloadIndex, T> fromDownloads, T none, CancellationToken cancellationToken)
+    {
+        var index = await catalog.GetAsync(cancellationToken).ConfigureAwait(false);
+        if (!network.IsOnline)
+        {
+            mode.ServedFromDownloads();
+        }
+
+        return index is null ? none : fromDownloads(index);
     }
 
     /// <summary>The downloaded songs among <paramref name="ids"/>, in their order, each once.</summary>

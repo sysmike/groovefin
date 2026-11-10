@@ -82,6 +82,12 @@ internal static class AppHost
             ActivatorUtilities.CreateInstance<OfflineLibraryService>(sp, sp.GetRequiredService<ServerServices>().Library));
         builder.Services.AddSingleton<IPlaylistService>(sp =>
             ActivatorUtilities.CreateInstance<OfflinePlaylistService>(sp, sp.GetRequiredService<ServerServices>().Playlists));
+        // Search too (#400): the downloads are searched when the server cannot be reached.
+        var serverSearch = builder.Services.Single(d => d.ServiceType == typeof(ISearchService));
+        builder.Services.Remove(serverSearch);
+        builder.Services.AddSingleton<ISearchService>(sp => new OfflineSearchService(
+            (ISearchService)(serverSearch.ImplementationFactory ?? throw new InvalidOperationException("ISearchService is not registered by a factory."))(sp),
+            sp.GetRequiredService<OfflineAnswers>()));
 
         // Settings: settings.json next to the logs (LocalFolder when packaged, %LOCALAPPDATA%\Groovefin otherwise).
         builder.Services.AddSingleton(new SettingsStoreOptions(Path.Join(AppPaths.LocalData, "settings.json")));
@@ -144,7 +150,9 @@ internal static class AppHost
         });
         builder.Services.AddSingleton<IDownloadStore, JsonDownloadStore>();
         builder.Services.AddSingleton<NetworkStatus>();
-        builder.Services.AddSingleton<INetworkStatus>(sp => sp.GetRequiredService<NetworkStatus>());
+        // "Work offline" (#400): the app sees the PC's network through the switch, offline while it is on.
+        builder.Services.AddSingleton(sp => new OfflineSwitch(sp.GetRequiredService<NetworkStatus>(), sp.GetRequiredService<ISettingsService>()));
+        builder.Services.AddSingleton<INetworkStatus>(sp => sp.GetRequiredService<OfflineSwitch>());
         builder.Services.AddSingleton(sp =>
         {
             var server = sp.GetRequiredService<ServerServices>();

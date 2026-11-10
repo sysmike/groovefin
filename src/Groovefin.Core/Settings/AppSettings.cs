@@ -352,6 +352,12 @@ public sealed record DownloadSettings
     public bool AllowMetered { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether Groovefin works offline although the server can be reached (#400):
+    /// the pages show the downloads, only downloaded songs play and nothing downloads (<c>OfflineSwitch</c>).
+    /// </summary>
+    public bool WorkOffline { get; set; }
+
+    /// <summary>
     /// Gets or sets the folder chosen for the downloads (#399), which get a <c>Groovefin Downloads</c> folder in it;
     /// <see langword="null"/> keeps them in the app's local data. Changed by moving them (<c>DownloadManager.MoveAsync</c>).
     /// </summary>

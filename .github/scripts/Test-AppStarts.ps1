@@ -481,7 +481,7 @@ try {
     # and a place on screen, Tab must not get stuck, and each part of the window (title bar, search box,
     # navigation, page, now playing bar) must be one run of stops, not visited in pieces. The order is printed.
     # The landmarks MainContent (the page) and NowPlaying come before NavView, which holds the page too.
-    $regions = 'SearchBox', 'PrivacyButton', 'StatisticsButton', 'SettingsButton', 'MainContent', 'NowPlaying', 'NavView'
+    $regions = 'SearchBox', 'PrivacyButton', 'WorkOfflineButton', 'StatisticsButton', 'SettingsButton', 'MainContent', 'NowPlaying', 'NavView'
     function Get-Region([System.Windows.Automation.AutomationElement] $element) {
         $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
         for ($e = $element; $e; $e = $walker.GetParent($e)) {
@@ -1918,7 +1918,37 @@ try {
     Write-Output "The Downloads page lists the playlist with its Remove button and says '$space'."
     Save-Screenshot 'downloads'
     Test-Accessibility 'downloads'
-    [System.Windows.Forms.SendKeys]::SendWait('%{LEFT}')
+
+    # Work offline (#400): with the title bar button on, the Albums page asks the server for no albums and shows
+    # the downloaded playlist's album, Album 1, alone; turned off, the server's albums are back. Ctrl+, then opens
+    # Settings again for the download to be turned off.
+    $workOffline = (Find-ById 'WorkOfflineButton').GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+    $workOffline.Toggle()
+    if ($workOffline.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { Stop-Test 'Work offline' 'The Work offline button did not turn on.' }
+    $albumRequests = '^GET /Items\?.*includeItemTypes=MusicAlbum'
+    # The tiles are list items: the now playing bar names its album too.
+    function Get-AlbumTiles {
+        $listItem = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)
+        @($window.FindAll($scope::Descendants, $listItem) |
+            ForEach-Object { $_.Current.Name } | Where-Object { $_ -like 'Album [0-9]*' } | Sort-Object -Unique)
+    }
+    $before = Get-RequestCount $albumRequests
+    Select-Navigation 'Albums'
+    Start-Sleep -Seconds 3
+    $offlineAlbums = @(Get-AlbumTiles)
+    if ((Get-RequestCount $albumRequests) -ne $before) { Stop-Test 'Work offline' 'Working offline, the Albums page still asked the server for albums.' }
+    if ($offlineAlbums.Count -ne 1 -or $offlineAlbums[0] -notlike 'Album 1*') { Stop-Test 'Work offline' "Working offline, the Albums page shows '$($offlineAlbums -join "', '")', not the downloaded Album 1 alone." }
+    Save-Screenshot 'work-offline'
+    $workOffline.Toggle()
+    Select-Navigation 'Home'
+    Start-Sleep -Seconds 1
+    $before = Get-RequestCount $albumRequests
+    Select-Navigation 'Albums'
+    $until = (Get-Date).AddSeconds(10)
+    while (@(Get-AlbumTiles).Count -le 1 -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
+    if ((Get-RequestCount $albumRequests) -le $before -or @(Get-AlbumTiles).Count -le 1) { Stop-Test 'Work offline' 'With Work offline turned off again, the Albums page did not show the server''s albums.' }
+    Write-Output "Working offline, the Albums page asked the server nothing and showed '$($offlineAlbums[0])' alone; turned off, the server's albums came back."
+    [System.Windows.Forms.SendKeys]::SendWait('^,')
     $null = Find-ById 'SettingsScroller'
     # A new Settings page: what was found on the old one is gone.
     $equalizerCard = Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer')) "equalizer settings"

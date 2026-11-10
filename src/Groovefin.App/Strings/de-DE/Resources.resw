@@ -52,6 +52,12 @@
   <data name="PrivacyButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Privatmodus: Wiedergaben werden nicht an den Server gemeldet und Discord zeigt nichts an, bis du ihn ausschaltest oder Groovefin neu startest</value>
   </data>
+  <data name="WorkOfflineButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Offline arbeiten</value>
+  </data>
+  <data name="WorkOfflineButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Offline arbeiten: nur heruntergeladene Musik zeigen und abspielen, auch wenn der Server erreichbar ist</value>
+  </data>
   <data name="SettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Einstellungen</value>
   </data>
@@ -180,6 +186,9 @@
   </data>
   <data name="AlbumsFavouritesSwitch.Header" xml:space="preserve">
     <value>Nur Favoriten</value>
+  </data>
+  <data name="AlbumsDownloadedSwitch.Header" xml:space="preserve">
+    <value>Nur heruntergeladene</value>
   </data>
   <data name="AlbumsGenreBox.Header" xml:space="preserve">
     <value>Genre</value>
@@ -505,6 +514,12 @@
   </data>
   <data name="ArtistsFavouritesToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Nur Favoriten</value>
+  </data>
+  <data name="ArtistsDownloadedToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Nur heruntergeladene</value>
+  </data>
+  <data name="ArtistsDownloadedToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Nur heruntergeladene</value>
   </data>
   <data name="ArtistsGridViewToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Rasteransicht</value>
@@ -2384,6 +2399,9 @@
   <data name="Downloads_StopOffline" xml:space="preserve">
     <value>Wartet auf eine Netzwerkverbindung.</value>
   </data>
+  <data name="Downloads_StopWorkingOffline" xml:space="preserve">
+    <value>Pausiert, solange du offline arbeitest.</value>
+  </data>
   <data name="Downloads_StopUnreachable" xml:space="preserve">
     <value>Wartet: Der Server ist nicht erreichbar.</value>
   </data>
@@ -2453,6 +2471,12 @@
   <data name="SettingsDownloadMeteredCard.Description" xml:space="preserve">
     <value>Zum Beispiel mobile Daten. Wenn aus, warten Downloads auf eine andere Verbindung.</value>
   </data>
+  <data name="SettingsWorkOfflineCard.Header" xml:space="preserve">
+    <value>Offline arbeiten</value>
+  </data>
+  <data name="SettingsWorkOfflineCard.Description" xml:space="preserve">
+    <value>Nur heruntergeladene Musik zeigen und abspielen, auch wenn der Server erreichbar ist. Der Knopf neben dem Privatmodus in der Titelleiste macht dasselbe.</value>
+  </data>
   <data name="SettingsDownloadFailuresCard.Header" xml:space="preserve">
     <value>Fehlgeschlagene Titel</value>
   </data>
@@ -2501,7 +2525,13 @@
     <value>Du bist offline</value>
   </data>
   <data name="Offline_Message" xml:space="preserve">
-    <value>Heruntergeladene Musik findest du in Favoriten und Playlists.</value>
+    <value>Groovefin zeigt die Musik, die du heruntergeladen hast.</value>
+  </data>
+  <data name="WorkOffline_Title" xml:space="preserve">
+    <value>Du arbeitest offline</value>
+  </data>
+  <data name="WorkOffline_Message" xml:space="preserve">
+    <value>Groovefin zeigt und spielt nur heruntergeladene Musik. Schalte „Offline arbeiten“ in der Titelleiste aus, um wieder zu streamen.</value>
   </data>
   <data name="DownloadedIcon.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Heruntergeladen</value>
@@ -2892,6 +2922,12 @@
   </data>
   <data name="LetterJumpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Zu einem Buchstaben springen</value>
+  </data>
+  <data name="SongsDownloadedToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Nur heruntergeladene</value>
+  </data>
+  <data name="SongsDownloadedToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Nur heruntergeladene</value>
   </data>
   <data name="SearchGenresHeader.Text" xml:space="preserve">
     <value>Genres</value>
