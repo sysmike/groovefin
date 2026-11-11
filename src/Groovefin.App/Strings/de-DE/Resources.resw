@@ -2020,6 +2020,41 @@
     <value>{0} belegt</value>
     <comment>{0} = size, e.g. 120 MB</comment>
   </data>
+  <data name="SettingsUpdatesCard.Header" xml:space="preserve">
+    <value>Nach Updates suchen</value>
+  </data>
+  <data name="SettingsUpdatesCard.Description" xml:space="preserve">
+    <value>Einmal täglich fragt Groovefin bei GitHub nach, ob eine neuere Version veröffentlicht wurde, und sagt dir Bescheid. Es wird nichts über dich oder deine Musik gesendet; wie jede Website sieht GitHub deine IP-Adresse.</value>
+  </data>
+  <data name="SettingsUpdatesCheckButton.Content" xml:space="preserve">
+    <value>Jetzt suchen</value>
+  </data>
+  <data name="SettingsUpdatesLink.Content" xml:space="preserve">
+    <value>Seite der Version öffnen</value>
+  </data>
+  <data name="Updates_NotChecked" xml:space="preserve">
+    <value>Seit dem Start von Groovefin noch nicht gesucht.</value>
+  </data>
+  <data name="Updates_Checking" xml:space="preserve">
+    <value>Suche läuft…</value>
+  </data>
+  <data name="Updates_Available" xml:space="preserve">
+    <value>Groovefin {0} ist verfügbar.</value>
+    <comment>{0} = version number</comment>
+  </data>
+  <data name="Updates_UpToDate" xml:space="preserve">
+    <value>Du hast die neueste Version.</value>
+  </data>
+  <data name="Updates_Failed" xml:space="preserve">
+    <value>Die Suche nach Updates ist fehlgeschlagen. Versuche es später erneut.</value>
+  </data>
+  <data name="Updates_NotificationTitle" xml:space="preserve">
+    <value>Groovefin {0} ist verfügbar</value>
+    <comment>{0} = version number</comment>
+  </data>
+  <data name="Updates_NotificationMessage" xml:space="preserve">
+    <value>Du findest sie in den Einstellungen unter „Info“.</value>
+  </data>
   <data name="Settings_Version" xml:space="preserve">
     <value>Version {0}</value>
     <comment>{0} = version number</comment>
