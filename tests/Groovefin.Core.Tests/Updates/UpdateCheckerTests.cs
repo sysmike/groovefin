@@ -94,7 +94,7 @@ public sealed class UpdateCheckerTests : IDisposable
     [Fact]
     public async Task Without_a_final_release_nothing_is_announced()
     {
-        _source.GetLatestAsync(Arg.Any<CancellationToken>()).Returns((ReleaseInfo?)null);
+        _source.GetLatestAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<ReleaseInfo?>(null));
 
         (await _sut.CheckAsync(cancellationToken: Ct)).Should().Be(UpdateCheckResult.UpToDate);
     }

@@ -86,12 +86,25 @@ public sealed class GitHubReleaseSourceTests
 
     private sealed class StubHandler(HttpStatusCode status, string body) : HttpMessageHandler
     {
+        // The answer is the handler's: the source disposes it after reading, and so does the handler at its end.
+        private readonly HttpResponseMessage _response = new(status) { Content = new StringContent(body) };
+
         public HttpRequestMessage? Request { get; private set; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Request = request;
-            return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body) });
+            return Task.FromResult(_response);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _response.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
     }
 }
