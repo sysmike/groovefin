@@ -2,6 +2,7 @@ using Groovefin.App.Services;
 using Groovefin.Core.Services;
 using Groovefin.Core.Shortcuts;
 using Groovefin.Core.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -84,7 +85,7 @@ internal static class ShortcutDialog
             }
         };
 
-        if ((await dialog.ShowAsync() == ContentDialogResult.Primary || accepted) && chosen is { } saved)
+        if ((await App.Services.GetRequiredService<ContentDialogService>().ShowAsync(dialog) == ContentDialogResult.Primary || accepted) && chosen is { } saved)
         {
             shortcuts.Assign(item, saved);
         }

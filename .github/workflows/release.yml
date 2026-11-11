@@ -27,8 +27,34 @@ env:
     Directory.Packages.props
 
 jobs:
+  # The unit tests of the commit that is released (#437): a tag on a commit that never ran CI must not ship.
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # MinVer needs tags and history
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: ${{ env.NUGET_CACHE_PATHS }}
+
+      - name: Restore
+        run: dotnet restore Groovefin.CrossPlatform.slnf
+
+      - name: Build
+        run: dotnet build Groovefin.CrossPlatform.slnf --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --solution Groovefin.CrossPlatform.slnf --configuration Release --no-build
+
   build:
     name: build (${{ matrix.platform }})
+    needs: test
     runs-on: ${{ vars.WINDOWS_RUNNER || 'windows-2025' }}
     timeout-minutes: 60
     strategy:
@@ -38,6 +64,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.value }}
       signed: ${{ steps.cert.outputs.available }}
+      sdk: ${{ steps.version.outputs.sdk }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -57,6 +84,10 @@ jobs:
           $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.Substring(1) } else { "0.0.0-dev.$($env:GITHUB_SHA.Substring(0, 7))" }
           "value=$version" >> $env:GITHUB_OUTPUT
           Write-Output "Release version: $version"
+          # The SDK decides the patch level of the runtime the packages carry (#432): the release notes say which.
+          $sdk = dotnet --version
+          "sdk=$sdk" >> $env:GITHUB_OUTPUT
+          Write-Output ".NET SDK: $sdk"
 
       - name: Restore
         run: dotnet restore Groovefin.sln -p:Platform=${{ matrix.platform }}
@@ -279,15 +310,21 @@ jobs:
           TAG: ${{ github.ref_name }}
           VERSION: ${{ needs.build.outputs.version }}
           SIGNED: ${{ needs.build.outputs.signed }}
+          SDK: ${{ needs.build.outputs.sdk }}
         run: |
           flags=(--verify-tag --generate-notes --title "Groovefin $VERSION")
           # Tags with a pre-release part (v1.0.0-beta.1) are pre-releases.
           if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); fi
+          # The packages carry the .NET runtime of this SDK's patch level (#432).
+          notes="Built with .NET SDK $SDK; the packages include its runtime."
           if [[ "$SIGNED" != "true" ]]; then
-            flags+=(--notes "> **Unsigned packages.** Install the MSIX with Developer Mode on (\`Add-AppxPackage -AllowUnsigned\`), or use the unpackaged ZIP.")
+            notes+=$'\n\n'"> **Unsigned packages.** Install the MSIX with Developer Mode on (\`Add-AppxPackage -AllowUnsigned\`), or use the unpackaged ZIP."
           fi
+          flags+=(--notes "$notes")
           gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" "${flags[@]}"
 
       - name: Dry run
         if: github.ref_type != 'tag'
-        run: echo "Dry run (${GITHUB_REF_NAME}); no release created. The files are this run's artifacts." >> "$GITHUB_STEP_SUMMARY"
+        env:
+          SDK: ${{ needs.build.outputs.sdk }}
+        run: echo "Dry run (${GITHUB_REF_NAME}); no release created. The files are this run's artifacts. Built with .NET SDK ${SDK}." >> "$GITHUB_STEP_SUMMARY"

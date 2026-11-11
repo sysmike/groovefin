@@ -90,6 +90,7 @@ attestations).
 
 | Job | Runner | What it does |
 |---|---|---|
+| `test` | Ubuntu | Builds `Groovefin.CrossPlatform.slnf` and runs its unit tests, as `test-core` does in CI. The builds wait for it, so a tag on a commit whose tests fail releases nothing (#437). |
 | `build (x64)`, `build (ARM64)` | Windows | Builds the MSIX and the unpackaged, self-contained app for the platform, the same way as CI. Zips the unpackaged app and signs the MSIX (if the certificate is set). Artifact `release-<platform>`. |
 | `bundle` | Windows | Combines both MSIX into one `.msixbundle` with `makeappx` and signs it. Artifact `release-bundle`. |
 | `publish` | Ubuntu | Writes `SHA256SUMS.txt`, creates build provenance attestations for every package, and (tag only) runs `gh release create --generate-notes`. A tag with a pre-release part (`-beta.1`) becomes a pre-release. |
@@ -107,6 +108,14 @@ The MSIX packages need the Windows App Runtime (a framework package from Microso
 unpackaged ZIPs are self-contained and need nothing installed.
 
 Verify a download with `gh attestation verify <file> --repo sysmike/groovefin`.
+
+**Runtime patch level (#432).** The unpackaged ZIP and the NativeAOT audio effect carry the .NET
+runtime of the SDK that built them. `global.json` rolls forward to the newest installed 10.0 SDK, and
+`setup-dotnet` installs the newest one, so a release gets the patch level of its build day; the release
+notes name the SDK. A released package never gets a newer runtime by itself: after a .NET security
+advisory that affects the app, publish a new patch release (`v1.2.1`) from the same code. An old tag
+may no longer build once NuGet's audit knows an advisory for its compiler package (`NU1903`); build
+it with the newest SDK instead of turning the audit off.
 
 **Signing.** The jobs decode `SIGNING_CERT_PFX_BASE64` to a file in the runner's temp folder, sign
 with `.github/scripts/Sign-Package.ps1` (signtool, SHA-256, RFC 3161 timestamp) and delete the file

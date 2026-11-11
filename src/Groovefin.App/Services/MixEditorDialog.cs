@@ -58,7 +58,7 @@ internal sealed class MixEditorDialog(ContentDialogService dialogs, IStringResou
         dialog.Opened += (_, _) => name.Focus(FocusState.Programmatic);
         try
         {
-            return await dialog.ShowAsync() == ContentDialogResult.Primary;
+            return await dialogs.ShowAsync(dialog) == ContentDialogResult.Primary;
         }
         finally
         {

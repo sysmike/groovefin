@@ -6,6 +6,12 @@
 
   <ItemGroup>
     <PackageReference Include="WireMock.Net" />
+
+    <!--
+      WireMock.Net brings in 2.3.0, which has a known vulnerability (GHSA-6527-9fp8-r4x6) that fails the
+      restore. Named here to get the patched version; remove it once WireMock.Net asks for it itself.
+    -->
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" />
   </ItemGroup>
 
 </Project>

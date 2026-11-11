@@ -30,6 +30,13 @@ public sealed partial class DiskImageCache(
     private readonly SemaphoreSlim _downloadGate = new(options.MaxConcurrentDownloads, options.MaxConcurrentDownloads);
     private readonly SemaphoreSlim _evictionGate = new(1, 1);
 
+    /// <summary>A temporary file this old is left from a download that never ended, such as one the app closed on.</summary>
+    internal static readonly TimeSpan StaleTempAge = TimeSpan.FromHours(1);
+
+    // The size of the cached files as far as this cache knows, or -1 before the first scan (#435). Each download
+    // adds to it, so the folder is scanned only once and then whenever the sum passes the limit.
+    private long _total = -1;
+
     public Task<string?> GetAsync(ImageRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -56,6 +63,8 @@ public sealed partial class DiskImageCache(
                 TryDelete(file.FullName);
             }
 
+            // Whatever could not be deleted is counted again by the next scan.
+            Volatile.Write(ref _total, -1);
             LogCleared();
         }
         finally
@@ -154,7 +163,7 @@ public sealed partial class DiskImageCache(
                 _downloadGate.Release();
             }
 
-            await EvictAsync().ConfigureAwait(false);
+            await EvictAsync(new FileInfo(path)).ConfigureAwait(false);
             return path;
         }
         catch (Exception ex) when (ex is JellyfinException or IOException or UnauthorizedAccessException)
@@ -180,8 +189,19 @@ public sealed partial class DiskImageCache(
         }
     }
 
-    private async Task EvictAsync()
+    /// <summary>
+    /// Counts the new file, and deletes the least recently used files when the cache is above its limit. The
+    /// folder is scanned for that only then, and once at first, not after every download (#435).
+    /// </summary>
+    private async Task EvictAsync(FileInfo added)
     {
+        var maxBytes = options.MaxBytes();
+        var first = Volatile.Read(ref _total) < 0;
+        if (!first && Interlocked.Add(ref _total, added.Exists ? added.Length : 0) <= maxBytes)
+        {
+            return;
+        }
+
         if (!await _evictionGate.WaitAsync(0).ConfigureAwait(false))
         {
             // Another eviction is running and will see this file too.
@@ -190,7 +210,11 @@ public sealed partial class DiskImageCache(
 
         try
         {
-            var maxBytes = options.MaxBytes();
+            if (first)
+            {
+                DeleteStaleTemps();
+            }
+
             var files = EnumerateFiles().OrderBy(f => f.LastWriteTimeUtc).ToList();
             var total = files.Sum(f => f.Length);
             var removed = 0;
@@ -209,6 +233,7 @@ public sealed partial class DiskImageCache(
                 }
             }
 
+            Volatile.Write(ref _total, total);
             if (removed > 0)
             {
                 LogEvicted(removed, total);
@@ -217,6 +242,22 @@ public sealed partial class DiskImageCache(
         finally
         {
             _evictionGate.Release();
+        }
+    }
+
+    /// <summary>Deletes the temporary files of downloads that never ended; those of running downloads are young.</summary>
+    private void DeleteStaleTemps()
+    {
+        var root = new DirectoryInfo(options.Directory);
+        if (!root.Exists)
+        {
+            return;
+        }
+
+        var cutoff = time.GetUtcNow().UtcDateTime - StaleTempAge;
+        foreach (var file in root.EnumerateFiles("*.tmp", SearchOption.AllDirectories).Where(f => f.LastWriteTimeUtc < cutoff))
+        {
+            TryDelete(file.FullName);
         }
     }
 
