@@ -121,7 +121,8 @@ public sealed record DownloadStatus
 /// reached (#335).
 /// <para>
 /// Syncs run one after another in the background: <see cref="FirstSyncDelay"/> after start-up, every
-/// <see cref="SyncInterval"/>, shortly after a change to favourites, playlists or the settings, when the network
+/// <see cref="SyncInterval"/> (those take the songs of what is downloaded and looks unchanged from the index, and
+/// ask the server for everything only every <see cref="DownloadSettings.FullReadHours"/> hours, #431), shortly after a change to favourites, playlists or the settings, when the network
 /// comes back, after a server or user change, and on <see cref="SyncNowAsync"/>. Nothing downloads while
 /// offline, on a metered connection unless allowed, or with less than <see cref="MinFreeBytes"/> free. A song
 /// that failed <see cref="MaxAttempts"/> times waits for <see cref="SyncNowAsync"/>.
@@ -202,6 +203,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
     private bool _pending;
     private bool _pendingManual;
     private bool _pendingAllowMetered;
+    private bool _pendingFull;
     private bool _disposed;
 
     // A move of the downloads runs (#399): syncs wait for it.
@@ -251,7 +253,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         _time = time;
         _logger = logger;
         _images = images;
-        _interval = time.CreateTimer(_ => _ = RequestAsync(manual: false), null, FirstSyncDelay, SyncInterval);
+        _interval = time.CreateTimer(_ => _ = SyncOnTimerAsync(), null, FirstSyncDelay, SyncInterval);
         _soon = time.CreateTimer(_ => _ = RequestAsync(manual: false), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
         _settings.Changed += OnSettingsChanged;
@@ -375,8 +377,15 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         }
     }
 
-    /// <summary>Syncs at once, as the timer does: a song that failed <see cref="MaxAttempts"/> times waits.</summary>
+    /// <summary>Syncs at once, as a change does: a song that failed <see cref="MaxAttempts"/> times waits.</summary>
     public Task SyncAsync() => RequestAsync(manual: false);
+
+    /// <summary>
+    /// The sync of the timer (#431): nothing has asked for it, so it takes the songs of the playlists, albums and
+    /// artists it knows from the index instead of asking the server for each, unless the last sync that read
+    /// everything is <see cref="DownloadSettings.FullReadHours"/> hours ago.
+    /// </summary>
+    internal Task SyncOnTimerAsync() => RequestAsync(manual: false, full: false);
 
     /// <summary>
     /// Syncs at once and tries every failed song again (Settings → Sync now); <paramref name="allowMetered"/>
@@ -474,7 +483,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             return new DownloadEstimate(0, 0);
         }
 
-        var wanted = await LoadWantedAsync(settings, key, cancellationToken).ConfigureAwait(false);
+        var wanted = await LoadWantedAsync(settings, key, known: null, cancellationToken).ConfigureAwait(false);
         var format = DownloadFormat.From(settings);
         List<Track> missing;
         await _indexGate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -897,7 +906,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
     }
 
     /// <summary>Asks for a sync. One runs at a time; a request while one runs syncs again after it.</summary>
-    private Task RequestAsync(bool manual, bool allowMetered = false)
+    private Task RequestAsync(bool manual, bool allowMetered = false, bool full = true)
     {
         lock (_gate)
         {
@@ -909,6 +918,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             _pending = true;
             _pendingManual |= manual;
             _pendingAllowMetered |= allowMetered;
+            _pendingFull |= full;
             if (_moving)
             {
                 // The move syncs when it is done.
@@ -929,7 +939,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
     {
         while (true)
         {
-            bool manual, allowMetered;
+            bool manual, allowMetered, full;
             CancellationToken cancellationToken;
             lock (_gate)
             {
@@ -942,14 +952,16 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
                 _pending = false;
                 manual = _pendingManual;
                 allowMetered = _pendingAllowMetered;
+                full = _pendingFull;
                 _pendingManual = false;
                 _pendingAllowMetered = false;
+                _pendingFull = false;
                 cancellationToken = _cancel.Token;
             }
 
             try
             {
-                await RunAsync(manual, allowMetered, cancellationToken).ConfigureAwait(false);
+                await RunAsync(manual, allowMetered, full, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -1005,13 +1017,14 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             _pending = false;
             _pendingManual = false;
             _pendingAllowMetered = false;
+            _pendingFull = false;
             worker = _worker;
         }
 
         await worker.ConfigureAwait(false);
     }
 
-    private async Task RunAsync(bool manual, bool allowMetered, CancellationToken cancellationToken)
+    private async Task RunAsync(bool manual, bool allowMetered, bool full, CancellationToken cancellationToken)
     {
         if (_client.Connection?.UserDataKey is not { } key)
         {
@@ -1052,7 +1065,8 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         Wanted wanted;
         try
         {
-            wanted = await LoadWantedAsync(settings, key, cancellationToken).ConfigureAwait(false);
+            var known = full ? null : await KnownAsync(key, cancellationToken).ConfigureAwait(false);
+            wanted = await LoadWantedAsync(settings, key, known, cancellationToken).ConfigureAwait(false);
         }
         catch (JellyfinException ex)
         {
@@ -1122,7 +1136,41 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         }
     }
 
-    private async Task<Wanted> LoadWantedAsync(DownloadSettings settings, string key, CancellationToken cancellationToken)
+    /// <summary>
+    /// What the index knows of the collections, for a sync of the timer (#431); or <see langword="null"/> when
+    /// everything is to be read from the server: nothing was yet, or <see cref="DownloadSettings.FullReadHours"/> hours ago.
+    /// </summary>
+    private async Task<Known?> KnownAsync(string key, CancellationToken cancellationToken)
+    {
+        await _indexGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var index = await LoadIndexAsync(key, cancellationToken).ConfigureAwait(false);
+            var now = _time.GetUtcNow();
+            var interval = TimeSpan.FromHours(Math.Max(0, _settings.Current.Downloads.FullReadHours));
+            lock (_indexLock)
+            {
+                return index.LastFullRead is { } last && last <= now && now - last < interval
+                    ? new Known(
+                        index.Tracks.ToDictionary(t => t.Key, t => t.Value.Track, StringComparer.Ordinal),
+                        index.Playlists.ToDictionary(p => p.Playlist.Id, StringComparer.Ordinal),
+                        index.Albums.ToDictionary(a => a.Album.Id, StringComparer.Ordinal),
+                        index.Artists.ToDictionary(a => a.Artist.Id, StringComparer.Ordinal))
+                    : null;
+            }
+        }
+        finally
+        {
+            _indexGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Reads the wanted songs from the server. With <paramref name="known"/>, a playlist, album or artist whose
+    /// songs are all downloaded, and that looks unchanged, keeps the songs the index has for it (#431): the server
+    /// is asked for the lists of playlists and favourites, but not for the songs of each item.
+    /// </summary>
+    private async Task<Wanted> LoadWantedAsync(DownloadSettings settings, string key, Known? known, CancellationToken cancellationToken)
     {
         // What was removed on the Downloads page (#388) stays in its collection, but is not downloaded.
         var removed = (settings.Removed.GetValueOrDefault(key) ?? []).Select(r => (r.Kind, r.Id)).ToHashSet();
@@ -1139,6 +1187,48 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             }
         }
 
+        async Task AddPlaylistAsync(Playlist playlist)
+        {
+            if (known?.SongsOf(playlist) is { } kept)
+            {
+                Add(kept.Select(id => known.Tracks[id]));
+                playlists.Add(new DownloadedPlaylist { Playlist = playlist, TrackIds = kept });
+                return;
+            }
+
+            var entries = await _playlists.GetEntriesAsync(playlist.Id, cancellationToken).ConfigureAwait(false);
+            Add(entries.Select(e => e.Track));
+            playlists.Add(new DownloadedPlaylist { Playlist = playlist, TrackIds = [.. entries.Select(e => e.Track.Id)] });
+        }
+
+        async Task AddAlbumAsync(Album album)
+        {
+            if (known?.SongsOf(album) is { } kept)
+            {
+                Add(kept.Select(id => known.Tracks[id]));
+                albums.Add(new DownloadedAlbum { Album = album, TrackIds = kept });
+                return;
+            }
+
+            var songs = await _library.GetAlbumTracksAsync(album.Id, cancellationToken).ConfigureAwait(false);
+            Add(songs);
+            albums.Add(new DownloadedAlbum { Album = album, TrackIds = [.. songs.Select(t => t.Id)] });
+        }
+
+        async Task AddArtistAsync(Artist artist)
+        {
+            if (known?.SongsOf(artist) is { } kept)
+            {
+                Add(kept.Select(id => known.Tracks[id]));
+                artists.Add(new DownloadedArtist { Artist = artist, TrackIds = kept });
+                return;
+            }
+
+            var songs = await _library.GetArtistTracksAsync(artist.Id, cancellationToken).ConfigureAwait(false);
+            Add(songs);
+            artists.Add(new DownloadedArtist { Artist = artist, TrackIds = [.. songs.Select(t => t.Id)] });
+        }
+
         if (settings.FavouriteSongs)
         {
             foreach (var track in await _library.GetFavouriteTracksAsync(MaxFavouriteSongs, cancellationToken).ConfigureAwait(false))
@@ -1153,13 +1243,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             foreach (var playlist in (await _playlists.GetPlaylistsAsync(cancellationToken).ConfigureAwait(false))
                 .Where(p => !removed.Contains((DownloadItemKind.Playlist, p.Id))))
             {
-                var entries = await _playlists.GetEntriesAsync(playlist.Id, cancellationToken).ConfigureAwait(false);
-                foreach (var entry in entries)
-                {
-                    tracks.TryAdd(entry.Track.Id, entry.Track);
-                }
-
-                playlists.Add(new DownloadedPlaylist { Playlist = playlist, TrackIds = [.. entries.Select(e => e.Track.Id)] });
+                await AddPlaylistAsync(playlist).ConfigureAwait(false);
             }
         }
 
@@ -1168,9 +1252,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             var favourite = await _library.GetAlbumsAsync(new AlbumQuery { FavouritesOnly = true, Limit = MaxFavouriteItems }, cancellationToken).ConfigureAwait(false);
             foreach (var album in favourite.Items.Where(a => !removed.Contains((DownloadItemKind.Album, a.Id))))
             {
-                var songs = await _library.GetAlbumTracksAsync(album.Id, cancellationToken).ConfigureAwait(false);
-                Add(songs);
-                albums.Add(new DownloadedAlbum { Album = album, TrackIds = [.. songs.Select(t => t.Id)] });
+                await AddAlbumAsync(album).ConfigureAwait(false);
             }
         }
 
@@ -1181,9 +1263,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             var favourite = await _library.GetArtistsAsync(query, cancellationToken).ConfigureAwait(false);
             foreach (var artist in favourite.Items.Where(a => !removed.Contains((DownloadItemKind.Artist, a.Id))))
             {
-                var songs = await _library.GetArtistTracksAsync(artist.Id, cancellationToken).ConfigureAwait(false);
-                Add(songs);
-                artists.Add(new DownloadedArtist { Artist = artist, TrackIds = [.. songs.Select(t => t.Id)] });
+                await AddArtistAsync(artist).ConfigureAwait(false);
             }
         }
 
@@ -1193,23 +1273,17 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             if (choice.Kind == DownloadItemKind.Playlist && playlists.All(p => p.Playlist.Id != choice.Id)
                 && await ChosenAsync(choice, () => _playlists.GetPlaylistAsync(choice.Id, cancellationToken)).ConfigureAwait(false) is { } playlist)
             {
-                var entries = await _playlists.GetEntriesAsync(playlist.Id, cancellationToken).ConfigureAwait(false);
-                Add(entries.Select(e => e.Track));
-                playlists.Add(new DownloadedPlaylist { Playlist = playlist, TrackIds = [.. entries.Select(e => e.Track.Id)] });
+                await AddPlaylistAsync(playlist).ConfigureAwait(false);
             }
             else if (choice.Kind == DownloadItemKind.Album && albums.All(a => a.Album.Id != choice.Id)
                 && await ChosenAsync(choice, () => _library.GetAlbumAsync(choice.Id, cancellationToken)).ConfigureAwait(false) is { } album)
             {
-                var songs = await _library.GetAlbumTracksAsync(album.Id, cancellationToken).ConfigureAwait(false);
-                Add(songs);
-                albums.Add(new DownloadedAlbum { Album = album, TrackIds = [.. songs.Select(t => t.Id)] });
+                await AddAlbumAsync(album).ConfigureAwait(false);
             }
             else if (choice.Kind == DownloadItemKind.Artist && artists.All(a => a.Artist.Id != choice.Id)
                 && await ChosenAsync(choice, () => _library.GetArtistAsync(choice.Id, cancellationToken)).ConfigureAwait(false) is { } artist)
             {
-                var songs = await _library.GetArtistTracksAsync(artist.Id, cancellationToken).ConfigureAwait(false);
-                Add(songs);
-                artists.Add(new DownloadedArtist { Artist = artist, TrackIds = [.. songs.Select(t => t.Id)] });
+                await AddArtistAsync(artist).ConfigureAwait(false);
             }
         }
 
@@ -1218,7 +1292,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         var files = tracks.Count > 0
             ? await _library.GetTrackFilesAsync([.. tracks.Keys], cancellationToken).ConfigureAwait(false)
             : new Dictionary<string, TrackFile>();
-        return new Wanted(tracks, favourites, playlists, albums, artists, files);
+        return new Wanted(tracks, favourites, playlists, albums, artists, files, Full: known is null);
     }
 
     /// <summary>
@@ -1351,6 +1425,11 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
                 index.Albums = wanted.Albums;
                 index.Artists = wanted.Artists;
                 index.LastSync = _time.GetUtcNow();
+                if (wanted.Full)
+                {
+                    index.LastFullRead = index.LastSync;
+                }
+
                 index.FlacFilesCompacted = compacted;
                 index.AacFilesChecked = !renameFailed;
             }
@@ -1908,7 +1987,43 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         IReadOnlyList<DownloadedPlaylist> Playlists,
         IReadOnlyList<DownloadedAlbum> Albums,
         IReadOnlyList<DownloadedArtist> Artists,
-        IReadOnlyDictionary<string, TrackFile> Files);
+        IReadOnlyDictionary<string, TrackFile> Files,
+        bool Full);
+
+    /// <summary>
+    /// What the index has of the collections at a sync of the timer (#431): the downloaded songs, and each
+    /// playlist, album and artist with its songs at the last sync.
+    /// </summary>
+    private sealed record Known(
+        Dictionary<string, Track> Tracks,
+        Dictionary<string, DownloadedPlaylist> Playlists,
+        Dictionary<string, DownloadedAlbum> Albums,
+        Dictionary<string, DownloadedArtist> Artists)
+    {
+        /// <summary>The playlist's songs, when it has as many and is as long as at the last sync and all are downloaded.</summary>
+        public IReadOnlyList<string>? SongsOf(Playlist playlist) =>
+            Playlists.TryGetValue(playlist.Id, out var known)
+            && playlist.TrackCount is { } count && count == known.Playlist.TrackCount && count == known.TrackIds.Count
+            && playlist.Duration == known.Playlist.Duration
+                ? Downloaded(known.TrackIds)
+                : null;
+
+        /// <summary>The album's songs, when it is as long as at the last sync and all are downloaded.</summary>
+        public IReadOnlyList<string>? SongsOf(Album album) =>
+            Albums.TryGetValue(album.Id, out var known) && album.Duration is { } duration && duration == known.Album.Duration
+                ? Downloaded(known.TrackIds)
+                : null;
+
+        /// <summary>
+        /// The artist's songs when all are downloaded. The server tells nothing that shows a new song of an artist:
+        /// it comes with the next sync that reads everything.
+        /// </summary>
+        public IReadOnlyList<string>? SongsOf(Artist artist) =>
+            Artists.TryGetValue(artist.Id, out var known) ? Downloaded(known.TrackIds) : null;
+
+        private IReadOnlyList<string>? Downloaded(IReadOnlyList<string> trackIds) =>
+            trackIds.Count > 0 && trackIds.All(Tracks.ContainsKey) ? trackIds : null;
+    }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Moving the audio of {FileName} to the front failed")]
     private partial void LogCompactFailed(Exception exception, string fileName);

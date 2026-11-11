@@ -363,6 +363,14 @@
                                 ItemsSource="{x:Bind Downloads.FormatOptions}"
                                 SelectedIndex="{x:Bind Downloads.FormatIndex, Mode=TwoWay}" />
                         </controls:SettingsCard>
+                        <!-- How often the timer's sync reads every playlist, album and artist again (#431). -->
+                        <controls:SettingsCard x:Uid="SettingsDownloadFullReadCard">
+                            <ComboBox
+                                MinWidth="{StaticResource SettingsChoiceMinWidth}"
+                                AutomationProperties.AutomationId="DownloadFullReadChoice"
+                                ItemsSource="{x:Bind Downloads.FullReadOptions}"
+                                SelectedIndex="{x:Bind Downloads.FullReadIndex, Mode=TwoWay}" />
+                        </controls:SettingsCard>
                         <controls:SettingsCard x:Uid="SettingsDownloadMeteredCard">
                             <ToggleSwitch IsOn="{x:Bind Downloads.AllowMetered, Mode=TwoWay}" />
                         </controls:SettingsCard>
