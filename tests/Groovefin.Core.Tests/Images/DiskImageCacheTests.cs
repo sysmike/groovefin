@@ -316,9 +316,16 @@ file static class InterlockedExtensions
 {
     public static void Max(ref int target, int value)
     {
-        int seen;
-        while ((seen = Volatile.Read(ref target)) < value && Interlocked.CompareExchange(ref target, value, seen) != seen)
+        var seen = Volatile.Read(ref target);
+        while (seen < value)
         {
+            var before = Interlocked.CompareExchange(ref target, value, seen);
+            if (before == seen)
+            {
+                return;
+            }
+
+            seen = before;
         }
     }
 }

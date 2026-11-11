@@ -111,12 +111,9 @@ public sealed partial class JsonPlayHistoryStore(PlayHistoryStoreOptions options
             }
 
             // The backup first: should the second move fail, the history is still read from it.
-            foreach (var suffix in new[] { JsonFile.BackupSuffix, string.Empty })
+            foreach (var suffix in new[] { JsonFile.BackupSuffix, string.Empty }.Where(suffix => File.Exists(from + suffix)))
             {
-                if (File.Exists(from + suffix))
-                {
-                    File.Move(from + suffix, to + suffix);
-                }
+                File.Move(from + suffix, to + suffix);
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

@@ -45,11 +45,11 @@ public static class Artwork
         }
 
         // Scrolled away before its cover came: the cache drops a download nobody waits for.
+        // The request that waits disposes its own source once it has seen the cancellation.
         if (Pending.TryGetValue(image, out var previous))
         {
             Pending.Remove(image);
             previous.Cancel();
-            previous.Dispose();
         }
 
         image.Source = null;
@@ -58,7 +58,7 @@ public static class Artwork
             return;
         }
 
-        var cancel = new CancellationTokenSource();
+        using var cancel = new CancellationTokenSource();
         Pending.AddOrUpdate(image, cancel);
         BitmapImage? bitmap;
         try
@@ -71,11 +71,10 @@ public static class Artwork
         }
         finally
         {
-            // A newer request has removed and disposed it already.
+            // A newer request has removed it already.
             if (Pending.TryGetValue(image, out var current) && ReferenceEquals(current, cancel))
             {
                 Pending.Remove(image);
-                cancel.Dispose();
             }
         }
 

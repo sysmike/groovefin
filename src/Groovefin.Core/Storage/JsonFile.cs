@@ -68,6 +68,10 @@ internal static class JsonFile
         };
     }
 
+    /// <summary>
+    /// Writes <paramref name="value"/> to a temporary file, flushes it to disk, keeps the file there is as
+    /// <c>.bak</c> and puts the new one in its place.
+    /// </summary>
     /// <exception cref="IOException">The file could not be written. The file and its backup are as before.</exception>
     /// <exception cref="UnauthorizedAccessException">The file may not be written.</exception>
     public static async Task WriteAsync<T>(string path, T value, JsonTypeInfo<T> type, CancellationToken cancellationToken = default)
