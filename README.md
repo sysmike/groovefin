@@ -30,6 +30,7 @@ A native Jellyfin music player for Windows 11, built with C#, .NET 10 and WinUI 
 - Keyboard shortcuts
 - Notification icon
 - A privacy mode that stops reporting what you play
+- A notice when a newer release is out (a daily check with GitHub that you can turn off in Settings → About)
 
 ## Install
 

@@ -2039,6 +2039,41 @@
     <value>{0} used</value>
     <comment>{0} = size, e.g. 120 MB</comment>
   </data>
+  <data name="SettingsUpdatesCard.Header" xml:space="preserve">
+    <value>Check for updates</value>
+  </data>
+  <data name="SettingsUpdatesCard.Description" xml:space="preserve">
+    <value>Once a day, Groovefin asks GitHub whether a newer release is out and tells you when one is. Nothing about you or your music is sent; like any website, GitHub sees your IP address.</value>
+  </data>
+  <data name="SettingsUpdatesCheckButton.Content" xml:space="preserve">
+    <value>Check now</value>
+  </data>
+  <data name="SettingsUpdatesLink.Content" xml:space="preserve">
+    <value>Open the release page</value>
+  </data>
+  <data name="Updates_NotChecked" xml:space="preserve">
+    <value>Not checked since Groovefin started.</value>
+  </data>
+  <data name="Updates_Checking" xml:space="preserve">
+    <value>Checking…</value>
+  </data>
+  <data name="Updates_Available" xml:space="preserve">
+    <value>Groovefin {0} is available.</value>
+    <comment>{0} = version number</comment>
+  </data>
+  <data name="Updates_UpToDate" xml:space="preserve">
+    <value>You have the newest release.</value>
+  </data>
+  <data name="Updates_Failed" xml:space="preserve">
+    <value>Couldn't check for updates. Try again later.</value>
+  </data>
+  <data name="Updates_NotificationTitle" xml:space="preserve">
+    <value>Groovefin {0} is available</value>
+    <comment>{0} = version number</comment>
+  </data>
+  <data name="Updates_NotificationMessage" xml:space="preserve">
+    <value>Open Settings and go to About to get it.</value>
+  </data>
   <data name="Settings_Version" xml:space="preserve">
     <value>Version {0}</value>
     <comment>{0} = version number</comment>

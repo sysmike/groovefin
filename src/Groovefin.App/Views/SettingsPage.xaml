@@ -643,6 +643,22 @@
                         IsTextSelectionEnabled="True"
                         Text="{x:Bind ViewModel.Version.DisplayText}" />
                     <controls:SettingsExpander.Items>
+                        <!-- The daily check for a newer release, and what the last check found (#432). -->
+                        <controls:SettingsCard x:Uid="SettingsUpdatesCard">
+                            <ToggleSwitch AutomationProperties.AutomationId="UpdatesCheckSwitch" IsOn="{x:Bind Updates.CheckAutomatically, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+                        <controls:SettingsCard AutomationProperties.AutomationId="UpdatesStatusCard" Header="{x:Bind Updates.StatusText, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <HyperlinkButton
+                                    x:Uid="SettingsUpdatesLink"
+                                    NavigateUri="{x:Bind Updates.ReleaseUri, Mode=OneWay}"
+                                    Visibility="{x:Bind Updates.HasUpdate, Mode=OneWay}" />
+                                <Button
+                                    x:Uid="SettingsUpdatesCheckButton"
+                                    AutomationProperties.AutomationId="UpdatesCheckNowButton"
+                                    Command="{x:Bind Updates.CheckNowCommand}" />
+                            </StackPanel>
+                        </controls:SettingsCard>
                         <controls:SettingsCard x:Uid="SettingsCommitCard" Visibility="{x:Bind ViewModel.HasCommit}">
                             <HyperlinkButton Content="{x:Bind ViewModel.Version.Commit}" NavigateUri="{x:Bind ViewModel.CommitUri}" />
                         </controls:SettingsCard>

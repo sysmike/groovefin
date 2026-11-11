@@ -24,6 +24,7 @@ internal sealed partial class SettingsPage : Page
         Downloads = App.CreateViewModel<DownloadsViewModel>();
         OutputDevice = App.CreateViewModel<OutputDeviceViewModel>();
         Startup = App.CreateViewModel<StartupViewModel>();
+        Updates = App.CreateViewModel<UpdatesViewModel>();
         History = App.Services.GetRequiredService<ListeningHistoryViewModel>();
         InitializeComponent();
         AddSectionLinks();
@@ -45,6 +46,9 @@ internal sealed partial class SettingsPage : Page
     /// <summary>Gets the Start with Windows card (#395).</summary>
     public StartupViewModel Startup { get; }
 
+    /// <summary>Gets the update cards in About (#432).</summary>
+    public UpdatesViewModel Updates { get; }
+
     /// <summary>Gets the listening history's card: clears the plays kept for On repeat and the statistics (#382).</summary>
     public ListeningHistoryViewModel History { get; }
 
@@ -56,6 +60,7 @@ internal sealed partial class SettingsPage : Page
         Downloads.Dispose();
         OutputDevice.Dispose();
         Startup.Dispose();
+        Updates.Dispose();
     }
 
     /// <summary>Change on a shortcut: its Tag is the shortcut (<c>Tag="{x:Bind}"</c>, #172).</summary>

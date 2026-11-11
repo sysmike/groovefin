@@ -23,6 +23,7 @@ using Groovefin.Core.Session;
 using Groovefin.Core.Settings;
 using Groovefin.Core.Shortcuts;
 using Groovefin.Core.Statistics;
+using Groovefin.Core.Updates;
 using Groovefin.Core.ViewModels;
 using Groovefin.Jellyfin;
 using Groovefin.Playback.Windows;
@@ -174,6 +175,11 @@ internal static class AppHost
             sp.GetRequiredService<IStringResources>(),
             sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Win32Taskbar>>()));
         builder.Services.AddSingleton<TaskbarSync>();
+
+        // The check for a newer release (#432): GitHub's public API, without a token. On by default; a switch in
+        // Settings > About turns the daily check off.
+        builder.Services.AddSingleton<IReleaseSource>(sp => new GitHubReleaseSource(sp.GetRequiredService<AppVersion>()));
+        builder.Services.AddSingleton<UpdateChecker>();
 
         // Discord status over the local pipe (no key, no network); off until the user turns it on.
         builder.Services.AddSingleton(DiscordApplication.Groovefin);

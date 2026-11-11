@@ -13,6 +13,7 @@ using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Session;
 using Groovefin.Core.Settings;
+using Groovefin.Core.Updates;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -173,6 +174,9 @@ public partial class App : Application
 
             // Lives as long as the app: the music plays on the chosen output device (#389).
             StartupStep("audio output", () => services.GetRequiredService<AudioOutputSync>());
+
+            // Lives as long as the app: tells when a newer release is out (#432).
+            StartupStep("update check", () => services.GetRequiredService<UpdateChecker>());
 
             // The window has restored the server connection: bring back the last queue (paused) and keep saving it.
             await StartupStepAsync("session restore", () => services.GetRequiredService<SessionPersistence>().RestoreAsync());

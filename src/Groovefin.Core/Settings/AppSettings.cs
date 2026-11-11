@@ -42,6 +42,8 @@ public sealed record AppSettings
 
     public DownloadSettings Downloads { get; set; } = new();
 
+    public UpdateSettings Updates { get; set; } = new();
+
     /// <summary>Gets or sets the main window's placement from the last run (#272), or <see langword="null"/> before the first.</summary>
     public WindowSettings? Window { get; set; }
 
@@ -407,6 +409,19 @@ public enum LyricsAlignment
     Left,
     Center,
     Right,
+}
+
+/// <summary>The check for a newer release of Groovefin (#432).</summary>
+public sealed record UpdateSettings
+{
+    /// <summary>
+    /// Gets or sets a value indicating whether Groovefin asks GitHub once a day whether a newer final release is
+    /// out. On by default: a released package gets no fixes by itself.
+    /// </summary>
+    public bool CheckAutomatically { get; set; } = true;
+
+    /// <summary>Gets or sets the newest release the user was told about, so each is announced once.</summary>
+    public string? NotifiedVersion { get; set; }
 }
 
 /// <summary>Look of the lyrics pane.</summary>
