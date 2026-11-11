@@ -313,6 +313,51 @@ public sealed class JsonSettingsServiceTests : IDisposable
 
         act.Should().Throw<ArgumentNullException>();
     }
+
+    [Fact]
+    public async Task A_corrupted_file_gives_way_to_its_backup()
+    {
+        var first = CreateSut();
+        first.Update(s => s with { Appearance = s.Appearance with { Theme = AppTheme.Light } });
+        await first.FlushAsync();
+        first.Update(s => s with { Appearance = s.Appearance with { Theme = AppTheme.Dark } });
+        await first.FlushAsync();
+        await WriteFileAsync("{ \"appearance\": {");
+        var sut = CreateSut();
+
+        await sut.LoadAsync(TestContext.Current.CancellationToken);
+
+        sut.Current.Appearance.Theme.Should().Be(AppTheme.Light, "the backup holds the settings before the last save");
+        File.Exists(FilePath + ".corrupt").Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_file_that_cannot_be_read_is_not_replaced_by_the_defaults()
+    {
+        var first = CreateSut();
+        first.Update(s => s with { Appearance = s.Appearance with { Theme = AppTheme.Light } });
+        await first.FlushAsync();
+        var before = await File.ReadAllBytesAsync(FilePath, TestContext.Current.CancellationToken);
+        var sut = CreateSut();
+
+        await using (new FileStream(FilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            await sut.LoadAsync(TestContext.Current.CancellationToken);
+        }
+
+        sut.Current.Should().Be(new AppSettings());
+        sut.Update(s => s with { Appearance = s.Appearance with { Theme = AppTheme.Dark } });
+        sut.Update(s => s with { Appearance = s.Appearance with { Theme = AppTheme.Light } });
+        await sut.FlushAsync();
+
+        (await File.ReadAllBytesAsync(FilePath, TestContext.Current.CancellationToken)).Should().Equal(before);
+        _errors.Received(1).Report(Arg.Any<IOException>(), Operations.SaveSettings);
+
+        // The next start reads the user's settings again.
+        var next = CreateSut();
+        await next.LoadAsync(TestContext.Current.CancellationToken);
+        next.Current.Appearance.Theme.Should().Be(AppTheme.Light);
+    }
 }
 
 /// <summary>Runs continuations inline but keeps itself as the current context, so tests can detect it.</summary>

@@ -59,7 +59,7 @@ public sealed class DownloadChoicesTests : IDisposable
     private static Track Song(string id) => new() { Id = id, Name = $"Song {id}" };
 
     private string[] Files() => Directory.Exists(Folder)
-        ? [.. Directory.EnumerateFiles(Folder).Select(Path.GetFileName).Where(n => n != JsonDownloadStore.IndexFileName).Order(StringComparer.Ordinal).OfType<string>()]
+        ? [.. Directory.EnumerateFiles(Folder).Select(Path.GetFileName).Where(n => n?.StartsWith(JsonDownloadStore.IndexFileName, StringComparison.Ordinal) == false).Order(StringComparer.Ordinal).OfType<string>()]
         : [];
 
     [Fact]

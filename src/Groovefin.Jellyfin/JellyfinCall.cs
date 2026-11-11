@@ -2,6 +2,7 @@ using System.Net;
 using Groovefin.Core.Api;
 using Microsoft.Kiota.Abstractions;
 using Polly.CircuitBreaker;
+using Polly.RateLimiting;
 using Polly.Timeout;
 
 namespace Groovefin.Jellyfin;
@@ -66,6 +67,9 @@ internal static class JellyfinCall
 
         // Too many recent failures: the circuit breaker fails fast instead of waiting again.
         BrokenCircuitException => new JellyfinException($"{operation}: the server is not responding.", null, ex),
+
+        // More requests at once than the pipeline lets through (#430).
+        RateLimiterRejectedException => new JellyfinException($"{operation}: too many requests at once.", null, ex),
         _ => null,
     };
 }

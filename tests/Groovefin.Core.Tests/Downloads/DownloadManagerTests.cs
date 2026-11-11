@@ -47,18 +47,71 @@ public sealed class DownloadManagerTests : IDisposable
         _store = new JsonDownloadStore(
             new DownloadStoreOptions(_directory) { FreeSpace = _ => _freeSpace, DriveReady = _ => _driveReady },
             NullLogger<JsonDownloadStore>.Instance);
-        _sut = new DownloadManager(
-            _client,
-            _library,
-            _playlists,
-            _source,
-            _store,
-            _settings,
-            _network,
-            _servers,
-            _messenger,
-            _time,
-            NullLogger<DownloadManager>.Instance);
+        _sut = Manager(_store);
+    }
+
+    /// <summary>Another manager on the same folder: what the app is after a restart.</summary>
+    private DownloadManager Manager(IDownloadStore store) => new(
+        _client,
+        _library,
+        _playlists,
+        _source,
+        store,
+        _settings,
+        _network,
+        _servers,
+        _messenger,
+        _time,
+        NullLogger<DownloadManager>.Instance);
+
+    private string IndexPath => Path.Join(Folder, JsonDownloadStore.IndexFileName);
+
+    /// <summary>Gives the songs their file on the server, as long as the fake source's.</summary>
+    private void ServerFiles(params string[] ids)
+    {
+        foreach (var id in ids)
+        {
+            _files[id] = new TrackFile("flac", _source.FileOf(id).Length);
+        }
+    }
+
+    /// <summary>Counts the saves of the index.</summary>
+    private sealed class CountingStore(IDownloadStore inner) : IDownloadStore
+    {
+        public int Saves { get; private set; }
+
+        public string Root => inner.Root;
+
+        public bool IsAvailable => inner.IsAvailable;
+
+        public string RootOf(string? chosenFolder) => inner.RootOf(chosenFolder);
+
+        public Task<DownloadMoveResult> MoveAsync(string root, IProgress<DownloadMoveProgress>? progress, CancellationToken cancellationToken) =>
+            inner.MoveAsync(root, progress, cancellationToken);
+
+        public void RemoveLeftovers() => inner.RemoveLeftovers();
+
+        public string FolderOf(string key) => inner.FolderOf(key);
+
+        public long FreeSpace(string key) => inner.FreeSpace(key);
+
+        public Task<DownloadIndex> LoadAsync(string key, CancellationToken cancellationToken = default) => inner.LoadAsync(key, cancellationToken);
+
+        public Task SaveAsync(string key, DownloadIndex index, CancellationToken cancellationToken = default)
+        {
+            Saves++;
+            return inner.SaveAsync(key, index, cancellationToken);
+        }
+
+        public void DeleteAll(string key) => inner.DeleteAll(key);
+
+        public void Rename(string fromKey, string toKey) => inner.Rename(fromKey, toKey);
+
+        public IReadOnlyList<string> Keys() => inner.Keys();
+
+        public DateTime? IndexSavedAt(string key) => inner.IndexSavedAt(key);
+
+        public string CoversOf(string key) => inner.CoversOf(key);
     }
 
     private string Folder => _store.FolderOf(_client.Connection!.UserDataKey);
@@ -86,7 +139,7 @@ public sealed class DownloadManagerTests : IDisposable
     }
 
     private string[] Files() => Directory.Exists(Folder)
-        ? [.. Directory.EnumerateFiles(Folder).Select(Path.GetFileName).Where(n => n != JsonDownloadStore.IndexFileName).Order(StringComparer.Ordinal).OfType<string>()]
+        ? [.. Directory.EnumerateFiles(Folder).Select(Path.GetFileName).Where(n => n?.StartsWith(JsonDownloadStore.IndexFileName, StringComparison.Ordinal) == false).Order(StringComparer.Ordinal).OfType<string>()]
         : [];
 
     [Fact]
@@ -211,13 +264,15 @@ public sealed class DownloadManagerTests : IDisposable
     {
         Favourites("abcdefgh");
         Playlist();
-        Directory.CreateDirectory(Folder);
-        await File.WriteAllBytesAsync(Path.Join(Folder, "abcdefgh.part"), _source.FileOf("abcdefgh")[..3], Ct);
+        _source.CutShort.Add("abcdefgh");
+        await _sut.SyncAsync();
+        _source.CutShort.Clear();
 
         await _sut.SyncAsync();
 
-        _source.Requests.Should().ContainSingle().Which.Offset.Should().Be(3);
+        _source.Requests.Select(r => r.Offset).Should().Equal(0, 2);
         File.ReadAllBytes(Path.Join(Folder, "abcdefgh.flac")).Should().Equal(_source.FileOf("abcdefgh"));
+        Files().Should().Equal("abcdefgh.flac");
     }
 
     [Fact]
@@ -227,8 +282,168 @@ public sealed class DownloadManagerTests : IDisposable
 
         await _sut.SyncAsync();
 
-        Files().Should().Equal("a.part", "b.flac", "c.flac");
+        Files().Should().HaveCount(3).And.Contain(["b.flac", "c.flac"]).And.ContainSingle(f => f.StartsWith("a.", StringComparison.Ordinal) && f.EndsWith(".part", StringComparison.Ordinal));
         _sut.Status.Failures.Should().ContainSingle().Which.Attempts.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task A_part_file_of_unknown_origin_is_not_resumed()
+    {
+        // As versions before #427 named it: nothing tells what it was started from.
+        Favourites("abcdefgh");
+        Playlist();
+        Directory.CreateDirectory(Folder);
+        await File.WriteAllBytesAsync(Path.Join(Folder, "abcdefgh.part"), [9, 9, 9], Ct);
+
+        await _sut.SyncAsync();
+
+        _source.Requests.Should().ContainSingle().Which.Offset.Should().Be(0);
+        File.ReadAllBytes(Path.Join(Folder, "abcdefgh.flac")).Should().Equal(_source.FileOf("abcdefgh"));
+        Files().Should().Equal("abcdefgh.flac");
+    }
+
+    [Fact]
+    public async Task A_part_file_of_another_format_is_not_resumed()
+    {
+        Favourites("abcdefgh");
+        Playlist();
+        _settings.Update(s => s with { Downloads = s.Downloads with { Format = DownloadFormatKind.Aac, AacBitrateKbps = 256 } });
+        _source.CutShort.Add("abcdefgh");
+        await _sut.SyncAsync();
+        _source.CutShort.Clear();
+        _settings.Update(s => s with { Downloads = s.Downloads with { Format = DownloadFormatKind.Original } });
+
+        await _sut.SyncAsync();
+
+        _source.Requests.Should().OnlyContain(r => r.Offset == 0);
+        File.ReadAllBytes(Path.Join(Folder, "abcdefgh.flac")).Should().Equal(_source.FileOf("abcdefgh"));
+        Files().Should().Equal("abcdefgh.flac");
+    }
+
+    [Fact]
+    public async Task A_part_file_of_a_file_the_server_replaced_is_not_resumed()
+    {
+        Favourites("a");
+        Playlist();
+        _source.Files["a"] = [1, 2, 3, 4];
+        ServerFiles("a");
+        _source.CutShort.Add("a");
+        await _sut.SyncAsync();
+        _source.CutShort.Clear();
+        _source.Files["a"] = [5, 6, 7, 8, 9, 10];
+        ServerFiles("a");
+
+        await _sut.SyncAsync();
+
+        _source.Requests.Should().OnlyContain(r => r.Offset == 0);
+        File.ReadAllBytes(Path.Join(Folder, "a.flac")).Should().Equal(5, 6, 7, 8, 9, 10);
+        Files().Should().Equal("a.flac");
+    }
+
+    [Fact]
+    public async Task A_part_file_the_server_has_nothing_more_for_starts_over()
+    {
+        // HTTP 416: the part file is complete (its rename failed), or not of this file.
+        Favourites("a");
+        Playlist();
+        _source.CutShort.Add("a");
+        await _sut.SyncAsync();
+        _source.CutShort.Clear();
+        _source.RangeNotSatisfiable.Add("a");
+
+        await _sut.SyncAsync();
+
+        _source.Requests.Select(r => r.Offset).Should().Equal(0, 2, 0);
+        File.ReadAllBytes(Path.Join(Folder, "a.flac")).Should().Equal(_source.FileOf("a"));
+        Files().Should().Equal("a.flac");
+        _sut.Status.Failures.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_long_sync_does_not_save_the_index_after_every_song()
+    {
+        var ids = Enumerable.Range(0, 60).Select(i => $"s{i:00}").ToArray();
+        Favourites(ids);
+        Playlist();
+        var store = new CountingStore(_store);
+        using var sut = Manager(store);
+
+        await sut.SyncAsync();
+
+        store.Saves.Should().BeLessThanOrEqualTo(2 + (ids.Length / DownloadManager.SaveEverySongs));
+        (await _store.LoadAsync(_client.Connection!.UserDataKey, Ct)).Tracks.Keys.Should().BeEquivalentTo(ids);
+    }
+
+    [Fact]
+    public async Task A_sync_that_is_stopped_saves_what_it_downloaded()
+    {
+        _source.Failures["c"] = new JellyfinException("No route to host.");
+
+        await _sut.SyncAsync();
+
+        _sut.Status.Stopped.Should().Be(DownloadStop.Unreachable);
+        (await _store.LoadAsync(_client.Connection!.UserDataKey, Ct)).Tracks.Keys.Should().Contain("a");
+    }
+
+    [Fact]
+    public async Task After_a_lost_index_the_files_that_are_the_servers_are_kept()
+    {
+        ServerFiles("a", "b", "c");
+        await _sut.SyncAsync();
+        _sut.Dispose();
+        File.Delete(IndexPath);
+        File.Delete(IndexPath + ".bak");
+        await File.WriteAllBytesAsync(Path.Join(Folder, "c.flac"), [1], Ct);
+        using var sut = Manager(_store);
+
+        await sut.SyncAsync();
+
+        _source.Count("a").Should().Be(1);
+        _source.Count("b").Should().Be(1);
+        _source.Count("c").Should().Be(2, "its file is not as long as the server's");
+        var index = await _store.LoadAsync(_client.Connection!.UserDataKey, Ct);
+        index.Tracks.Keys.Should().BeEquivalentTo(["a", "b", "c"]);
+        index.Tracks["a"].Should().BeEquivalentTo(new { FileName = "a.flac", Size = 4L, Format = "original", FileVersion = "flac:4" });
+    }
+
+    [Fact]
+    public async Task An_index_that_cannot_be_read_stops_the_sync_and_deletes_nothing()
+    {
+        await _sut.SyncAsync();
+        _sut.Dispose();
+        var before = await File.ReadAllBytesAsync(IndexPath, Ct);
+        Favourites();
+        Playlist();
+
+        // In use before the app starts: its first read of the index fails too.
+        await using (new FileStream(IndexPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            using var sut = Manager(_store);
+            await sut.RefreshStatusAsync();
+            await sut.SyncAsync();
+            sut.FileOf("a").Should().BeNull();
+        }
+
+        Files().Should().Equal("a.flac", "b.flac", "c.flac");
+        (await File.ReadAllBytesAsync(IndexPath, Ct)).Should().Equal(before);
+        _source.Requests.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task An_index_of_a_newer_version_stops_the_sync_and_stays_as_it_is()
+    {
+        await _sut.SyncAsync();
+        _sut.Dispose();
+        var newer = (await File.ReadAllTextAsync(IndexPath, Ct)).Replace("\"version\":1", "\"version\":2", StringComparison.Ordinal);
+        await File.WriteAllTextAsync(IndexPath, newer, Ct);
+        Favourites();
+        Playlist();
+        using var sut = Manager(_store);
+
+        await sut.SyncAsync();
+
+        Files().Should().Equal("a.flac", "b.flac", "c.flac");
+        (await File.ReadAllTextAsync(IndexPath, Ct)).Should().Be(newer).And.Contain("\"version\":2");
     }
 
     /// <summary>An MP4 file's start: a box of 24 bytes, of type <c>ftyp</c>.</summary>
@@ -401,6 +616,53 @@ public sealed class DownloadManagerTests : IDisposable
 
         Directory.Exists(_store.FolderOf(other)).Should().BeFalse();
         Files().Should().HaveCount(3, "the active server stays in the list");
+    }
+
+    [Fact]
+    public async Task Downloads_named_after_the_servers_address_are_kept_under_its_id()
+    {
+        // As versions before #429 kept them.
+        await _sut.SyncAsync();
+        _sut.Dispose();
+        var legacy = _client.Connection!.UserDataKey;
+        _settings.Update(s => s with
+        {
+            Downloads = s.Downloads with
+            {
+                Chosen = new Dictionary<string, IReadOnlyList<DownloadChoice>> { [legacy] = [new DownloadChoice(DownloadItemKind.Playlist, PlaylistId, "Road trip")] },
+            },
+        });
+        var connection = new ServerConnection(new Uri("http://media:8096"), "user1", "token") { ServerId = "s1" };
+        _client.Connection.Returns(connection);
+        _servers.Servers.Returns([new ServerProfile { Id = "s1", Name = "Media", Address = connection.ServerUrl, UserId = "user1" }]);
+        using var sut = Manager(_store);
+
+        await sut.SyncAsync();
+
+        connection.UserDataKey.Should().NotBe(legacy);
+        Directory.Exists(_store.FolderOf(legacy)).Should().BeFalse();
+        Files().Should().Equal("a.flac", "b.flac", "c.flac");
+        _source.Requests.Should().HaveCount(3, "nothing downloads again");
+        _settings.Current.Downloads.Chosen.Keys.Should().Equal(connection.UserDataKey);
+    }
+
+    [Fact]
+    public async Task A_server_at_another_address_keeps_its_downloads()
+    {
+        var connection = new ServerConnection(new Uri("http://media:8096"), "user1", "token") { ServerId = "s1" };
+        _client.Connection.Returns(connection);
+        await _sut.SyncAsync();
+        var moved = connection with { ServerUrl = new Uri("https://media.example.com/") };
+        _client.Connection.Returns(moved);
+        _servers.Servers.Returns([new ServerProfile { Id = "s1", Name = "Media", Address = moved.ServerUrl, UserId = "user1" }]);
+
+        _servers.Changed += Raise.Event();
+        await _sut.SyncAsync();
+
+        moved.UserDataKey.Should().Be(connection.UserDataKey);
+        Files().Should().Equal("a.flac", "b.flac", "c.flac");
+        _source.Requests.Should().HaveCount(3, "nothing downloads again");
+        _sut.FileOf("a").Should().NotBeNull();
     }
 
     [Fact]

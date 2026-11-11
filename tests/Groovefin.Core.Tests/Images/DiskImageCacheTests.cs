@@ -221,4 +221,111 @@ public sealed class DiskImageCacheTests : IDisposable
     {
         (await CreateSut().GetSizeAsync(Ct)).Should().Be(0);
     }
+
+    /// <summary>Makes every download wait for the returned source; tells how many ran at once.</summary>
+    private (TaskCompletionSource Release, Func<int> Running, Func<int> Most) SlowSource()
+    {
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        int running = 0, most = 0;
+        _source.OpenAsync(Arg.Any<ImageRequest>(), Arg.Any<CancellationToken>()).Returns(async call =>
+        {
+            var now = Interlocked.Increment(ref running);
+            InterlockedExtensions.Max(ref most, now);
+            try
+            {
+                await release.Task.WaitAsync(call.Arg<CancellationToken>());
+                return Image(100);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref running);
+            }
+        });
+        return (release, () => Volatile.Read(ref running), () => Volatile.Read(ref most));
+    }
+
+    private static async Task UntilAsync(Func<bool> condition)
+    {
+        while (!condition())
+        {
+            await Task.Delay(10, Ct);
+        }
+    }
+
+    [Fact]
+    public async Task Only_a_handful_of_images_download_at_a_time()
+    {
+        var (release, running, most) = SlowSource();
+        var sut = new DiskImageCache(
+            new ImageCacheOptions(_directory, () => _maxBytes) { MaxConcurrentDownloads = 3 }, _source, _time, NullLogger<DiskImageCache>.Instance);
+
+        var all = Enumerable.Range(0, 20).Select(i => sut.GetAsync(Request($"item{i}"), Ct)).ToList();
+        await UntilAsync(() => running() == 3);
+        await Task.Delay(100, Ct);
+        release.SetResult();
+        var paths = await Task.WhenAll(all);
+
+        most().Should().Be(3);
+        paths.Should().OnlyContain(p => p != null).And.OnlyHaveUniqueItems();
+    }
+
+    [Fact]
+    public async Task A_download_nobody_waits_for_any_more_is_dropped()
+    {
+        var (release, running, _) = SlowSource();
+        var sut = new DiskImageCache(
+            new ImageCacheOptions(_directory, () => _maxBytes) { MaxConcurrentDownloads = 1 }, _source, _time, NullLogger<DiskImageCache>.Instance);
+        using var scrolledAway = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var first = sut.GetAsync(Request("a"), Ct);
+        await UntilAsync(() => running() == 1);
+        var second = sut.GetAsync(Request("b"), scrolledAway.Token);
+        await Task.Delay(50, Ct);
+        await scrolledAway.CancelAsync();
+        await second.Awaiting(t => t).Should().ThrowAsync<OperationCanceledException>();
+        release.SetResult();
+
+        (await first).Should().NotBeNull();
+        await _source.DidNotReceive().OpenAsync(Request("b"), Arg.Any<CancellationToken>());
+
+        // Wanted again, it downloads.
+        (await sut.GetAsync(Request("b"), Ct)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task A_caller_that_leaves_does_not_cancel_the_download_another_waits_for()
+    {
+        var (release, running, _) = SlowSource();
+        var sut = CreateSut();
+        using var scrolledAway = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var leaves = sut.GetAsync(Request("a"), scrolledAway.Token);
+        var stays = sut.GetAsync(Request("a"), Ct);
+        await UntilAsync(() => running() == 1);
+        await scrolledAway.CancelAsync();
+        await leaves.Awaiting(t => t).Should().ThrowAsync<OperationCanceledException>();
+        release.SetResult();
+
+        (await stays).Should().NotBeNull();
+        await _source.Received(1).OpenAsync(Request("a"), Arg.Any<CancellationToken>());
+        Directory.EnumerateFiles(_directory, "*.tmp", SearchOption.AllDirectories).Should().BeEmpty();
+    }
+}
+
+file static class InterlockedExtensions
+{
+    public static void Max(ref int target, int value)
+    {
+        var seen = Volatile.Read(ref target);
+        while (seen < value)
+        {
+            var before = Interlocked.CompareExchange(ref target, value, seen);
+            if (before == seen)
+            {
+                return;
+            }
+
+            seen = before;
+        }
+    }
 }

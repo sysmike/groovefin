@@ -1,4 +1,4 @@
-using System.Text.Json;
+using Groovefin.Core.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace Groovefin.Core.History;
@@ -10,36 +10,67 @@ public sealed record PlayHistoryStoreOptions(string Directory);
 /// <summary>Loads and saves the play history of one server and user, by a key that names both.</summary>
 public interface IPlayHistoryStore
 {
-    /// <summary>Gets the saved history, or <see langword="null"/> when there is none or it cannot be read.</summary>
+    /// <summary>Gets the saved history, or <see langword="null"/> when there is none or the file is damaged beyond its backup.</summary>
+    /// <exception cref="IOException">
+    /// The history is there but could not be read, or a newer version of the app wrote it (#428): nothing may be
+    /// saved over it.
+    /// </exception>
     Task<PlayHistoryData?> LoadAsync(string key, CancellationToken cancellationToken = default);
 
     Task SaveAsync(string key, PlayHistoryData data, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gives the history of <paramref name="fromKey"/> to <paramref name="toKey"/> (#429), when there is one and
+    /// <paramref name="toKey"/> has none yet. A file that cannot be moved now stays for the next time.
+    /// </summary>
+    void Rename(string fromKey, string toKey);
 }
 
 /// <summary>
 /// <see cref="IPlayHistoryStore"/> as JSON files. Writes go to a temporary file that then replaces the history
-/// file, so a crash never leaves half a file; an unreadable file is treated as no history.
+/// file, so a crash never leaves half a file, and the history before stays as <c>.bak</c>. A damaged file gives
+/// way to that backup and is kept as <c>.corrupt</c>; a file that cannot be read is not replaced (#428).
 /// </summary>
 public sealed partial class JsonPlayHistoryStore(PlayHistoryStoreOptions options, ILogger<JsonPlayHistoryStore> logger) : IPlayHistoryStore
 {
+    // The history files the last load could not read (#428): not saved over until a load succeeds.
+    private readonly HashSet<string> _unreadable = new(StringComparer.OrdinalIgnoreCase);
+
     public async Task<PlayHistoryData?> LoadAsync(string key, CancellationToken cancellationToken = default)
     {
         var path = PathOf(key);
-        try
+        var result = await JsonFile.ReadAsync(path, PlayHistoryJsonContext.Default.PlayHistoryData, cancellationToken).ConfigureAwait(false);
+        var unreadable = result.State == JsonFileState.Unreadable
+            || (result.State == JsonFileState.Loaded && result.Value!.Version > PlayHistoryData.CurrentVersion);
+        lock (_unreadable)
         {
-            if (!File.Exists(path))
-            {
-                return null;
-            }
-
-            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
-            var data = await JsonSerializer.DeserializeAsync(stream, PlayHistoryJsonContext.Default.PlayHistoryData, cancellationToken).ConfigureAwait(false);
-            return data?.Version == PlayHistoryData.CurrentVersion ? data : null;
+            _ = unreadable ? _unreadable.Add(path) : _unreadable.Remove(path);
         }
-        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException or NotSupportedException)
+
+        switch (result.State)
         {
-            LogReadFailed(ex, path);
-            return null;
+            case JsonFileState.Loaded when result.Value!.Version > PlayHistoryData.CurrentVersion:
+                LogNewerVersion(path, result.Value.Version);
+                throw new IOException($"The play history is of version {result.Value.Version}; this app reads up to {PlayHistoryData.CurrentVersion}.");
+
+            case JsonFileState.Loaded:
+                if (result.FromBackup)
+                {
+                    LogBackupUsed(result.Error, path);
+                }
+
+                return PlayHistoryData.Migrate(result.Value!);
+
+            case JsonFileState.Unreadable:
+                LogReadFailed(result.Error, path);
+                throw new IOException("The play history could not be read.", result.Error);
+
+            case JsonFileState.Corrupt:
+                LogCorrupt(result.Error, path);
+                return null;
+
+            default:
+                return null;
         }
     }
 
@@ -47,21 +78,47 @@ public sealed partial class JsonPlayHistoryStore(PlayHistoryStoreOptions options
     {
         ArgumentNullException.ThrowIfNull(data);
         var path = PathOf(key);
+        lock (_unreadable)
+        {
+            if (_unreadable.Contains(path))
+            {
+                // The last read failed (#428): the file may be fine, and this is not what it holds.
+                LogWriteSkipped(path);
+                return;
+            }
+        }
+
         try
         {
-            Directory.CreateDirectory(options.Directory);
-            var temp = path + ".tmp";
-            await using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
-            {
-                await JsonSerializer.SerializeAsync(stream, data, PlayHistoryJsonContext.Default.PlayHistoryData, cancellationToken).ConfigureAwait(false);
-            }
-
-            File.Move(temp, path, overwrite: true);
+            await JsonFile.WriteAsync(path, data, PlayHistoryJsonContext.Default.PlayHistoryData, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // Not worth bothering the user: the next play saves again.
             LogWriteFailed(ex, path);
+        }
+    }
+
+    public void Rename(string fromKey, string toKey)
+    {
+        var from = PathOf(fromKey);
+        var to = PathOf(toKey);
+        try
+        {
+            if (File.Exists(to) || File.Exists(to + JsonFile.BackupSuffix))
+            {
+                return;
+            }
+
+            // The backup first: should the second move fail, the history is still read from it.
+            foreach (var suffix in new[] { JsonFile.BackupSuffix, string.Empty }.Where(suffix => File.Exists(from + suffix)))
+            {
+                File.Move(from + suffix, to + suffix);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogRenameFailed(ex, from, to);
         }
     }
 
@@ -76,8 +133,23 @@ public sealed partial class JsonPlayHistoryStore(PlayHistoryStoreOptions options
         return Path.Join(options.Directory, key + ".json");
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Reading the play history {Path} failed")]
-    private partial void LogReadFailed(Exception exception, string path);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Moving the play history {Source} to {Target} failed; it stays for the next time")]
+    private partial void LogRenameFailed(Exception exception, string source, string target);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The play history {Path} is not saved: it could not be read, and is left as it is")]
+    private partial void LogWriteSkipped(string path);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The play history {Path} could not be read; it is left as it is and plays are not recorded")]
+    private partial void LogReadFailed(Exception? exception, string path);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The play history {Path} is damaged and has no usable backup; a copy is kept as .corrupt")]
+    private partial void LogCorrupt(Exception? exception, string path);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The play history {Path} was gone or damaged; its backup is used")]
+    private partial void LogBackupUsed(Exception? exception, string path);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The play history {Path} has version {Version}, written by a newer Groovefin; it is left as it is")]
+    private partial void LogNewerVersion(string path, int version);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Writing the play history {Path} failed")]
     private partial void LogWriteFailed(Exception exception, string path);

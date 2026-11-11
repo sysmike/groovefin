@@ -161,7 +161,7 @@ public sealed partial class ServerManager(
         var updated = profile with { UserId = user.UserId, UserName = user.UserName };
         Replace(updated);
         settings.Update(s => s with { Servers = s.Servers with { ActiveServerId = updated.Id } });
-        client.Connect(new ServerConnection(updated.Address, user.UserId, user.AccessToken) { LibraryId = updated.LibraryId });
+        client.Connect(new ServerConnection(updated.Address, user.UserId, user.AccessToken) { ServerId = updated.Id, LibraryId = updated.LibraryId });
 
         LogSignedIn(updated.Name);
         Changed?.Invoke(this, EventArgs.Empty);
@@ -213,7 +213,7 @@ public sealed partial class ServerManager(
             return;
         }
 
-        client.Connect(new ServerConnection(profile.Address, profile.UserId!, token) { LibraryId = profile.LibraryId });
+        client.Connect(new ServerConnection(profile.Address, profile.UserId!, token) { ServerId = profile.Id, LibraryId = profile.LibraryId });
     }
 
     private ServerProfile? Find(string serverId) =>

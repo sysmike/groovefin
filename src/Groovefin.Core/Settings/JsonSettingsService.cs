@@ -1,13 +1,15 @@
-using System.Text.Json;
 using Groovefin.Core.Notifications;
+using Groovefin.Core.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace Groovefin.Core.Settings;
 
 /// <summary>
 /// <see cref="ISettingsService"/> that stores settings as JSON. Writes go to a temporary file that
-/// replaces the settings file, so a crash never leaves a half-written file. A corrupted file is kept
-/// as <c>settings.json.corrupt</c> and the defaults are used.
+/// replaces the settings file, so a crash never leaves a half-written file; the settings before stay as
+/// <c>settings.json.bak</c>. A corrupted file gives way to that backup, or to the defaults without one, and is
+/// kept as <c>settings.json.corrupt</c>. A file that is there but cannot be read is never replaced (#428): the
+/// defaults are used until the next start, and changes are not saved.
 /// </summary>
 public sealed partial class JsonSettingsService(
     SettingsStoreOptions options,
@@ -20,6 +22,10 @@ public sealed partial class JsonSettingsService(
     private long _version;
     private long _savedVersion;
 
+    // The settings file could not be read: Current is not the user's settings and must not replace the file (#428).
+    private bool _unreadable;
+    private bool _unreadableReported;
+
     public AppSettings Current { get; private set; } = new();
 
     public event EventHandler<SettingsChangedEventArgs>? Changed;
@@ -28,16 +34,20 @@ public sealed partial class JsonSettingsService(
 
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        AppSettings loaded;
-        try
+        // No ConfigureAwait(false): Changed must be raised on the caller's (UI) thread.
+        var result = await JsonFile.ReadAsync(FilePath, SettingsJsonContext.Default.AppSettings, cancellationToken);
+        var loaded = result.Value ?? new AppSettings();
+        switch (result.State)
         {
-            // No ConfigureAwait(false): Changed must be raised on the caller's (UI) thread.
-            loaded = await ReadAsync(cancellationToken) ?? new AppSettings();
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            LogReadFailed(ex, FilePath);
-            loaded = new AppSettings();
+            case JsonFileState.Loaded when result.FromBackup:
+                LogBackupUsed(result.Error, FilePath);
+                break;
+            case JsonFileState.Corrupt:
+                LogCorrupted(result.Error, FilePath, FilePath + JsonFile.CorruptSuffix);
+                break;
+            case JsonFileState.Unreadable:
+                LogReadFailed(result.Error, FilePath);
+                break;
         }
 
         if (loaded.SchemaVersion > AppSettings.CurrentSchemaVersion)
@@ -51,6 +61,8 @@ public sealed partial class JsonSettingsService(
             old = Current;
             Current = loaded with { SchemaVersion = AppSettings.CurrentSchemaVersion };
             _savedVersion = _version;
+            _unreadable = result.State == JsonFileState.Unreadable;
+            _unreadableReported = false;
         }
 
         if (old != Current)
@@ -94,32 +106,11 @@ public sealed partial class JsonSettingsService(
         }
     }
 
-    private async Task<AppSettings?> ReadAsync(CancellationToken cancellationToken)
-    {
-        if (!File.Exists(FilePath))
-        {
-            return null;
-        }
-
-        try
-        {
-            await using var stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
-            return await JsonSerializer.DeserializeAsync(stream, SettingsJsonContext.Default.AppSettings, cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (JsonException ex)
-        {
-            var backup = FilePath + ".corrupt";
-            LogCorrupted(ex, FilePath, backup);
-            File.Move(FilePath, backup, overwrite: true);
-            return null;
-        }
-    }
-
     private async Task SaveLatestAsync()
     {
         AppSettings snapshot;
         long version;
+        bool report;
         lock (_gate)
         {
             if (_savedVersion == _version)
@@ -129,18 +120,24 @@ public sealed partial class JsonSettingsService(
 
             snapshot = Current;
             version = _version;
+            report = _unreadable && !_unreadableReported;
+            _unreadableReported |= _unreadable;
+            if (_unreadable && !report)
+            {
+                return;
+            }
+        }
+
+        if (report)
+        {
+            // Said once; the file keeps the user's settings for the next start.
+            errors.Report(new IOException($"The settings file '{FilePath}' could not be read, so changes are not saved over it."), Operations.SaveSettings);
+            return;
         }
 
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            var temp = FilePath + ".tmp";
-            await using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous | FileOptions.WriteThrough))
-            {
-                await JsonSerializer.SerializeAsync(stream, snapshot, SettingsJsonContext.Default.AppSettings).ConfigureAwait(false);
-            }
-
-            File.Move(temp, FilePath, overwrite: true);
+            await JsonFile.WriteAsync(FilePath, snapshot, SettingsJsonContext.Default.AppSettings).ConfigureAwait(false);
 
             lock (_gate)
             {
@@ -155,10 +152,13 @@ public sealed partial class JsonSettingsService(
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Settings file {Path} is corrupted; using defaults and keeping a copy at {Backup}")]
-    private partial void LogCorrupted(Exception exception, string path, string backup);
+    private partial void LogCorrupted(Exception? exception, string path, string backup);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Could not read settings file {Path}; using defaults")]
-    private partial void LogReadFailed(Exception exception, string path);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Settings file {Path} was gone or corrupted; its backup is used")]
+    private partial void LogBackupUsed(Exception? exception, string path);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Could not read settings file {Path}; using defaults for now and leaving the file as it is")]
+    private partial void LogReadFailed(Exception? exception, string path);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Settings file has schema version {FileVersion}, newer than {SupportedVersion}; unknown values are ignored")]
     private partial void LogNewerSchema(int fileVersion, int supportedVersion);

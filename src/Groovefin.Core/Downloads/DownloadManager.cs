@@ -113,7 +113,8 @@ public sealed record DownloadStatus
 /// song of the favourite albums and artists, and all playlists; and the playlists, albums and artists chosen one by
 /// one with their Download toggle (#387, <see cref="IDownloadChoices"/>). A sync reads the wanted songs from the server, deletes the files no collection needs any more,
 /// and downloads the missing ones, <see cref="Parallel"/> at a time, each to a <c>.part</c> file that is renamed
-/// when complete. An interrupted original resumes where it stopped. A song shared by several collections is
+/// when complete. An interrupted original resumes where it stopped: the <c>.part</c> file's name tells the format
+/// and the server's file it was started from, so another one starts over (#427). A song shared by several collections is
 /// kept once; one whose file changed on the server (another container or size) is downloaded again. The
 /// downloads of a server that left the list are deleted. Each sync also keeps one cover per downloaded album,
 /// artist and playlist (<see cref="CoverWidth"/> wide), which the image cache shows when the server cannot be
@@ -162,6 +163,12 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
     /// <summary>A download that receives nothing for this long fails.</summary>
     public static readonly TimeSpan IdleTimeout = TimeSpan.FromMinutes(1);
 
+    /// <summary>A sync saves the index after this many downloaded songs, not after each (#431), and when it ends.</summary>
+    public const int SaveEverySongs = 25;
+
+    /// <summary>A sync saves the index when the last save is this long ago, however few songs came since (#431).</summary>
+    public static readonly TimeSpan SaveInterval = TimeSpan.FromSeconds(30);
+
     private const string PartExtension = ".part";
 
     private const string CoverExtension = ".img";
@@ -206,6 +213,10 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
     private readonly Lock _indexLock = new();
     private string? _key;
     private DownloadIndex _index = new();
+
+    // Songs added to the index since it was last saved, and when that was (#431). Under _indexGate.
+    private int _unsaved;
+    private long _savedAt;
 
     private readonly ConcurrentDictionary<string, DownloadFailure> _failures = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, string> _current = new(StringComparer.Ordinal);
@@ -252,6 +263,7 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         messenger.Register<DownloadManager, PlaylistDeletedMessage>(this, static (r, _) => r.OnCollectionChanged(favourites: false));
 
         // The player asks for files from the first song on (#333).
+        MoveLegacyChoices();
         _ = RefreshStatusAsync();
     }
 
@@ -386,6 +398,10 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         {
             await LoadIndexAsync(key, CancellationToken.None).ConfigureAwait(false);
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The index could not be read (#428; the store logged it): no downloads for now, and the next use reads again.
+        }
         finally
         {
             _indexGate.Release();
@@ -469,6 +485,11 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             {
                 missing = [.. wanted.Tracks.Values.Where(track => NeedsDownload(index, wanted, track.Id, format))];
             }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The index could not be read (#428): as if nothing were on disk.
+            missing = [.. wanted.Tracks.Values];
         }
         finally
         {
@@ -741,8 +762,47 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         }
     }
 
+    /// <summary>
+    /// Gives what the signed-in user chose and removed one by one to their key of today (#429): versions before
+    /// kept both under a key that named the server by its address.
+    /// </summary>
+    private void MoveLegacyChoices()
+    {
+        if (_client.Connection is not { LegacyUserDataKey: { } legacy } connection || legacy == connection.UserDataKey)
+        {
+            return;
+        }
+
+        var key = connection.UserDataKey;
+        static IReadOnlyDictionary<string, T> Moved<T>(IReadOnlyDictionary<string, T> items, string from, string to)
+        {
+            if (!items.TryGetValue(from, out var item))
+            {
+                return items;
+            }
+
+            var moved = items.Where(i => i.Key != from).ToDictionary(i => i.Key, i => i.Value, StringComparer.Ordinal);
+            moved.TryAdd(to, item);
+            return moved;
+        }
+
+        var downloads = _settings.Current.Downloads;
+        if (downloads.Chosen.ContainsKey(legacy) || downloads.Removed.ContainsKey(legacy))
+        {
+            _settings.Update(s => s with
+            {
+                Downloads = s.Downloads with
+                {
+                    Chosen = Moved(s.Downloads.Chosen, legacy, key),
+                    Removed = Moved(s.Downloads.Removed, legacy, key),
+                },
+            });
+        }
+    }
+
     private void OnServersChanged(object? sender, EventArgs e)
     {
+        MoveLegacyChoices();
         _ = StopRunningAsync();
         _ = RemoveOtherServersAsync();
         _ = RefreshStatusAsync();
@@ -774,6 +834,10 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             // Every await below runs without the caller's context, so waiting here cannot deadlock.
             LoadIndexAsync(key, CancellationToken.None).GetAwaiter().GetResult();
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The index could not be read (#428; the store logged it): the song streams.
+        }
         finally
         {
             _indexGate.Release();
@@ -781,12 +845,15 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
     }
 
     /// <summary>
-    /// Deletes the downloads of servers no longer in the list: removed, or at another address now (their songs then
-    /// download again under the new one).
+    /// Deletes the downloads of servers no longer in the list. A server at another address now keeps its
+    /// downloads: their folder is named after the server's ID (#429). A folder still named after the address of a
+    /// server in the list, by a version before that, stays until its user signs in and it is renamed.
     /// </summary>
     private async Task RemoveOtherServersAsync()
     {
-        var known = _servers.Servers.Select(p => ServerConnection.ServerKeyOf(p.Address)).ToList();
+        var known = _servers.Servers
+            .SelectMany(p => new[] { ServerConnection.ServerKeyOf(p.Id), ServerConnection.ServerKeyOf(p.Address) })
+            .ToList();
         await _indexGate.WaitAsync().ConfigureAwait(false);
         try
         {
@@ -976,7 +1043,22 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         }
 
         var format = DownloadFormat.From(settings);
-        var index = await UpdateIndexAsync(key, wanted, cancellationToken).ConfigureAwait(false);
+        var index = await UpdateIndexAsync(key, wanted, format, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await DownloadMissingAsync(key, index, wanted, format, settings, allowMetered, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            // Also when stopped or failed: what was downloaded is in the index (#431).
+            await SaveIndexAsync(key, index, onlyWhenDue: false).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Downloads the wanted songs the index does not have, then the covers.</summary>
+    private async Task DownloadMissingAsync(
+        string key, DownloadIndex index, Wanted wanted, DownloadFormat format, DownloadSettings settings, bool allowMetered, CancellationToken cancellationToken)
+    {
         var missing = new ConcurrentQueue<Track>(wanted.Tracks.Values.Where(track => NeedsDownload(index, wanted, track.Id, format) && !GaveUp(track.Id)));
         Publish(key, DownloadStop.None);
         if (missing.IsEmpty)
@@ -1173,9 +1255,10 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
 
     /// <summary>
     /// Saves the wanted collections, gives the kept songs the server's metadata, and deletes the files nothing
-    /// wants any more, also ones the index does not know (left from a lost index).
+    /// wants any more, also ones the index does not know, unless they are the server's (<see cref="Adopt"/>).
     /// </summary>
-    private async Task<DownloadIndex> UpdateIndexAsync(string key, Wanted wanted, CancellationToken cancellationToken)
+    /// <exception cref="IOException">The index could not be read (#428): nothing was deleted or saved.</exception>
+    private async Task<DownloadIndex> UpdateIndexAsync(string key, Wanted wanted, DownloadFormat format, CancellationToken cancellationToken)
     {
         await _indexGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -1230,11 +1313,13 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
 
             if (Directory.Exists(folder))
             {
+                Adopt(index, wanted, format, folder);
+
+                // A part file of another format, or of a file the server has since replaced, goes too (#427).
                 var kept = index.Tracks.Values.Select(t => t.FileName)
-                    .Concat(wanted.Tracks.Keys.Select(id => id + PartExtension))
-                    .Append(JsonDownloadStore.IndexFileName)
+                    .Concat(wanted.Tracks.Keys.Select(id => PartName(id, format.For(wanted.Files.GetValueOrDefault(id)), wanted.Files.GetValueOrDefault(id))))
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                foreach (var file in Directory.EnumerateFiles(folder).Where(f => !kept.Contains(Path.GetFileName(f))))
+                foreach (var file in Directory.EnumerateFiles(folder).Where(f => !IsIndexFile(f) && !kept.Contains(Path.GetFileName(f))))
                 {
                     TryDelete(file);
                 }
@@ -1250,7 +1335,10 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
                 index.FlacFilesCompacted = compacted;
                 index.AacFilesChecked = !renameFailed;
             }
+
             await _store.SaveAsync(key, index, cancellationToken).ConfigureAwait(false);
+            _unsaved = 0;
+            _savedAt = _time.GetTimestamp();
             return index;
         }
         finally
@@ -1265,14 +1353,20 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         // The index keeps the chosen format; an original Windows cannot play arrives as AAC (#362).
         var source = format.For(serverFile);
         var folder = _store.FolderOf(key);
-        var part = Path.Join(folder, track.Id + PartExtension);
+        var part = Path.Join(folder, PartName(track.Id, source, serverFile));
         _current[track.Id] = track.Name;
         Publish(key, DownloadStop.None);
         try
         {
             Directory.CreateDirectory(folder);
             var offset = source.Kind == DownloadFormatKind.Original && File.Exists(part) ? new FileInfo(part).Length : 0;
-            using var response = await _source.OpenAsync(track.Id, source, offset, cancellationToken).ConfigureAwait(false);
+            if (offset > 0 && serverFile is not null && offset >= serverFile.Size)
+            {
+                // As long as the server's file or longer: nothing is left to resume, and the server would answer 416.
+                offset = 0;
+            }
+
+            using var response = await OpenAsync(track.Id, source, offset, part, cancellationToken).ConfigureAwait(false);
             var resumed = offset > 0 && response.Resumed;
             await using (var file = new FileStream(part, resumed ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
             {
@@ -1314,7 +1408,8 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
                     };
                 }
 
-                await _store.SaveAsync(key, index, CancellationToken.None).ConfigureAwait(false);
+                _unsaved++;
+                await SaveIndexUnderGateAsync(key, index, onlyWhenDue: true).ConfigureAwait(false);
             }
             finally
             {
@@ -1345,6 +1440,119 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
         {
             _current.TryRemove(track.Id, out _);
             Publish(key, DownloadStop.None);
+        }
+    }
+
+    /// <summary>
+    /// Saves the index when songs were added since the last save: with <paramref name="onlyWhenDue"/> after
+    /// <see cref="SaveEverySongs"/> songs or <see cref="SaveInterval"/>, so a long sync does not write the whole
+    /// index once per song (#431). Not when the index is no longer the loaded one: its folder may be deleted.
+    /// </summary>
+    private async Task SaveIndexAsync(string key, DownloadIndex index, bool onlyWhenDue)
+    {
+        await _indexGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            await SaveIndexUnderGateAsync(key, index, onlyWhenDue).ConfigureAwait(false);
+        }
+        finally
+        {
+            _indexGate.Release();
+        }
+    }
+
+    /// <summary><see cref="SaveIndexAsync"/> for a caller that holds <see cref="_indexGate"/>.</summary>
+    private async Task SaveIndexUnderGateAsync(string key, DownloadIndex index, bool onlyWhenDue)
+    {
+        if (_unsaved == 0 || _key != key || !ReferenceEquals(_index, index)
+            || (onlyWhenDue && _unsaved < SaveEverySongs && _time.GetElapsedTime(_savedAt) < SaveInterval))
+        {
+            return;
+        }
+
+        await _store.SaveAsync(key, index, CancellationToken.None).ConfigureAwait(false);
+        _unsaved = 0;
+        _savedAt = _time.GetTimestamp();
+    }
+
+    /// <summary>Whether a file in a user's folder is the index, its backup or another copy of it the store keeps.</summary>
+    private static bool IsIndexFile(string path) =>
+        Path.GetFileName(path).StartsWith(JsonDownloadStore.IndexFileName, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Takes the files the index does not know back in (#428): after the index was lost, or when the app ended
+    /// before a download got into it. Only an original that is as long as the server's file is certain to be that
+    /// file; anything else is deleted and comes again.
+    /// </summary>
+    private void Adopt(DownloadIndex index, Wanted wanted, DownloadFormat format, string folder)
+    {
+        if (format.Kind != DownloadFormatKind.Original)
+        {
+            return;
+        }
+
+        foreach (var file in new DirectoryInfo(folder).EnumerateFiles())
+        {
+            var dot = file.Name.IndexOf('.', StringComparison.Ordinal);
+            if (dot <= 0 || IsIndexFile(file.Name) || file.Name.EndsWith(PartExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var id = file.Name[..dot];
+            if (index.Tracks.ContainsKey(id)
+                || !wanted.Tracks.TryGetValue(id, out var track)
+                || !wanted.Files.TryGetValue(id, out var serverFile)
+                || format.For(serverFile).Kind != DownloadFormatKind.Original
+                || serverFile.Size <= 0
+                || file.Length != serverFile.Size)
+            {
+                continue;
+            }
+
+            lock (_indexLock)
+            {
+                index.Tracks[id] = new DownloadedTrack
+                {
+                    Track = track,
+                    FileName = file.Name,
+                    Size = file.Length,
+                    Format = format.Key,
+                    DownloadedAt = file.LastWriteTimeUtc,
+                    FileVersion = serverFile.Mark,
+                };
+            }
+
+            LogAdopted(id);
+        }
+    }
+
+    /// <summary>
+    /// The name of a song's unfinished download (#427): <c>{id}.{tag}.part</c>, the tag a hash of the format and of
+    /// the server's file (<see cref="TrackFile.Mark"/>). Only a part file of the same name is resumed, so bytes of
+    /// another format or of a replaced file never end up in one song.
+    /// </summary>
+    private static string PartName(string trackId, DownloadFormat source, TrackFile? serverFile)
+    {
+        var tag = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes($"{source.Key}|{serverFile?.Mark}"));
+        return $"{trackId}.{Convert.ToHexStringLower(tag, 0, 4)}{PartExtension}";
+    }
+
+    /// <summary>
+    /// Opens the song at <paramref name="offset"/>. A server that has nothing from there on (HTTP 416: the part
+    /// file is complete, or not of this file) is asked for the whole file, which replaces the part file (#427).
+    /// </summary>
+    private async Task<DownloadResponse> OpenAsync(string trackId, DownloadFormat source, long offset, string part, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _source.OpenAsync(trackId, source, offset, cancellationToken).ConfigureAwait(false);
+        }
+        catch (JellyfinException ex) when (offset > 0 && ex.StatusCode == System.Net.HttpStatusCode.RequestedRangeNotSatisfiable)
+        {
+            LogPartDiscarded(trackId, offset);
+            TryDelete(part);
+            return await _source.OpenAsync(trackId, source, 0, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -1485,6 +1693,12 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             if (!_store.IsAvailable)
             {
                 return new DownloadIndex();
+            }
+
+            // Named after the server's address by versions before #429.
+            if (_client.Connection is { LegacyUserDataKey: { } legacy } connection && connection.UserDataKey == key && legacy != key)
+            {
+                _store.Rename(legacy, key);
             }
 
             var index = await _store.LoadAsync(key, cancellationToken).ConfigureAwait(false);
@@ -1709,6 +1923,12 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Keeping the cover of {ItemId} failed")]
     private partial void LogCoverFailed(Exception exception, string itemId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "The unfinished download of {TrackId} could not be resumed at {Offset} bytes; it starts over")]
+    private partial void LogPartDiscarded(string trackId, long offset);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "The file of {TrackId} was on disk but not in the index; it is kept")]
+    private partial void LogAdopted(string trackId);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "All downloads removed")]
     private partial void LogRemovedAll();

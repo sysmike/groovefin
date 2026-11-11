@@ -62,6 +62,16 @@ public sealed record PlayHistoryData
 
     public int Version { get; set; } = CurrentVersion;
 
+    /// <summary>
+    /// Brings a history an older version of the app wrote up to <see cref="CurrentVersion"/> (#428). A change to
+    /// the format adds its step here, so an update keeps the history. Version 1 is the first.
+    /// </summary>
+    internal static PlayHistoryData Migrate(PlayHistoryData data)
+    {
+        data.Version = CurrentVersion;
+        return data;
+    }
+
     /// <summary>Gets or sets when the play counts were last read from the server, or <see langword="null"/> before the first time.</summary>
     public DateTimeOffset? LastSync { get; set; }
 

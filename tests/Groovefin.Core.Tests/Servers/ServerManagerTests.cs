@@ -140,7 +140,26 @@ public sealed class ServerManagerTests
 
         await _sut.UpdateAddressAsync("id-a", "https://alpha.example.com", Ct);
 
-        _client.Received().Connect(new ServerConnection(new Uri("https://alpha.example.com/"), "user-1", "token-id-a"));
+        _client.Received().Connect(new ServerConnection(new Uri("https://alpha.example.com/"), "user-1", "token-id-a") { ServerId = "id-a" });
+    }
+
+    [Fact]
+    public async Task UpdateAddress_keeps_the_key_of_the_history_and_the_downloads()
+    {
+        await _sut.AddAsync("alpha:8096", Ct);
+        SignIn("id-a", "user-1");
+        _sut.Restore();
+        var before = _client.ReceivedCalls().Where(c => c.GetMethodInfo().Name == nameof(IJellyfinClient.Connect))
+            .Select(c => (ServerConnection)c.GetArguments()[0]!).Last();
+        StubServer("https://alpha.example.com/", "id-a", "Alpha");
+
+        await _sut.UpdateAddressAsync("id-a", "https://alpha.example.com", Ct);
+
+        var after = _client.ReceivedCalls().Where(c => c.GetMethodInfo().Name == nameof(IJellyfinClient.Connect))
+            .Select(c => (ServerConnection)c.GetArguments()[0]!).Last();
+        after.ServerUrl.Should().Be(new Uri("https://alpha.example.com/"));
+        after.UserDataKey.Should().Be(before.UserDataKey).And.Be($"user-1-{ServerConnection.ServerKeyOf("id-a")}");
+        after.LegacyUserDataKey.Should().NotBe(before.LegacyUserDataKey);
     }
 
     [Fact]
@@ -155,7 +174,7 @@ public sealed class ServerManagerTests
         _credentials.Received(1).RemoveServer("id-a");
         _sut.Servers.Should().ContainSingle().Which.Id.Should().Be("id-b");
         _sut.ActiveServer!.Id.Should().Be("id-b");
-        _client.Received().Connect(new ServerConnection(new Uri("http://beta:8096/"), "user-2", "token-id-b"));
+        _client.Received().Connect(new ServerConnection(new Uri("http://beta:8096/"), "user-2", "token-id-b") { ServerId = "id-b" });
     }
 
     [Fact]
@@ -180,7 +199,7 @@ public sealed class ServerManagerTests
         _sut.SetActive("id-b");
 
         _sut.ActiveServer!.Id.Should().Be("id-b");
-        _client.Received(1).Connect(new ServerConnection(new Uri("http://beta:8096/"), "user-2", "token-id-b"));
+        _client.Received(1).Connect(new ServerConnection(new Uri("http://beta:8096/"), "user-2", "token-id-b") { ServerId = "id-b" });
     }
 
     [Fact]
@@ -202,7 +221,7 @@ public sealed class ServerManagerTests
 
         _sut.Restore();
 
-        _client.Received(1).Connect(new ServerConnection(new Uri("http://alpha:8096/"), "user-1", "token-id-a"));
+        _client.Received(1).Connect(new ServerConnection(new Uri("http://alpha:8096/"), "user-1", "token-id-a") { ServerId = "id-a" });
     }
 
     [Fact]
@@ -219,7 +238,7 @@ public sealed class ServerManagerTests
 
         _credentials.Received(1).SaveAccessToken("id-b", "user-2", "token-new");
         _sut.ActiveServer!.Should().BeEquivalentTo(new { Id = "id-b", UserId = "user-2", UserName = "Mike" });
-        _client.Received(1).Connect(new ServerConnection(new Uri("http://beta:8096/"), "user-2", "token-new"));
+        _client.Received(1).Connect(new ServerConnection(new Uri("http://beta:8096/"), "user-2", "token-new") { ServerId = "id-b" });
         raised.Should().Be(1);
     }
 
@@ -253,7 +272,7 @@ public sealed class ServerManagerTests
 
         await _sut.SignInAsync("id-a", "mike", "pw", Ct);
 
-        _client.Received(1).Connect(new ServerConnection(new Uri("http://alpha:8096/"), "user-1", "token") { LibraryId = "lib-2" });
+        _client.Received(1).Connect(new ServerConnection(new Uri("http://alpha:8096/"), "user-1", "token") { ServerId = "id-a", LibraryId = "lib-2" });
     }
 
     [Fact]
@@ -267,7 +286,7 @@ public sealed class ServerManagerTests
 
         _credentials.Received(1).SaveAccessToken("id-a", "user-3", "token-qc");
         _sut.ActiveServer!.Should().BeEquivalentTo(new { Id = "id-a", UserId = "user-3", UserName = "Mike" });
-        _client.Received(1).Connect(new ServerConnection(new Uri("http://alpha:8096/"), "user-3", "token-qc"));
+        _client.Received(1).Connect(new ServerConnection(new Uri("http://alpha:8096/"), "user-3", "token-qc") { ServerId = "id-a" });
     }
 
     [Fact]

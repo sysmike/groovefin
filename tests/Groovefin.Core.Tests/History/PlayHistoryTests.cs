@@ -401,4 +401,21 @@ public sealed class PlayHistoryTests : IDisposable
 
         (await fresh.GetOnRepeatAsync()).Should().ContainSingle().Which.Should().Be(new OnRepeatEntry("a", 2, Now.AddDays(-1)));
     }
+
+    [Fact]
+    public async Task A_history_named_after_the_servers_address_is_kept_under_its_id()
+    {
+        // As versions before #429 kept it; and the address has changed since.
+        var old = new PlayHistoryData();
+        old.Plays.Add(new PlayRecord("t1", Now.AddDays(-1), PlaySource.Server));
+        var connection = Alice with { ServerId = "server-1" };
+        await _store.SaveAsync(connection.LegacyUserDataKey!, old, TestContext.Current.CancellationToken);
+        _client.Connection.Returns(connection);
+
+        var log = await _sut.GetLogAsync();
+
+        log.Plays.Should().ContainSingle().Which.TrackId.Should().Be("t1");
+        _store.Saved.Keys.Should().Equal(connection.UserDataKey);
+        (connection with { ServerUrl = new Uri("http://192.168.1.10:8096/") }).UserDataKey.Should().Be(connection.UserDataKey);
+    }
 }

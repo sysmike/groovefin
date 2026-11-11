@@ -96,4 +96,83 @@ public sealed class JsonDownloadStoreTests : IDisposable
     [InlineData("")]
     public void A_key_that_is_no_folder_name_is_rejected(string key) =>
         _sut.Invoking(s => s.FolderOf(key)).Should().Throw<ArgumentException>();
+
+    private string IndexPath => Path.Join(_sut.FolderOf("user-server"), JsonDownloadStore.IndexFileName);
+
+    private static DownloadIndex IndexWith(string trackId)
+    {
+        var index = new DownloadIndex();
+        index.Tracks[trackId] = new DownloadedTrack { Track = new Track { Id = trackId, Name = trackId }, FileName = trackId + ".flac", Format = "original" };
+        return index;
+    }
+
+    [Fact]
+    public async Task A_damaged_index_gives_way_to_its_backup_and_is_kept()
+    {
+        await _sut.SaveAsync("user-server", IndexWith("t1"), Ct);
+        await _sut.SaveAsync("user-server", IndexWith("t2"), Ct);
+        await File.WriteAllTextAsync(IndexPath, "{ \"tracks\": { \"t2\": ", Ct);
+
+        var loaded = await _sut.LoadAsync("user-server", Ct);
+
+        loaded.Tracks.Keys.Should().Equal("t1");
+        File.Exists(IndexPath + ".corrupt").Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task An_index_lost_between_the_renames_of_a_save_comes_from_its_backup()
+    {
+        await _sut.SaveAsync("user-server", IndexWith("t1"), Ct);
+        File.Move(IndexPath, IndexPath + ".bak");
+
+        (await _sut.LoadAsync("user-server", Ct)).Tracks.Keys.Should().Equal("t1");
+    }
+
+    [Fact]
+    public async Task An_index_in_use_is_not_an_empty_one_and_is_not_saved_over()
+    {
+        await _sut.SaveAsync("user-server", IndexWith("t1"), Ct);
+        var before = await File.ReadAllBytesAsync(IndexPath, Ct);
+
+        await using (new FileStream(IndexPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            await _sut.Awaiting(s => s.LoadAsync("user-server", Ct)).Should().ThrowAsync<IOException>();
+        }
+
+        await _sut.SaveAsync("user-server", new DownloadIndex(), Ct);
+        (await File.ReadAllBytesAsync(IndexPath, Ct)).Should().Equal(before);
+
+        // Read again, it is saved again.
+        (await _sut.LoadAsync("user-server", Ct)).Tracks.Keys.Should().Equal("t1");
+        await _sut.SaveAsync("user-server", IndexWith("t2"), Ct);
+        (await _sut.LoadAsync("user-server", Ct)).Tracks.Keys.Should().Equal("t2");
+    }
+
+    [Fact]
+    public async Task An_index_of_a_newer_version_is_not_an_empty_one_and_is_not_saved_over()
+    {
+        Directory.CreateDirectory(_sut.FolderOf("user-server"));
+        const string Newer = """{"version":2,"tracks":{},"somethingNew":true}""";
+        await File.WriteAllTextAsync(IndexPath, Newer, Ct);
+
+        await _sut.Awaiting(s => s.LoadAsync("user-server", Ct)).Should().ThrowAsync<IOException>();
+        await _sut.SaveAsync("user-server", new DownloadIndex(), Ct);
+
+        (await File.ReadAllTextAsync(IndexPath, Ct)).Should().Be(Newer);
+    }
+
+    [Fact]
+    public async Task Rename_gives_a_folder_another_key_unless_that_key_has_one()
+    {
+        await _sut.SaveAsync("old", IndexWith("t1"), Ct);
+        await _sut.SaveAsync("taken", IndexWith("t2"), Ct);
+
+        _sut.Rename("old", "new");
+        _sut.Rename("new", "taken");
+        _sut.Rename("never-made", "other");
+
+        _sut.Keys().Should().BeEquivalentTo(["new", "taken"]);
+        (await _sut.LoadAsync("new", Ct)).Tracks.Keys.Should().Equal("t1");
+        (await _sut.LoadAsync("taken", Ct)).Tracks.Keys.Should().Equal("t2");
+    }
 }
