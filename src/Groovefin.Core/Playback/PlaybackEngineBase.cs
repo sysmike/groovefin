@@ -286,8 +286,17 @@ public abstract class PlaybackEngineBase(IDispatcher dispatcher, TimeProvider ti
         ApplyVolume(force: true);
     }
 
-    /// <summary>The player changed state. Safe to call from any thread.</summary>
-    protected void ReportState(PlaybackState state) => Dispatch(() => SetState(state));
+    /// <summary>
+    /// The player changed state. Safe to call from any thread. A state that arrives after <see cref="Stop"/> is
+    /// the stopped source's and is dropped: with nothing loaded the engine stays idle (#437).
+    /// </summary>
+    protected void ReportState(PlaybackState state) => Dispatch(() =>
+    {
+        if (Current is not null)
+        {
+            SetState(state);
+        }
+    });
 
     /// <summary>
     /// The player's position or length changed. Safe to call from any thread; events are throttled to

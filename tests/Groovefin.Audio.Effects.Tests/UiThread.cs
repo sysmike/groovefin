@@ -9,7 +9,7 @@ namespace Groovefin.Audio.Effects.Tests;
 /// </summary>
 internal sealed class UiThread : IDispatcher, IDisposable
 {
-    private readonly BlockingCollection<Action> _work = [];
+    private readonly BlockingCollection<Task> _work = [];
     private readonly Thread _thread;
 
     public UiThread()
@@ -28,31 +28,19 @@ internal sealed class UiThread : IDispatcher, IDisposable
 
     public Task<T> EnqueueAsync<T>(Func<T> function)
     {
-        var done = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-        void Work()
-        {
-            try
-            {
-                done.SetResult(function());
-            }
-            catch (Exception ex)
-            {
-                // Handed to whoever awaits the work, as a dispatcher does.
-                done.SetException(ex);
-            }
-        }
-
+        // Not started: the thread runs it, and what it throws goes to whoever awaits it, as with a dispatcher.
+        var work = new Task<T>(function);
         try
         {
-            _work.Add(Work);
+            _work.Add(work);
         }
         catch (InvalidOperationException)
         {
             // The thread has ended: a late event of a player that is closing.
-            done.SetCanceled();
+            return Task.FromCanceled<T>(new CancellationToken(canceled: true));
         }
 
-        return done.Task;
+        return work;
     }
 
     public void Dispose()
@@ -66,7 +54,7 @@ internal sealed class UiThread : IDispatcher, IDisposable
     {
         foreach (var work in _work.GetConsumingEnumerable())
         {
-            work();
+            work.RunSynchronously();
         }
     }
 }
