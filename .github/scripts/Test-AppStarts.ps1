@@ -2019,21 +2019,46 @@ try {
     $pattern = $null
     $scroll = $null
     $expanded = $false
+    $expanders = @()
     $named = $window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Equalizer'))
     foreach ($element in @($equalizerCard) + @($named)) {
         Write-Output "Element 'Equalizer': $($element.Current.ControlType.ProgrammaticName), class $($element.Current.ClassName)"
-        if (-not $expanded -and $element.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $pattern)) {
-            if ($element.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
-            $pattern.Expand()
-            $expanded = $true
+        if ($element.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref] $pattern)) {
+            $expanders += $pattern
+            if (-not $expanded) {
+                if ($element.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView() }
+                $pattern.Expand()
+                $expanded = $true
+            }
         }
     }
     Write-Output "Expanded the equalizer: $expanded"
     $visual = $null
     if ($window.TryGetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern, [ref] $visual)) { $visual.SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized) }
-    Start-Sleep -Seconds 2
-    $sliders = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider)))
-    $band = $sliders | Where-Object { $_.Current.Name -eq '1 kHz' } | Select-Object -First 1
+
+    # The sliders come when the expander has opened and laid out its content, which takes longer the longer
+    # the page is: wait for them instead of a fixed time, and expand again an expander that did not open
+    # (on about every second run the first Expand had no effect within two seconds).
+    $sliders = @()
+    $band = $null
+    $until = (Get-Date).AddSeconds(20)
+    do {
+        Start-Sleep -Seconds 1
+        $sliders = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider)))
+        $band = $sliders | Where-Object { $_.Current.Name -eq '1 kHz' } | Select-Object -First 1
+        if (-not $band) {
+            foreach ($expander in $expanders) {
+                try {
+                    $state = $expander.Current.ExpandCollapseState
+                    if ($state -ne [System.Windows.Automation.ExpandCollapseState]::Expanded) {
+                        Write-Output "An equalizer expander is $state; expanding it again."
+                        $expander.Expand()
+                    }
+                }
+                catch { Write-Output "An equalizer expander could not be expanded: $($_.Exception.Message)" }
+            }
+        }
+    } while (-not $band -and (Get-Date) -lt $until)
     if ($band -and $band.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView(); Start-Sleep -Seconds 1 }
     Save-Screenshot 'settings-equalizer'
     foreach ($slider in $sliders) {
