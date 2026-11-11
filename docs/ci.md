@@ -160,7 +160,18 @@ reference in `Directory.Packages.props`, tag prefix `v`).
 - `InformationalVersion` is `<version>+<commit SHA>`. The About page shows the version and the
   short SHA (`AppVersion` in Core).
 - `Package.appxmanifest` keeps `0.0.0.0` in source. At build time `Directory.Build.targets` writes
-  a copy to `obj/` with `Major.Minor.Patch.0` (MSIX versions are numeric) and packages that copy.
+  a copy to `obj/` with a numeric four-part version and packages that copy. Windows refuses to
+  install a package whose version it already has with other contents, so the fourth part carries the
+  pre-release, and each release upgrades the one before it in place:
+
+  | Version | MSIX version |
+  |---|---|
+  | `1.2.0-alpha.0.5` | `1.2.0.10005` (10000 + number × 100 + commits since the tag) |
+  | `1.2.0-beta9` | `1.2.0.20900` |
+  | `1.2.0-rc.1` | `1.2.0.30100` |
+  | `1.2.0` | `1.2.0.65535` (above all of its pre-releases) |
+
+  The number and the commit count are capped at 99 each. The bundle gets the version of its packages.
 - MinVer needs the full history. Every CI checkout uses `fetch-depth: 0`. In a shallow clone the
   version falls back to `0.0.0-alpha.0`.
 

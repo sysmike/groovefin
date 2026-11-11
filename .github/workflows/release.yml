@@ -181,10 +181,21 @@ jobs:
         env:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
-          # makeappx bundles every package in a folder; the bundle version is numeric like the packages'.
+          # makeappx bundles every package in a folder. The bundle takes the packages' own version, which
+          # carries the pre-release in its fourth part (Directory.Build.targets, #426).
           $bundleInput = New-Item -ItemType Directory (Join-Path $env:RUNNER_TEMP 'bundle-input')
           Copy-Item packages/*.msix $bundleInput
-          $numeric = ($env:VERSION -split '-')[0] + '.0'
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $versions = @(Get-ChildItem $bundleInput -Filter *.msix | ForEach-Object {
+            $zip = [IO.Compression.ZipFile]::OpenRead($_.FullName)
+            try {
+              $reader = [IO.StreamReader]::new($zip.GetEntry('AppxManifest.xml').Open())
+              try { ([xml]$reader.ReadToEnd()).Package.Identity.Version } finally { $reader.Dispose() }
+            } finally { $zip.Dispose() }
+          } | Sort-Object -Unique)
+          if ($versions.Count -ne 1) { throw "Expected one package version, found: $($versions -join ', ')." }
+          $numeric = $versions[0]
+          Write-Output "Bundle version: $numeric"
           New-Item -ItemType Directory dist | Out-Null
           $makeappx = & ./.github/scripts/Find-WindowsSdkTool.ps1 -Name makeappx.exe
           & $makeappx bundle /bv $numeric /d $bundleInput /p "dist/Groovefin_${env:VERSION}.msixbundle" /o

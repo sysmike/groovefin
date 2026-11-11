@@ -60,6 +60,16 @@ public sealed record DownloadIndex
 
     public int Version { get; set; } = CurrentVersion;
 
+    /// <summary>
+    /// Brings an index an older version of the app wrote up to <see cref="CurrentVersion"/> (#428). A change to
+    /// the format adds its step here, so an update keeps the downloads. Version 1 is the first.
+    /// </summary>
+    internal static DownloadIndex Migrate(DownloadIndex index)
+    {
+        index.Version = CurrentVersion;
+        return index;
+    }
+
     /// <summary>Gets the downloaded songs by ID.</summary>
     public Dictionary<string, DownloadedTrack> Tracks { get; set; } = [];
 

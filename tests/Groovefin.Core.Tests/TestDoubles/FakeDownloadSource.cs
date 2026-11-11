@@ -19,6 +19,9 @@ internal sealed class FakeDownloadSource : IDownloadSource
     /// <summary>Gets the songs that arrive with only their first bytes, although the length says more.</summary>
     public HashSet<string> CutShort { get; } = [];
 
+    /// <summary>Gets the songs the server has nothing of from an offset on: HTTP 416, as for a complete part file.</summary>
+    public HashSet<string> RangeNotSatisfiable { get; } = [];
+
     public string Extension { get; set; } = ".flac";
 
     public bool SupportsRange { get; set; } = true;
@@ -31,6 +34,11 @@ internal sealed class FakeDownloadSource : IDownloadSource
         if (Failures.TryGetValue(trackId, out var failure))
         {
             throw failure;
+        }
+
+        if (offset > 0 && RangeNotSatisfiable.Contains(trackId))
+        {
+            throw new Groovefin.Core.Api.JellyfinException("Downloading a song failed with HTTP 416.", System.Net.HttpStatusCode.RequestedRangeNotSatisfiable);
         }
 
         var file = FileOf(trackId);

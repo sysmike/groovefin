@@ -76,6 +76,9 @@ public sealed partial class PlayHistory : IPlayLog, IDisposable
     private string? _key;
     private PlayHistoryData _data = new();
 
+    // The history file could not be read: what is in memory is not the user's history and is not saved (#428).
+    private bool _unreadable;
+
     private Listen? _listen;
 
     public PlayHistory(
@@ -319,7 +322,7 @@ public sealed partial class PlayHistory : IPlayLog, IDisposable
         }
     }
 
-    /// <summary>A file name for the signed-in user on the server: their ID and a hash of the server's address.</summary>
+    /// <summary>A file name for the signed-in user on the server: their ID and a hash of the server's ID.</summary>
     private string? CurrentKey() => _client.Connection?.UserDataKey;
 
     /// <summary>The tracks played since <paramref name="since"/>, newest first, from as many pages as that takes.</summary>
@@ -523,8 +526,26 @@ public sealed partial class PlayHistory : IPlayLog, IDisposable
     {
         if (_key != key)
         {
-            _data = await _store.LoadAsync(key).ConfigureAwait(false) ?? new PlayHistoryData();
-            _key = key;
+            try
+            {
+                // Kept under the server's address by versions before #429.
+                if (_client.Connection is { LegacyUserDataKey: { } legacy } connection && connection.UserDataKey == key && legacy != key)
+                {
+                    _store.Rename(legacy, key);
+                }
+
+                _data = await _store.LoadAsync(key).ConfigureAwait(false) ?? new PlayHistoryData();
+                _key = key;
+                _unreadable = false;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // The file is there but could not be read (#428; the store logged it): an empty history for now,
+                // which is never saved over the file. The next use reads again.
+                _data = new PlayHistoryData();
+                _key = null;
+                _unreadable = true;
+            }
         }
 
         // A new history, or one from before the statistics (#382): their history begins now.
@@ -543,7 +564,7 @@ public sealed partial class PlayHistory : IPlayLog, IDisposable
         return _data;
     }
 
-    private Task SaveAsync(string key, PlayHistoryData data) => _store.SaveAsync(key, data);
+    private Task SaveAsync(string key, PlayHistoryData data) => _unreadable ? Task.CompletedTask : _store.SaveAsync(key, data);
 
     private Task Enqueue(Func<Task> work) => Enqueue(async () =>
     {

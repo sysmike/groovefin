@@ -28,6 +28,15 @@ public static class ServiceCollectionExtensions
                 configureResilience?.Invoke(options);
             });
 
+        // Images (#430): the same rules, but a pipeline of their own, so a burst of covers neither uses up the
+        // API's rate limit nor opens its circuit breaker.
+        services.AddHttpClient(JellyfinImageSource.HttpClientName)
+            .AddStandardResilienceHandler(options =>
+            {
+                ConfigureDefaults(options);
+                configureResilience?.Invoke(options);
+            });
+
         // Downloads (#327): a song can take longer than the pipeline's 45 seconds, and the download manager
         // retries failed songs itself.
         services.AddHttpClient(JellyfinDownloadSource.HttpClientName, http => http.Timeout = Timeout.InfiniteTimeSpan);

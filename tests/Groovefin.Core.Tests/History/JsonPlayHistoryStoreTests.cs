@@ -86,4 +86,70 @@ public sealed class JsonPlayHistoryStoreTests : IDisposable
 
         await act.Should().ThrowAsync<ArgumentException>();
     }
+
+    private string HistoryPath => Path.Join(_directory, "user-server.json");
+
+    private static PlayHistoryData HistoryWith(string trackId)
+    {
+        var data = new PlayHistoryData();
+        data.Plays.Add(new PlayRecord(trackId, new DateTimeOffset(2026, 10, 25, 12, 0, 0, TimeSpan.Zero), PlaySource.Server));
+        return data;
+    }
+
+    [Fact]
+    public async Task A_damaged_history_gives_way_to_its_backup_and_is_kept()
+    {
+        await _sut.SaveAsync("user-server", HistoryWith("t1"), Ct);
+        await _sut.SaveAsync("user-server", HistoryWith("t2"), Ct);
+        await File.WriteAllTextAsync(HistoryPath, "{ \"plays\": [", Ct);
+
+        var loaded = await _sut.LoadAsync("user-server", Ct);
+
+        loaded!.Plays.Should().ContainSingle().Which.TrackId.Should().Be("t1");
+        File.Exists(HistoryPath + ".corrupt").Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_history_in_use_is_not_taken_for_none_and_is_not_saved_over()
+    {
+        await _sut.SaveAsync("user-server", HistoryWith("t1"), Ct);
+        var before = await File.ReadAllBytesAsync(HistoryPath, Ct);
+
+        await using (new FileStream(HistoryPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            await _sut.Awaiting(s => s.LoadAsync("user-server", Ct)).Should().ThrowAsync<IOException>();
+        }
+
+        await _sut.SaveAsync("user-server", new PlayHistoryData(), Ct);
+
+        (await File.ReadAllBytesAsync(HistoryPath, Ct)).Should().Equal(before);
+    }
+
+    [Fact]
+    public async Task A_history_of_a_newer_version_is_not_taken_for_none_and_is_not_saved_over()
+    {
+        Directory.CreateDirectory(_directory);
+        const string Newer = """{"version":2,"plays":[],"somethingNew":true}""";
+        await File.WriteAllTextAsync(HistoryPath, Newer, Ct);
+
+        await _sut.Awaiting(s => s.LoadAsync("user-server", Ct)).Should().ThrowAsync<IOException>();
+        await _sut.SaveAsync("user-server", new PlayHistoryData(), Ct);
+
+        (await File.ReadAllTextAsync(HistoryPath, Ct)).Should().Be(Newer);
+    }
+
+    [Fact]
+    public async Task Rename_gives_a_history_another_key_unless_that_key_has_one()
+    {
+        await _sut.SaveAsync("old", HistoryWith("t1"), Ct);
+        await _sut.SaveAsync("taken", HistoryWith("t2"), Ct);
+
+        _sut.Rename("old", "new");
+        _sut.Rename("new", "taken");
+        _sut.Rename("never-made", "other");
+
+        (await _sut.LoadAsync("old", Ct)).Should().BeNull();
+        (await _sut.LoadAsync("new", Ct))!.Plays.Should().ContainSingle().Which.TrackId.Should().Be("t1");
+        (await _sut.LoadAsync("taken", Ct))!.Plays.Should().ContainSingle().Which.TrackId.Should().Be("t2");
+    }
 }

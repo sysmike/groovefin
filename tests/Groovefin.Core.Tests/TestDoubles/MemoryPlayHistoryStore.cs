@@ -26,6 +26,14 @@ internal sealed class MemoryPlayHistoryStore : IPlayHistoryStore
         return Task.FromResult(preloaded);
     }
 
+    public void Rename(string fromKey, string toKey)
+    {
+        if (!Saved.ContainsKey(toKey) && Saved.Remove(fromKey, out var data))
+        {
+            Saved[toKey] = data;
+        }
+    }
+
     public Task SaveAsync(string key, PlayHistoryData data, CancellationToken cancellationToken = default)
     {
         Saved[key] = data;

@@ -9,7 +9,9 @@ namespace Groovefin.Core.Images;
 /// <summary>
 /// <see cref="IImageCache"/> that stores one file per server, item, image kind, tag and width bucket.
 /// The file's last-write time is its last use; above <see cref="ImageCacheOptions.MaxBytes"/> the least
-/// recently used files are deleted. Concurrent requests for the same image share one download.
+/// recently used files are deleted. Concurrent requests for the same image share one download;
+/// <see cref="ImageCacheOptions.MaxConcurrentDownloads"/> run at a time, and one whose callers all cancelled
+/// (tiles scrolled out of view) is dropped, also while it waits its turn (#430).
 /// Views ask for every visible cover on the UI thread, so even a hit (file check and timestamp) runs on
 /// the thread pool. An image the server cannot give comes from the <c>fallback</c> instead, such as a cover
 /// kept with the downloads (#335); it is not cached.
@@ -24,7 +26,8 @@ public sealed partial class DiskImageCache(
     /// <summary>A hit marks its file as used at most this often, so scrolling back and forth writes little.</summary>
     internal static readonly TimeSpan TouchInterval = TimeSpan.FromMinutes(1);
 
-    private readonly ConcurrentDictionary<string, Lazy<Task<string?>>> _inFlight = new();
+    private readonly ConcurrentDictionary<string, Download> _inFlight = new();
+    private readonly SemaphoreSlim _downloadGate = new(options.MaxConcurrentDownloads, options.MaxConcurrentDownloads);
     private readonly SemaphoreSlim _evictionGate = new(1, 1);
 
     public Task<string?> GetAsync(ImageRequest request, CancellationToken cancellationToken = default)
@@ -70,41 +73,87 @@ public sealed partial class DiskImageCache(
         return Path.Join(options.Directory, hash[..2], hash + ".img");
     }
 
-    private Task<string?> LookUpAsync(ImageRequest request, string path, CancellationToken cancellationToken)
+    private async Task<string?> LookUpAsync(ImageRequest request, string path, CancellationToken cancellationToken)
     {
         if (File.Exists(path))
         {
             TouchIfStale(path);
-            return Task.FromResult<string?>(path);
+            return path;
         }
 
-        // One download per file; the shared download is not cancelled by a single caller.
-        var lazy = _inFlight.GetOrAdd(path, p => new Lazy<Task<string?>>(() => DownloadAsync(request, p)));
-        return lazy.Value.WaitAsync(cancellationToken);
+        while (true)
+        {
+            // One download per file, shared by everyone who asks for it meanwhile.
+            var download = _inFlight.GetOrAdd(path, static _ => new Download());
+            Task<string?> task;
+            lock (download)
+            {
+                if (download.Ended)
+                {
+                    // Dropped or done just now: it is on its way out, so start over.
+                    _inFlight.TryRemove(new KeyValuePair<string, Download>(path, download));
+                    continue;
+                }
+
+                download.Waiters++;
+                task = download.Task ??= Task.Run(() => DownloadAsync(request, path, download), CancellationToken.None);
+            }
+
+            try
+            {
+                return await task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // A single caller does not cancel the shared download; the last one to leave does.
+                lock (download)
+                {
+                    if (--download.Waiters == 0 && !download.Ended)
+                    {
+                        download.Ended = true;
+                        download.Cancel.Cancel();
+                    }
+                }
+
+                throw;
+            }
+        }
     }
 
-    private async Task<string?> DownloadAsync(ImageRequest request, string path)
+    private async Task<string?> DownloadAsync(ImageRequest request, string path, Download download)
     {
+        var cancellationToken = download.Cancel.Token;
+        string? temp = null;
         try
         {
-            // A caller that missed the file just before the download that made it ended gets here: the file is in
-            // place before that download leaves _inFlight, so nothing downloads twice.
-            if (File.Exists(path))
+            await _downloadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
             {
-                return path;
+                // A caller that missed the file just before the download that made it ended gets here: the file
+                // is in place before that download leaves _inFlight, so nothing downloads twice.
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+
+                await using (var stream = await source.OpenAsync(request, cancellationToken).ConfigureAwait(false))
+                await using (var file = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                {
+                    await stream.CopyToAsync(file, cancellationToken).ConfigureAwait(false);
+                }
+
+                File.Move(temp, path, overwrite: true);
+                temp = null;
+                Touch(path);
+            }
+            finally
+            {
+                _downloadGate.Release();
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            var temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-
-            await using (var stream = await source.OpenAsync(request, CancellationToken.None).ConfigureAwait(false))
-            await using (var file = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true))
-            {
-                await stream.CopyToAsync(file).ConfigureAwait(false);
-            }
-
-            File.Move(temp, path, overwrite: true);
-            Touch(path);
             await EvictAsync().ConfigureAwait(false);
             return path;
         }
@@ -116,7 +165,18 @@ public sealed partial class DiskImageCache(
         }
         finally
         {
-            _inFlight.TryRemove(path, out _);
+            if (temp is not null)
+            {
+                TryDelete(temp);
+            }
+
+            lock (download)
+            {
+                download.Ended = true;
+                download.Cancel.Dispose();
+            }
+
+            _inFlight.TryRemove(new KeyValuePair<string, Download>(path, download));
         }
     }
 
@@ -207,6 +267,19 @@ public sealed partial class DiskImageCache(
             // In use by a view; it is deleted on a later eviction.
             return false;
         }
+    }
+
+    /// <summary>A download in flight and those who wait for it. Its members are used under a lock on it.</summary>
+    private sealed class Download
+    {
+        public CancellationTokenSource Cancel { get; } = new();
+
+        public Task<string?>? Task { get; set; }
+
+        public int Waiters { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether it finished or was dropped: nobody joins it any more.</summary>
+        public bool Ended { get; set; }
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not load {Kind} image of item {ItemId}")]

@@ -5,10 +5,13 @@ namespace Groovefin.Jellyfin;
 
 /// <summary>
 /// <see cref="IImageSource"/> for the active connection. Images are resized by the server and fetched
-/// through the resilient HTTP client.
+/// through a resilient HTTP client of their own (#430): covers that time out on a slow server then open their
+/// own circuit breaker, not the one browsing and playback reporting depend on.
 /// </summary>
 internal sealed class JellyfinImageSource(JellyfinClient client, IHttpClientFactory httpClientFactory, ClientIdentity identity) : IImageSource
 {
+    public const string HttpClientName = "Groovefin.Jellyfin.Images";
+
     public string? ServerKey => client.Connection?.ServerUrl.AbsoluteUri.TrimEnd('/').ToLowerInvariant();
 
     public async Task<Stream> OpenAsync(ImageRequest request, CancellationToken cancellationToken)
@@ -16,7 +19,7 @@ internal sealed class JellyfinImageSource(JellyfinClient client, IHttpClientFact
         ArgumentNullException.ThrowIfNull(request);
 
         var connection = client.Connection ?? throw new JellyfinException("Not connected to a server.");
-        var http = httpClientFactory.CreateClient(JellyfinApiFactory.HttpClientName);
+        var http = httpClientFactory.CreateClient(HttpClientName);
 
         return await JellyfinCall.RunAsync<Stream>(
             async () =>

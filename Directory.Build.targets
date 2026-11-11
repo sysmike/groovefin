@@ -1,16 +1,44 @@
 <Project>
   <!--
-    Stamps the MinVer version into the MSIX manifest. MSIX needs a numeric 4-part version, so a
-    pre-release such as 0.3.0-beta.1 becomes 0.3.0.0. The source Package.appxmanifest is not
-    modified; a stamped copy in obj/ replaces it as the AppxManifest item.
+    MSIX needs a numeric 4-part version, and Windows refuses to install a package whose version it
+    already has with other contents. The fourth part therefore carries the pre-release (#426):
+
+      1.2.0-alpha.0.5  ->  1.2.0.10005    alpha: 10000 + number * 100 + commits since the tag
+      1.2.0-beta9      ->  1.2.0.20900    beta:  20000 + ...
+      1.2.0-rc.1       ->  1.2.0.30100    rc:    30000 + ...
+      1.2.0            ->  1.2.0.65535    the final release sorts above all of its pre-releases
+
+    The number and the commit count are capped at 99 each. Any other pre-release name counts from 0.
+  -->
+  <Target Name="GroovefinComputeAppxPackageVersion">
+    <PropertyGroup>
+      <_GroovefinPreName>$([System.Text.RegularExpressions.Regex]::Replace('$(MinVerPreRelease)', '^([A-Za-z]*).*$', '$1').ToLowerInvariant())</_GroovefinPreName>
+      <_GroovefinPreNumber>$([System.Text.RegularExpressions.Regex]::Replace('$(MinVerPreRelease)', '^[A-Za-z]*\.?(\d*).*$', '$1'))</_GroovefinPreNumber>
+      <_GroovefinPreHeight>$([System.Text.RegularExpressions.Regex]::Replace('$(MinVerPreRelease)', '^[A-Za-z]*\.?\d*\.?(\d*).*$', '$1'))</_GroovefinPreHeight>
+      <_GroovefinPreNumber Condition="'$(_GroovefinPreNumber)' == ''">0</_GroovefinPreNumber>
+      <_GroovefinPreHeight Condition="'$(_GroovefinPreHeight)' == ''">0</_GroovefinPreHeight>
+      <_GroovefinPreNumber Condition="$(_GroovefinPreNumber) &gt; 99">99</_GroovefinPreNumber>
+      <_GroovefinPreHeight Condition="$(_GroovefinPreHeight) &gt; 99">99</_GroovefinPreHeight>
+      <_GroovefinPreBase>0</_GroovefinPreBase>
+      <_GroovefinPreBase Condition="'$(_GroovefinPreName)' == 'alpha'">10000</_GroovefinPreBase>
+      <_GroovefinPreBase Condition="'$(_GroovefinPreName)' == 'beta'">20000</_GroovefinPreBase>
+      <_GroovefinPreBase Condition="'$(_GroovefinPreName)' == 'rc'">30000</_GroovefinPreBase>
+      <_GroovefinAppxRevision>$([MSBuild]::Add($(_GroovefinPreBase), $([MSBuild]::Add($([MSBuild]::Multiply($(_GroovefinPreNumber), 100)), $(_GroovefinPreHeight)))))</_GroovefinAppxRevision>
+      <_GroovefinAppxRevision Condition="'$(MinVerPreRelease)' == ''">65535</_GroovefinAppxRevision>
+      <GroovefinAppxPackageVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).$(_GroovefinAppxRevision)</GroovefinAppxPackageVersion>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    Stamps that version into the MSIX manifest. The source Package.appxmanifest is not modified; a
+    stamped copy in obj/ replaces it as the AppxManifest item.
   -->
   <Target Name="GroovefinStampAppxManifestVersion"
           BeforeTargets="_ValidatePresenceOfAppxManifestItems"
-          DependsOnTargets="MinVer"
+          DependsOnTargets="MinVer;GroovefinComputeAppxPackageVersion"
           Condition="'@(AppxManifest)' != '' and '$(MinVerSkip)' != 'true'">
     <PropertyGroup>
       <_GroovefinAppxManifest>$(IntermediateOutputPath)Package.versioned.appxmanifest</_GroovefinAppxManifest>
-      <GroovefinAppxPackageVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).0</GroovefinAppxPackageVersion>
     </PropertyGroup>
 
     <Copy SourceFiles="@(AppxManifest)" DestinationFiles="$(_GroovefinAppxManifest)" SkipUnchangedFiles="false" />

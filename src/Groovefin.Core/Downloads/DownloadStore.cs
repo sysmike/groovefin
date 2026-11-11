@@ -1,4 +1,4 @@
-using System.Text.Json;
+using Groovefin.Core.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace Groovefin.Core.Downloads;
@@ -110,13 +110,26 @@ public interface IDownloadStore
     /// <summary>Gets the free bytes on the folder's drive.</summary>
     long FreeSpace(string key);
 
-    /// <summary>Gets the saved index, or an empty one when there is none or it cannot be read.</summary>
+    /// <summary>
+    /// Gets the saved index, or an empty one when there is none or the file is damaged beyond its backup: the next
+    /// sync then finds the files again that are the server's.
+    /// </summary>
+    /// <exception cref="IOException">
+    /// The index is there but could not be read, or a newer version of the app wrote it (#428). It is not an
+    /// empty one: no file may be deleted for it, and nothing saved over it.
+    /// </exception>
     Task<DownloadIndex> LoadAsync(string key, CancellationToken cancellationToken = default);
 
     Task SaveAsync(string key, DownloadIndex index, CancellationToken cancellationToken = default);
 
     /// <summary>Deletes the user's folder with all files and the index.</summary>
     void DeleteAll(string key);
+
+    /// <summary>
+    /// Gives the folder of <paramref name="fromKey"/> to <paramref name="toKey"/> (#429), when there is one and
+    /// <paramref name="toKey"/> has none yet. A folder that cannot be moved now stays for the next time.
+    /// </summary>
+    void Rename(string fromKey, string toKey);
 
     /// <summary>Gets the keys that have a folder: every server and user with downloads.</summary>
     IReadOnlyList<string> Keys();
@@ -130,7 +143,8 @@ public interface IDownloadStore
 
 /// <summary>
 /// <see cref="IDownloadStore"/> with the index as <c>downloads.json</c> in the user's folder. Writes go to a
-/// temporary file that then replaces the index, so a crash never leaves half a file.
+/// temporary file that then replaces the index, so a crash never leaves half a file; the index before stays as
+/// <c>downloads.json.bak</c> and is read when the index is gone or damaged (#428).
 /// </summary>
 public sealed partial class JsonDownloadStore(DownloadStoreOptions options, ILogger<JsonDownloadStore> logger) : IDownloadStore
 {
@@ -139,6 +153,8 @@ public sealed partial class JsonDownloadStore(DownloadStoreOptions options, ILog
     /// <summary>A copy to another drive reads and writes this much at a time, and reports after each.</summary>
     private const int CopyBufferSize = 1 << 20;
 
+    // The index files the last load could not read (#428): not saved over until a load succeeds.
+    private readonly HashSet<string> _unreadable = new(StringComparer.OrdinalIgnoreCase);
     private readonly Lock _leftoversLock = new();
     private readonly List<(string File, string OldRoot)> _leftovers = [];
     private string? _root;
@@ -173,22 +189,40 @@ public sealed partial class JsonDownloadStore(DownloadStoreOptions options, ILog
     public async Task<DownloadIndex> LoadAsync(string key, CancellationToken cancellationToken = default)
     {
         var path = Path.Join(FolderOf(key), IndexFileName);
-        try
+        var result = await JsonFile.ReadAsync(path, DownloadJsonContext.Default.DownloadIndex, cancellationToken).ConfigureAwait(false);
+        var unreadable = result.State == JsonFileState.Unreadable
+            || (result.State == JsonFileState.Loaded && result.Value!.Version > DownloadIndex.CurrentVersion);
+        lock (_unreadable)
         {
-            if (!File.Exists(path))
-            {
-                return new DownloadIndex();
-            }
-
-            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
-            var index = await JsonSerializer.DeserializeAsync(stream, DownloadJsonContext.Default.DownloadIndex, cancellationToken).ConfigureAwait(false);
-            return index?.Version == DownloadIndex.CurrentVersion ? index : new DownloadIndex();
+            _ = unreadable ? _unreadable.Add(path) : _unreadable.Remove(path);
         }
-        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException or NotSupportedException)
+
+        switch (result.State)
         {
-            // The files stay; the next sync finds them missing from the index and downloads them again.
-            LogReadFailed(ex, path);
-            return new DownloadIndex();
+            case JsonFileState.Loaded when result.Value!.Version > DownloadIndex.CurrentVersion:
+                // A newer Groovefin's: this one would drop what it does not know.
+                LogNewerVersion(path, result.Value.Version);
+                throw new IOException($"The download index is of version {result.Value.Version}; this app reads up to {DownloadIndex.CurrentVersion}.");
+
+            case JsonFileState.Loaded:
+                if (result.FromBackup)
+                {
+                    LogBackupUsed(result.Error, path);
+                }
+
+                return DownloadIndex.Migrate(result.Value!);
+
+            case JsonFileState.Unreadable:
+                LogReadFailed(result.Error, path);
+                throw new IOException("The download index could not be read.", result.Error);
+
+            case JsonFileState.Corrupt:
+                // The next sync keeps the files that are the server's and downloads the others again.
+                LogCorrupt(result.Error, path);
+                return new DownloadIndex();
+
+            default:
+                return new DownloadIndex();
         }
     }
 
@@ -197,16 +231,19 @@ public sealed partial class JsonDownloadStore(DownloadStoreOptions options, ILog
         ArgumentNullException.ThrowIfNull(index);
         var folder = FolderOf(key);
         var path = Path.Join(folder, IndexFileName);
+        lock (_unreadable)
+        {
+            if (_unreadable.Contains(path))
+            {
+                // The last read failed (#428): the file may be fine, and this is not what it holds.
+                LogWriteSkipped(path);
+                return;
+            }
+        }
+
         try
         {
-            Directory.CreateDirectory(folder);
-            var temp = path + ".tmp";
-            await using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
-            {
-                await JsonSerializer.SerializeAsync(stream, index, DownloadJsonContext.Default.DownloadIndex, cancellationToken).ConfigureAwait(false);
-            }
-
-            File.Move(temp, path, overwrite: true);
+            await JsonFile.WriteAsync(path, index, DownloadJsonContext.Default.DownloadIndex, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -229,6 +266,24 @@ public sealed partial class JsonDownloadStore(DownloadStoreOptions options, ILog
         {
             LogDeleteFailed(ex, folder);
             throw;
+        }
+    }
+
+    public void Rename(string fromKey, string toKey)
+    {
+        var from = FolderOf(fromKey);
+        var to = FolderOf(toKey);
+        try
+        {
+            if (Directory.Exists(from) && !Directory.Exists(to))
+            {
+                Directory.Move(from, to);
+                LogRenamed(fromKey, toKey);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogRenameFailed(ex, from, to);
         }
     }
 
@@ -516,8 +571,26 @@ public sealed partial class JsonDownloadStore(DownloadStoreOptions options, ILog
     [LoggerMessage(Level = LogLevel.Warning, Message = "Listing the downloads in {Folder} failed")]
     private partial void LogListFailed(Exception exception, string folder);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Reading the download index {Path} failed")]
-    private partial void LogReadFailed(Exception exception, string path);
+    [LoggerMessage(Level = LogLevel.Information, Message = "The downloads {FromKey} are now {ToKey}")]
+    private partial void LogRenamed(string fromKey, string toKey);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Moving the downloads {Source} to {Target} failed; they stay for the next time")]
+    private partial void LogRenameFailed(Exception exception, string source, string target);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The download index {Path} is not saved: it could not be read, and is left as it is")]
+    private partial void LogWriteSkipped(string path);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The download index {Path} could not be read; it is left as it is and nothing is synced")]
+    private partial void LogReadFailed(Exception? exception, string path);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The download index {Path} is damaged and has no usable backup; a copy is kept as .corrupt")]
+    private partial void LogCorrupt(Exception? exception, string path);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The download index {Path} was gone or damaged; its backup is used")]
+    private partial void LogBackupUsed(Exception? exception, string path);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The download index {Path} has version {Version}, written by a newer Groovefin; it is left as it is and nothing is synced")]
+    private partial void LogNewerVersion(string path, int version);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Writing the download index {Path} failed")]
     private partial void LogWriteFailed(Exception exception, string path);
