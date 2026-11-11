@@ -131,6 +131,21 @@ public sealed class PlaybackEngineBaseTests
     }
 
     [Fact]
+    public void A_state_the_player_reported_just_before_the_stop_does_not_arrive_after_it()
+    {
+        // MediaPlayer reports from its own threads: "Opening" was on its way to the UI thread when Stop ran.
+        // The stopped player reports nothing more, so the engine would stay at that state with nothing loaded.
+        _sut.Load(Source("a"));
+        _sut.SimulateState(PlaybackState.Opening);
+
+        _sut.Stop();
+        _dispatcher.RunAll();
+
+        _sut.State.Should().Be(PlaybackState.Idle);
+        _sut.Current.Should().BeNull();
+    }
+
+    [Fact]
     public void Volume_is_clamped_and_sent_only_when_it_changes()
     {
         _sut.Volume = 0.5;

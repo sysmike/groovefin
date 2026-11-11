@@ -24,7 +24,7 @@ depend on which, and the conventions every feature follows.
 | `Groovefin.Playback.Windows` | `net10.0-windows10.0.22000.0` | `IPlaybackEngine` implementation using `Windows.Media.Playback.MediaPlayer` + `MediaPlaybackList`. System Media Transport Controls. |
 | `Groovefin.Core.Tests` | `net10.0` | Unit tests for Core (ViewModels, queue, parsers). |
 | `Groovefin.Jellyfin.Tests` | `net10.0` | Unit tests for the Jellyfin layer against WireMock.Net fakes. |
-| `Groovefin.Audio.Effects.Tests` | `net10.0-windows10.0.26100.0` | Windows only: sends a tone through the published NativeAOT effect with Media Foundation's transcoder and measures the level. |
+| `Groovefin.Audio.Effects.Tests` | `net10.0-windows10.0.26100.0` | Windows only: sends a tone through the published NativeAOT effect with Media Foundation's transcoder and measures the level. It also runs `MediaPlayerEngine` on a real `MediaPlayer` with a WAV file of a tone (#437): load, stop, replace, volume, the equalizer effect in the audio path, the output devices, disposing twice, a missing file, and playing, which without a sound card (the CI runners) must fail at the audio output and nowhere before. Both test classes share one xUnit collection, because the effect's parameters are the process's. |
 
 ## Component diagram
 

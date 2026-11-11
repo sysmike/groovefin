@@ -12,6 +12,7 @@ namespace Groovefin.Audio.Effects.Tests;
 /// effect by its class name and feeds it like MediaPlayer does, but needs no sound card, which the CI runners
 /// do not have (#169). The parameters go through the DLL's exports, as in the app.
 /// </summary>
+[Collection(MediaFoundationCollection.Name)]
 public sealed class EqualizerEffectTests : IDisposable
 {
     private const int SampleRate = 44100;
