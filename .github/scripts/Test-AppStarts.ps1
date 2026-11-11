@@ -2036,29 +2036,38 @@ try {
     $visual = $null
     if ($window.TryGetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern, [ref] $visual)) { $visual.SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Maximized) }
 
-    # The sliders come when the expander has opened and laid out its content, which takes longer the longer
-    # the page is: wait for them instead of a fixed time, and expand again an expander that did not open
-    # (on about every second run the first Expand had no effect within two seconds).
+    # Since the page got longer (#440) the expander was, on about every second run, expanded but without its
+    # band sliders, also 20 seconds later. Most likely they are only made while the expander's content is
+    # near the part of the page that shows. So look for them at each scroll position from the top down,
+    # expand again an expander that did not open, and say what was found where.
     $sliders = @()
     $band = $null
-    $until = (Get-Date).AddSeconds(20)
-    do {
+    $pageScroll = (Find-ById 'SettingsScroller').GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
+    foreach ($percent in @(-1) + @(0..10 | ForEach-Object { $_ * 10 })) {
+        if ($percent -ge 0) {
+            $pageScroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, $percent)
+        }
         Start-Sleep -Seconds 1
+        foreach ($expander in $expanders) {
+            try {
+                $state = $expander.Current.ExpandCollapseState
+                if ($state -ne [System.Windows.Automation.ExpandCollapseState]::Expanded) {
+                    Write-Output "An equalizer expander is $state; expanding it again."
+                    $expander.Expand()
+                    Start-Sleep -Seconds 1
+                }
+            }
+            catch { Write-Output "An equalizer expander could not be read or expanded: $($_.Exception.Message)" }
+        }
         $sliders = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider)))
         $band = $sliders | Where-Object { $_.Current.Name -eq '1 kHz' } | Select-Object -First 1
-        if (-not $band) {
-            foreach ($expander in $expanders) {
-                try {
-                    $state = $expander.Current.ExpandCollapseState
-                    if ($state -ne [System.Windows.Automation.ExpandCollapseState]::Expanded) {
-                        Write-Output "An equalizer expander is $state; expanding it again."
-                        $expander.Expand()
-                    }
-                }
-                catch { Write-Output "An equalizer expander could not be expanded: $($_.Exception.Message)" }
-            }
+        $where = if ($percent -lt 0) { 'where the page was' } else { "with the page scrolled to $percent%" }
+        if ($band) {
+            Write-Output "The equalizer's sliders are there $where."
+            break
         }
-    } while (-not $band -and (Get-Date) -lt $until)
+        Write-Output "No equalizer sliders $where ($($sliders.Count) sliders)."
+    }
     if ($band -and $band.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref] $scroll)) { $scroll.ScrollIntoView(); Start-Sleep -Seconds 1 }
     Save-Screenshot 'settings-equalizer'
     foreach ($slider in $sliders) {
