@@ -959,14 +959,33 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
             {
                 LogSyncFailed(ex);
             }
+            catch (Exception ex) when (Unexpected(ex))
+            {
+                // Logged by the filter. Left uncaught, it would end this loop with _running still set, and no
+                // sync would start again until the app restarts (#433).
+            }
             finally
             {
                 _current.Clear();
                 _syncing = false;
             }
 
-            Publish(_client.Connection?.UserDataKey, _stopped);
+            try
+            {
+                Publish(_client.Connection?.UserDataKey, _stopped);
+            }
+            catch (Exception ex) when (Unexpected(ex))
+            {
+                // A subscriber of the status failed: the loop goes on all the same (#433).
+            }
         }
+    }
+
+    /// <summary>Logs an error a sync was not prepared for; always <see langword="true"/>, for an exception filter.</summary>
+    private bool Unexpected(Exception exception)
+    {
+        LogSyncFailedUnexpectedly(exception);
+        return true;
     }
 
     /// <summary>Cancels the sync that runs and those asked for, and waits until it has stopped.</summary>
@@ -1914,6 +1933,9 @@ public sealed partial class DownloadManager : IOfflineLibrary, IDownloadChoices,
 
     [LoggerMessage(Level = LogLevel.Information, Message = "The {Kind} {Name} chosen to download is no longer on the server")]
     private partial void LogChosenGone(DownloadItemKind kind, string name);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "A download sync failed unexpectedly; the next one runs as usual")]
+    private partial void LogSyncFailedUnexpectedly(Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "A download sync failed")]
     private partial void LogSyncFailed(Exception exception);

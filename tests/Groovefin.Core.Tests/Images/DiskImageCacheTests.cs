@@ -222,6 +222,48 @@ public sealed class DiskImageCacheTests : IDisposable
         (await CreateSut().GetSizeAsync(Ct)).Should().Be(0);
     }
 
+    [Fact]
+    public async Task The_cache_folder_is_not_scanned_after_every_download()
+    {
+        _maxBytes = 250;
+        var sut = CreateSut();
+        var first = await sut.GetAsync(Request("a"), Ct);
+
+        // A file the cache did not make shows whether a download looks through the folder: it is the oldest.
+        var stranger = Path.Join(Path.GetDirectoryName(first)!, "stranger.img");
+        await File.WriteAllBytesAsync(stranger, Bytes(1000), Ct);
+        File.SetLastWriteTimeUtc(stranger, _time.GetUtcNow().UtcDateTime.AddDays(-1));
+        _time.Advance(TimeSpan.FromMinutes(5));
+        await sut.GetAsync(Request("b"), Ct);
+
+        File.Exists(stranger).Should().BeTrue("200 bytes of downloads are within the limit, so nothing was scanned");
+
+        // The third download passes the limit: now the folder is scanned, and the oldest files go.
+        _time.Advance(TimeSpan.FromMinutes(5));
+        await sut.GetAsync(Request("c"), Ct);
+
+        File.Exists(stranger).Should().BeFalse();
+        (await sut.GetSizeAsync(Ct)).Should().BeLessThanOrEqualTo(250);
+    }
+
+    [Fact]
+    public async Task Temporary_files_of_downloads_that_never_ended_are_deleted()
+    {
+        var folder = Path.Join(_directory, "ab");
+        Directory.CreateDirectory(folder);
+        var stale = Path.Join(folder, "old.img.1234.tmp");
+        var running = Path.Join(folder, "new.img.5678.tmp");
+        await File.WriteAllBytesAsync(stale, Bytes(10), Ct);
+        await File.WriteAllBytesAsync(running, Bytes(10), Ct);
+        File.SetLastWriteTimeUtc(stale, _time.GetUtcNow().UtcDateTime.AddHours(-2));
+        File.SetLastWriteTimeUtc(running, _time.GetUtcNow().UtcDateTime);
+
+        await CreateSut().GetAsync(Request("a"), Ct);
+
+        File.Exists(stale).Should().BeFalse();
+        File.Exists(running).Should().BeTrue();
+    }
+
     /// <summary>Makes every download wait for the returned source; tells how many ran at once.</summary>
     private (TaskCompletionSource Release, Func<int> Running, Func<int> Most) SlowSource()
     {

@@ -6,9 +6,15 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Groovefin.App.Services;
 
-/// <summary><see cref="IDialogService"/> using <see cref="ContentDialog"/> in the main window.</summary>
+/// <summary>
+/// <see cref="IDialogService"/> using <see cref="ContentDialog"/> in the main window. WinUI shows one
+/// <see cref="ContentDialog"/> at a time and throws for a second, so every dialog of the app opens through
+/// <see cref="ShowAsync"/>, one after another (#434).
+/// </summary>
 internal sealed class ContentDialogService : IDialogService
 {
+    // Held while a dialog is open. Taken and released on the UI thread.
+    private readonly SemaphoreSlim _open = new(1, 1);
     private XamlRoot? _root;
 
     /// <summary>Sets the XAML root that dialogs are shown in. Called by the main window once loaded.</summary>
@@ -18,7 +24,7 @@ internal sealed class ContentDialogService : IDialogService
     {
         var dialog = Create(title, primaryButtonText, closeButtonText);
         dialog.Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap };
-        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+        return await ShowAsync(dialog) == ContentDialogResult.Primary;
     }
 
     public async Task<DialogChoice> ChooseAsync(string title, string message, string primaryButtonText, string secondaryButtonText, string closeButtonText)
@@ -26,7 +32,7 @@ internal sealed class ContentDialogService : IDialogService
         var dialog = Create(title, primaryButtonText, closeButtonText);
         dialog.SecondaryButtonText = secondaryButtonText;
         dialog.Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap };
-        return await dialog.ShowAsync() switch
+        return await ShowAsync(dialog) switch
         {
             ContentDialogResult.Primary => DialogChoice.Primary,
             ContentDialogResult.Secondary => DialogChoice.Secondary,
@@ -40,7 +46,7 @@ internal sealed class ContentDialogService : IDialogService
         box.SelectAll();
         var dialog = Create(title, primaryButtonText, closeButtonText);
         dialog.Content = box;
-        return await dialog.ShowAsync() == ContentDialogResult.Primary ? box.Text : null;
+        return await ShowAsync(dialog) == ContentDialogResult.Primary ? box.Text : null;
     }
 
     public async Task ShowDetailsAsync(string title, IReadOnlyList<DetailSection> sections, string closeButtonText)
@@ -65,7 +71,25 @@ internal sealed class ContentDialogService : IDialogService
         dialog.DefaultButton = ContentDialogButton.Close;
         // Long lists scroll; the scroll bar's own column keeps it off the values.
         dialog.Content = new ScrollViewer { Content = panel, Padding = new Thickness(0, 0, 16, 0) };
-        await dialog.ShowAsync();
+        await ShowAsync(dialog);
+    }
+
+    /// <summary>
+    /// Shows <paramref name="dialog"/> once no other dialog is open (#434): one asked for meanwhile, by a
+    /// shortcut or by something in the background, waits its turn. Call it on the UI thread.
+    /// </summary>
+    internal async Task<ContentDialogResult> ShowAsync(ContentDialog dialog)
+    {
+        ArgumentNullException.ThrowIfNull(dialog);
+        await _open.WaitAsync();
+        try
+        {
+            return await dialog.ShowAsync();
+        }
+        finally
+        {
+            _open.Release();
+        }
     }
 
     /// <summary>Label/value rows; values can be selected and copied, and Narrator reads each with its label.</summary>

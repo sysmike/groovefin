@@ -666,6 +666,34 @@ public sealed class DownloadManagerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_sync_that_fails_unexpectedly_does_not_stop_the_next_one()
+    {
+        _library.GetFavouriteTracksAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns<IReadOnlyList<Track>>(_ => throw new InvalidOperationException("Not prepared for this."));
+        await _sut.Awaiting(s => s.SyncAsync()).Should().NotThrowAsync();
+        Favourites("a", "b");
+
+        await _sut.SyncAsync();
+
+        Files().Should().Equal("a.flac", "b.flac", "c.flac");
+        _sut.Status.IsSyncing.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_status_subscriber_that_fails_does_not_stop_the_syncs()
+    {
+        void Fail(object? sender, EventArgs e) => throw new InvalidOperationException("A broken subscriber.");
+        _sut.StatusChanged += Fail;
+        await _sut.Awaiting(s => s.SyncAsync()).Should().NotThrowAsync();
+        _sut.StatusChanged -= Fail;
+        Favourites("a", "b", "d");
+
+        await _sut.SyncAsync();
+
+        Files().Should().Contain("d.flac");
+    }
+
+    [Fact]
     public async Task Every_song_of_the_favourite_albums_and_artists_is_downloaded()
     {
         _settings.Update(s => s with { Downloads = new DownloadSettings { FavouriteAlbums = true, FavouriteArtists = true } });

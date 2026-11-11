@@ -42,6 +42,9 @@ public partial class App : Application
     private ILogger<App>? _logger;
     private bool _windowShown;
 
+    // Done when the start-up steps after the shown window have run, failed or not (#436).
+    private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public App()
     {
         // Before anything can fail: until the logger exists, StartupCrashLog records what goes wrong,
@@ -138,47 +141,97 @@ public partial class App : Application
             LogStartedWithWindows(logger, minimized);
         }
 
-        // Lives as long as the app: tells the server what is playing (play counts, recently played).
-        _host.Services.GetRequiredService<PlaybackReporting>();
-
-        // Lives as long as the app: records the plays behind "On repeat" (#251).
-        _host.Services.GetRequiredService<PlayHistory>();
-
-        // Lives as long as the app: media keys and the Windows media flyout.
-        _host.Services.GetRequiredService<SystemMediaControlsSync>();
-
-        // Lives as long as the app: keeps the collections that are on in Settings → Downloads on disk (#327).
-        _host.Services.GetRequiredService<DownloadManager>();
-
-        // Lives as long as the app: the taskbar thumbnail buttons and progress (needs the shown window).
-        _host.Services.GetRequiredService<TaskbarSync>();
-
-        // Lives as long as the app: the Discord status (when turned on).
-        _host.Services.GetRequiredService<DiscordPresence>();
-
-        // Lives as long as the app: the equalizer settings reach the audio effect.
-        _host.Services.GetRequiredService<EqualizerSync>();
-
-        // Lives as long as the app: the music plays on the chosen output device (#389).
-        _host.Services.GetRequiredService<AudioOutputSync>();
-
-        // The window has restored the server connection: bring back the last queue (paused) and keep saving it.
-        await _host.Services.GetRequiredService<SessionPersistence>().RestoreAsync();
-
-        // Lives as long as the app: the jump list's tasks and favourite playlists (#406).
-        _host.Services.GetRequiredService<JumpListSync>();
-
-        // A jump list entry that started the app runs once the session is back: Play/Pause plays the restored
-        // queue. Later starts come here instead of opening a second app.
-        var command = JumpListCommand.Parse(arguments) ?? JumpListCommand.Parse(Environment.CommandLine);
-        if (command is not null)
-        {
-            await RunJumpListCommandAsync(command);
-        }
-
+        // Right after the window is shown (#436): whatever fails below, a second start still reaches this app
+        // and brings its window back, also from the notification area. Its command waits for the steps below.
         Program.OnRedirected(activation => window.DispatcherQueue.TryEnqueue(() => OnStartedAgain(window, Program.ArgumentsOf(activation))));
 
+        var services = _host.Services;
+        try
+        {
+            // Each step on its own (#436): one that fails is reported, and the others still run.
+
+            // Lives as long as the app: tells the server what is playing (play counts, recently played).
+            StartupStep("playback reporting", () => services.GetRequiredService<PlaybackReporting>());
+
+            // Lives as long as the app: records the plays behind "On repeat" (#251).
+            StartupStep("play history", () => services.GetRequiredService<PlayHistory>());
+
+            // Lives as long as the app: media keys and the Windows media flyout.
+            StartupStep("media controls", () => services.GetRequiredService<SystemMediaControlsSync>());
+
+            // Lives as long as the app: keeps the collections that are on in Settings → Downloads on disk (#327).
+            StartupStep("downloads", () => services.GetRequiredService<DownloadManager>());
+
+            // Lives as long as the app: the taskbar thumbnail buttons and progress (needs the shown window).
+            StartupStep("taskbar", () => services.GetRequiredService<TaskbarSync>());
+
+            // Lives as long as the app: the Discord status (when turned on).
+            StartupStep("Discord status", () => services.GetRequiredService<DiscordPresence>());
+
+            // Lives as long as the app: the equalizer settings reach the audio effect.
+            StartupStep("equalizer", () => services.GetRequiredService<EqualizerSync>());
+
+            // Lives as long as the app: the music plays on the chosen output device (#389).
+            StartupStep("audio output", () => services.GetRequiredService<AudioOutputSync>());
+
+            // The window has restored the server connection: bring back the last queue (paused) and keep saving it.
+            await StartupStepAsync("session restore", () => services.GetRequiredService<SessionPersistence>().RestoreAsync());
+
+            // Lives as long as the app: the jump list's tasks and favourite playlists (#406).
+            StartupStep("jump list", () => services.GetRequiredService<JumpListSync>());
+
+            // A jump list entry that started the app runs once the session is back: Play/Pause plays the restored
+            // queue. Later starts come to OnStartedAgain instead of opening a second app.
+            var command = JumpListCommand.Parse(arguments) ?? JumpListCommand.Parse(Environment.CommandLine);
+            if (command is not null)
+            {
+                await StartupStepAsync("jump list command", () => RunJumpListCommandAsync(command));
+            }
+        }
+        finally
+        {
+            _started.TrySetResult();
+        }
+
         LogStartupMeasured(_logger);
+    }
+
+    /// <summary>Runs one step of the start-up after the window is shown; a failure is reported and the start goes on (#436).</summary>
+    private void StartupStep(string name, Action step)
+    {
+        try
+        {
+            step();
+        }
+        catch (Exception ex) when (StartupStepFailed(name, ex))
+        {
+            // Reported by the filter.
+        }
+    }
+
+    /// <summary><see cref="StartupStep"/> for a step that awaits.</summary>
+    private async Task StartupStepAsync(string name, Func<Task> step)
+    {
+        try
+        {
+            await step();
+        }
+        catch (Exception ex) when (StartupStepFailed(name, ex))
+        {
+            // Reported by the filter.
+        }
+    }
+
+    /// <summary>Logs a failed start-up step and tells the user; always <see langword="true"/>, for an exception filter.</summary>
+    private bool StartupStepFailed(string name, Exception exception)
+    {
+        if (_logger is not null)
+        {
+            LogStartupStepFailed(_logger, exception, name);
+        }
+
+        TryGetErrorReporter()?.Report(exception, Operations.Unexpected);
+        return true;
     }
 
     /// <summary>Start-up time (process start to a shown window with the session restored) and memory, see docs/performance.md.</summary>
@@ -207,6 +260,8 @@ public partial class App : Application
             return;
         }
 
+        // A start that arrived during start-up: its command runs once the session is back.
+        await _started.Task;
         await RunJumpListCommandAsync(command);
     }
 
@@ -443,6 +498,9 @@ public partial class App : Application
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Start-up took {ElapsedMs} ms; working set {WorkingSetMb} MB, managed heap {ManagedMb} MB")]
     private static partial void LogStartup(ILogger logger, long elapsedMs, long workingSetMb, long managedMb);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The start-up step '{Step}' failed; the start goes on without it")]
+    private static partial void LogStartupStepFailed(ILogger logger, Exception exception, string step);
 
     [LoggerMessage(Level = LogLevel.Critical, Message = "Start-up failed before the window was shown; exiting")]
     private static partial void LogStartupFailed(ILogger logger, Exception exception);
