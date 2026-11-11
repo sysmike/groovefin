@@ -21,6 +21,9 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
     /// <summary>The format choices: the original, then AAC from high to low.</summary>
     private static readonly int?[] Formats = [null, 320, 256, 192, 128];
 
+    /// <summary>The choices of <see cref="DownloadSettings.FullReadHours"/>: every sync, then less and less often.</summary>
+    private static readonly int[] FullReads = [0, 2, 6, 12, 24];
+
     private readonly DownloadManager _downloads;
     private readonly ISettingsService _settings;
     private readonly INetworkStatus _network;
@@ -55,6 +58,16 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
             .. Formats.Select(kbps => kbps is { } value
                 ? strings.GetString("Downloads_FormatAac").Replace("{0}", value.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)
                 : strings.GetString("Downloads_FormatOriginal")),
+        ];
+
+        FullReadOptions =
+        [
+            .. FullReads.Select(hours => hours switch
+            {
+                0 => strings.GetString("Downloads_FullReadAlways"),
+                24 => strings.GetString("Downloads_FullReadDaily"),
+                _ => strings.GetString("Downloads_FullReadHours").Replace("{0}", hours.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal),
+            }),
         ];
 
         _downloads.StatusChanged += OnStatusChanged;
@@ -100,6 +113,29 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
                 Change(true, d => Formats[value] is { } kbps
                     ? d with { Format = DownloadFormatKind.Aac, AacBitrateKbps = kbps }
                     : d with { Format = DownloadFormatKind.Original });
+            }
+        }
+    }
+
+    public IReadOnlyList<string> FullReadOptions { get; }
+
+    /// <summary>
+    /// Gets or sets how often everything is read from the server again (#431), as an index into
+    /// <see cref="FullReadOptions"/>. Hours from a settings file that are no choice show as the next longer one.
+    /// </summary>
+    public int FullReadIndex
+    {
+        get
+        {
+            var index = Array.FindIndex(FullReads, hours => hours >= Current.FullReadHours);
+            return index >= 0 ? index : FullReads.Length - 1;
+        }
+
+        set
+        {
+            if (value >= 0 && value < FullReads.Length && value != FullReadIndex)
+            {
+                Change(true, d => d with { FullReadHours = FullReads[value] });
             }
         }
     }
@@ -381,6 +417,7 @@ public sealed partial class DownloadsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(FavouriteArtists));
         OnPropertyChanged(nameof(Playlists));
         OnPropertyChanged(nameof(FormatIndex));
+        OnPropertyChanged(nameof(FullReadIndex));
         OnPropertyChanged(nameof(AllowMetered));
         OnPropertyChanged(nameof(WorkOffline));
         OnPropertyChanged(nameof(FolderText));

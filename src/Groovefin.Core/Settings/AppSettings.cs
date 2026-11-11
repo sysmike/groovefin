@@ -357,6 +357,16 @@ public sealed record DownloadSettings
     /// <summary>Gets or sets a value indicating whether songs download on a metered connection too.</summary>
     public bool AllowMetered { get; set; }
 
+    /// <summary>The default of <see cref="FullReadHours"/>.</summary>
+    public const int DefaultFullReadHours = 6;
+
+    /// <summary>
+    /// Gets or sets how many hours pass before the sync of the timer asks the server again for the songs of every
+    /// downloaded playlist, album and artist (#431). In between it asks only for those that look changed or are
+    /// not all downloaded. 0 asks every time, every 30 minutes.
+    /// </summary>
+    public int FullReadHours { get; set; } = DefaultFullReadHours;
+
     /// <summary>
     /// Gets or sets a value indicating whether Groovefin works offline although the server can be reached (#400):
     /// the pages show the downloads, only downloaded songs play and nothing downloads (<c>OfflineSwitch</c>).

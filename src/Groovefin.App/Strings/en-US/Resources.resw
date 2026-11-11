@@ -2400,6 +2400,16 @@
   <data name="Downloads_FormatOriginal" xml:space="preserve">
     <value>Original</value>
   </data>
+  <data name="Downloads_FullReadAlways" xml:space="preserve">
+    <value>Every 30 minutes</value>
+  </data>
+  <data name="Downloads_FullReadHours" xml:space="preserve">
+    <value>Every {0} hours</value>
+    <comment>{0} = hours, more than one</comment>
+  </data>
+  <data name="Downloads_FullReadDaily" xml:space="preserve">
+    <value>Once a day</value>
+  </data>
   <data name="Downloads_FormatAac" xml:space="preserve">
     <value>AAC {0} kbps</value>
     <comment>{0} = bitrate</comment>
@@ -2501,6 +2511,12 @@
   </data>
   <data name="SettingsDownloadFormatCard.Description" xml:space="preserve">
     <value>Original keeps the files as they are on the server. AAC takes less space. A change downloads the songs again.</value>
+  </data>
+  <data name="SettingsDownloadFullReadCard.Header" xml:space="preserve">
+    <value>Check everything on the server</value>
+  </data>
+  <data name="SettingsDownloadFullReadCard.Description" xml:space="preserve">
+    <value>How often Groovefin reads the songs of every downloaded playlist, album and artist from the server again. In between, it asks only for those that look changed. A change you make here, and Sync now, always read everything.</value>
   </data>
   <data name="SettingsDownloadMeteredCard.Header" xml:space="preserve">
     <value>Download on metered connections</value>

@@ -67,6 +67,25 @@ public sealed class DownloadsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task How_often_everything_is_read_again_can_be_chosen()
+    {
+        _sut.FullReadOptions.Should().HaveCount(5);
+        _sut.FullReadIndex.Should().Be(2, "6 hours is the default");
+
+        _sut.FullReadIndex = 4;
+        await WaitUntilAsync(() => _settings.Current.Downloads.FullReadHours == 24);
+
+        _settings.Current.Downloads.FullReadHours.Should().Be(24);
+        _sut.FullReadIndex.Should().Be(4);
+
+        // Hours typed into the settings file show as the next longer choice.
+        _settings.Update(s => s with { Downloads = s.Downloads with { FullReadHours = 8 } });
+        _sut.FullReadIndex.Should().Be(3);
+        _settings.Update(s => s with { Downloads = s.Downloads with { FullReadHours = 100 } });
+        _sut.FullReadIndex.Should().Be(4);
+    }
+
+    [Fact]
     public async Task The_switches_and_the_format_change_the_settings()
     {
         _sut.FavouriteSongs = true;

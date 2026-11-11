@@ -665,6 +665,129 @@ public sealed class DownloadManagerTests : IDisposable
         _sut.FileOf("a").Should().NotBeNull();
     }
 
+    /// <summary>A playlist and a favourite album as the server lists them, with what tells a change: count and length.</summary>
+    private void Collections(string[] playlistSongs, string[] albumSongs)
+    {
+        _settings.Update(s => s with { Downloads = s.Downloads with { FavouriteSongs = false, Playlists = true, FavouriteAlbums = true } });
+        _playlists.GetPlaylistsAsync(Arg.Any<CancellationToken>())
+            .Returns([new Playlist { Id = PlaylistId, Name = "Road trip", TrackCount = playlistSongs.Length, Duration = TimeSpan.FromMinutes(3 * playlistSongs.Length) }]);
+        _playlists.GetEntriesAsync(PlaylistId, Arg.Any<CancellationToken>()).Returns([.. playlistSongs.Select(id => new PlaylistEntry($"e-{id}", Song(id)))]);
+        _library.GetAlbumsAsync(Arg.Is<AlbumQuery>(q => q.FavouritesOnly), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<Album>([new Album { Id = "al1", Name = "Discovery", Duration = TimeSpan.FromMinutes(4 * albumSongs.Length) }], 1, 0));
+        _library.GetAlbumTracksAsync("al1", Arg.Any<CancellationToken>()).Returns([.. albumSongs.Select(Song)]);
+    }
+
+    /// <summary>
+    /// A first sync that reads everything, and the server calls counted from then on. The settings change of
+    /// <see cref="Collections"/> asks for a sync of its own, which is over when this returns.
+    /// </summary>
+    private async Task FirstSyncAsync()
+    {
+        _time.Advance(DownloadManager.ChangeDelay);
+        await _sut.SyncAsync();
+        _playlists.ClearReceivedCalls();
+        _library.ClearReceivedCalls();
+    }
+
+    private int EntriesRead => _playlists.ReceivedCalls().Count(c => c.GetMethodInfo().Name == nameof(IPlaylistService.GetEntriesAsync));
+
+    private int AlbumSongsRead => _library.ReceivedCalls().Count(c => c.GetMethodInfo().Name == nameof(ILibraryService.GetAlbumTracksAsync));
+
+    [Fact]
+    public async Task A_sync_of_the_timer_does_not_ask_for_the_songs_of_what_is_downloaded_and_unchanged()
+    {
+        Collections(["b", "c"], ["d1", "d2"]);
+        await FirstSyncAsync();
+
+        await _sut.SyncOnTimerAsync();
+
+        (EntriesRead, AlbumSongsRead).Should().Be((0, 0), "only the first sync read them");
+        await _playlists.Received(1).GetPlaylistsAsync(Arg.Any<CancellationToken>());
+        Files().Should().Equal("b.flac", "c.flac", "d1.flac", "d2.flac");
+        var index = await _store.LoadAsync(_client.Connection!.UserDataKey, Ct);
+        index.Playlists.Should().ContainSingle().Which.TrackIds.Should().Equal("b", "c");
+        index.Albums.Should().ContainSingle().Which.TrackIds.Should().Equal("d1", "d2");
+        _sut.Status.Should().BeEquivalentTo(new { Wanted = 4, Downloaded = 4 });
+    }
+
+    [Fact]
+    public async Task A_sync_of_the_timer_reads_what_changed_on_the_server()
+    {
+        Collections(["b", "c"], ["d1", "d2"]);
+        await FirstSyncAsync();
+        Collections(["b", "c", "e"], ["d1"]);
+
+        await _sut.SyncOnTimerAsync();
+
+        (EntriesRead, AlbumSongsRead).Should().Be((1, 1));
+        Files().Should().Equal("b.flac", "c.flac", "d1.flac", "e.flac");
+    }
+
+    [Fact]
+    public async Task A_sync_of_the_timer_reads_what_is_not_all_downloaded()
+    {
+        Collections(["b", "c"], ["d1", "d2"]);
+        _source.Failures["c"] = new JellyfinException("Gone.", HttpStatusCode.NotFound);
+        await FirstSyncAsync();
+        _source.Failures.Clear();
+
+        await _sut.SyncOnTimerAsync();
+
+        (EntriesRead, AlbumSongsRead).Should().Be((1, 0), "the playlist misses a song, the album is complete");
+        Files().Should().Equal("b.flac", "c.flac", "d1.flac", "d2.flac");
+    }
+
+    [Fact]
+    public async Task A_sync_of_the_timer_reads_everything_again_after_a_while()
+    {
+        Collections(["b", "c"], ["d1", "d2"]);
+        await FirstSyncAsync();
+        _time.Advance(TimeSpan.FromHours(DownloadSettings.DefaultFullReadHours));
+
+        await _sut.SyncOnTimerAsync();
+        await _sut.SyncOnTimerAsync();
+
+        (EntriesRead, AlbumSongsRead).Should().Be((1, 1), "one sync of the timer read everything, those after it nothing");
+    }
+
+    [Theory]
+    [InlineData(0, 0, 1)]
+    [InlineData(2, 1, 0)]
+    [InlineData(2, 2, 1)]
+    [InlineData(24, 23, 0)]
+    public async Task How_often_everything_is_read_again_is_a_setting(int setting, int hoursLater, int reads)
+    {
+        Collections(["b", "c"], ["d1", "d2"]);
+        _settings.Update(s => s with { Downloads = s.Downloads with { FullReadHours = setting } });
+        await FirstSyncAsync();
+        _time.Advance(TimeSpan.FromHours(hoursLater));
+
+        await _sut.SyncOnTimerAsync();
+        await _sut.SyncOnTimerAsync();
+
+        // With 0 every sync reads everything: both of these, and those the timer started meanwhile.
+        if (setting == 0)
+        {
+            EntriesRead.Should().BeGreaterThanOrEqualTo(2);
+        }
+        else
+        {
+            (EntriesRead, AlbumSongsRead).Should().Be((reads, reads));
+        }
+    }
+
+    [Fact]
+    public async Task A_sync_for_a_change_reads_everything()
+    {
+        Collections(["b", "c"], ["d1", "d2"]);
+        await FirstSyncAsync();
+
+        await _sut.SyncAsync();
+        await _sut.SyncNowAsync();
+
+        (EntriesRead, AlbumSongsRead).Should().Be((2, 2));
+    }
+
     [Fact]
     public async Task A_sync_that_fails_unexpectedly_does_not_stop_the_next_one()
     {

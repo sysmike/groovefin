@@ -2381,6 +2381,16 @@
   <data name="Downloads_FormatOriginal" xml:space="preserve">
     <value>Original</value>
   </data>
+  <data name="Downloads_FullReadAlways" xml:space="preserve">
+    <value>Alle 30 Minuten</value>
+  </data>
+  <data name="Downloads_FullReadHours" xml:space="preserve">
+    <value>Alle {0} Stunden</value>
+    <comment>{0} = hours, more than one</comment>
+  </data>
+  <data name="Downloads_FullReadDaily" xml:space="preserve">
+    <value>Einmal täglich</value>
+  </data>
   <data name="Downloads_FormatAac" xml:space="preserve">
     <value>AAC {0} kbit/s</value>
     <comment>{0} = bitrate</comment>
@@ -2482,6 +2492,12 @@
   </data>
   <data name="SettingsDownloadFormatCard.Description" xml:space="preserve">
     <value>Original behält die Dateien so, wie sie auf dem Server liegen. AAC braucht weniger Platz. Eine Änderung lädt die Titel neu herunter.</value>
+  </data>
+  <data name="SettingsDownloadFullReadCard.Header" xml:space="preserve">
+    <value>Alles auf dem Server prüfen</value>
+  </data>
+  <data name="SettingsDownloadFullReadCard.Description" xml:space="preserve">
+    <value>Wie oft Groovefin die Titel aller heruntergeladenen Playlists, Alben und Interpreten erneut vom Server liest. Dazwischen fragt es nur die ab, die geändert aussehen. Eigene Änderungen hier und „Jetzt synchronisieren“ lesen immer alles.</value>
   </data>
   <data name="SettingsDownloadMeteredCard.Header" xml:space="preserve">
     <value>Über getaktete Verbindungen herunterladen</value>

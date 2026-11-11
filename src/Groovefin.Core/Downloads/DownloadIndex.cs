@@ -96,6 +96,12 @@ public sealed record DownloadIndex
     public DateTimeOffset? LastSync { get; set; }
 
     /// <summary>
+    /// Gets or sets when a sync last asked the server for the songs of every playlist, album and artist (#431).
+    /// The syncs of the timer in between keep the songs of those that are downloaded and look unchanged.
+    /// </summary>
+    public DateTimeOffset? LastFullRead { get; set; }
+
+    /// <summary>
     /// Gets or sets whether the FLAC files downloaded before #365 had their audio moved to the front
     /// (<see cref="FlacMetadata"/>). A download from then on gets it right away.
     /// </summary>
