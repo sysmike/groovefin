@@ -181,6 +181,12 @@ reference in `Directory.Packages.props`, tag prefix `v`).
   | `1.2.0` | `1.2.0.65535` (above all of its pre-releases) |
 
   The number and the commit count are capped at 99 each. The bundle gets the version of its packages.
+
+  A package for the Microsoft Store is built with `-p:GroovefinStore=true` and gets `1.2.0.0` (#67): the
+  Store keeps the fourth part for itself. That build fails for a pre-release, whose version would be the
+  same as its final release's; Store users get final releases only. The Store signs the package as its
+  own publisher, so Windows takes it for another app than the one from GitHub: the two never upgrade
+  each other, and their versions need not line up.
 - MinVer needs the full history. Every CI checkout uses `fetch-depth: 0`. In a shallow clone the
   version falls back to `0.0.0-alpha.0`.
 
