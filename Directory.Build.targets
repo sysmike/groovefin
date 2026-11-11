@@ -9,8 +9,16 @@
       1.2.0            ->  1.2.0.65535    the final release sorts above all of its pre-releases
 
     The number and the commit count are capped at 99 each. Any other pre-release name counts from 0.
+
+    A package for the Microsoft Store (-p:GroovefinStore=true, #67) is 1.2.0.0: the Store keeps the fourth part
+    for itself. Only a final release can be one, as its pre-releases would get the same version. The Store signs
+    the package as its own publisher, so Windows takes it for another app than the one from GitHub, and the two
+    kinds of version never meet.
   -->
   <Target Name="GroovefinComputeAppxPackageVersion">
+    <Error
+      Condition="'$(GroovefinStore)' == 'true' and '$(MinVerPreRelease)' != ''"
+      Text="A package for the Microsoft Store (GroovefinStore=true) must be a final release: $(MinVerMajor).$(MinVerMinor).$(MinVerPatch)-$(MinVerPreRelease) is a pre-release, and the Store's version has no part for it. Build from a tag like v$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)." />
     <PropertyGroup>
       <_GroovefinPreName>$([System.Text.RegularExpressions.Regex]::Replace('$(MinVerPreRelease)', '^([A-Za-z]*).*$', '$1').ToLowerInvariant())</_GroovefinPreName>
       <_GroovefinPreNumber>$([System.Text.RegularExpressions.Regex]::Replace('$(MinVerPreRelease)', '^[A-Za-z]*\.?(\d*).*$', '$1'))</_GroovefinPreNumber>
@@ -25,6 +33,7 @@
       <_GroovefinPreBase Condition="'$(_GroovefinPreName)' == 'rc'">30000</_GroovefinPreBase>
       <_GroovefinAppxRevision>$([MSBuild]::Add($(_GroovefinPreBase), $([MSBuild]::Add($([MSBuild]::Multiply($(_GroovefinPreNumber), 100)), $(_GroovefinPreHeight)))))</_GroovefinAppxRevision>
       <_GroovefinAppxRevision Condition="'$(MinVerPreRelease)' == ''">65535</_GroovefinAppxRevision>
+      <_GroovefinAppxRevision Condition="'$(GroovefinStore)' == 'true'">0</_GroovefinAppxRevision>
       <GroovefinAppxPackageVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).$(_GroovefinAppxRevision)</GroovefinAppxPackageVersion>
     </PropertyGroup>
   </Target>
