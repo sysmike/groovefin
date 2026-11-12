@@ -30,6 +30,16 @@
             <Setter Property="Padding" Value="0" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
+        <!--  A plain button among the toggles on the right (the sleep timer): filled like them, not transparent.  -->
+        <Style
+            x:Key="NowPlayingPanelButtonStyle"
+            BasedOn="{StaticResource DefaultButtonStyle}"
+            TargetType="Button">
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
     </UserControl.Resources>
 
     <!--  A landmark (#51): Narrator can jump to the player. The x:Uid names it.  -->
@@ -246,7 +256,7 @@
             <Button
                 AutomationProperties.AutomationId="NowPlayingSleepTimerButton"
                 AutomationProperties.Name="{x:Bind SleepTimer.Description, Mode=OneWay}"
-                Style="{StaticResource NowPlayingButtonStyle}"
+                Style="{StaticResource NowPlayingPanelButtonStyle}"
                 ToolTipService.ToolTip="{x:Bind SleepTimer.Description, Mode=OneWay}">
                 <Grid>
                     <FontIcon
