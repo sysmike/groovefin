@@ -1855,44 +1855,23 @@
   <data name="SettingsThemeCard.Header" xml:space="preserve">
     <value>App theme</value>
   </data>
-  <data name="SettingsThemeCard.Description" xml:space="preserve">
-    <value>Light or dark, or the same as Windows.</value>
-  </data>
   <data name="SettingsTaskbarProgressCard.Header" xml:space="preserve">
     <value>Playback progress in the taskbar</value>
-  </data>
-  <data name="SettingsTaskbarProgressCard.Description" xml:space="preserve">
-    <value>The taskbar button fills up as the track plays.</value>
   </data>
   <data name="SettingsTrayCard.Header" xml:space="preserve">
     <value>Icon in the notification area</value>
   </data>
-  <data name="SettingsTrayCard.Description" xml:space="preserve">
-    <value>With playback controls in its menu.</value>
-  </data>
   <data name="SettingsMinimizeToTrayCard.Header" xml:space="preserve">
     <value>Minimize to the notification area</value>
-  </data>
-  <data name="SettingsMinimizeToTrayCard.Description" xml:space="preserve">
-    <value>Minimizing hides the window. The icon brings it back.</value>
   </data>
   <data name="SettingsServersCard.Header" xml:space="preserve">
     <value>Servers</value>
   </data>
-  <data name="SettingsServersCard.Description" xml:space="preserve">
-    <value>Add, switch or remove Jellyfin servers.</value>
-  </data>
   <data name="SettingsLibraryCard.Header" xml:space="preserve">
     <value>Music library</value>
   </data>
-  <data name="SettingsLibraryCard.Description" xml:space="preserve">
-    <value>The library Groovefin shows from this server.</value>
-  </data>
   <data name="SettingsStreamingCard.Header" xml:space="preserve">
     <value>Stream quality</value>
-  </data>
-  <data name="SettingsStreamingCard.Description" xml:space="preserve">
-    <value>Groovefin plays the original files when it can. With a limit, the server converts tracks above it.</value>
   </data>
   <data name="SettingsLocalBitrateCard.Header" xml:space="preserve">
     <value>Quality on the home network</value>
@@ -1907,37 +1886,22 @@
     <value>Volume normalization</value>
   </data>
   <data name="SettingsNormalizationCard.Description" xml:space="preserve">
-    <value>Uses the loudness your Jellyfin server measured (enable the LUFS scan in the library settings). Loud tracks are turned down, never up, so nothing clips. Applies from the next track.</value>
+    <value>Needs the LUFS scan in your Jellyfin library settings.</value>
   </data>
   <data name="SettingsInstantMixCard.Header" xml:space="preserve">
     <value>Instant mix</value>
   </data>
-  <data name="SettingsInstantMixCard.Description" xml:space="preserve">
-    <value>What starting an instant mix does to the queue.</value>
-  </data>
   <data name="SettingsCrossfadeCard.Header" xml:space="preserve">
     <value>Crossfade</value>
-  </data>
-  <data name="SettingsCrossfadeCard.Description" xml:space="preserve">
-    <value>The end of a track fades into the next one. Tracks of the same album always follow without a gap.</value>
   </data>
   <data name="SettingsResumeCard.Header" xml:space="preserve">
     <value>Resume where I left off</value>
   </data>
-  <data name="SettingsResumeCard.Description" xml:space="preserve">
-    <value>Restore the queue and position on start, paused.</value>
-  </data>
   <data name="SettingsDiscordCard.Header" xml:space="preserve">
     <value>Show what I'm playing in Discord</value>
   </data>
-  <data name="SettingsDiscordCard.Description" xml:space="preserve">
-    <value>While Discord runs on this PC, your status shows the title, artist and progress. Groovefin talks only to the Discord app, not to the internet.</value>
-  </data>
   <data name="SettingsEqualizerCard.Header" xml:space="preserve">
     <value>Equalizer</value>
-  </data>
-  <data name="SettingsEqualizerCard.Description" xml:space="preserve">
-    <value>Shape the sound with ten bands from 31 Hz to 16 kHz. Changes are heard at once.</value>
   </data>
   <data name="SettingsEqualizerPresetCard.Header" xml:space="preserve">
     <value>Preset</value>
@@ -1945,26 +1909,17 @@
   <data name="SettingsEqualizerBandsCard.Header" xml:space="preserve">
     <value>Bands</value>
   </data>
-  <data name="SettingsEqualizerBandsCard.Description" xml:space="preserve">
-    <value>Moving a slider switches to the Custom preset.</value>
-  </data>
   <data name="EqualizerBandSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Gain in decibels</value>
   </data>
   <data name="SettingsEqualizerPreampCard.Header" xml:space="preserve">
     <value>Preamp</value>
   </data>
-  <data name="SettingsEqualizerPreampCard.Description" xml:space="preserve">
-    <value>Lower it if raised bands make the music distort.</value>
-  </data>
   <data name="SettingsEqualizerPreampSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Preamp, in decibels</value>
   </data>
   <data name="SettingsEqualizerResetCard.Header" xml:space="preserve">
     <value>Reset the equalizer</value>
-  </data>
-  <data name="SettingsEqualizerResetCard.Description" xml:space="preserve">
-    <value>Sets all bands and the preamp to 0 dB.</value>
   </data>
   <data name="SettingsEqualizerResetButton.Content" xml:space="preserve">
     <value>Reset</value>
@@ -1981,14 +1936,8 @@
   <data name="SettingsCacheLimitCard.Header" xml:space="preserve">
     <value>Maximum size</value>
   </data>
-  <data name="SettingsCacheLimitCard.Description" xml:space="preserve">
-    <value>Above it, the covers not used for the longest time are deleted.</value>
-  </data>
   <data name="SettingsLogsCard.Header" xml:space="preserve">
     <value>Log files</value>
-  </data>
-  <data name="SettingsLogsCard.Description" xml:space="preserve">
-    <value>Useful when you report a problem.</value>
   </data>
   <data name="SettingsOpenLogsButton.Content" xml:space="preserve">
     <value>Open folder</value>
@@ -1996,17 +1945,11 @@
   <data name="SettingsShortcutsCard.Header" xml:space="preserve">
     <value>Keyboard shortcuts</value>
   </data>
-  <data name="SettingsShortcutsCard.Description" xml:space="preserve">
-    <value>They work anywhere in the window, except while you type. Change any of them here.</value>
-  </data>
   <data name="SettingsAboutCard.Header" xml:space="preserve">
     <value>Groovefin</value>
   </data>
   <data name="SettingsCommitCard.Header" xml:space="preserve">
     <value>Commit</value>
-  </data>
-  <data name="SettingsCommitCard.Description" xml:space="preserve">
-    <value>The source code this version was built from.</value>
   </data>
   <data name="SettingsSourceCard.Header" xml:space="preserve">
     <value>Source code</value>
@@ -2029,9 +1972,6 @@
   <data name="SettingsThirdPartyCard.Header" xml:space="preserve">
     <value>Third-party software</value>
   </data>
-  <data name="SettingsThirdPartyCard.Description" xml:space="preserve">
-    <value>Groovefin uses these components. Their license texts are on the project pages.</value>
-  </data>
   <data name="SettingsThirdPartyList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Third-party software</value>
   </data>
@@ -2041,9 +1981,6 @@
   </data>
   <data name="SettingsUpdatesCard.Header" xml:space="preserve">
     <value>Check for updates</value>
-  </data>
-  <data name="SettingsUpdatesCard.Description" xml:space="preserve">
-    <value>Once a day, Groovefin asks GitHub whether a newer release is out and tells you when one is. Nothing about you or your music is sent; like any website, GitHub sees your IP address.</value>
   </data>
   <data name="SettingsUpdatesCheckButton.Content" xml:space="preserve">
     <value>Check now</value>
@@ -2095,9 +2032,6 @@
   <data name="SettingsAccentCard.Header" xml:space="preserve">
     <value>Accent colour</value>
   </data>
-  <data name="SettingsAccentCard.Description" xml:space="preserve">
-    <value>Highlights use your Windows accent colour. When off, they are neutral grey.</value>
-  </data>
   <data name="SettingsLanguageCard.Header" xml:space="preserve">
     <value>App language</value>
   </data>
@@ -2107,14 +2041,8 @@
   <data name="SettingsStartPageCard.Header" xml:space="preserve">
     <value>Start page</value>
   </data>
-  <data name="SettingsStartPageCard.Description" xml:space="preserve">
-    <value>The page Groovefin opens with.</value>
-  </data>
   <data name="SettingsNavigationCard.Header" xml:space="preserve">
     <value>Navigation pane</value>
-  </data>
-  <data name="SettingsNavigationCard.Description" xml:space="preserve">
-    <value>Choose the sections it shows and their order: drag them or use the arrows.</value>
   </data>
   <data name="SettingsNavigationResetButton.Content" xml:space="preserve">
     <value>Reset</value>
@@ -2232,9 +2160,6 @@
   <data name="SettingsDensityCard.Header" xml:space="preserve">
     <value>Density</value>
   </data>
-  <data name="SettingsDensityCard.Description" xml:space="preserve">
-    <value>Compact fits more rows on the screen.</value>
-  </data>
   <data name="SettingsDensityStandard.Content" xml:space="preserve">
     <value>Standard</value>
   </data>
@@ -2315,9 +2240,6 @@
   </data>
   <data name="SettingsShortcutsResetAllCard.Header" xml:space="preserve">
     <value>Reset all shortcuts</value>
-  </data>
-  <data name="SettingsShortcutsResetAllCard.Description" xml:space="preserve">
-    <value>Back to the keys Groovefin comes with.</value>
   </data>
   <data name="SettingsShortcutsResetAllButton.Content" xml:space="preserve">
     <value>Reset all</value>
@@ -2521,7 +2443,7 @@
     <value>Albums, artists and playlists of your choice</value>
   </data>
   <data name="SettingsDownloadChosenCard.Description" xml:space="preserve">
-    <value>Download one with the Download button on its page or in its menu. It need not be a favourite.</value>
+    <value>Use the Download button on their page or in their menu.</value>
   </data>
   <data name="DownloadToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Download</value>
@@ -2532,38 +2454,23 @@
   <data name="SettingsDownloadFavouritesCard.Header" xml:space="preserve">
     <value>Also download all favourite songs</value>
   </data>
-  <data name="SettingsDownloadFavouritesCard.Description" xml:space="preserve">
-    <value>Every song with a heart.</value>
-  </data>
   <data name="SettingsDownloadPlaylistsCard.Header" xml:space="preserve">
     <value>Also download all playlists</value>
-  </data>
-  <data name="SettingsDownloadPlaylistsCard.Description" xml:space="preserve">
-    <value>All your playlists, with every song in them.</value>
   </data>
   <data name="SettingsDownloadFormatCard.Header" xml:space="preserve">
     <value>Format</value>
   </data>
   <data name="SettingsDownloadFormatCard.Description" xml:space="preserve">
-    <value>Original keeps the files as they are on the server. AAC takes less space. A change downloads the songs again.</value>
+    <value>A change downloads the songs again.</value>
   </data>
   <data name="SettingsDownloadFullReadCard.Header" xml:space="preserve">
     <value>Check everything on the server</value>
   </data>
-  <data name="SettingsDownloadFullReadCard.Description" xml:space="preserve">
-    <value>How often Groovefin reads the songs of every downloaded playlist, album and artist from the server again. In between, it asks only for those that look changed. A change you make here, and Sync now, always read everything.</value>
-  </data>
   <data name="SettingsDownloadMeteredCard.Header" xml:space="preserve">
     <value>Download on metered connections</value>
   </data>
-  <data name="SettingsDownloadMeteredCard.Description" xml:space="preserve">
-    <value>For example mobile data. When off, downloads wait for another connection.</value>
-  </data>
   <data name="SettingsWorkOfflineCard.Header" xml:space="preserve">
     <value>Work offline</value>
-  </data>
-  <data name="SettingsWorkOfflineCard.Description" xml:space="preserve">
-    <value>Show and play only downloaded music, even when the server can be reached. The button next to privacy mode in the title bar does the same.</value>
   </data>
   <data name="SettingsDownloadFailuresCard.Header" xml:space="preserve">
     <value>Failed songs</value>
@@ -2573,9 +2480,6 @@
   </data>
   <data name="SettingsDownloadRemoveCard.Header" xml:space="preserve">
     <value>Remove all downloads</value>
-  </data>
-  <data name="SettingsDownloadRemoveCard.Description" xml:space="preserve">
-    <value>Deletes the downloaded songs from this PC and turns the switches off.</value>
   </data>
   <data name="SettingsDownloadRemoveButton.Content" xml:space="preserve">
     <value>Remove all</value>
@@ -2597,14 +2501,8 @@
   <data name="SettingsDownloadAlbumsCard.Header" xml:space="preserve">
     <value>Also download all favourite albums</value>
   </data>
-  <data name="SettingsDownloadAlbumsCard.Description" xml:space="preserve">
-    <value>Every song of each album with a heart.</value>
-  </data>
   <data name="SettingsDownloadArtistsCard.Header" xml:space="preserve">
     <value>Also download all favourite artists</value>
-  </data>
-  <data name="SettingsDownloadArtistsCard.Description" xml:space="preserve">
-    <value>Every song of each artist with a heart. This can be a lot.</value>
   </data>
   <data name="Error_NotDownloaded" xml:space="preserve">
     <value>You're offline, and none of the songs left in the queue is downloaded.</value>
@@ -2775,9 +2673,6 @@
   </data>
   <data name="SettingsHistoryCard.Header" xml:space="preserve">
     <value>Listening history</value>
-  </data>
-  <data name="SettingsHistoryCard.Description" xml:space="preserve">
-    <value>The plays kept on this PC for a year, for On repeat and the statistics. The server's play counts stay.</value>
   </data>
   <data name="SettingsClearHistoryButton.Content" xml:space="preserve">
     <value>Clear</value>
@@ -2974,9 +2869,6 @@
   <data name="SettingsOutputDeviceCard.Header" xml:space="preserve">
     <value>Output device</value>
   </data>
-  <data name="SettingsOutputDeviceCard.Description" xml:space="preserve">
-    <value>Where the music plays. While the chosen device isn't connected, it plays on the Windows default.</value>
-  </data>
   <data name="Settings_OutputDefault" xml:space="preserve">
     <value>Windows default</value>
   </data>
@@ -3000,9 +2892,6 @@
   </data>
   <data name="SettingsNormalizationTargetCard.Header" xml:space="preserve">
     <value>Loudness</value>
-  </data>
-  <data name="SettingsNormalizationTargetCard.Description" xml:space="preserve">
-    <value>Louder targets turn loud tracks down less. Tracks quieter than the target can't be turned up, so they may stay a little quieter. Nothing is amplified, so nothing clips.</value>
   </data>
   <data name="SettingsNormalizationTargetServer.Content" xml:space="preserve">
     <value>Jellyfin's target (quietest)</value>
@@ -3169,9 +3058,6 @@
   <data name="SettingsHomeRowsCard.Header" xml:space="preserve">
     <value>Home page rows</value>
   </data>
-  <data name="SettingsHomeRowsCard.Description" xml:space="preserve">
-    <value>Choose the rows the home page shows and their order: drag them or use the arrows.</value>
-  </data>
   <data name="SettingsHomeRowsResetButton.Content" xml:space="preserve">
     <value>Reset</value>
   </data>
@@ -3277,26 +3163,14 @@
   <data name="SettingsDownloadListCard.Header" xml:space="preserve">
     <value>See each download</value>
   </data>
-  <data name="SettingsDownloadListCard.Description" xml:space="preserve">
-    <value>Each playlist, album and artist with its size. Retry what failed, or remove one at a time.</value>
-  </data>
   <data name="SettingsCloseToTrayCard.Header" xml:space="preserve">
     <value>Keep playing when the window is closed</value>
-  </data>
-  <data name="SettingsCloseToTrayCard.Description" xml:space="preserve">
-    <value>Closing hides the window to the notification area, and the music goes on. Exit in the icon's menu quits Groovefin.</value>
   </data>
   <data name="SettingsStartupCard.Header" xml:space="preserve">
     <value>Start with Windows</value>
   </data>
-  <data name="SettingsStartupCard.Description" xml:space="preserve">
-    <value>Groovefin opens when you sign in to Windows.</value>
-  </data>
   <data name="SettingsStartMinimizedCard.Header" xml:space="preserve">
     <value>Start minimized</value>
-  </data>
-  <data name="SettingsStartMinimizedCard.Description" xml:space="preserve">
-    <value>In the notification area when its icon is on, otherwise on the taskbar.</value>
   </data>
   <data name="Settings_StartupOffByUser" xml:space="preserve">
     <value>Turned off in Task Manager's Startup apps or in Windows Settings → Apps → Startup. Turn it on there.</value>
