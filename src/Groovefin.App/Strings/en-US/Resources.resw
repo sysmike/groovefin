@@ -54,13 +54,13 @@
     <comment>Title bar toggle beside Settings (#234, #254)</comment>
   </data>
   <data name="PrivacyButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Privacy mode: plays are not reported to the server and Discord shows nothing, until you turn it off or restart Groovefin</value>
+    <value>Privacy mode</value>
   </data>
   <data name="WorkOfflineButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Work offline</value>
+    <value>Offline mode</value>
   </data>
   <data name="WorkOfflineButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Work offline: show and play only downloaded music, even when the server can be reached</value>
+    <value>Offline mode</value>
   </data>
   <data name="SettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Settings</value>

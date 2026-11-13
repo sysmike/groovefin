@@ -50,13 +50,13 @@
     <value>Privatmodus</value>
   </data>
   <data name="PrivacyButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Privatmodus: Wiedergaben werden nicht an den Server gemeldet und Discord zeigt nichts an, bis du ihn ausschaltest oder Groovefin neu startest</value>
+    <value>Privatmodus</value>
   </data>
   <data name="WorkOfflineButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Offline arbeiten</value>
+    <value>Offlinemodus</value>
   </data>
   <data name="WorkOfflineButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Offline arbeiten: nur heruntergeladene Musik zeigen und abspielen, auch wenn der Server erreichbar ist</value>
+    <value>Offlinemodus</value>
   </data>
   <data name="SettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Einstellungen</value>
