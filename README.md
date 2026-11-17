@@ -1,6 +1,6 @@
 # Groovefin
 
-A native Jellyfin music player for Windows 11, built with C#, .NET 10 and WinUI 3.
+A native looking Jellyfin music player for Windows 11
 
 [![CI](https://github.com/sysmike/groovefin/actions/workflows/ci.yml/badge.svg)](https://github.com/sysmike/groovefin/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/sysmike/groovefin/actions/workflows/codeql.yml/badge.svg)](https://github.com/sysmike/groovefin/actions/workflows/codeql.yml)
