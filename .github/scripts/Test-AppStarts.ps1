@@ -1102,6 +1102,21 @@ try {
     $jumped = [System.Windows.Automation.AutomationElement]::FocusedElement
     if ($jumped.Current.Name -notlike '*Album 3*') { Stop-Test 'Letter jump' "After the letter A the focus is on '$($jumped.Current.Name)', not on Album 3." }
     Write-Output "The letter A asked the server where A starts and focused '$($jumped.Current.Name)'."
+    # Pressing the view toggle that is already on keeps it on, and the view stays: it used to turn off.
+    $toggleState = [System.Windows.Automation.TogglePattern]::Pattern
+    $viewToggles = foreach ($name in 'Grid view', 'List view') {
+        Find-Element ([System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $name)) "$name button"
+    }
+    $onToggle = $viewToggles | Where-Object { $_.GetCurrentPattern($toggleState).Current.ToggleState -eq [System.Windows.Automation.ToggleState]::On } | Select-Object -First 1
+    if (-not $onToggle) { Stop-Test 'View toggle' 'On the Albums page neither Grid view nor List view is on.' }
+    Add-Type -AssemblyName System.Windows.Forms
+    $onToggle.SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait(' ')
+    Start-Sleep -Milliseconds 500
+    if ($onToggle.GetCurrentPattern($toggleState).Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) {
+        Stop-Test 'View toggle' "On the Albums page, pressing '$($onToggle.Current.Name)', which was already on, turned it off."
+    }
+    Write-Output "Pressing '$($onToggle.Current.Name)' again on the Albums page kept it on."
     $album2 = 'parentId=a{31}2'
     $reports = 'POST /Sessions/Playing'
     $reportsBefore = Get-RequestCount $reports

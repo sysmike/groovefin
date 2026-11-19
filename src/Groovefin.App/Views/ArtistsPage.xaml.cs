@@ -142,8 +142,14 @@ internal sealed partial class ArtistsPage : Page
         }
     }
 
-    private void OnViewModeClick(object sender, RoutedEventArgs e) =>
+    private void OnViewModeClick(object sender, RoutedEventArgs e)
+    {
         ViewModel.ViewMode = ReferenceEquals(sender, ListViewToggle) ? CollectionViewMode.List : CollectionViewMode.Grid;
+
+        // A click on the toggle that is already on turns it off, but the view stays: keep it on.
+        GridViewToggle.IsChecked = ViewModel.ViewMode == CollectionViewMode.Grid;
+        ListViewToggle.IsChecked = ViewModel.ViewMode == CollectionViewMode.List;
+    }
 
     private void OnArtistInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
     {

@@ -222,8 +222,14 @@ internal sealed partial class AlbumsPage : Page
 
     private void OnClearFiltersClick(object sender, RoutedEventArgs e) => ViewModel.ClearFiltersCommand.Execute(null);
 
-    private void OnViewModeClick(object sender, RoutedEventArgs e) =>
+    private void OnViewModeClick(object sender, RoutedEventArgs e)
+    {
         ViewModel.ViewMode = ReferenceEquals(sender, ListViewToggle) ? CollectionViewMode.List : CollectionViewMode.Grid;
+
+        // A click on the toggle that is already on turns it off, but the view stays: keep it on.
+        GridViewToggle.IsChecked = ViewModel.ViewMode == CollectionViewMode.Grid;
+        ListViewToggle.IsChecked = ViewModel.ViewMode == CollectionViewMode.List;
+    }
 
     private void OnAlbumInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
     {
