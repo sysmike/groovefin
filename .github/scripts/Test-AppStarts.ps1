@@ -1875,12 +1875,19 @@ try {
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))) "queue's heading in full screen"
     Start-Sleep -Milliseconds 500
     $queueGap = (Get-Bounds $queueHeading).Top - $window.Current.BoundingRectangle.Top
+    # And it takes half the window (#454): its heading starts just right of the middle (the pane's 16 px padding).
+    $screenBounds = $window.Current.BoundingRectangle
+    $queueInset = (Get-Bounds $queueHeading).Left - $screenBounds.Left - $screenBounds.Width / 2
     [System.Windows.Forms.SendKeys]::SendWait('^q')
     [System.Windows.Forms.SendKeys]::SendWait('{F11}')
     $until = (Get-Date).AddSeconds(5)
     while ($window.FindFirst($scope::Descendants, $exitFullScreen) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 300 }
     if ($queueGap -gt 36) { Stop-Test 'Full screen' ("The queue's heading is {0:0} px below the top of the screen in full screen: the pane does not reach the top." -f $queueGap) }
     Write-Output ("In full screen the queue's heading is {0:0} px below the top of the screen." -f $queueGap)
+    if ($queueInset -lt 0 -or $queueInset -gt 60) {
+        Stop-Test 'Full screen' ("In full screen the queue's heading starts {0:0} px from the middle of the screen: the pane is not half the window." -f $queueInset)
+    }
+    Write-Output ("In full screen the queue takes half the window: its heading starts {0:0} px right of the middle." -f $queueInset)
     if ([Math]::Abs($pageWidths['queue'] - $pageWidths['lyrics']) -gt 1) {
         Stop-Test 'Side panes' ("The queue and the lyrics are not as wide: the page is {0:0} px wide beside the queue and {1:0} px beside the lyrics." -f $pageWidths['queue'], $pageWidths['lyrics'])
     }

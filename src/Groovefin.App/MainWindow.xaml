@@ -328,11 +328,15 @@
             </StackPanel>
         </Grid>
 
-        <!--  Ctrl+Q or the now playing bar's queue button.  -->
+        <!--
+            Ctrl+Q or the now playing bar's queue button. SidePaneWidth wide; in full screen half the window, the cover
+            and the song's details the other half (#454): MainWindow.FitPanes.
+        -->
         <controls:QueuePanel
             x:Name="QueuePane"
             Grid.Row="1"
             Grid.Column="1"
+            Width="{StaticResource SidePaneWidth}"
             Visibility="{x:Bind Queue.IsOpen, Mode=OneWay}" />
 
         <!--  Ctrl+L or the now playing bar's lyrics button; it shares the place of the queue.  -->
@@ -340,6 +344,7 @@
             x:Name="LyricsPane"
             Grid.Row="1"
             Grid.Column="1"
+            Width="{StaticResource SidePaneWidth}"
             Visibility="{x:Bind Lyrics.IsOpen, Mode=OneWay}" />
 
         <!--  Shown once something is queued.  -->
