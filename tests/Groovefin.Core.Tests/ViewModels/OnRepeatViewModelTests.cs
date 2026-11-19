@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.History;
+using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -106,6 +107,23 @@ public sealed class OnRepeatViewModelTests : IDisposable
         _sut.HasEntries.Should().BeTrue();
         _sut.IsEmpty.Should().BeFalse();
         _sut.PlayCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Each_row_shows_its_albums_cover_at_the_display_scale()
+    {
+        Played(("a", 3), ("b", 2));
+        _library.GetTracksByIdAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>()).Returns(
+        [
+            Song("a") with { AlbumId = "al", AlbumImageTag = "t" },
+            Song("b") with { AlbumId = "other", AlbumImageTag = null },
+        ]);
+        _sut.DisplayScale = 2;
+
+        await _sut.LoadAsync(Ct);
+
+        _sut.Entries[0].Cover.Should().Be(new ImageRequest("al", ImageKind.Primary, "t", 80));
+        _sut.Entries[1].Cover.Should().BeNull("an album without a cover shows the placeholder");
     }
 
     [Fact]

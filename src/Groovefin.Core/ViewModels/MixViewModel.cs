@@ -37,6 +37,9 @@ public sealed partial class MixViewModel(
 
     public ObservableCollection<OnRepeatItem> Entries { get; } = currentTrack.Watch(new ObservableCollection<OnRepeatItem>());
 
+    /// <summary>Gets or sets the display's scale; the covers are requested for it.</summary>
+    public double DisplayScale { get; set; } = 1;
+
     [ObservableProperty]
     public partial string Name { get; private set; } = string.Empty;
 
@@ -180,7 +183,7 @@ public sealed partial class MixViewModel(
             foreach (var track in tracks)
             {
                 var plays = strings.GetString("OnRepeat_Plays").Replace("{0}", track.PlayCount.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal);
-                Entries.Add(new OnRepeatItem(track, Entries.Count + 1, track.PlayCount, plays, favourites.IsFavourite(track.Id, track.IsFavorite)));
+                Entries.Add(new OnRepeatItem(track, Entries.Count + 1, track.PlayCount, plays, favourites.IsFavourite(track.Id, track.IsFavorite), OnRepeatItem.CoverOf(track, DisplayScale)));
             }
 
             HasEntries = Entries.Count > 0;

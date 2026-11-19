@@ -31,6 +31,7 @@ internal sealed partial class OnRepeatPage : Page
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnLoaded;
+        ViewModel.DisplayScale = XamlRoot?.RasterizationScale ?? 1;
         await ViewModel.LoadAsync(_cancellation.Token);
     }
 
