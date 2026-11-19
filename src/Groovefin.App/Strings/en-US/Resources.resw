@@ -1036,6 +1036,18 @@
   <data name="PlaylistsNewText.Text" xml:space="preserve">
     <value>New playlist</value>
   </data>
+  <data name="PlaylistsGridViewToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Grid view</value>
+  </data>
+  <data name="PlaylistsGridViewToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Grid view</value>
+  </data>
+  <data name="PlaylistsListViewToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>List view</value>
+  </data>
+  <data name="PlaylistsListViewToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>List view</value>
+  </data>
   <data name="PlaylistsView.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Playlists</value>
   </data>

@@ -1425,6 +1425,25 @@ try {
         if (-not $playlistTile) { Start-Sleep -Milliseconds 500 }
     } while (-not $playlistTile -and (Get-Date) -lt $until)
     if (-not $playlistTile) { Stop-Test 'Playlist columns' "The playlist 'Road trip' was not found on the playlists page." }
+
+    # The playlists show as a list too (#449): the List view toggle turns the tiles into rows, and the row
+    # opens the playlist below. Pressed with the keyboard, as a user does, so its Click handler runs.
+    $tileHeight = (Get-Bounds $playlistTile).Height
+    Add-Type -AssemblyName System.Windows.Forms
+    (Find-ById 'PlaylistsListViewToggle').SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait(' ')
+    $until = (Get-Date).AddSeconds(10)
+    do {
+        Start-Sleep -Milliseconds 300
+        $playlistTile = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) |
+            Where-Object { $_.Current.Name -like 'Road trip*' } | Select-Object -First 1
+        $rowHeight = if ($playlistTile) { (Get-Bounds $playlistTile).Height } else { $tileHeight }
+    } while ($rowHeight -ge 100 -and (Get-Date) -lt $until)
+    if ($rowHeight -ge 100) {
+        Stop-Test 'Playlists list view' "After List view was pressed, 'Road trip' is still $rowHeight px high (as a tile: $tileHeight px), not a row."
+    }
+    Write-Output "List view shows the playlists as rows ('Road trip': $rowHeight px high, $tileHeight px as a tile)."
+
     $pattern = $null
     if ($playlistTile.TryGetCurrentPattern($invoke, [ref] $pattern)) { $pattern.Invoke() }
     else {
