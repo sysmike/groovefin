@@ -120,6 +120,8 @@ $server = Start-ThreadJob -ArgumentList $listener -ScriptBlock {
             '^/system/info/public$' { @{ Id = $serverId; ServerName = 'Smoke test'; Version = '10.11.0'; ProductName = 'Jellyfin Server'; StartupWizardCompleted = $true } }
             '^/users/authenticatebyname$' { @{ User = @{ Id = 'fedcba9876543210fedcba9876543210'; Name = 'smoke'; ServerId = $serverId }; AccessToken = 'smoke-test-token'; ServerId = $serverId } }
             '^/quickconnect/enabled$' { $false }
+            # Where the client connects from (#453): in the server's network.
+            '^/system/endpoint$' { @{ IsLocal = $false; IsInNetwork = $true } }
             '^/userviews$' { @{ Items = @(@{ Id = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'; Name = 'Music'; Type = 'CollectionFolder'; CollectionType = 'music' }); TotalRecordCount = 1; StartIndex = 0 } }
             '/images/' { $status = 404; $null }
             '^/items/tracks$' { @{ Items = $tracks; TotalRecordCount = $tracks.Count; StartIndex = 0 } }
@@ -1061,6 +1063,10 @@ try {
         while ((Get-RequestCount $pattern) -le $before -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 500 }
         if ((Get-RequestCount $pattern) -le $before) { Stop-Test 'Cover buttons' "$what, but Groovefin did not ask the server for it." }
     }
+
+    # At home or away (#453): after signing in, Groovefin asked the server whether the PC is in its network.
+    if ((Get-RequestCount '^GET /System/Endpoint') -lt 1) { Stop-Test 'Home network' 'After signing in, Groovefin did not ask the server whether this PC is in its home network (/System/Endpoint).' }
+    Write-Output 'After signing in, Groovefin asked the server whether this PC is in its home network.'
     function Test-StayedOnList([System.Windows.Automation.Condition] $detailPage, [string] $what) {
         Start-Sleep -Seconds 2
         if ($window.FindFirst($scope::Descendants, $detailPage)) { Stop-Test 'Cover buttons' "$what also opened its page." }

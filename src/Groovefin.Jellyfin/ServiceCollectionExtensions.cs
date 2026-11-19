@@ -54,6 +54,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<SearchService>();
         services.AddSingleton<ISearchService>(sp => new ForgivingSearch(sp.GetRequiredService<SearchService>()));
         services.AddSingleton<ILyricsService, LyricsService>();
+        services.AddSingleton<IServerNetwork, ServerNetwork>();
         services.AddSingleton<IServerDiscovery, ServerDiscovery>();
         return services;
     }

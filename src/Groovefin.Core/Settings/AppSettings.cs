@@ -260,22 +260,24 @@ public sealed record SongColumnSettings
 }
 
 /// <summary>
-/// Stream quality. Local servers (home network) default to the original files, remote ones to
-/// 320 kbit/s, so mobile data and slow uplinks are spared.
+/// Stream quality. In the server's home network the original files play by default; away from it 320 kbit/s,
+/// so mobile data and slow uplinks are spared. <see cref="IHomeNetwork"/> tells which applies (#453).
 /// </summary>
 public sealed record StreamingSettings
 {
     /// <summary>Gets or sets the bitrate limit on the local network; <see langword="null"/> means no limit.</summary>
     public int? LocalMaxBitrateKbps { get; set; }
 
-    /// <summary>Gets or sets the bitrate limit for remote servers; <see langword="null"/> means no limit.</summary>
+    /// <summary>Gets or sets the bitrate limit away from the home network; <see langword="null"/> means no limit.</summary>
     public int? RemoteMaxBitrateKbps { get; set; } = 320;
 
     public TranscodingCodec Codec { get; set; } = TranscodingCodec.Aac;
 
-    /// <summary>Gets the stream options for a server at <paramref name="serverUrl"/>.</summary>
-    public StreamOptions OptionsFor(Uri serverUrl) =>
-        new(NetworkLocation.IsLocal(serverUrl) ? LocalMaxBitrateKbps : RemoteMaxBitrateKbps, Codec);
+    /// <summary>Gets the stream options for a server at <paramref name="serverUrl"/>, judged by its address alone.</summary>
+    public StreamOptions OptionsFor(Uri serverUrl) => OptionsFor(NetworkLocation.IsLocal(serverUrl));
+
+    /// <summary>Gets the stream options in the server's home network, or away from it.</summary>
+    public StreamOptions OptionsFor(bool atHome) => new(atHome ? LocalMaxBitrateKbps : RemoteMaxBitrateKbps, Codec);
 }
 
 /// <summary>Playback: loudness, instant mix, resuming the last session and the Discord status.</summary>

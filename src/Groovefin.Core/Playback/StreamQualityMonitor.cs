@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Groovefin.Core.Api;
 using Groovefin.Core.Models;
+using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
 
@@ -19,6 +20,7 @@ public sealed partial class StreamQualityMonitor : ObservableObject, IDisposable
     private readonly ISettingsService _settings;
     private readonly IStringResources _strings;
     private readonly IDispatcher? _dispatcher;
+    private readonly IHomeNetwork? _home;
     private (string TrackId, TrackDetails Details)? _file;
     private string? _trackId;
     private bool _downloaded;
@@ -30,7 +32,8 @@ public sealed partial class StreamQualityMonitor : ObservableObject, IDisposable
         IJellyfinClient client,
         ISettingsService settings,
         IStringResources strings,
-        IDispatcher? dispatcher = null)
+        IDispatcher? dispatcher = null,
+        IHomeNetwork? home = null)
     {
         _engine = engine;
         _library = library;
@@ -38,6 +41,7 @@ public sealed partial class StreamQualityMonitor : ObservableObject, IDisposable
         _settings = settings;
         _strings = strings;
         _dispatcher = dispatcher;
+        _home = home;
         _engine.CurrentChanged += OnCurrentChanged;
         _settings.Changed += OnSettingsChanged;
     }
@@ -127,7 +131,8 @@ public sealed partial class StreamQualityMonitor : ObservableObject, IDisposable
         }
 
         var server = _client.Connection?.ServerUrl ?? new Uri("http://localhost/");
-        var info = StreamQuality.Describe(file.Details, _settings.Current.Streaming.OptionsFor(server), _downloaded, _strings);
+        var atHome = _home?.IsAtHome(server) ?? NetworkLocation.IsLocal(server);
+        var info = StreamQuality.Describe(file.Details, _settings.Current.Streaming.OptionsFor(atHome), atHome, _downloaded, _strings);
         Label = info.Label;
         Explanation = info.Explanation;
     }

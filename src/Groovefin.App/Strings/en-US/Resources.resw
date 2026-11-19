@@ -1901,7 +1901,7 @@
     <value>Quality on the home network</value>
   </data>
   <data name="SettingsRemoteBitrateCard.Header" xml:space="preserve">
-    <value>Quality for remote servers</value>
+    <value>Quality away from home</value>
   </data>
   <data name="SettingsCodecCard.Header" xml:space="preserve">
     <value>Conversion format</value>
@@ -2998,8 +2998,11 @@
   <data name="StreamQuality_FormatWhy" xml:space="preserve">
     <value>Converted by the server: Windows can't play {0} files.</value>
   </data>
-  <data name="StreamQuality_BitrateWhy" xml:space="preserve">
-    <value>Converted by the server: the file is above the {0} limit set for this server in Settings → Streaming.</value>
+  <data name="StreamQuality_BitrateWhyHome" xml:space="preserve">
+    <value>Converted by the server: the file is above the {0} limit set for the home network in Settings → Streaming.</value>
+  </data>
+  <data name="StreamQuality_BitrateWhyAway" xml:space="preserve">
+    <value>Converted by the server: the file is above the {0} limit set for away from home in Settings → Streaming.</value>
   </data>
   <data name="StreamQuality_DownloadedFile" xml:space="preserve">
     <value>Downloaded file</value>
