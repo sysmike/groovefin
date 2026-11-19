@@ -162,6 +162,10 @@
                                     Height="{ThemeResource ListThumbnailSize}"
                                     Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                                     CornerRadius="{StaticResource ControlCornerRadius}">
+                                    <FontIcon
+                                        FontSize="16"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Glyph="&#xE93C;" />
                                     <Image
                                         controls:Artwork.Request="{x:Bind Cover}"
                                         AutomationProperties.AccessibilityView="Raw"
