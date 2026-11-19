@@ -1,4 +1,5 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -66,6 +67,18 @@ public sealed class SearchViewModelTests
         (_sut.HasArtists, _sut.HasAlbums, _sut.HasTracks, _sut.HasPlaylists).Should().Be((true, true, true, true));
         _sut.Summary.Should().Be("5 results for disco");
         _sut.IsLoading.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Each_song_shows_its_albums_cover_at_the_display_scale()
+    {
+        Returns(new SearchResults([], [], [Song("t1") with { AlbumId = "al", AlbumImageTag = "t" }, Song("t2") with { AlbumId = "al2", AlbumImageTag = null }], []));
+        _sut.DisplayScale = 2;
+
+        await _sut.LoadAsync("disco", Ct);
+
+        _sut.Tracks[0].Cover.Should().Be(new ImageRequest("al", ImageKind.Primary, "t", 80));
+        _sut.Tracks[1].Cover.Should().BeNull("an album without a cover shows the placeholder");
     }
 
     [Fact]

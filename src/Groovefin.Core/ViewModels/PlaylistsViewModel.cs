@@ -59,7 +59,7 @@ public sealed partial class PlaylistsViewModel(
     ISettingsService settings,
     IOfflineLibrary? downloads = null) : ObservableObject
 {
-    public const double TileWidth = 168;
+    public const double TileWidth = CoverSizes.Tile;
 
     public ObservableCollection<PlaylistItem> Playlists { get; } = [];
 

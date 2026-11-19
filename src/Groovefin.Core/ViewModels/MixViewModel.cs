@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
+using Groovefin.Core.Images;
 using Groovefin.Core.Mixes;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -183,7 +184,7 @@ public sealed partial class MixViewModel(
             foreach (var track in tracks)
             {
                 var plays = strings.GetString("OnRepeat_Plays").Replace("{0}", track.PlayCount.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal);
-                Entries.Add(new OnRepeatItem(track, Entries.Count + 1, track.PlayCount, plays, favourites.IsFavourite(track.Id, track.IsFavorite), OnRepeatItem.CoverOf(track, DisplayScale)));
+                Entries.Add(new OnRepeatItem(track, Entries.Count + 1, track.PlayCount, plays, favourites.IsFavourite(track.Id, track.IsFavorite), CoverSizes.RowCover(track, DisplayScale)));
             }
 
             HasEntries = Entries.Count > 0;

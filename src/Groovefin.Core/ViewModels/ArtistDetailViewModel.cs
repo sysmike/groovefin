@@ -19,9 +19,12 @@ using Groovefin.Core.Settings;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>One row in an artist's top tracks.</summary>
-public sealed partial class ArtistTrackItem(Track track, int rank, bool isFavourite = false) : ObservableObject, ICurrentTrackRow
+public sealed partial class ArtistTrackItem(Track track, int rank, bool isFavourite = false, ImageRequest? cover = null) : ObservableObject, ICurrentTrackRow
 {
     public Track Track { get; } = track;
+
+    /// <summary>Gets the album's cover (#452), or <see langword="null"/> without one.</summary>
+    public ImageRequest? Cover { get; } = cover;
 
     public int Rank { get; } = rank;
 
@@ -71,10 +74,10 @@ public sealed partial class ArtistDetailViewModel(
     /// <summary>Background width: small on purpose, it is blurred and stretched.</summary>
     public const double BackgroundWidth = 128;
 
-    public const double TileWidth = 152;
+    public const double TileWidth = CoverSizes.Tile;
 
     /// <summary>Least width of the albums grid's tiles (the page's <c>AlbumTile</c>), as on the Albums page (#263); they grow to fill each row.</summary>
-    public const double AlbumGridTileWidth = 168;
+    public const double AlbumGridTileWidth = CoverSizes.Tile;
 
     public const int TopTrackCount = 10;
 
@@ -346,7 +349,7 @@ public sealed partial class ArtistDetailViewModel(
         TopTracks.Clear();
         for (var i = 0; i < tracks.Count; i++)
         {
-            TopTracks.Add(new ArtistTrackItem(tracks[i], i + 1, favourites.IsFavourite(tracks[i].Id, tracks[i].IsFavorite)));
+            TopTracks.Add(new ArtistTrackItem(tracks[i], i + 1, favourites.IsFavourite(tracks[i].Id, tracks[i].IsFavorite), CoverSizes.RowCover(tracks[i], DisplayScale)));
         }
 
         HasTopTracks = TopTracks.Count > 0;

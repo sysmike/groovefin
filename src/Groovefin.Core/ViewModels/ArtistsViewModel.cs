@@ -35,7 +35,7 @@ public sealed partial class ArtistsViewModel : ObservableObject, IDisposable
     public const int PageSize = 100;
 
     /// <summary>Tile width in device-independent pixels; images are requested for this width.</summary>
-    public const double TileWidth = 160;
+    public const double TileWidth = CoverSizes.Tile;
 
     private readonly ILibraryService _library;
     private readonly ISettingsService _settings;

@@ -16,6 +16,8 @@
             <x:Double x:Key="TitleBarContentMaxWidth">480</x:Double>
             <!--  The queue and the lyrics, which open in the same place beside the page (#239).  -->
             <x:Double x:Key="SidePaneWidth">400</x:Double>
+            <!--  Album, artist and playlist tiles on every page (#452): their least width, CoverSizes.Tile in Core.  -->
+            <x:Double x:Key="CoverTileWidth">168</x:Double>
 
             <!--
                 List density (standard values). ThemeService replaces them for the compact density;

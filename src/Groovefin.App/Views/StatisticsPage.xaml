@@ -12,7 +12,7 @@
 
     <Page.Resources>
         <!--  Both rows are as wide, so their tiles are too; they grow to fill the row, like the start page's (#376).  -->
-        <controls:TileSize x:Key="StatisticsTile" MinWidth="152" />
+        <controls:TileSize x:Key="StatisticsTile" MinWidth="{StaticResource CoverTileWidth}" />
 
         <!--  The height of the charts' bars at the most plays: StatisticsViewModel.ChartHeight.  -->
         <x:Double x:Key="StatisticsChartHeight">96</x:Double>
@@ -424,7 +424,7 @@
                             <ItemsView.Layout>
                                 <controls:WrapGridLayout
                                     MinColumnSpacing="16"
-                                    MinItemWidth="152"
+                                    MinItemWidth="{StaticResource CoverTileWidth}"
                                     MinRowSpacing="8" />
                             </ItemsView.Layout>
                         </ItemsView>
@@ -465,7 +465,7 @@
                             <ItemsView.Layout>
                                 <controls:WrapGridLayout
                                     MinColumnSpacing="16"
-                                    MinItemWidth="152"
+                                    MinItemWidth="{StaticResource CoverTileWidth}"
                                     MinRowSpacing="8" />
                             </ItemsView.Layout>
                         </ItemsView>

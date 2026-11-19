@@ -11,8 +11,8 @@
 
     <Page.Resources>
         <!--  The grids' tiles grow until whole columns fill each row (#232); one size per grid.  -->
-        <controls:TileSize x:Key="FavouriteAlbumTile" MinWidth="168" />
-        <controls:TileSize x:Key="FavouriteArtistTile" MinWidth="168" />
+        <controls:TileSize x:Key="FavouriteAlbumTile" MinWidth="{StaticResource CoverTileWidth}" />
+        <controls:TileSize x:Key="FavouriteArtistTile" MinWidth="{StaticResource CoverTileWidth}" />
 
         <!--  Grid: square cover, name, artist.  -->
         <DataTemplate x:Key="AlbumGridTemplate" x:DataType="vm:AlbumItem">
@@ -352,7 +352,7 @@
                 <ItemsView.Layout>
                     <UniformGridLayout
                         MinColumnSpacing="16"
-                        MinItemWidth="168"
+                        MinItemWidth="{StaticResource CoverTileWidth}"
                         MinRowSpacing="8" />
                 </ItemsView.Layout>
             </ItemsView>
@@ -373,7 +373,7 @@
                 <ItemsView.Layout>
                     <UniformGridLayout
                         MinColumnSpacing="16"
-                        MinItemWidth="168"
+                        MinItemWidth="{StaticResource CoverTileWidth}"
                         MinRowSpacing="8" />
                 </ItemsView.Layout>
             </ItemsView>

@@ -300,7 +300,8 @@ public sealed class StatisticsViewModelTests
     public void TilesThatFit_matches_the_rows_layout()
     {
         TileRow.TilesThatFit(100).Should().Be(1);
-        TileRow.TilesThatFit(321).Should().Be(2);
-        TileRow.TilesThatFit(1000).Should().Be(6);
+        TileRow.TilesThatFit(352).Should().Be(1);
+        TileRow.TilesThatFit(353).Should().Be(2);
+        TileRow.TilesThatFit(1000).Should().Be(5);
     }
 }

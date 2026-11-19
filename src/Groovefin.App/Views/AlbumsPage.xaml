@@ -13,7 +13,7 @@
 
     <Page.Resources>
         <!--  The grid's tiles grow until whole columns fill each row (#232).  -->
-        <controls:TileSize x:Key="AlbumTile" MinWidth="168" />
+        <controls:TileSize x:Key="AlbumTile" MinWidth="{StaticResource CoverTileWidth}" />
 
         <!--  Grid: square cover with play and songs buttons, name, artist.  -->
         <DataTemplate x:Key="AlbumGridTemplate" x:DataType="vm:AlbumItem">

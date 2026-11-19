@@ -182,7 +182,7 @@ public sealed partial class HomeViewModel : ObservableObject, IDisposable
     public const int ShelfSize = 20;
 
     /// <summary>Least tile width in device-independent pixels; covers are requested for this width.</summary>
-    public const double TileWidth = 152;
+    public const double TileWidth = CoverSizes.Tile;
 
     /// <summary>Space between two tiles in device-independent pixels.</summary>
     public const double TileSpacing = 16;

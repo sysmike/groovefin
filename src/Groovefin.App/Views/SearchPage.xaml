@@ -14,9 +14,9 @@
         <!--  Square cover, name, album artist.  -->
         <DataTemplate x:Key="AlbumTileTemplate" x:DataType="vm:AlbumItem">
             <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
-                <StackPanel Width="152" Padding="0,0,0,8" Spacing="6">
+                <StackPanel Width="{StaticResource CoverTileWidth}" Padding="0,0,0,8" Spacing="6">
                     <Grid
-                        Height="152"
+                        Height="{StaticResource CoverTileWidth}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                         CornerRadius="{StaticResource OverlayCornerRadius}">
                         <FontIcon
@@ -48,10 +48,10 @@
         <!--  Round image, name.  -->
         <DataTemplate x:Key="ArtistTileTemplate" x:DataType="vm:ArtistItem">
             <ItemContainer AutomationProperties.Name="{x:Bind AccessibleName}">
-                <StackPanel Width="152" Padding="0,0,0,8" Spacing="8">
+                <StackPanel Width="{StaticResource CoverTileWidth}" Padding="0,0,0,8" Spacing="8">
                     <Grid
-                        Width="152"
-                        Height="152"
+                        Width="{StaticResource CoverTileWidth}"
+                        Height="{StaticResource CoverTileWidth}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                         CornerRadius="76">
                         <FontIcon
@@ -113,7 +113,7 @@
                 <ItemsView
                     controls:ItemMenu.IsEnabled="True"
                     x:Uid="SearchArtists"
-                    Height="208"
+                    Height="224"
                     Padding="36,0"
                     IsItemInvokedEnabled="True"
                     ItemInvoked="OnArtistInvoked"
@@ -132,7 +132,7 @@
                 <ItemsView
                     controls:ItemMenu.IsEnabled="True"
                     x:Uid="SearchAlbums"
-                    Height="224"
+                    Height="240"
                     Padding="36,0"
                     IsItemInvokedEnabled="True"
                     ItemInvoked="OnAlbumInvoked"
@@ -167,10 +167,28 @@
                                 AutomationProperties.Name="{x:Bind AccessibleName}"
                                 ColumnSpacing="16">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <StackPanel VerticalAlignment="Center">
+                                <!--  The album's cover (#452). Decorative: the row's name says it all.  -->
+                                <Grid
+                                    Width="{ThemeResource ListThumbnailSize}"
+                                    Height="{ThemeResource ListThumbnailSize}"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                    CornerRadius="{StaticResource ControlCornerRadius}">
+                                    <FontIcon
+                                        FontSize="16"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Glyph="&#xE93C;" />
+                                    <Image
+                                        controls:Artwork.Request="{x:Bind Cover}"
+                                        AutomationProperties.AccessibilityView="Raw"
+                                        Stretch="UniformToFill" />
+                                </Grid>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                     <controls:TrackText
                                         IsDownloaded="{x:Bind IsDownloaded, Mode=OneWay}"
                                         IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
@@ -183,7 +201,7 @@
                                         Text="{x:Bind Details}" />
                                 </StackPanel>
                                 <TextBlock
-                                    Grid.Column="1"
+                                    Grid.Column="2"
                                     VerticalAlignment="Center"
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                     Text="{x:Bind Duration}" />

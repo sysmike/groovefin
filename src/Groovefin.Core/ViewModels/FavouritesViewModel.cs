@@ -58,9 +58,9 @@ public sealed partial class FavouritesViewModel(
     /// <summary>Most favourites loaded per kind.</summary>
     public const int Limit = 500;
 
-    public const double TileWidth = 168;
+    public const double TileWidth = CoverSizes.Tile;
 
-    public const double CoverWidth = 40;
+    public const double CoverWidth = CoverSizes.Row;
 
     public ObservableCollection<FavouriteTrackItem> Tracks { get; } = currentTrack.Watch(new ObservableCollection<FavouriteTrackItem>());
 

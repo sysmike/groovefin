@@ -86,7 +86,7 @@ public sealed partial class PlaylistDetailViewModel(
     public const double ImageWidth = 200;
 
     /// <summary>The width of a row's cover (the list thumbnail size; a compact list draws it smaller).</summary>
-    public const double CoverWidth = 40;
+    public const double CoverWidth = CoverSizes.Row;
 
     private bool _loadingOrder;
 

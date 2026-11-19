@@ -74,9 +74,14 @@ internal sealed partial class SongsPage : Page
         {
             Loaded += OnFirstLoaded;
         }
-        else if (e.NavigationMode != NavigationMode.Back)
+        else
         {
-            _ = ViewModel.ReloadAsync();
+            // The density may have changed meanwhile: the Title header leaves room for the covers (#452).
+            RefreshHeader();
+            if (e.NavigationMode != NavigationMode.Back)
+            {
+                _ = ViewModel.ReloadAsync();
+            }
         }
     }
 
@@ -91,6 +96,7 @@ internal sealed partial class SongsPage : Page
             _scroll.ViewChanged += (_, _) => LoadMoreIfNeeded();
         }
 
+        ViewModel.DisplayScale = XamlRoot?.RasterizationScale ?? 1;
         await ViewModel.InitializeAsync();
         LoadMoreIfNeeded();
     }
@@ -190,6 +196,12 @@ internal sealed partial class SongsPage : Page
     private void ShowHeader(Button button, SongColumnViewModel column)
     {
         var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        if (column.Column == SongColumn.Title)
+        {
+            // The rows show the album's cover before the title (#452): the label starts where the titles do.
+            content.Children.Add(new Border { Width = SongTableRow.ThumbnailSize + SongTableRow.CoverSpacing - content.Spacing });
+        }
+
         content.Children.Add(new TextBlock { Text = column.Header, Style = CellStyle, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
         var name = ColumnName(column);
         if (column.SortDescending is { } descending)

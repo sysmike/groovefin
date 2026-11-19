@@ -22,9 +22,6 @@ namespace Groovefin.Core.ViewModels;
 /// </summary>
 public sealed partial class OnRepeatItem(Track track, int rank, int plays, string playsText, bool isFavourite = false, ImageRequest? cover = null) : ObservableObject, ICurrentTrackRow
 {
-    /// <summary>The cover's width in device-independent pixels, as <c>ListThumbnailSize</c> has it.</summary>
-    public const double CoverWidth = 40;
-
     public Track Track { get; } = track;
 
     /// <summary>Gets the album's cover, or <see langword="null"/> without one.</summary>
@@ -62,13 +59,6 @@ public sealed partial class OnRepeatItem(Track track, int rank, int plays, strin
 
     /// <summary>Gets the text Narrator reads, e.g. "1, One More Time, Daft Punk, Discovery, 12 plays, 5:20".</summary>
     public string AccessibleName => string.Join(", ", new[] { Number, Name, Artist, Album, playsText, Duration }.Where(s => s.Length > 0));
-
-    /// <summary>The cover of <paramref name="track"/>'s album at <paramref name="scale"/>.</summary>
-    public static ImageRequest? CoverOf(Track track, double scale)
-    {
-        ArgumentNullException.ThrowIfNull(track);
-        return track.AlbumId is { } albumId ? ImageRequest.Primary(albumId, track.AlbumImageTag, CoverWidth, scale) : null;
-    }
 }
 
 /// <summary>
@@ -134,7 +124,7 @@ public sealed partial class OnRepeatViewModel(
             {
                 var track = tracks[entry.TrackId];
                 var plays = strings.GetString("OnRepeat_Plays").Replace("{0}", entry.Plays.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal);
-                Entries.Add(new OnRepeatItem(track, Entries.Count + 1, entry.Plays, plays, favourites.IsFavourite(track.Id, track.IsFavorite), OnRepeatItem.CoverOf(track, DisplayScale)));
+                Entries.Add(new OnRepeatItem(track, Entries.Count + 1, entry.Plays, plays, favourites.IsFavourite(track.Id, track.IsFavorite), CoverSizes.RowCover(track, DisplayScale)));
             }
 
             HasEntries = Entries.Count > 0;
