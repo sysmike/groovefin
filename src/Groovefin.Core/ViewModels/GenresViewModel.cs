@@ -6,22 +6,41 @@ using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 
 namespace Groovefin.Core.ViewModels;
 
-/// <summary>A genre tile.</summary>
+/// <summary>A genre tile or row.</summary>
 public sealed record GenreItem(Genre Genre)
 {
     public string Name => Genre.Name;
 }
 
-/// <summary>Genres page: the genres of the music library's albums, by name.</summary>
+/// <summary>
+/// Genres page: the genres of the music library's albums, by name, as a grid or a list (#450). The view mode is
+/// remembered in settings.
+/// </summary>
 public sealed partial class GenresViewModel(
     ILibraryService library,
     INavigationService navigation,
-    IErrorReporter errors) : ObservableObject
+    IErrorReporter errors,
+    ISettingsService settings) : ObservableObject
 {
     public ObservableCollection<GenreItem> Genres { get; } = [];
+
+    /// <summary>Gets or sets how the genres show: cards or rows.</summary>
+    public CollectionViewMode ViewMode
+    {
+        get => settings.Current.Browse.GenreView;
+        set
+        {
+            if (value != ViewMode)
+            {
+                settings.Update(s => s with { Browse = s.Browse with { GenreView = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEmpty))]

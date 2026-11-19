@@ -1200,6 +1200,27 @@ try {
             [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))) 'The play button on the card of Genre'
     Test-Running 'after playing a genre from its card'
 
+    # The genres show as a list too (#450): List view turns the 88 px cards into rows, Grid view brings them
+    # back. Pressed with the keyboard, as a user does, so the Click handlers run.
+    function Get-GenreItemHeight {
+        $item = @($window.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))) |
+            Where-Object { $_.Current.Name -eq 'Genre' } | Select-Object -First 1
+        if ($item) { (Get-Bounds $item).Height } else { 0 }
+    }
+    function Switch-GenresView([string] $id, [scriptblock] $done, [string] $what) {
+        Add-Type -AssemblyName System.Windows.Forms
+        (Find-ById $id).SetFocus()
+        [System.Windows.Forms.SendKeys]::SendWait(' ')
+        $until = (Get-Date).AddSeconds(10)
+        do { Start-Sleep -Milliseconds 300; $height = Get-GenreItemHeight } while (-not (& $done $height) -and (Get-Date) -lt $until)
+        if (-not (& $done $height)) { Stop-Test 'Genres list view' "After $what was pressed, the item 'Genre' is $height px high." }
+        $height
+    }
+    $cardHeight = Get-GenreItemHeight
+    $rowHeight = Switch-GenresView 'GenresListViewToggle' { param($h) $h -gt 0 -and $h -lt 70 } 'List view'
+    $null = Switch-GenresView 'GenresGridViewToggle' { param($h) $h -ge 80 } 'Grid view'
+    Write-Output "List view shows the genres as rows ('Genre': $rowHeight px high, $cardHeight px as a card), and Grid view shows the cards again."
+
     Select-Navigation 'Artists'
     Start-Sleep -Seconds 2
     Test-Accessibility 'artists'

@@ -217,6 +217,9 @@ public sealed record BrowseSettings
     /// <summary>Gets or sets how the playlists page shows the playlists (#449).</summary>
     public CollectionViewMode PlaylistView { get; set; } = CollectionViewMode.Grid;
 
+    /// <summary>Gets or sets how the genres page shows the genres (#450).</summary>
+    public CollectionViewMode GenreView { get; set; } = CollectionViewMode.Grid;
+
     public TrackSortField SongSort { get; set; } = TrackSortField.Name;
 
     public bool SongSortDescending { get; set; }
