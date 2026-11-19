@@ -154,6 +154,9 @@ internal static class AppHost
         // "Work offline" (#400): the app sees the PC's network through the switch, offline while it is on.
         builder.Services.AddSingleton(sp => new OfflineSwitch(sp.GetRequiredService<NetworkStatus>(), sp.GetRequiredService<ISettingsService>()));
         builder.Services.AddSingleton<INetworkStatus>(sp => sp.GetRequiredService<OfflineSwitch>());
+        // At home or away, for the stream quality limits (#453): the server says which.
+        builder.Services.AddSingleton<HomeNetwork>();
+        builder.Services.AddSingleton<IHomeNetwork>(sp => sp.GetRequiredService<HomeNetwork>());
         builder.Services.AddSingleton(sp =>
         {
             var server = sp.GetRequiredService<ServerServices>();

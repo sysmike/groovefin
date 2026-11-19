@@ -31,10 +31,11 @@ public static class StreamQuality
     ];
 
     /// <summary>
-    /// Describes <paramref name="file"/>. <paramref name="options"/> are the streaming settings for the server; a
-    /// <paramref name="downloaded"/> song plays from its file.
+    /// Describes <paramref name="file"/>. <paramref name="options"/> are the streaming settings for the server, those
+    /// of its home network when <paramref name="atHome"/> (#453); a <paramref name="downloaded"/> song plays from its
+    /// file.
     /// </summary>
-    public static StreamQualityInfo Describe(TrackDetails file, StreamOptions options, bool downloaded, IStringResources strings)
+    public static StreamQualityInfo Describe(TrackDetails file, StreamOptions options, bool atHome, bool downloaded, IStringResources strings)
     {
         ArgumentNullException.ThrowIfNull(file);
         ArgumentNullException.ThrowIfNull(options);
@@ -64,7 +65,7 @@ public static class StreamQuality
             return new(
                 StreamKind.Converted,
                 Join($"{codec} {Kbps(limit)}", strings.GetString("StreamQuality_ConvertedShort")),
-                strings.GetString("StreamQuality_BitrateWhy").Replace("{0}", Kbps(limit), StringComparison.Ordinal));
+                strings.GetString(atHome ? "StreamQuality_BitrateWhyHome" : "StreamQuality_BitrateWhyAway").Replace("{0}", Kbps(limit), StringComparison.Ordinal));
         }
 
         return new(StreamKind.Original, Format(file), strings.GetString("StreamQuality_OriginalWhy"));

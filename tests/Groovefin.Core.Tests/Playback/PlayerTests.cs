@@ -3,6 +3,7 @@ using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
 using Groovefin.Core.Queue;
+using Groovefin.Core.Servers;
 using Groovefin.Core.Settings;
 using Groovefin.Core.Tests.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -87,6 +88,22 @@ public sealed class PlayerTests : IDisposable
         _sut.Play(Tracks("a"));
 
         _streams.Received(1).GetStreamUrl("a", new StreamOptions(320, TranscodingCodec.Aac));
+    }
+
+    [Theory]
+    [InlineData(true, null)]
+    [InlineData(false, 320)]
+    public void The_server_saying_where_the_pc_is_decides_the_limit_whatever_its_address(bool atHome, int? limit)
+    {
+        var server = new Uri("https://media.example.com/");
+        var home = Substitute.For<IHomeNetwork>();
+        home.IsAtHome(server).Returns(atHome);
+        _client.Connection.Returns(new ServerConnection(server, "user", "token"));
+        using var player = new Player(new QueueManager(new Random(1)), new FakePlaybackEngine(), _streams, _client, _settings, _errors, NullLogger<Player>.Instance, home: home);
+
+        player.Play(Tracks("a"));
+
+        _streams.Received(1).GetStreamUrl("a", new StreamOptions(limit, TranscodingCodec.Aac));
     }
 
     [Fact]

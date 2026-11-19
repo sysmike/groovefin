@@ -1882,7 +1882,7 @@
     <value>Qualität im Heimnetz</value>
   </data>
   <data name="SettingsRemoteBitrateCard.Header" xml:space="preserve">
-    <value>Qualität für entfernte Server</value>
+    <value>Qualität unterwegs</value>
   </data>
   <data name="SettingsCodecCard.Header" xml:space="preserve">
     <value>Format bei Umwandlung</value>
@@ -2971,8 +2971,11 @@
   <data name="StreamQuality_FormatWhy" xml:space="preserve">
     <value>Vom Server umgewandelt: Windows kann {0}-Dateien nicht abspielen.</value>
   </data>
-  <data name="StreamQuality_BitrateWhy" xml:space="preserve">
-    <value>Vom Server umgewandelt: Die Datei liegt über der Grenze von {0}, die in Einstellungen → Streaming für diesen Server gilt.</value>
+  <data name="StreamQuality_BitrateWhyHome" xml:space="preserve">
+    <value>Vom Server umgewandelt: Die Datei liegt über der Grenze von {0} für das Heimnetz in Einstellungen → Streaming.</value>
+  </data>
+  <data name="StreamQuality_BitrateWhyAway" xml:space="preserve">
+    <value>Vom Server umgewandelt: Die Datei liegt über der Grenze von {0} für unterwegs in Einstellungen → Streaming.</value>
   </data>
   <data name="StreamQuality_DownloadedFile" xml:space="preserve">
     <value>Heruntergeladene Datei</value>

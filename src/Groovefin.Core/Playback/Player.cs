@@ -3,6 +3,7 @@ using Groovefin.Core.Downloads;
 using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Queue;
+using Groovefin.Core.Servers;
 using Groovefin.Core.Services;
 using Groovefin.Core.Settings;
 using Microsoft.Extensions.Logging;
@@ -43,6 +44,7 @@ public sealed partial class Player : IPlayer, IDisposable
     private readonly INetworkStatus? _network;
     private readonly TimeProvider _time;
     private readonly IDispatcher? _dispatcher;
+    private readonly IHomeNetwork? _home;
     private string? _loadedItemId;
     private Reconnection? _reconnection;
     private bool _wasOnline;
@@ -61,7 +63,8 @@ public sealed partial class Player : IPlayer, IDisposable
         IOfflineLibrary? offline = null,
         INetworkStatus? network = null,
         TimeProvider? time = null,
-        IDispatcher? dispatcher = null)
+        IDispatcher? dispatcher = null,
+        IHomeNetwork? home = null)
     {
         Queue = queue;
         Engine = engine;
@@ -74,6 +77,7 @@ public sealed partial class Player : IPlayer, IDisposable
         _network = network;
         _time = time ?? TimeProvider.System;
         _dispatcher = dispatcher;
+        _home = home;
         _wasOnline = network?.IsOnline ?? true;
 
         Engine.Ended += OnEnded;
@@ -470,7 +474,8 @@ public sealed partial class Player : IPlayer, IDisposable
         }
 
         var server = _client.Connection?.ServerUrl ?? throw new InvalidOperationException("Not connected to a server.");
-        var options = _settings.Current.Streaming.OptionsFor(server);
+        // At home or away (#453): the server says so; without it, its address.
+        var options = _settings.Current.Streaming.OptionsFor(_home?.IsAtHome(server) ?? NetworkLocation.IsLocal(server));
         var url = _streams.GetStreamUrl(item.Track.Id, options);
         return new PlaybackSource(item.Id, url, item.Track, gain)
         {
