@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
+using Groovefin.Core.Images;
 using Groovefin.Core.Mixes;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
@@ -136,6 +137,20 @@ public sealed class MixViewModelsTests : IDisposable
         sut.Entries.Select(e => (e.Track.Id, e.Plays, e.Rank)).Should().Equal(("a", 3, 1), ("b", 1, 2));
         sut.HasEntries.Should().BeTrue();
         sut.PlayCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_mix_page_shows_each_songs_album_cover_at_the_display_scale()
+    {
+        _library.GetTracksAsync(Arg.Any<TrackQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<Track>([Song("a", 3) with { AlbumId = "al", AlbumImageTag = "t" }], 1, 0));
+        _store.Save(Saved());
+        var sut = Mix();
+        sut.DisplayScale = 1.5;
+
+        await sut.LoadAsync("m1", TestContext.Current.CancellationToken);
+
+        sut.Entries.Should().ContainSingle().Which.Cover.Should().Be(new ImageRequest("al", ImageKind.Primary, "t", 60));
     }
 
     [Fact]

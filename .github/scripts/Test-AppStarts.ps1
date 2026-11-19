@@ -1451,6 +1451,20 @@ try {
     $mixSummary = (Find-ById 'MixSummary').Current.Name
     Test-Running 'after making a mix'
     Write-Output "A new mix picked the fake server's 2 songs ($mixSummary)."
+    # Each song shows its album's cover before the title (#451), as in a playlist: the Title label starts where
+    # the titles do, with the rank and the cover before them.
+    $mixTitleLabel = Find-ById 'MixColumnTitle'
+    $mixRowTitle = @($mixEntries.FindAll($scope::Descendants, [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))) |
+        Where-Object { $_.Current.Name -like 'Track *' } | Select-Object -First 1
+    if (-not $mixRowTitle) { Stop-Test 'Mix covers' "The mix's rows show no song title." }
+    $mixLabelLeft = (Get-Bounds $mixTitleLabel).Left
+    $mixTitleLeft = (Get-Bounds $mixRowTitle).Left
+    if ([Math]::Abs($mixTitleLeft - $mixLabelLeft) -gt 2) {
+        Stop-Test 'Mix covers' "The mix's titles don't start under the Title header (header at $mixLabelLeft px, title at $mixTitleLeft px)."
+    }
+    $coverRoom = $mixTitleLeft - (Get-Bounds $mixRows[0]).Left
+    if ($coverRoom -lt 90) { Stop-Test 'Mix covers' "The mix's titles start $coverRoom px into the row: no room for the cover before them." }
+    Write-Output "The mix's titles start $coverRoom px into the row, after the cover, under the Title header."
     Test-Accessibility 'mix'
     Select-Navigation 'Mixes'
     $null = Find-Button 'Play Smoke mix'

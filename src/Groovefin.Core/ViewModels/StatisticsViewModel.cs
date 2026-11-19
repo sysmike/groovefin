@@ -500,7 +500,8 @@ public sealed partial class StatisticsViewModel : ObservableObject
                 i + 1,
                 s.Plays,
                 PlaysText(s.Plays),
-                _favourites.IsFavourite(s.Item.Id, s.Item.IsFavorite))),
+                _favourites.IsFavourite(s.Item.Id, s.Item.IsFavorite),
+                OnRepeatItem.CoverOf(s.Item, DisplayScale))),
         ];
         HasSongs = _songs.Count > 0;
         HasMoreSongs = _songs.Count > SongsShown;

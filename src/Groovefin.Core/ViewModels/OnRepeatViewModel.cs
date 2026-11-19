@@ -7,6 +7,7 @@ using Groovefin.Core.Api;
 using Groovefin.Core.Favourites;
 using Groovefin.Core.Formatting;
 using Groovefin.Core.History;
+using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -15,10 +16,19 @@ using Groovefin.Core.Services;
 
 namespace Groovefin.Core.ViewModels;
 
-/// <summary>A row of "On repeat" (#251): rank, title, artists, album, plays, heart, length.</summary>
-public sealed partial class OnRepeatItem(Track track, int rank, int plays, string playsText, bool isFavourite = false) : ObservableObject, ICurrentTrackRow
+/// <summary>
+/// A row of "On repeat" (#251), a mix (#401) and the statistics' top songs: rank, album cover (#451), title,
+/// artists, album, plays, heart, length.
+/// </summary>
+public sealed partial class OnRepeatItem(Track track, int rank, int plays, string playsText, bool isFavourite = false, ImageRequest? cover = null) : ObservableObject, ICurrentTrackRow
 {
+    /// <summary>The cover's width in device-independent pixels, as <c>ListThumbnailSize</c> has it.</summary>
+    public const double CoverWidth = 40;
+
     public Track Track { get; } = track;
+
+    /// <summary>Gets the album's cover, or <see langword="null"/> without one.</summary>
+    public ImageRequest? Cover { get; } = cover;
 
     /// <summary>Gets or sets whether the row's track is playing (#247).</summary>
     [ObservableProperty]
@@ -52,6 +62,13 @@ public sealed partial class OnRepeatItem(Track track, int rank, int plays, strin
 
     /// <summary>Gets the text Narrator reads, e.g. "1, One More Time, Daft Punk, Discovery, 12 plays, 5:20".</summary>
     public string AccessibleName => string.Join(", ", new[] { Number, Name, Artist, Album, playsText, Duration }.Where(s => s.Length > 0));
+
+    /// <summary>The cover of <paramref name="track"/>'s album at <paramref name="scale"/>.</summary>
+    public static ImageRequest? CoverOf(Track track, double scale)
+    {
+        ArgumentNullException.ThrowIfNull(track);
+        return track.AlbumId is { } albumId ? ImageRequest.Primary(albumId, track.AlbumImageTag, CoverWidth, scale) : null;
+    }
 }
 
 /// <summary>
@@ -73,6 +90,9 @@ public sealed partial class OnRepeatViewModel(
     TimeProvider time) : ObservableObject
 {
     public ObservableCollection<OnRepeatItem> Entries { get; } = currentTrack.Watch(new ObservableCollection<OnRepeatItem>());
+
+    /// <summary>Gets or sets the display's scale; the covers are requested for it.</summary>
+    public double DisplayScale { get; set; } = 1;
 
     [ObservableProperty]
     public partial bool IsLoading { get; private set; }
@@ -114,7 +134,7 @@ public sealed partial class OnRepeatViewModel(
             {
                 var track = tracks[entry.TrackId];
                 var plays = strings.GetString("OnRepeat_Plays").Replace("{0}", entry.Plays.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal);
-                Entries.Add(new OnRepeatItem(track, Entries.Count + 1, entry.Plays, plays, favourites.IsFavourite(track.Id, track.IsFavorite)));
+                Entries.Add(new OnRepeatItem(track, Entries.Count + 1, entry.Plays, plays, favourites.IsFavourite(track.Id, track.IsFavorite), OnRepeatItem.CoverOf(track, DisplayScale)));
             }
 
             HasEntries = Entries.Count > 0;
