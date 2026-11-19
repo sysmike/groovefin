@@ -3,6 +3,7 @@ using Groovefin.Core.Servers;
 using Groovefin.Core.Tests.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
+using NSubstitute.ReturnsExtensions;
 
 namespace Groovefin.Core.Tests.Servers;
 
@@ -126,7 +127,7 @@ public sealed class HomeNetworkTests
         }
 
         _network.IsOnline = true;
-        _client.Connection.Returns((ServerConnection?)null);
+        _client.Connection.ReturnsNull();
         using (var signedOut = CreateSut())
         {
             await signedOut.Checking;
