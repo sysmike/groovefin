@@ -112,7 +112,7 @@ public sealed class OnRepeatViewModelTests : IDisposable
     [Fact]
     public async Task Each_row_shows_its_albums_cover_at_the_display_scale()
     {
-        Played(("a", 2), ("b", 1));
+        Played(("a", 3), ("b", 2));
         _library.GetTracksByIdAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>()).Returns(
         [
             Song("a") with { AlbumId = "al", AlbumImageTag = "t" },
