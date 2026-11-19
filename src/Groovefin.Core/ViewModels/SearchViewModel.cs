@@ -14,9 +14,12 @@ using Groovefin.Core.Services;
 namespace Groovefin.Core.ViewModels;
 
 /// <summary>A track in the search results.</summary>
-public sealed partial class SearchTrackItem(Track track, int index) : ObservableObject, ICurrentTrackRow
+public sealed partial class SearchTrackItem(Track track, int index, ImageRequest? cover = null) : ObservableObject, ICurrentTrackRow
 {
     public Track Track { get; } = track;
+
+    /// <summary>Gets the album's cover (#452), or <see langword="null"/> without one.</summary>
+    public ImageRequest? Cover { get; } = cover;
 
     public int Index { get; } = index;
 
@@ -30,7 +33,6 @@ public sealed partial class SearchTrackItem(Track track, int index) : Observable
 
     public string Name => Track.Name;
 
-    /// <summary>Gets the artists and the album, e.g. "Daft Punk · Discovery".</summary>
     /// <summary>Gets the artists, album and year, so the same song on several albums can be told apart (#391).</summary>
     public string Details => SearchTexts.TrackDetails(Track);
 
@@ -54,7 +56,7 @@ public sealed partial class SearchViewModel(
     /// <summary>Most results shown per kind.</summary>
     public const int Limit = 50;
 
-    public const double TileWidth = 152;
+    public const double TileWidth = CoverSizes.Tile;
 
     public const double PlaylistImageWidth = 48;
 
@@ -161,7 +163,7 @@ public sealed partial class SearchViewModel(
         Tracks.Clear();
         for (var i = 0; i < results.Tracks.Count; i++)
         {
-            Tracks.Add(new SearchTrackItem(results.Tracks[i], i));
+            Tracks.Add(new SearchTrackItem(results.Tracks[i], i, CoverSizes.RowCover(results.Tracks[i], DisplayScale)));
         }
 
         Playlists.Clear();

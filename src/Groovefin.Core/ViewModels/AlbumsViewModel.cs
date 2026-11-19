@@ -63,7 +63,7 @@ public sealed partial class AlbumsViewModel : ObservableObject, IDisposable
     public const int PageSize = 100;
 
     /// <summary>Tile width in device-independent pixels; covers are requested for this width.</summary>
-    public const double TileWidth = 168;
+    public const double TileWidth = CoverSizes.Tile;
 
     private readonly ILibraryService _library;
     private readonly ISettingsService _settings;

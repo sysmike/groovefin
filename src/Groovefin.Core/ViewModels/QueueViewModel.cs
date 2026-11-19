@@ -41,7 +41,7 @@ public sealed class QueueEntry(QueueItem item, ImageRequest? cover)
 public sealed partial class QueueViewModel : ObservableObject, IDisposable
 {
     /// <summary>Cover size in device-independent pixels.</summary>
-    public const double CoverWidth = 40;
+    public const double CoverWidth = CoverSizes.Row;
 
     /// <summary>Most history entries shown, newest first.</summary>
     public const int HistoryShown = 100;

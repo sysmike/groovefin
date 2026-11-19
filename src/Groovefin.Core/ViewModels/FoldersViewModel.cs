@@ -26,7 +26,7 @@ public sealed partial class FoldersViewModel(ILibraryService library, IPlayer pl
 {
     public const int TrackLimit = 1000;
 
-    public const double CoverWidth = 40;
+    public const double CoverWidth = CoverSizes.Row;
 
     private int _generation;
 

@@ -99,7 +99,7 @@ public sealed partial class TileRow(string showAllText, string showLessText) : O
 public sealed partial class StatisticsViewModel : ObservableObject
 {
     /// <summary>The smallest tile width; the tiles grow to fill the row.</summary>
-    public const double TileWidth = 152;
+    public const double TileWidth = CoverSizes.Tile;
 
     public const double TileSpacing = 16;
 
@@ -501,7 +501,7 @@ public sealed partial class StatisticsViewModel : ObservableObject
                 s.Plays,
                 PlaysText(s.Plays),
                 _favourites.IsFavourite(s.Item.Id, s.Item.IsFavorite),
-                OnRepeatItem.CoverOf(s.Item, DisplayScale))),
+                CoverSizes.RowCover(s.Item, DisplayScale))),
         ];
         HasSongs = _songs.Count > 0;
         HasMoreSongs = _songs.Count > SongsShown;

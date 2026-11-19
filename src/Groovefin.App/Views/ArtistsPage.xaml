@@ -11,7 +11,7 @@
 
     <Page.Resources>
         <!--  The grid's tiles grow until whole columns fill each row (#232).  -->
-        <controls:TileSize x:Key="ArtistTile" MinWidth="160" />
+        <controls:TileSize x:Key="ArtistTile" MinWidth="{StaticResource CoverTileWidth}" />
 
         <!--  Grid: round image with a play button, name.  -->
         <DataTemplate x:Key="ArtistGridTemplate" x:DataType="vm:ArtistItem">

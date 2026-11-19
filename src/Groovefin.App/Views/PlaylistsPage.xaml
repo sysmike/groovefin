@@ -12,7 +12,7 @@
 
     <Page.Resources>
         <!--  The grid's tiles grow until whole columns fill each row (#232).  -->
-        <controls:TileSize x:Key="PlaylistTile" MinWidth="168" />
+        <controls:TileSize x:Key="PlaylistTile" MinWidth="{StaticResource CoverTileWidth}" />
 
         <!--  Grid: square image, name, track count and length.  -->
         <DataTemplate x:Key="PlaylistTileTemplate" x:DataType="vm:PlaylistItem">

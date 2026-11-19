@@ -182,10 +182,10 @@ public sealed class HomeViewModelTests
 
     [Theory]
     [InlineData(100, 1)]
-    [InlineData(152, 1)]
-    [InlineData(320, 1)]
-    [InlineData(321, 2)]
-    [InlineData(1000, 6)]
+    [InlineData(168, 1)]
+    [InlineData(351, 1)]
+    [InlineData(352, 2)]
+    [InlineData(1000, 5)]
     public void Tiles_that_fit_count_the_space_between_them(double width, int tiles)
     {
         HomeShelf.TilesThatFit(width).Should().Be(tiles);

@@ -2,7 +2,10 @@ using System.ComponentModel;
 using Groovefin.Core.Settings;
 using Groovefin.Core.ViewModels;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace Groovefin.App.Controls;
 
@@ -15,6 +18,9 @@ internal sealed partial class SongTableRow : Grid
 {
     /// <summary>Space on both sides of a cell's text; the header uses the same.</summary>
     public const double CellPadding = 8;
+
+    /// <summary>Between the album's cover and the title (#452); the Title header leaves the cover's room and this.</summary>
+    public const double CoverSpacing = 12;
 
     private SongsViewModel? _table;
     private SongRow? _row;
@@ -83,7 +89,7 @@ internal sealed partial class SongTableRow : Grid
                 ColumnDefinitions.Add(new ColumnDefinition());
                 FrameworkElement cell = columns[i].Column switch
                 {
-                    SongColumn.Title => new TrackText { ShowsIcon = !hasNumber },
+                    SongColumn.Title => new TitleCell(new TrackText { ShowsIcon = !hasNumber }),
                     SongColumn.Artist or SongColumn.Album or SongColumn.AlbumArtist => new TrackText { IsSecondary = true },
                     SongColumn.TrackNumber => new TrackNumber(),
                     _ => new TextBlock { Style = _secondaryStyle },
@@ -102,11 +108,17 @@ internal sealed partial class SongTableRow : Grid
             var text = _row.Text(columns[i].Column);
             switch (Children[i])
             {
+                case TitleCell title:
+                    title.Show(_row.Cover);
+                    title.Text.Text = text;
+                    title.Text.IsPlaying = _row.IsCurrent;
+                    title.Text.IsDownloaded = _row.IsDownloaded;
+                    break;
                 case TrackText track:
                     track.Text = text;
                     track.IsPlaying = _row.IsCurrent;
                     // The download mark is the title's (#337).
-                    track.IsDownloaded = !track.IsSecondary && _row.IsDownloaded;
+                    track.IsDownloaded = false;
                     break;
                 case TrackNumber number:
                     number.Text = text;
@@ -118,4 +130,58 @@ internal sealed partial class SongTableRow : Grid
             }
         }
     }
+
+    /// <summary>
+    /// The title column's cell: the album's cover (#452), as big as <c>ListThumbnailSize</c> in the current density,
+    /// then the title. The cover is decorative: the row's name says it all.
+    /// </summary>
+    private sealed partial class TitleCell : Grid
+    {
+        private readonly Grid _frame;
+        private readonly Image _cover = new() { Stretch = Stretch.UniformToFill };
+
+        public TitleCell(TrackText text)
+        {
+            Text = text;
+            ColumnSpacing = CoverSpacing;
+            ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            _frame = new Grid
+            {
+                VerticalAlignment = VerticalAlignment.Center,
+                Background = (Brush)Application.Current.Resources["CardBackgroundFillColorSecondaryBrush"],
+                CornerRadius = (CornerRadius)Application.Current.Resources["ControlCornerRadius"],
+            };
+            AutomationProperties.SetAccessibilityView(_frame, AccessibilityView.Raw);
+            AutomationProperties.SetAccessibilityView(_cover, AccessibilityView.Raw);
+            _frame.Children.Add(new FontIcon
+            {
+                Glyph = "\uE93C",
+                FontSize = 16,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
+            });
+            _frame.Children.Add(_cover);
+            Children.Add(_frame);
+
+            text.VerticalAlignment = VerticalAlignment.Center;
+            SetColumn(text, 1);
+            Children.Add(text);
+        }
+
+        public TrackText Text { get; }
+
+        /// <summary>Shows <paramref name="cover"/>, at the density's thumbnail size, which may have changed since.</summary>
+        public void Show(Groovefin.Core.Images.ImageRequest? cover)
+        {
+            _frame.Width = _frame.Height = ThumbnailSize;
+            if (!Equals(Artwork.GetRequest(_cover), cover))
+            {
+                Artwork.SetRequest(_cover, cover);
+            }
+        }
+    }
+
+    /// <summary>The list thumbnail's size in the current density: ThemeService changes it.</summary>
+    internal static double ThumbnailSize => (double)Application.Current.Resources["ListThumbnailSize"];
 }

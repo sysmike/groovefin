@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Groovefin.Core.Api;
 using Groovefin.Core.Downloads;
 using Groovefin.Core.Favourites;
+using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
@@ -399,5 +400,19 @@ public sealed class ArtistDetailViewModelTests
 
         sut.Albums[0].Cover!.Width.Should().Be((int)Math.Ceiling(ArtistDetailViewModel.AlbumGridTileWidth * 1.5));
         sut.AppearsOn[0].Cover!.Width.Should().Be((int)Math.Ceiling(ArtistDetailViewModel.TileWidth * 1.5));
+    }
+
+    [Fact]
+    public async Task Top_songs_show_their_albums_cover_at_the_display_scale()
+    {
+        _library.GetArtistTopTracksAsync(ArtistId, ArtistDetailViewModel.TopTrackCount, Arg.Any<CancellationToken>())
+            .Returns([Track("t1", "One More Time", "Discovery", "al") with { AlbumImageTag = "t" }, Track("t2", "Around the World", "Homework", "al2")]);
+        var sut = CreateSut();
+        sut.DisplayScale = 2;
+
+        await sut.LoadAsync(ArtistId, TestContext.Current.CancellationToken);
+
+        sut.TopTracks[0].Cover.Should().Be(new ImageRequest("al", ImageKind.Primary, "t", 80));
+        sut.TopTracks[1].Cover.Should().BeNull("an album without a cover shows the placeholder");
     }
 }

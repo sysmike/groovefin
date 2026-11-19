@@ -14,9 +14,9 @@
         <!--  Square cover, name, album artist.  -->
         <DataTemplate x:Key="AlbumTileTemplate" x:DataType="vm:AlbumItem">
             <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
-                <StackPanel Width="152" Padding="0,0,0,8" Spacing="6">
+                <StackPanel Width="{StaticResource CoverTileWidth}" Padding="0,0,0,8" Spacing="6">
                     <Grid
-                        Height="152"
+                        Height="{StaticResource CoverTileWidth}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                         CornerRadius="{StaticResource OverlayCornerRadius}">
                         <FontIcon
@@ -117,7 +117,7 @@
                 <TextBlock x:Uid="GenreAlbumsHeader" Style="{StaticResource SectionHeaderStyle}" />
                 <ItemsView
                     x:Uid="GenreAlbums"
-                    Height="224"
+                    Height="240"
                     AutomationProperties.AutomationId="GenreAlbums"
                     Padding="36,0"
                     controls:ItemMenu.IsEnabled="True"

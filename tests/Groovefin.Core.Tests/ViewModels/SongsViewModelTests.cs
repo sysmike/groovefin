@@ -1,4 +1,5 @@
 using Groovefin.Core.Api;
+using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
@@ -67,6 +68,20 @@ public sealed class SongsViewModelTests
         sut.Songs.Should().HaveCount(450);
         sut.LoadMoreCommand.CanExecute(null).Should().BeFalse();
         sut.IsEmpty.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Each_row_shows_its_albums_cover_at_the_display_scale()
+    {
+        _library.GetTracksAsync(Arg.Any<TrackQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<Track>([Song(1) with { AlbumId = "al", AlbumImageTag = "t" }, Song(2)], 2, 0));
+        using var sut = CreateSut();
+        sut.DisplayScale = 1.5;
+
+        await sut.InitializeAsync();
+
+        sut.Songs[0].Cover.Should().Be(new ImageRequest("al", ImageKind.Primary, "t", 60));
+        sut.Songs[1].Cover.Should().BeNull("a song without an album has no cover");
     }
 
     [Fact]

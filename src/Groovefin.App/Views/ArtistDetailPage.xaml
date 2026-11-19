@@ -13,7 +13,7 @@
 
     <Page.Resources>
         <!--  The albums grid's tiles grow until whole columns fill each row, as on the Albums page (#232, #263).  -->
-        <controls:TileSize x:Key="AlbumTile" MinWidth="168" />
+        <controls:TileSize x:Key="AlbumTile" MinWidth="{StaticResource CoverTileWidth}" />
 
         <!--  Grid tile: square cover, name, year.  -->
         <DataTemplate x:Key="AlbumGridTemplate" x:DataType="vm:AlbumItem">
@@ -51,9 +51,9 @@
         <!--  Shelf tile (appears on): square cover, name, year.  -->
         <DataTemplate x:Key="AlbumTileTemplate" x:DataType="vm:AlbumItem">
             <ItemContainer controls:TrackDragSource.IsEnabled="True" AutomationProperties.Name="{x:Bind AccessibleName}">
-                <StackPanel Width="152" Padding="0,0,0,8" Spacing="6">
+                <StackPanel Width="{StaticResource CoverTileWidth}" Padding="0,0,0,8" Spacing="6">
                     <Grid
-                        Height="152"
+                        Height="{StaticResource CoverTileWidth}"
                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                         CornerRadius="{StaticResource OverlayCornerRadius}">
                         <FontIcon
@@ -82,7 +82,7 @@
         </DataTemplate>
 
         <!--  The similar artists' tiles grow until whole columns fill their one row (#232, #264).  -->
-        <controls:TileSize x:Key="SimilarTile" MinWidth="152" />
+        <controls:TileSize x:Key="SimilarTile" MinWidth="{StaticResource CoverTileWidth}" />
 
         <!--  Round image, name.  -->
         <DataTemplate x:Key="ArtistTileTemplate" x:DataType="vm:ArtistItem">
@@ -331,12 +331,35 @@
                                         VerticalAlignment="Center"
                                         IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
                                         Text="{x:Bind Number}" />
-                                    <controls:TrackText
-                                        Grid.Column="1"
-                                        VerticalAlignment="Center"
-                                        IsDownloaded="{x:Bind IsDownloaded, Mode=OneWay}"
-                                        IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
-                                        Text="{x:Bind Name}" />
+                                    <!--  The album's cover, then the title (#452). Decorative: the row's name says it all.  -->
+                                    <Grid Grid.Column="1" ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid
+                                            Width="{ThemeResource ListThumbnailSize}"
+                                            Height="{ThemeResource ListThumbnailSize}"
+                                            VerticalAlignment="Center"
+                                            AutomationProperties.AccessibilityView="Raw"
+                                            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                            CornerRadius="{StaticResource ControlCornerRadius}">
+                                            <FontIcon
+                                                FontSize="16"
+                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                Glyph="&#xE93C;" />
+                                            <Image
+                                                controls:Artwork.Request="{x:Bind Cover}"
+                                                AutomationProperties.AccessibilityView="Raw"
+                                                Stretch="UniformToFill" />
+                                        </Grid>
+                                        <controls:TrackText
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            IsDownloaded="{x:Bind IsDownloaded, Mode=OneWay}"
+                                            IsPlaying="{x:Bind IsCurrent, Mode=OneWay}"
+                                            Text="{x:Bind Name}" />
+                                    </Grid>
                                     <controls:TrackText
                                         Grid.Column="2"
                                         VerticalAlignment="Center"
@@ -391,7 +414,7 @@
                         <ItemsView.Layout>
                             <controls:WrapGridLayout
                                 MinColumnSpacing="16"
-                                MinItemWidth="168"
+                                MinItemWidth="{StaticResource CoverTileWidth}"
                                 MinRowSpacing="8" />
                         </ItemsView.Layout>
                     </ItemsView>
@@ -403,7 +426,7 @@
                     <ItemsView
                         controls:ItemMenu.IsEnabled="True"
                         x:Uid="ArtistAppearsOn"
-                        Height="224"
+                        Height="240"
                         Padding="36,0"
                         IsItemInvokedEnabled="True"
                         ItemInvoked="OnAlbumInvoked"
@@ -439,7 +462,7 @@
                         <ItemsView.Layout>
                             <controls:WrapGridLayout
                                 MinColumnSpacing="16"
-                                MinItemWidth="152"
+                                MinItemWidth="{StaticResource CoverTileWidth}"
                                 MinRowSpacing="8" />
                         </ItemsView.Layout>
                     </ItemsView>

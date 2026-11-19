@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Groovefin.Core.Api;
 using Groovefin.Core.Formatting;
+using Groovefin.Core.Images;
 using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Playback;
@@ -12,10 +13,13 @@ using Groovefin.Core.Settings;
 
 namespace Groovefin.Core.ViewModels;
 
-/// <summary>One row of the songs table.</summary>
-public sealed partial class SongRow(Track track) : ObservableObject, ICurrentTrackRow
+/// <summary>One row of the songs table: the album's cover before the title (#452), then the columns.</summary>
+public sealed partial class SongRow(Track track, ImageRequest? cover = null) : ObservableObject, ICurrentTrackRow
 {
     public Track Track { get; } = track;
+
+    /// <summary>Gets the album's cover, or <see langword="null"/> without one.</summary>
+    public ImageRequest? Cover { get; } = cover;
 
     /// <summary>Gets or sets whether the row's track is playing (#247).</summary>
     [ObservableProperty]
@@ -131,6 +135,9 @@ public sealed partial class SongsViewModel : ObservableObject, IDisposable
     public event EventHandler? LayoutChanged;
 
     public ObservableCollection<SongRow> Songs { get; } = [];
+
+    /// <summary>Gets or sets the display's scale; the covers are requested for it.</summary>
+    public double DisplayScale { get; set; } = 1;
 
     /// <summary>Gets every column in display order, hidden ones included.</summary>
     public ObservableCollection<SongColumnViewModel> Columns { get; } = [];
@@ -446,7 +453,7 @@ public sealed partial class SongsViewModel : ObservableObject, IDisposable
 
             foreach (var track in page.Items)
             {
-                Songs.Add(new SongRow(track));
+                Songs.Add(new SongRow(track, CoverSizes.RowCover(track, DisplayScale)));
             }
 
             TotalCount = page.TotalCount;

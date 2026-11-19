@@ -69,9 +69,9 @@ public sealed partial class GenreDetailViewModel(
 
     public const int AlbumLimit = 200;
 
-    public const double TileWidth = 152;
+    public const double TileWidth = CoverSizes.Tile;
 
-    public const double CoverWidth = 40;
+    public const double CoverWidth = CoverSizes.Row;
 
     private IReadOnlyList<Track> _tracks = [];
 

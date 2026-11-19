@@ -666,6 +666,15 @@ try {
         if (-not $songRow) { Start-Sleep -Milliseconds 500 }
     } while (-not $songRow -and (Get-Date) -lt $until)
     if (-not $songRow) { Stop-Test 'Smoke test' "The song 'Track 1' was not found on the songs page." }
+    # Each song shows its album's cover before the title (#452): after the # column (48 px) and the cover,
+    # the title starts more than 90 px into the row; without the cover it would start at 56 px.
+    $songTitle = $songRow.FindFirst($scope::Descendants, [System.Windows.Automation.AndCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Track 1'),
+            [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text)))
+    if (-not $songTitle) { Stop-Test 'Songs covers' "The songs page's row 'Track 1' shows no title." }
+    $songTitleInset = (Get-Bounds $songTitle).Left - (Get-Bounds $songRow).Left
+    if ($songTitleInset -lt 90) { Stop-Test 'Songs covers' "The songs page's titles start $songTitleInset px into the row: no room for the cover before them." }
+    Write-Output "The songs page's titles start $songTitleInset px into the row, after the cover."
     # The menu: a right-click on the row, else Shift+F10 or the Menu key on it. A menu can open in a popup
     # window of its own, beside the main window, so every window of the app is searched; each try that finds
     # nothing prints what UI Automation sees.

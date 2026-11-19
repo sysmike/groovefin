@@ -13,7 +13,7 @@
 
     <Page.Resources>
         <!--  Both rows are as wide, so their tiles are too.  -->
-        <controls:TileSize x:Key="HomeTile" MinWidth="152" />
+        <controls:TileSize x:Key="HomeTile" MinWidth="{StaticResource CoverTileWidth}" />
 
         <!--  Square cover, name, artist.  -->
         <DataTemplate x:Key="HomeTileTemplate" x:DataType="vm:AlbumItem">
@@ -252,7 +252,7 @@
                                         Tag="{x:Bind}"
                                         Visibility="{x:Bind HasAlbums, Mode=OneWay}" />
                                 </Grid>
-                                <Grid MinHeight="224">
+                                <Grid MinHeight="240">
                                     <!--
                                         One row of as many albums as fit (#376), grown to fill the page's width like
                                         the Albums page's grid; it never scrolls. Arrow keys move between albums, Tab
@@ -274,7 +274,7 @@
                                         <ItemsView.Layout>
                                             <controls:WrapGridLayout
                                                 MinColumnSpacing="16"
-                                                MinItemWidth="152"
+                                                MinItemWidth="{StaticResource CoverTileWidth}"
                                                 MinRowSpacing="8" />
                                         </ItemsView.Layout>
                                     </ItemsView>
