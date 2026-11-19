@@ -3,6 +3,8 @@ using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
 namespace Groovefin.Core.Tests.ViewModels;
@@ -12,9 +14,10 @@ public sealed class GenresViewModelTests
     private readonly ILibraryService _library = Substitute.For<ILibraryService>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
+    private readonly InMemorySettingsService _settings = new();
     private readonly GenresViewModel _sut;
 
-    public GenresViewModelTests() => _sut = new GenresViewModel(_library, _navigation, _errors);
+    public GenresViewModelTests() => _sut = new GenresViewModel(_library, _navigation, _errors, _settings);
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -29,6 +32,21 @@ public sealed class GenresViewModelTests
         _sut.Genres.Select(g => g.Name).Should().Equal("Electronic", "Jazz");
         _sut.IsEmpty.Should().BeFalse();
         _navigation.Received(1).NavigateTo(PageKeys.Genre, "g2");
+    }
+
+    [Fact]
+    public void The_view_mode_is_a_grid_at_first_and_is_remembered()
+    {
+        _sut.ViewMode.Should().Be(CollectionViewMode.Grid);
+        var changes = new List<string?>();
+        _sut.PropertyChanged += (_, e) => changes.Add(e.PropertyName);
+
+        _sut.ViewMode = CollectionViewMode.List;
+        _sut.ViewMode = CollectionViewMode.List;
+
+        changes.Should().Equal(nameof(GenresViewModel.ViewMode));
+        _settings.Current.Browse.GenreView.Should().Be(CollectionViewMode.List);
+        new GenresViewModel(_library, _navigation, _errors, _settings).ViewMode.Should().Be(CollectionViewMode.List);
     }
 
     [Fact]

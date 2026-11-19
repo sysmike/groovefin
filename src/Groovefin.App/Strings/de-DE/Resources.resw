@@ -1454,6 +1454,18 @@
   <data name="GenresHeader.Text" xml:space="preserve">
     <value>Genres</value>
   </data>
+  <data name="GenresGridViewToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Rasteransicht</value>
+  </data>
+  <data name="GenresGridViewToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Rasteransicht</value>
+  </data>
+  <data name="GenresListViewToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Listenansicht</value>
+  </data>
+  <data name="GenresListViewToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Listenansicht</value>
+  </data>
   <data name="GenresView.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Genres</value>
   </data>

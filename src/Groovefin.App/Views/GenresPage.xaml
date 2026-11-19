@@ -13,7 +13,7 @@
         <!--  The cards grow until whole columns fill each row (#232).  -->
         <controls:TileSize x:Key="GenreTile" MinWidth="200" />
 
-        <!--  A card with the genre's name.  -->
+        <!--  Grid: a card with the genre's name.  -->
         <DataTemplate x:Key="GenreTileTemplate" x:DataType="vm:GenreItem">
             <ItemContainer AutomationProperties.Name="{x:Bind Name}">
                 <Grid
@@ -50,6 +50,33 @@
                 </Grid>
             </ItemContainer>
         </DataTemplate>
+
+        <!--  List (#450): the genre icon and the name.  -->
+        <DataTemplate x:Key="GenreListTemplate" x:DataType="vm:GenreItem">
+            <ItemContainer AutomationProperties.Name="{x:Bind Name}">
+                <Grid Padding="{ThemeResource ListItemPadding}" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid
+                        Width="{ThemeResource ListThumbnailSize}"
+                        Height="{ThemeResource ListThumbnailSize}"
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                        CornerRadius="{StaticResource ControlCornerRadius}">
+                        <FontIcon
+                            FontSize="16"
+                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                            Glyph="&#xE8EC;" />
+                    </Grid>
+                    <TextBlock
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Text="{x:Bind Name}"
+                        TextTrimming="CharacterEllipsis" />
+                </Grid>
+            </ItemContainer>
+        </DataTemplate>
     </Page.Resources>
 
     <Grid>
@@ -58,24 +85,45 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel
-            Margin="36,24,36,12"
-            Orientation="Horizontal"
-            Spacing="12">
-            <TextBlock
-                x:Uid="GenresHeader"
-                AutomationProperties.HeadingLevel="Level1"
-                Style="{StaticResource TitleTextBlockStyle}" />
-            <ProgressRing
-                x:Uid="LoadingRing"
-                Width="16"
-                Height="16"
-                VerticalAlignment="Center"
-                IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
-        </StackPanel>
+        <Grid Margin="36,24,36,12" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Spacing="12">
+                <TextBlock
+                    x:Uid="GenresHeader"
+                    AutomationProperties.HeadingLevel="Level1"
+                    Style="{StaticResource TitleTextBlockStyle}" />
+                <ProgressRing
+                    x:Uid="LoadingRing"
+                    Width="16"
+                    Height="16"
+                    VerticalAlignment="Center"
+                    IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                <ToggleButton
+                    x:Name="GridViewToggle"
+                    x:Uid="GenresGridViewToggle"
+                    AutomationProperties.AutomationId="GenresGridViewToggle"
+                    Click="OnViewModeClick">
+                    <FontIcon FontSize="16" Glyph="&#xF0E2;" />
+                </ToggleButton>
+                <ToggleButton
+                    x:Name="ListViewToggle"
+                    x:Uid="GenresListViewToggle"
+                    AutomationProperties.AutomationId="GenresListViewToggle"
+                    Click="OnViewModeClick">
+                    <FontIcon FontSize="16" Glyph="&#xE8FD;" />
+                </ToggleButton>
+            </StackPanel>
+        </Grid>
 
+        <!--  Its template and layout follow the view mode: set from code.  -->
         <ItemsView
             controls:ViewMemory.IsEnabled="True"
+            x:Name="GenresView"
             x:Uid="GenresView"
             Grid.Row="1"
             controls:TileSize.Source="{StaticResource GenreTile}"
@@ -83,16 +131,8 @@
             controls:ItemMenu.IsEnabled="True"
             IsItemInvokedEnabled="True"
             ItemInvoked="OnGenreInvoked"
-            ItemTemplate="{StaticResource GenreTileTemplate}"
             ItemsSource="{x:Bind ViewModel.Genres}"
-            SelectionMode="None">
-            <ItemsView.Layout>
-                <UniformGridLayout
-                    MinColumnSpacing="12"
-                    MinItemWidth="200"
-                    MinRowSpacing="12" />
-            </ItemsView.Layout>
-        </ItemsView>
+            SelectionMode="None" />
         <TextBlock
             x:Uid="GenresEmpty"
             Grid.Row="1"
