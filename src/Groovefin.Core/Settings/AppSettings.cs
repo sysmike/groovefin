@@ -214,6 +214,9 @@ public sealed record BrowseSettings
     /// <summary>Gets or sets a value indicating whether the artists page lists album artists only.</summary>
     public bool AlbumArtistsOnly { get; set; } = true;
 
+    /// <summary>Gets or sets how the playlists page shows the playlists (#449).</summary>
+    public CollectionViewMode PlaylistView { get; set; } = CollectionViewMode.Grid;
+
     public TrackSortField SongSort { get; set; } = TrackSortField.Name;
 
     public bool SongSortDescending { get; set; }

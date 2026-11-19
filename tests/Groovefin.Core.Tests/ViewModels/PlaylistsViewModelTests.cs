@@ -4,6 +4,8 @@ using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
+using Groovefin.Core.Tests.TestDoubles;
 using Groovefin.Core.ViewModels;
 
 namespace Groovefin.Core.Tests.ViewModels;
@@ -15,13 +17,14 @@ public sealed class PlaylistsViewModelTests
     private readonly IDialogService _dialogs = Substitute.For<IDialogService>();
     private readonly IErrorReporter _errors = Substitute.For<IErrorReporter>();
     private readonly IStringResources _strings = Substitute.For<IStringResources>();
+    private readonly InMemorySettingsService _settings = new();
     private readonly PlaylistsViewModel _sut;
 
     public PlaylistsViewModelTests()
     {
         _strings.GetString(Arg.Any<string>()).Returns(call => call.Arg<string>());
         _strings.GetString("Album_TrackCount").Returns("{0} tracks");
-        _sut = new PlaylistsViewModel(_playlists, _navigation, _dialogs, _errors, _strings);
+        _sut = new PlaylistsViewModel(_playlists, _navigation, _dialogs, _errors, _strings, _settings);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -47,7 +50,7 @@ public sealed class PlaylistsViewModelTests
         _playlists.GetPlaylistsAsync(Arg.Any<CancellationToken>()).Returns([new Playlist { Id = "p1", Name = "Chill" }, new Playlist { Id = "p2", Name = "Road trip" }]);
         var downloads = Substitute.For<IOfflineLibrary>();
         downloads.IsComplete("p2").Returns(true);
-        var sut = new PlaylistsViewModel(_playlists, _navigation, _dialogs, _errors, _strings, downloads);
+        var sut = new PlaylistsViewModel(_playlists, _navigation, _dialogs, _errors, _strings, _settings, downloads);
 
         await sut.LoadAsync(Ct);
 
@@ -84,6 +87,21 @@ public sealed class PlaylistsViewModelTests
         await _sut.LoadAsync(Ct);
 
         _errors.DidNotReceiveWithAnyArgs().Report(default!, default!);
+    }
+
+    [Fact]
+    public void The_view_mode_is_a_grid_at_first_and_is_remembered()
+    {
+        _sut.ViewMode.Should().Be(CollectionViewMode.Grid);
+        var changes = new List<string?>();
+        _sut.PropertyChanged += (_, e) => changes.Add(e.PropertyName);
+
+        _sut.ViewMode = CollectionViewMode.List;
+        _sut.ViewMode = CollectionViewMode.List;
+
+        changes.Should().Equal(nameof(PlaylistsViewModel.ViewMode));
+        _settings.Current.Browse.PlaylistView.Should().Be(CollectionViewMode.List);
+        new PlaylistsViewModel(_playlists, _navigation, _dialogs, _errors, _strings, _settings).ViewMode.Should().Be(CollectionViewMode.List);
     }
 
     [Fact]

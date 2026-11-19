@@ -10,6 +10,7 @@ using Groovefin.Core.Models;
 using Groovefin.Core.Navigation;
 using Groovefin.Core.Notifications;
 using Groovefin.Core.Services;
+using Groovefin.Core.Settings;
 
 namespace Groovefin.Core.ViewModels;
 
@@ -45,18 +46,36 @@ public sealed record PlaylistItem(Playlist Playlist, ImageRequest? Image, string
     }
 }
 
-/// <summary>Playlists page: the user's audio playlists, and creating a new one.</summary>
+/// <summary>
+/// Playlists page: the user's audio playlists as a grid or a list (#449), and creating a new one. The view
+/// mode is remembered in settings.
+/// </summary>
 public sealed partial class PlaylistsViewModel(
     IPlaylistService playlists,
     INavigationService navigation,
     IDialogService dialogs,
     IErrorReporter errors,
     IStringResources strings,
+    ISettingsService settings,
     IOfflineLibrary? downloads = null) : ObservableObject
 {
     public const double TileWidth = 168;
 
     public ObservableCollection<PlaylistItem> Playlists { get; } = [];
+
+    /// <summary>Gets or sets how the playlists show: tiles or rows.</summary>
+    public CollectionViewMode ViewMode
+    {
+        get => settings.Current.Browse.PlaylistView;
+        set
+        {
+            if (value != ViewMode)
+            {
+                settings.Update(s => s with { Browse = s.Browse with { PlaylistView = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
 
     public double DisplayScale { get; set; } = 1;
 
