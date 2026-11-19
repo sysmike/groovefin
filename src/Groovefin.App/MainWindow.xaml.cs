@@ -179,8 +179,10 @@ internal sealed partial class MainWindow : Window
             if (e.PropertyName is nameof(NowPlayingViewModel.IsFullScreen) or nameof(NowPlayingViewModel.IsMiniPlayer))
             {
                 ApplyPresenter();
+                FitPanes();
             }
         };
+        RootGrid.SizeChanged += (_, _) => FitPanes();
         AppWindow.Changed += (_, args) =>
         {
             if (args.DidPresenterChange)
@@ -222,12 +224,22 @@ internal sealed partial class MainWindow : Window
             {
                 Lyrics.IsOpen = false;
             }
+
+            if (e.PropertyName == nameof(QueueViewModel.IsOpen))
+            {
+                FitPanes();
+            }
         };
         Lyrics.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(LyricsViewModel.IsOpen) && Lyrics.IsOpen)
             {
                 Queue.IsOpen = false;
+            }
+
+            if (e.PropertyName == nameof(LyricsViewModel.IsOpen))
+            {
+                FitPanes();
             }
         };
 
@@ -236,6 +248,18 @@ internal sealed partial class MainWindow : Window
     }
 
     public ShellViewModel ViewModel { get; }
+
+    /// <summary>
+    /// The queue and the lyrics are <c>SidePaneWidth</c> wide; in full screen half the window (#454), so the lyrics
+    /// can be read from the sofa and the cover and the song's details keep the other half.
+    /// </summary>
+    private void FitPanes()
+    {
+        var side = (double)Application.Current.Resources["SidePaneWidth"];
+        var width = Player.IsFullScreen ? Math.Max(side, Math.Floor(RootGrid.ActualWidth / 2)) : side;
+        QueuePane.Width = width;
+        LyricsPane.Width = width;
+    }
 
     public QueueViewModel Queue { get; }
 

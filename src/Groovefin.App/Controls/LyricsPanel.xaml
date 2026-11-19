@@ -22,8 +22,8 @@
         </Style>
     </UserControl.Resources>
 
+    <!--  As wide as the window gives it: SidePaneWidth, half the window in full screen (#454).  -->
     <Grid
-        Width="{StaticResource SidePaneWidth}"
         Padding="16,12,8,0"
         Background="{ThemeResource LayerFillColorDefaultBrush}"
         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
