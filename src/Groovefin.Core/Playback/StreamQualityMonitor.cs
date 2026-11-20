@@ -21,6 +21,7 @@ public sealed partial class StreamQualityMonitor : ObservableObject, IDisposable
     private readonly IStringResources _strings;
     private readonly IDispatcher? _dispatcher;
     private readonly IHomeNetwork? _home;
+    private readonly StreamConversions? _conversions;
     private (string TrackId, TrackDetails Details)? _file;
     private string? _trackId;
     private bool _downloaded;
@@ -33,7 +34,8 @@ public sealed partial class StreamQualityMonitor : ObservableObject, IDisposable
         ISettingsService settings,
         IStringResources strings,
         IDispatcher? dispatcher = null,
-        IHomeNetwork? home = null)
+        IHomeNetwork? home = null,
+        StreamConversions? conversions = null)
     {
         _engine = engine;
         _library = library;
@@ -42,8 +44,13 @@ public sealed partial class StreamQualityMonitor : ObservableObject, IDisposable
         _strings = strings;
         _dispatcher = dispatcher;
         _home = home;
+        _conversions = conversions;
         _engine.CurrentChanged += OnCurrentChanged;
         _settings.Changed += OnSettingsChanged;
+        if (conversions is not null)
+        {
+            conversions.Changed += OnConversionsChanged;
+        }
     }
 
     /// <summary>Gets the label, e.g. "AAC 320 kbps · converted", or empty while nothing plays or it is not known.</summary>
@@ -61,12 +68,19 @@ public sealed partial class StreamQualityMonitor : ObservableObject, IDisposable
     {
         _engine.CurrentChanged -= OnCurrentChanged;
         _settings.Changed -= OnSettingsChanged;
+        if (_conversions is not null)
+        {
+            _conversions.Changed -= OnConversionsChanged;
+        }
     }
 
     /// <summary>Gets the work of the last change, for tests.</summary>
     internal Task LastUpdate { get; private set; } = Task.CompletedTask;
 
     private void OnCurrentChanged(object? sender, EventArgs e) => LastUpdate = UpdateAsync();
+
+    /// <summary>A song now streams converted: the label says so when it is the one playing.</summary>
+    private void OnConversionsChanged(object? sender, EventArgs e) => OnUiThread(Show);
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
@@ -132,7 +146,9 @@ public sealed partial class StreamQualityMonitor : ObservableObject, IDisposable
 
         var server = _client.Connection?.ServerUrl ?? new Uri("http://localhost/");
         var atHome = _home?.IsAtHome(server) ?? NetworkLocation.IsLocal(server);
-        var info = StreamQuality.Describe(file.Details, _settings.Current.Streaming.OptionsFor(atHome), atHome, _downloaded, _strings);
+        var options = _settings.Current.Streaming.OptionsFor(atHome);
+        options = _conversions?.For(file.TrackId, options) ?? options;
+        var info = StreamQuality.Describe(file.Details, options, atHome, _downloaded, _strings);
         Label = info.Label;
         Explanation = info.Explanation;
     }

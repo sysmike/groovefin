@@ -51,6 +51,14 @@ public static class StreamQuality
         }
 
         var codec = options.Codec == TranscodingCodec.Mp3 ? "MP3" : "AAC";
+        if (options.Convert)
+        {
+            // Windows could not open the original (StreamConversions).
+            return new(
+                StreamKind.Converted,
+                Join(options.MaxBitrateKbps is { } kbps ? $"{codec} {Kbps(kbps)}" : codec, strings.GetString("StreamQuality_ConvertedShort")),
+                strings.GetString("StreamQuality_UnreadableWhy"));
+        }
         if (!playable)
         {
             var target = options.MaxBitrateKbps is { } max ? $"{codec} {Kbps(max)}" : codec;

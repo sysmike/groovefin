@@ -47,6 +47,12 @@ public static class StreamFailures
         return string.Equals(error, "NetworkError", StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Whether Windows could not open the file's format as it is: <c>MF_E_UNSUPPORTED_BYTESTREAM_TYPE</c>, e.g. a FLAC
+    /// file with a large cover and tags (#361). A conversion by the server plays.
+    /// </summary>
+    public static bool IsUnreadableFormat(int? result) => result == unchecked((int)0xC00D36C4);
+
     /// <summary>The HTTP status of an <c>HTTP_E_STATUS_*</c> result, or <see langword="null"/>.</summary>
     private static int? HttpStatus(int result)
     {

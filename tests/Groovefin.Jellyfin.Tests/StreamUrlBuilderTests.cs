@@ -53,6 +53,18 @@ public sealed class StreamUrlBuilderTests : IDisposable
     }
 
     [Fact]
+    public void A_converted_stream_lets_only_the_conversions_format_play_as_it_is()
+    {
+        _host.ConnectAsTestUser();
+
+        var query = Query(Sut.GetStreamUrl(TrackId, new StreamOptions(320, TranscodingCodec.Aac) { Convert = true }));
+
+        query["Container"].Should().Be("aac", "a FLAC file must not play as it is");
+        query["TranscodingContainer"].Should().Be("aac");
+        query["MaxStreamingBitrate"].Should().Be("320000");
+    }
+
+    [Fact]
     public void A_start_position_becomes_start_time_ticks()
     {
         _host.ConnectAsTestUser();

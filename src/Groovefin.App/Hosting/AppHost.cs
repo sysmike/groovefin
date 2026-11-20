@@ -131,6 +131,8 @@ internal static class AppHost
         builder.Services.AddSingleton<IAudioOutput>(sp => sp.GetRequiredService<MediaPlayerEngine>());
         builder.Services.AddSingleton<AudioOutputSync>();
         builder.Services.AddSingleton(_ => new QueueManager());
+        // Songs Windows can't open as streams, converted by the server instead (#361, #453).
+        builder.Services.AddSingleton<StreamConversions>();
         builder.Services.AddSingleton<Player>();
         builder.Services.AddSingleton<IPlayer>(sp => sp.GetRequiredService<Player>());
         // Privacy mode (#234): not saved, so it is off at every start.

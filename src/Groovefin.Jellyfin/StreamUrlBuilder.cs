@@ -38,7 +38,8 @@ internal sealed class StreamUrlBuilder(JellyfinClient client, ClientIdentity ide
         {
             ("UserId", connection.UserId),
             ("DeviceId", identity.DeviceId),
-            ("Container", DirectPlayContainers),
+            // Converted (StreamConversions): only the conversion's own format may play as it is.
+            ("Container", options.Convert ? codec : DirectPlayContainers),
             ("TranscodingContainer", codec),
             ("TranscodingProtocol", "http"),
             ("AudioCodec", codec),

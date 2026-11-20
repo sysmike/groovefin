@@ -2998,6 +2998,9 @@
   <data name="StreamQuality_FormatWhy" xml:space="preserve">
     <value>Converted by the server: Windows can't play {0} files.</value>
   </data>
+  <data name="StreamQuality_UnreadableWhy" xml:space="preserve">
+    <value>Converted by the server: Windows can't open the original file as it is.</value>
+  </data>
   <data name="StreamQuality_BitrateWhyHome" xml:space="preserve">
     <value>Converted by the server: the file is above the {0} limit set for the home network in Settings → Streaming.</value>
   </data>

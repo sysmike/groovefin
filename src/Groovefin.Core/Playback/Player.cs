@@ -45,6 +45,7 @@ public sealed partial class Player : IPlayer, IDisposable
     private readonly TimeProvider _time;
     private readonly IDispatcher? _dispatcher;
     private readonly IHomeNetwork? _home;
+    private readonly StreamConversions _conversions;
     private string? _loadedItemId;
     private Reconnection? _reconnection;
     private bool _wasOnline;
@@ -64,7 +65,8 @@ public sealed partial class Player : IPlayer, IDisposable
         INetworkStatus? network = null,
         TimeProvider? time = null,
         IDispatcher? dispatcher = null,
-        IHomeNetwork? home = null)
+        IHomeNetwork? home = null,
+        StreamConversions? conversions = null)
     {
         Queue = queue;
         Engine = engine;
@@ -78,6 +80,7 @@ public sealed partial class Player : IPlayer, IDisposable
         _time = time ?? TimeProvider.System;
         _dispatcher = dispatcher;
         _home = home;
+        _conversions = conversions ?? new StreamConversions();
         _wasOnline = network?.IsOnline ?? true;
 
         Engine.Ended += OnEnded;
@@ -262,6 +265,16 @@ public sealed partial class Player : IPlayer, IDisposable
         // Only a stream: a downloaded file does not need the network.
         if ((e.IsNetworkError || _network is { IsOnline: false }) && e.Source.UrlAt is not null && TryReconnect(e.Source))
         {
+            return;
+        }
+
+        // A stream whose original file Windows can't open: the server converts it, from where it was, once.
+        if (e.Source.UrlAt is not null && StreamFailures.IsUnreadableFormat(e.Exception?.HResult)
+            && Queue.Current?.Id == e.Source.Id && _conversions.Add(e.Source.Track.Id))
+        {
+            LogConverting(e.Source.ToString());
+            EndReconnection();
+            LoadCurrent(autoPlay: true, startPosition: e.Source.StartPosition);
             return;
         }
 
@@ -474,8 +487,8 @@ public sealed partial class Player : IPlayer, IDisposable
         }
 
         var server = _client.Connection?.ServerUrl ?? throw new InvalidOperationException("Not connected to a server.");
-        // At home or away (#453): the server says so; without it, its address.
-        var options = _settings.Current.Streaming.OptionsFor(_home?.IsAtHome(server) ?? NetworkLocation.IsLocal(server));
+        // At home or away (#453): the server says so; without it, its address. Converted when Windows can't open it.
+        var options = _conversions.For(item.Track.Id, _settings.Current.Streaming.OptionsFor(_home?.IsAtHome(server) ?? NetworkLocation.IsLocal(server)));
         var url = _streams.GetStreamUrl(item.Track.Id, options);
         return new PlaybackSource(item.Id, url, item.Track, gain)
         {
@@ -643,6 +656,9 @@ public sealed partial class Player : IPlayer, IDisposable
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Playback of {Source} failed: {Message}")]
     private partial void LogPlaybackFailed(Exception? exception, string source, string message);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Windows can't open the file of {Source}; the server converts it")]
+    private partial void LogConverting(string source);
 
     /// <summary>A stream the network broke, waiting for its next try (#385).</summary>
     private sealed record Reconnection(string ItemId, TimeSpan Position, int Attempt, ITimer Timer);
