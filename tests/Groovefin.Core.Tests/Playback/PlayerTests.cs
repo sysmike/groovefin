@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Groovefin.Core.Api;
 using Groovefin.Core.Models;
 using Groovefin.Core.Notifications;
@@ -343,6 +344,36 @@ public sealed class PlayerTests : IDisposable
 
         Playing.Should().Be("b");
         _errors.Received(1).Report(Arg.Is<Exception>(e => e is PlaybackException && e.Message == "MediaSourceNotSupported"), Operations.Playback);
+    }
+
+    [Fact]
+    public void A_stream_windows_cannot_open_plays_again_converted_and_a_second_failure_skips_it()
+    {
+        var unreadable = new COMException("MF_E_UNSUPPORTED_BYTESTREAM_TYPE", unchecked((int)0xC00D36C4));
+        _sut.Play(Tracks("a", "b"));
+
+        _engine.SimulateFailure("SourceNotSupportedError", unreadable);
+
+        Playing.Should().Be("a", "the server converts it instead");
+        _streams.Received(1).GetStreamUrl("a", new StreamOptions(StreamConversions.Kbps, TranscodingCodec.Aac) { Convert = true });
+        _errors.DidNotReceiveWithAnyArgs().Report(default!, default!);
+
+        _engine.SimulateFailure("SourceNotSupportedError", unreadable);
+
+        Playing.Should().Be("b", "a conversion that fails too is skipped");
+        _errors.Received(1).Report(Arg.Any<PlaybackException>(), Operations.Playback);
+    }
+
+    [Fact]
+    public void A_song_converted_once_is_converted_at_once_the_next_time()
+    {
+        var conversions = new StreamConversions();
+        conversions.Add("a");
+        using var player = new Player(new QueueManager(new Random(1)), new FakePlaybackEngine(), _streams, _client, _settings, _errors, NullLogger<Player>.Instance, conversions: conversions);
+
+        player.Play(Tracks("a"));
+
+        _streams.Received(1).GetStreamUrl("a", new StreamOptions(StreamConversions.Kbps, TranscodingCodec.Aac) { Convert = true });
     }
 
     [Fact]

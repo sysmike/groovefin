@@ -17,6 +17,12 @@ public sealed record StreamOptions(int? MaxBitrateKbps, TranscodingCodec Codec)
     /// only be read from the front (#154). A file the server plays as it is ignores it.
     /// </summary>
     public TimeSpan StartPosition { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the server converts the file even when Windows plays its format: a file Windows
+    /// could not open as it is (<c>StreamConversions</c>).
+    /// </summary>
+    public bool Convert { get; init; }
 }
 
 /// <summary>Builds stream URLs for the active connection.</summary>

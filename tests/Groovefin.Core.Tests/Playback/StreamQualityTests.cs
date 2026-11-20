@@ -59,6 +59,14 @@ public sealed class StreamQualityTests
     }
 
     [Fact]
+    public void A_file_windows_cannot_open_says_it_is_converted_and_why()
+    {
+        var info = StreamQuality.Describe(File("flac", "flac", 900_000, 44100, 16), Original with { MaxBitrateKbps = 320, Convert = true }, atHome: true, downloaded: false, _strings);
+
+        info.Should().Be(new StreamQualityInfo(StreamKind.Converted, "AAC 320 kbps · converted", "StreamQuality_UnreadableWhy"));
+    }
+
+    [Fact]
     public void A_lossy_file_within_the_limit_shows_its_bitrate()
     {
         StreamQuality.Describe(File("mp3", "mp3", 256_000), Remote, atHome: false, downloaded: false, _strings).Label.Should().Be("MP3 256 kbps");
