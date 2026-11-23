@@ -1991,7 +1991,7 @@
     <value>License</value>
   </data>
   <data name="SettingsLicenseCard.Description" xml:space="preserve">
-    <value>Groovefin is free software under the MIT License.</value>
+    <value>Groovefin is free software under the GNU General Public License, version 3 or later.</value>
   </data>
   <data name="SettingsThirdPartyCard.Header" xml:space="preserve">
     <value>Third-party software</value>

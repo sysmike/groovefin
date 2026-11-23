@@ -1972,7 +1972,7 @@
     <value>Lizenz</value>
   </data>
   <data name="SettingsLicenseCard.Description" xml:space="preserve">
-    <value>Groovefin ist freie Software unter der MIT-Lizenz.</value>
+    <value>Groovefin ist freie Software unter der GNU General Public License, Version 3 oder neuer.</value>
   </data>
   <data name="SettingsThirdPartyCard.Header" xml:space="preserve">
     <value>Software von Drittanbietern</value>

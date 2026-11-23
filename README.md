@@ -4,7 +4,7 @@ A native looking Jellyfin music player for Windows 11
 
 [![CI](https://github.com/sysmike/groovefin/actions/workflows/ci.yml/badge.svg)](https://github.com/sysmike/groovefin/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/sysmike/groovefin/actions/workflows/codeql.yml/badge.svg)](https://github.com/sysmike/groovefin/actions/workflows/codeql.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: GPL v3 or later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 
 ![Groovefin's start page with the navigation pane open: a random album on a colour taken from its cover, then rows of recently played and recently added albums](assets/screenshots/home.webp)
 
@@ -80,8 +80,15 @@ Linux and macOS (`dotnet test --solution Groovefin.CrossPlatform.slnf`).
 
 ## License
 
-Groovefin is licensed under the [MIT License](LICENSE). The licenses of the components it uses are
-listed in the app (Settings → About → Third-party software).
+Copyright © 2026 Groovefin contributors.
+
+Groovefin is free software: you can redistribute it and/or modify it under the terms of the
+[GNU General Public License](LICENSE) as published by the Free Software Foundation, either version 3
+of the License, or (at your option) any later version. It is distributed in the hope that it will be
+useful, but without any warranty; see the license for details.
+
+The licenses of the components it uses are listed in the app (Settings → About → Third-party
+software).
 
 Groovefin is not affiliated with the Jellyfin project. [Feishin](https://github.com/jeffvli/feishin)
 (GPL-3.0) is used as a UX reference only; no code or assets are copied from it.
